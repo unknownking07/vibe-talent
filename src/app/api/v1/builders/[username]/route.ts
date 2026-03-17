@@ -34,6 +34,7 @@ export async function GET(
       .from("projects")
       .select("id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, created_at")
       .eq("user_id", user.id)
+      .eq("flagged", false)
       .order("created_at", { ascending: false });
 
     if (projectsError) {

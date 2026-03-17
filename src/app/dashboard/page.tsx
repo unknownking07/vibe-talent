@@ -430,6 +430,20 @@ export default function DashboardPage() {
 
   const handleAddProject = async () => {
     if (!user || addingProject || !projectForm.title || !projectForm.description) return;
+
+    if (projectForm.description.length < 10) {
+      alert("Description must be at least 10 characters.");
+      return;
+    }
+    if (projectForm.github_url && !projectForm.github_url.startsWith("https://github.com/")) {
+      alert("GitHub URL must start with https://github.com/");
+      return;
+    }
+    if (projectForm.live_url && !projectForm.live_url.startsWith("http://") && !projectForm.live_url.startsWith("https://")) {
+      alert("Live URL must start with http:// or https://");
+      return;
+    }
+
     setAddingProject(true);
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -475,6 +489,20 @@ export default function DashboardPage() {
 
   const handleSaveEdit = async () => {
     if (!user || !editingProjectId || savingEdit || !projectForm.title || !projectForm.description) return;
+
+    if (projectForm.description.length < 10) {
+      alert("Description must be at least 10 characters.");
+      return;
+    }
+    if (projectForm.github_url && !projectForm.github_url.startsWith("https://github.com/")) {
+      alert("GitHub URL must start with https://github.com/");
+      return;
+    }
+    if (projectForm.live_url && !projectForm.live_url.startsWith("http://") && !projectForm.live_url.startsWith("https://")) {
+      alert("Live URL must start with http:// or https://");
+      return;
+    }
+
     setSavingEdit(true);
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

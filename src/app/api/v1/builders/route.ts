@@ -64,7 +64,8 @@ export async function GET(req: NextRequest) {
     const { data: projects, error: projectsError } = await (supabase as any)
       .from("projects")
       .select("user_id, tech_stack")
-      .in("user_id", userIds);
+      .in("user_id", userIds)
+      .eq("flagged", false);
 
     if (projectsError) {
       console.error("Failed to fetch projects:", projectsError);

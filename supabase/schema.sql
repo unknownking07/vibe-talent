@@ -269,3 +269,27 @@ CREATE POLICY "Anyone can insert hire messages"
 -- Add reply and replied_at columns to hire_requests
 ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS reply TEXT;
 ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS replied_at TIMESTAMPTZ;
+
+-- Add flagged column to projects
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS flagged BOOLEAN DEFAULT false;
+CREATE INDEX IF NOT EXISTS idx_projects_flagged ON projects(flagged);
+
+-- Project reports table (spam prevention)
+CREATE TABLE project_reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  reason TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_project_reports_project_id ON project_reports(project_id);
+
+ALTER TABLE project_reports ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can submit a report (no auth required)
+CREATE POLICY "Anyone can submit project reports"
+  ON project_reports FOR INSERT WITH CHECK (true);
+
+-- Reports are readable for counting (used by API)
+CREATE POLICY "Reports are readable"
+  ON project_reports FOR SELECT USING (true);

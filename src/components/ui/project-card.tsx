@@ -1,15 +1,60 @@
 "use client";
 
-import { ExternalLink, Github, Clock, Tag, Pencil } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { ExternalLink, Github, Clock, Tag, Pencil, Flag } from "lucide-react";
 import type { Project } from "@/lib/types/database";
+
+const REPORT_REASONS = [
+  "Spam/Fake",
+  "Inappropriate content",
+  "Broken links",
+  "Other",
+];
 
 interface ProjectCardProps {
   project: Project;
   showAuthor?: boolean;
+  showReport?: boolean;
   onEdit?: (project: Project) => void;
 }
 
-export function ProjectCard({ project, onEdit }: ProjectCardProps) {
+export function ProjectCard({ project, onEdit, showReport = true }: ProjectCardProps) {
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reported, setReported] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setReportOpen(false);
+      }
+    }
+    if (reportOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [reportOpen]);
+
+  const handleReport = async (reason: string) => {
+    if (reporting || reported) return;
+    setReporting(true);
+    try {
+      const res = await fetch("/api/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: project.id, reason }),
+      });
+      if (res.ok) {
+        setReported(true);
+      }
+    } catch {
+      // silently fail
+    }
+    setReporting(false);
+    setReportOpen(false);
+  };
+
   return (
     <div
       className="card-brutal p-5 transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#0F0F0F]"
@@ -25,6 +70,41 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
             >
               <Pencil size={16} />
             </button>
+          )}
+          {showReport && !onEdit && (
+            <div className="relative" ref={dropdownRef}>
+              {reported ? (
+                <span className="text-xs font-bold text-[#71717A]">Reported</span>
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setReportOpen(!reportOpen);
+                  }}
+                  className="text-[#A1A1AA] hover:text-red-500 transition-colors"
+                  title="Report project"
+                >
+                  <Flag size={14} />
+                </button>
+              )}
+              {reportOpen && (
+                <div className="absolute right-0 top-6 z-50 w-44 border-2 border-[#0F0F0F] bg-white shadow-[4px_4px_0_#0F0F0F]">
+                  {REPORT_REASONS.map((reason) => (
+                    <button
+                      key={reason}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleReport(reason);
+                      }}
+                      disabled={reporting}
+                      className="block w-full px-3 py-2 text-left text-xs font-bold uppercase text-[#0F0F0F] hover:bg-[#F5F5F5] transition-colors disabled:opacity-50"
+                    >
+                      {reason}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
           {project.live_url && (
             <a

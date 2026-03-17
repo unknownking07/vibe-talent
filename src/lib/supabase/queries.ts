@@ -17,7 +17,8 @@ export async function fetchUsers(): Promise<UserWithSocials[]> {
   const { data: projects } = await supabase()
     .from("projects")
     .select("*")
-    .in("user_id", userIds);
+    .in("user_id", userIds)
+    .eq("flagged", false);
 
   const { data: socialLinks } = await supabase()
     .from("social_links")
@@ -44,6 +45,7 @@ export async function fetchUserByUsername(username: string): Promise<UserWithSoc
     .from("projects")
     .select("*")
     .eq("user_id", user.id)
+    .eq("flagged", false)
     .order("created_at", { ascending: false });
 
   const { data: socialLinks } = await supabase()
@@ -63,6 +65,7 @@ export async function fetchProjects() {
   const { data, error } = await supabase()
     .from("projects")
     .select("*")
+    .eq("flagged", false)
     .order("created_at", { ascending: false });
 
   if (error) return [];
