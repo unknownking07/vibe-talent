@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Bot, Search, Send, Zap, MessageCircle } from "lucide-react";
+import { Bot, Search, Send, Zap, MessageCircle, Code2, ExternalLink } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "AI Agents",
@@ -173,6 +173,89 @@ export default function AgentHubPage() {
               <p className="text-xs text-zinc-400 font-medium">{item.text}</p>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* API for External Agents */}
+      <div
+        className="mt-16 p-8"
+        style={{
+          backgroundColor: "#FFFFFF",
+          border: "2px solid #0F0F0F",
+          boxShadow: "var(--shadow-brutal)",
+        }}
+      >
+        <div className="flex items-center gap-3 mb-6">
+          <div
+            className="w-10 h-10 flex items-center justify-center"
+            style={{
+              backgroundColor: "var(--accent)",
+              border: "2px solid #0F0F0F",
+            }}
+          >
+            <Code2 size={18} className="text-white" />
+          </div>
+          <h2 className="text-2xl font-extrabold uppercase text-[#0F0F0F]">Public API for AI Agents</h2>
+        </div>
+        <p className="text-sm text-[#52525B] font-medium mb-6 max-w-3xl">
+          Building an AI agent? VibeTalent exposes a free, open REST API so your agent can search builders,
+          evaluate profiles, and send hire requests programmatically. No API key required.
+        </p>
+
+        <div className="grid sm:grid-cols-3 gap-4 mb-6">
+          <div
+            className="p-4"
+            style={{ backgroundColor: "#F5F5F5", border: "2px solid #0F0F0F" }}
+          >
+            <code className="text-xs font-mono font-bold text-[var(--accent)]">GET</code>
+            <p className="text-sm font-extrabold text-[#0F0F0F] mt-1">/api/v1/builders</p>
+            <p className="text-xs text-[#71717A] font-medium mt-1">
+              Search builders by skills, streak, vibe score. Supports sorting and filtering.
+            </p>
+          </div>
+          <div
+            className="p-4"
+            style={{ backgroundColor: "#F5F5F5", border: "2px solid #0F0F0F" }}
+          >
+            <code className="text-xs font-mono font-bold text-[var(--accent)]">GET</code>
+            <p className="text-sm font-extrabold text-[#0F0F0F] mt-1">/api/v1/builders/:username</p>
+            <p className="text-xs text-[#71717A] font-medium mt-1">
+              Get full builder profile with projects, social links, and stats.
+            </p>
+          </div>
+          <div
+            className="p-4"
+            style={{ backgroundColor: "#F5F5F5", border: "2px solid #0F0F0F" }}
+          >
+            <code className="text-xs font-mono font-bold text-[#16A34A]">POST</code>
+            <p className="text-sm font-extrabold text-[#0F0F0F] mt-1">/api/v1/hire</p>
+            <p className="text-xs text-[#71717A] font-medium mt-1">
+              Send a hire request to any builder. Includes chat URL for follow-up.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-3 flex-wrap">
+          <a
+            href="/api/v1/openapi"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-brutal btn-brutal-primary text-sm flex items-center gap-2"
+          >
+            <Code2 size={14} />
+            OpenAPI Spec
+            <ExternalLink size={12} />
+          </a>
+          <a
+            href="/.well-known/ai-plugin.json"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-brutal btn-brutal-secondary text-sm flex items-center gap-2"
+          >
+            <Bot size={14} />
+            AI Plugin Manifest
+            <ExternalLink size={12} />
+          </a>
         </div>
       </div>
     </div>
