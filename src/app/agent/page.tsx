@@ -1,13 +1,19 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { Bot, Search, Send, Zap, MessageCircle, Code2, ExternalLink } from "lucide-react";
+"use client";
 
-export const metadata: Metadata = {
-  title: "AI Agents",
-  description: "Autonomous AI agents that analyze builder profiles, match talent to your project, and draft personalized hire requests.",
-};
+import Link from "next/link";
+import { useState } from "react";
+import { Bot, Search, Send, Zap, MessageCircle, Code2, ExternalLink, Copy, Check } from "lucide-react";
 
 export default function AgentHubPage() {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopySkillUrl = () => {
+    const url = `${window.location.origin}/skill.md`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
       <div className="text-center mb-12">
@@ -246,17 +252,14 @@ export default function AgentHubPage() {
             OpenAPI Spec
             <ExternalLink size={12} />
           </a>
-          <a
-            href="/skill.md"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-brutal text-sm flex items-center gap-2"
-            style={{ backgroundColor: "#0F0F0F", color: "#FFFFFF" }}
+          <button
+            onClick={handleCopySkillUrl}
+            className="btn-brutal text-sm flex items-center gap-2 transition-all"
+            style={{ backgroundColor: copied ? "#16A34A" : "#0F0F0F", color: "#FFFFFF" }}
           >
-            <Bot size={14} />
-            Agent Skill File
-            <ExternalLink size={12} />
-          </a>
+            {copied ? <Check size={14} /> : <Copy size={14} />}
+            {copied ? "Copied!" : "Copy Skill URL"}
+          </button>
           <a
             href="/.well-known/ai-plugin.json"
             target="_blank"
