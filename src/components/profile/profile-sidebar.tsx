@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Github, Globe, Bot } from "lucide-react";
+import { Github, Globe, Bot, Code2 } from "lucide-react";
 import Link from "next/link";
 import type { UserWithSocials, BadgeLevel } from "@/lib/types/database";
 import { HireModal } from "@/components/ui/hire-modal";
@@ -140,6 +140,21 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
           </a>
         )}
       </div>
+
+      {/* IDE Badge */}
+      {socials?.farcaster && (
+        <div
+          className="flex items-center gap-2 px-3 py-2 text-xs font-extrabold uppercase"
+          style={{
+            backgroundColor: "#FFF7ED",
+            border: "2px solid #0F0F0F",
+            boxShadow: "3px 3px 0 #0F0F0F",
+          }}
+        >
+          <Code2 size={14} className="text-[var(--accent)]" />
+          <span className="text-[#0F0F0F]">{socials.farcaster}</span>
+        </div>
+      )}
 
       {/* Hire button */}
       <button

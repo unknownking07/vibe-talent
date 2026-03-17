@@ -127,7 +127,7 @@ export default function DashboardPage() {
     github: "",
     telegram: "",
     website: "",
-    farcaster: "",
+    ide: "",
   });
 
   useEffect(() => {
@@ -139,7 +139,7 @@ export default function DashboardPage() {
         github: user.social_links?.github || "",
         telegram: user.social_links?.telegram || "",
         website: user.social_links?.website || "",
-        farcaster: user.social_links?.farcaster || "",
+        ide: user.social_links?.farcaster || "",
       });
     }
   }, [user]);
@@ -401,14 +401,14 @@ export default function DashboardPage() {
       .update({ username: profileForm.username, bio: profileForm.bio })
       .eq("id", user.id);
 
-    // Upsert social links
+    // Upsert social links (farcaster column stores IDE choice)
     await sb.from("social_links").upsert({
       user_id: user.id,
       twitter: profileForm.twitter || null,
       github: profileForm.github || null,
       telegram: profileForm.telegram || null,
       website: profileForm.website || null,
-      farcaster: profileForm.farcaster || null,
+      farcaster: profileForm.ide || null,
     }, { onConflict: "user_id" });
 
     setUser({
@@ -422,7 +422,7 @@ export default function DashboardPage() {
         github: profileForm.github || null,
         telegram: profileForm.telegram || null,
         website: profileForm.website || null,
-        farcaster: profileForm.farcaster || null,
+        farcaster: profileForm.ide || null,
       },
     });
     setSaving(false);
@@ -805,14 +805,26 @@ export default function DashboardPage() {
               </div>
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Farcaster</label>
-              <input
-                type="text"
-                value={profileForm.farcaster}
-                onChange={(e) => setProfileForm({ ...profileForm, farcaster: e.target.value })}
-                placeholder="username"
+              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Vibe Coding IDE</label>
+              <select
+                value={profileForm.ide}
+                onChange={(e) => setProfileForm({ ...profileForm, ide: e.target.value })}
                 className="input-brutal"
-              />
+              >
+                <option value="">Select your IDE...</option>
+                <option value="Claude Code (Pro)">Claude Code (Pro)</option>
+                <option value="Claude Code (Max 5x)">Claude Code (Max 5x)</option>
+                <option value="Claude Code (Max 20x)">Claude Code (Max 20x)</option>
+                <option value="Cursor">Cursor</option>
+                <option value="Windsurf">Windsurf</option>
+                <option value="Antigravity">Antigravity</option>
+                <option value="Bolt">Bolt</option>
+                <option value="Lovable">Lovable</option>
+                <option value="Replit Agent">Replit Agent</option>
+                <option value="GitHub Copilot">GitHub Copilot</option>
+                <option value="VS Code + AI">VS Code + AI</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
             <button
               onClick={handleSaveProfile}
