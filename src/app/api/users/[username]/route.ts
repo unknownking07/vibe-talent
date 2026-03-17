@@ -1,0 +1,48 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+// GET /api/users/[username] — Get user profile
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ username: string }> }
+) {
+  const { username } = await params;
+
+  try {
+    const supabase = await createServerSupabaseClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
+
+    const { data: user, error } = await sb
+      .from("users")
+      .select("*")
+      .eq("username", username)
+      .single();
+
+    if (error || !user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const { data: projects } = await sb
+      .from("projects")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    const { data: socialLinks } = await sb
+      .from("social_links")
+      .select("*")
+      .eq("user_id", user.id)
+      .single();
+
+    return NextResponse.json({
+      user: {
+        ...user,
+        projects: projects || [],
+        social_links: socialLinks || null,
+      },
+    });
+  } catch {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+}
