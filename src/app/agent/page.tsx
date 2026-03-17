@@ -247,6 +247,17 @@ export default function AgentHubPage() {
             <ExternalLink size={12} />
           </a>
           <a
+            href="/skill.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-brutal text-sm flex items-center gap-2"
+            style={{ backgroundColor: "#0F0F0F", color: "#FFFFFF" }}
+          >
+            <Bot size={14} />
+            Agent Skill File
+            <ExternalLink size={12} />
+          </a>
+          <a
             href="/.well-known/ai-plugin.json"
             target="_blank"
             rel="noopener noreferrer"
