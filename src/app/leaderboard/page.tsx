@@ -23,16 +23,27 @@ export default function LeaderboardPage() {
     });
   }, []);
 
-  const sortedUsers = [...allUsers].sort((a, b) => {
-    switch (activeTab) {
-      case "vibe_score":
-        return b.vibe_score - a.vibe_score;
-      case "streak":
-        return b.longest_streak - a.longest_streak;
-      case "projects":
-        return b.projects.length - a.projects.length;
-    }
-  });
+  const sortedUsers = [...allUsers]
+    .filter((user) => {
+      switch (activeTab) {
+        case "streak":
+          return user.longest_streak > 0;
+        case "projects":
+          return user.projects.length > 0;
+        default:
+          return true;
+      }
+    })
+    .sort((a, b) => {
+      switch (activeTab) {
+        case "vibe_score":
+          return b.vibe_score - a.vibe_score;
+        case "streak":
+          return b.longest_streak - a.longest_streak;
+        case "projects":
+          return b.projects.length - a.projects.length;
+      }
+    });
 
   const tabs: { id: Tab; label: string; icon: typeof Trophy }[] = [
     { id: "vibe_score", label: "Vibe Score", icon: Zap },
