@@ -1,14 +1,15 @@
 "use client";
 
-import { ExternalLink, Github, Clock, Tag } from "lucide-react";
+import { ExternalLink, Github, Clock, Tag, Pencil } from "lucide-react";
 import type { Project } from "@/lib/types/database";
 
 interface ProjectCardProps {
   project: Project;
   showAuthor?: boolean;
+  onEdit?: (project: Project) => void;
 }
 
-export function ProjectCard({ project }: ProjectCardProps) {
+export function ProjectCard({ project, onEdit }: ProjectCardProps) {
   return (
     <div
       className="card-brutal p-5 transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#0F0F0F]"
@@ -16,6 +17,15 @@ export function ProjectCard({ project }: ProjectCardProps) {
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-extrabold uppercase text-[#0F0F0F]">{project.title}</h3>
         <div className="flex shrink-0 gap-2">
+          {onEdit && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(project); }}
+              className="text-[#52525B] hover:text-[var(--accent)] transition-colors"
+              title="Edit project"
+            >
+              <Pencil size={16} />
+            </button>
+          )}
           {project.live_url && (
             <a
               href={project.live_url}

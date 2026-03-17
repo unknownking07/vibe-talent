@@ -136,6 +136,8 @@ export default function DashboardPage() {
   const [countdown, setCountdown] = useState("");
   const [saving, setSaving] = useState(false);
   const [addingProject, setAddingProject] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Check if already logged today on mount
   useEffect(() => {
@@ -288,6 +290,50 @@ export default function DashboardPage() {
     setProjectForm({ title: "", description: "", tech_stack: "", live_url: "", github_url: "", build_time: "", tags: "" });
     setShowProjectForm(false);
     setAddingProject(false);
+  };
+
+  const handleStartEdit = (project: import("@/lib/types/database").Project) => {
+    setEditingProjectId(project.id);
+    setProjectForm({
+      title: project.title,
+      description: project.description || "",
+      tech_stack: project.tech_stack?.join(", ") || "",
+      live_url: project.live_url || "",
+      github_url: project.github_url || "",
+      build_time: project.build_time || "",
+      tags: project.tags?.join(", ") || "",
+    });
+    setShowProjectForm(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!user || !editingProjectId || savingEdit || !projectForm.title || !projectForm.description) return;
+    setSavingEdit(true);
+    const supabase = createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
+
+    const { error } = await sb.from("projects").update({
+      title: projectForm.title,
+      description: projectForm.description,
+      tech_stack: projectForm.tech_stack ? projectForm.tech_stack.split(",").map((t: string) => t.trim()).filter(Boolean) : [],
+      live_url: projectForm.live_url || null,
+      github_url: projectForm.github_url || null,
+      build_time: projectForm.build_time || null,
+      tags: projectForm.tags ? projectForm.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [],
+    }).eq("id", editingProjectId);
+
+    if (error) {
+      console.error("Failed to update project:", error);
+      setSavingEdit(false);
+      return;
+    }
+
+    await reloadUser();
+    setProjectForm({ title: "", description: "", tech_stack: "", live_url: "", github_url: "", build_time: "", tags: "" });
+    setShowProjectForm(false);
+    setEditingProjectId(null);
+    setSavingEdit(false);
   };
 
   if (loading) {
@@ -540,7 +586,15 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-extrabold uppercase text-[#0F0F0F]">Your Projects</h2>
             <button
-              onClick={() => setShowProjectForm(!showProjectForm)}
+              onClick={() => {
+                if (showProjectForm) {
+                  setShowProjectForm(false);
+                  setEditingProjectId(null);
+                  setProjectForm({ title: "", description: "", tech_stack: "", live_url: "", github_url: "", build_time: "", tags: "" });
+                } else {
+                  setShowProjectForm(true);
+                }
+              }}
               className="btn-brutal btn-brutal-secondary text-sm flex items-center gap-2 py-2 px-4"
             >
               {showProjectForm ? <X size={16} /> : <Plus size={16} />}
@@ -557,7 +611,7 @@ export default function DashboardPage() {
                 boxShadow: "var(--shadow-brutal-sm)",
               }}
             >
-              <h3 className="text-sm font-extrabold uppercase text-[#0F0F0F] mb-3">New Project</h3>
+              <h3 className="text-sm font-extrabold uppercase text-[#0F0F0F] mb-3">{editingProjectId ? "Edit Project" : "New Project"}</h3>
               <div className="space-y-3">
                 <input
                   type="text"
@@ -613,12 +667,14 @@ export default function DashboardPage() {
                   />
                 </div>
                 <button
-                  onClick={handleAddProject}
-                  disabled={addingProject || !projectForm.title || !projectForm.description}
+                  onClick={editingProjectId ? handleSaveEdit : handleAddProject}
+                  disabled={(editingProjectId ? savingEdit : addingProject) || !projectForm.title || !projectForm.description}
                   className="btn-brutal btn-brutal-primary text-sm flex items-center gap-2 disabled:opacity-50"
                 >
-                  <Plus size={16} />
-                  {addingProject ? "Adding..." : "Add Project"}
+                  {editingProjectId ? <Save size={16} /> : <Plus size={16} />}
+                  {editingProjectId
+                    ? (savingEdit ? "Saving..." : "Save Changes")
+                    : (addingProject ? "Adding..." : "Add Project")}
                 </button>
               </div>
             </div>
@@ -626,7 +682,7 @@ export default function DashboardPage() {
 
           <div className="space-y-4">
             {user.projects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+              <ProjectCard key={project.id} project={project} onEdit={handleStartEdit} />
             ))}
           </div>
         </div>
