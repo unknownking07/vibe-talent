@@ -30,6 +30,7 @@ import {
   User,
   Wrench,
   ExternalLink,
+  Camera,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -160,6 +161,43 @@ export default function DashboardPage() {
   const [loadingChat, setLoadingChat] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatPollRef = useRef<NodeJS.Timeout | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploadingAvatar(true);
+    const supabase = createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
+    const ext = file.name.split(".").pop();
+    const filePath = `${user.id}/avatar.${ext}`;
+
+    // Upload to storage
+    const { error: uploadError } = await sb.storage
+      .from("avatars")
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      console.error("Upload failed:", uploadError);
+      setUploadingAvatar(false);
+      return;
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = sb.storage
+      .from("avatars")
+      .getPublicUrl(filePath);
+
+    // Add cache-busting timestamp
+    const avatarUrl = `${publicUrl}?t=${Date.now()}`;
+
+    // Update user record
+    await sb.from("users").update({ avatar_url: avatarUrl }).eq("id", user.id);
+    setUser({ ...user, avatar_url: avatarUrl });
+    setUploadingAvatar(false);
+  };
 
   // Load inbox when tab switches to inbox
   const loadInbox = async () => {
@@ -672,6 +710,40 @@ export default function DashboardPage() {
         >
           <h2 className="text-lg font-extrabold uppercase text-[#0F0F0F] mb-4">Edit Profile</h2>
           <div className="space-y-4">
+            {/* Avatar Upload */}
+            <div className="flex items-center gap-4">
+              <div
+                className="relative w-20 h-20 flex items-center justify-center text-2xl font-extrabold text-white cursor-pointer group"
+                style={{ backgroundColor: "#0F0F0F", border: "2px solid #0F0F0F" }}
+                onClick={() => avatarInputRef.current?.click()}
+              >
+                {user.avatar_url ? (
+                  <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
+                ) : (
+                  user.username.slice(0, 2).toUpperCase()
+                )}
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera size={20} className="text-white" />
+                </div>
+              </div>
+              <div>
+                <button
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="text-sm font-bold text-[var(--accent)] hover:underline"
+                >
+                  {uploadingAvatar ? "Uploading..." : "Change Avatar"}
+                </button>
+                <p className="text-xs text-[#71717A] mt-1">JPG, PNG. Max 2MB.</p>
+              </div>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
+            </div>
             <div>
               <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Username</label>
               <input

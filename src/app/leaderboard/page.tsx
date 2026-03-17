@@ -119,7 +119,7 @@ export default function LeaderboardPage() {
               }}
             >
               <div
-                className={`mx-auto flex items-center justify-center font-extrabold text-white mb-3 ${
+                className={`mx-auto flex items-center justify-center font-extrabold text-white mb-3 overflow-hidden ${
                   isFirst ? "h-16 w-16 text-lg" : "h-12 w-12 text-sm"
                 }`}
                 style={{
@@ -127,7 +127,11 @@ export default function LeaderboardPage() {
                   border: "2px solid #0F0F0F",
                 }}
               >
-                {initials}
+                {user.avatar_url ? (
+                  <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
+                ) : (
+                  initials
+                )}
               </div>
               <div className="text-xs font-extrabold text-[#71717A] mb-1 uppercase">#{rank}</div>
               <div className="font-extrabold text-[#0F0F0F] text-sm uppercase">@{user.username}</div>
@@ -178,10 +182,14 @@ export default function LeaderboardPage() {
                   <td className="px-4 py-3">
                     <Link href={`/profile/${user.username}`} className="flex items-center gap-3 hover:text-[var(--accent)] transition-colors">
                       <div
-                        className="flex h-8 w-8 items-center justify-center text-xs font-extrabold text-white shrink-0"
+                        className="flex h-8 w-8 items-center justify-center text-xs font-extrabold text-white shrink-0 overflow-hidden"
                         style={{ backgroundColor: "#0F0F0F", border: "2px solid #0F0F0F" }}
                       >
-                        {initials}
+                        {user.avatar_url ? (
+                          <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
+                        ) : (
+                          initials
+                        )}
                       </div>
                       <span className="font-bold text-sm uppercase">@{user.username}</span>
                     </Link>

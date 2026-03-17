@@ -40,10 +40,14 @@ export function MatchCard({ match, rank }: MatchCardProps) {
             #{rank}
           </div>
           <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center text-sm font-extrabold text-white"
+            className="flex h-12 w-12 shrink-0 items-center justify-center text-sm font-extrabold text-white overflow-hidden"
             style={{ backgroundColor: "#0F0F0F", border: "2px solid #0F0F0F" }}
           >
-            {initials}
+            {user.avatar_url ? (
+              <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
+            ) : (
+              initials
+            )}
           </div>
         </div>
 
