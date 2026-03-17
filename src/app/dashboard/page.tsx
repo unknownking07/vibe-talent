@@ -283,6 +283,13 @@ export default function DashboardPage() {
       const midnight = new Date(now);
       midnight.setHours(24, 0, 0, 0);
       const diff = midnight.getTime() - now.getTime();
+      if (diff <= 0) {
+        // Midnight passed — reset so user can log again
+        setTodayLogged(false);
+        setCountdown("");
+        reloadUser();
+        return;
+      }
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
