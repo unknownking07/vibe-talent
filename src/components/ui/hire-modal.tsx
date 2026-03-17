@@ -28,6 +28,7 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+  const [requestId, setRequestId] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -53,12 +54,14 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || "Failed to send request.");
+        const resData = await res.json();
+        setError(resData.error || "Failed to send request.");
         setSending(false);
         return;
       }
 
+      const resData = await res.json();
+      setRequestId(resData.id || null);
       setSent(true);
       setSending(false);
     } catch {
@@ -69,6 +72,7 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
 
   const handleClose = () => {
     setSent(false);
+    setRequestId(null);
     setForm({ sender_name: "", sender_email: "", budget: "", message: "" });
     setError("");
     onClose();
@@ -130,6 +134,26 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
               <p className="text-sm text-[#52525B] font-medium">
                 Your hire request has been sent to @{builderName}. They will get back to you soon.
               </p>
+              {requestId && (
+                <div
+                  className="w-full p-3 text-sm"
+                  style={{
+                    backgroundColor: "#EFF6FF",
+                    border: "2px solid #0F0F0F",
+                  }}
+                >
+                  <p className="font-bold text-[#0F0F0F] mb-1">Continue the conversation:</p>
+                  <a
+                    href={`/hire/chat/${requestId}`}
+                    className="text-[var(--accent)] font-extrabold underline underline-offset-2 break-all"
+                  >
+                    {typeof window !== "undefined" ? window.location.origin : ""}/hire/chat/{requestId}
+                  </a>
+                  <p className="text-xs text-[#52525B] mt-1">
+                    Bookmark this link to check for replies and continue chatting.
+                  </p>
+                </div>
+              )}
               <button
                 onClick={handleClose}
                 className="btn-brutal btn-brutal-primary text-sm mt-2"

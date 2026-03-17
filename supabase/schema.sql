@@ -239,3 +239,33 @@ CREATE POLICY "Builders can view own hire requests"
 -- Only the builder can update their own hire requests
 CREATE POLICY "Builders can update own hire requests"
   ON hire_requests FOR UPDATE USING (auth.uid() = builder_id);
+
+-- Anyone can read a hire request by ID (needed for public chat page)
+CREATE POLICY "Anyone can read hire request by id"
+  ON hire_requests FOR SELECT USING (true);
+
+-- Hire messages table (chat thread per hire request)
+CREATE TABLE hire_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  hire_request_id UUID NOT NULL REFERENCES hire_requests(id) ON DELETE CASCADE,
+  sender_type TEXT NOT NULL CHECK (sender_type IN ('builder', 'client')),
+  message TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_hire_messages_hire_request_id ON hire_messages(hire_request_id);
+CREATE INDEX idx_hire_messages_created_at ON hire_messages(created_at ASC);
+
+ALTER TABLE hire_messages ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can read messages for a hire request (client needs access via request ID)
+CREATE POLICY "Anyone can read hire messages"
+  ON hire_messages FOR SELECT USING (true);
+
+-- Anyone can insert hire messages (builder auth checked in API, client uses request ID as token)
+CREATE POLICY "Anyone can insert hire messages"
+  ON hire_messages FOR INSERT WITH CHECK (true);
+
+-- Add reply and replied_at columns to hire_requests
+ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS reply TEXT;
+ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS replied_at TIMESTAMPTZ;

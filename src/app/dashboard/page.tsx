@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { fetchStreakLogs } from "@/lib/supabase/queries";
 import { BadgeDisplay } from "@/components/ui/badge-display";
@@ -10,7 +10,7 @@ import { VibeScore } from "@/components/ui/vibe-score";
 import { ActivityHeatmap } from "@/components/ui/activity-heatmap";
 import { ProjectCard } from "@/components/ui/project-card";
 import { fetchHireRequests } from "@/lib/supabase/queries";
-import type { HireRequest } from "@/lib/types/database";
+import type { HireRequest, HireMessage } from "@/lib/types/database";
 import {
   Plus,
   Save,
@@ -24,6 +24,12 @@ import {
   Mail,
   MailOpen,
   DollarSign,
+  Reply,
+  Send,
+  MessageCircle,
+  User,
+  Wrench,
+  ExternalLink,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -147,6 +153,13 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<"overview" | "inbox">("overview");
   const [hireRequests, setHireRequests] = useState<HireRequest[]>([]);
   const [loadingInbox, setLoadingInbox] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
+  const [chatMessages, setChatMessages] = useState<Record<string, HireMessage[]>>({});
+  const [loadingChat, setLoadingChat] = useState<string | null>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatPollRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load inbox when tab switches to inbox
   const loadInbox = async () => {
@@ -171,6 +184,81 @@ export default function DashboardPage() {
     } catch (err) {
       console.error("Failed to mark as read:", err);
     }
+  };
+
+  const loadChatMessages = async (requestId: string) => {
+    try {
+      const res = await fetch(`/api/hire/messages?hire_request_id=${requestId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setChatMessages((prev) => ({ ...prev, [requestId]: data.messages || [] }));
+      }
+    } catch (err) {
+      console.error("Failed to load chat messages:", err);
+    }
+  };
+
+  const handleOpenChat = async (requestId: string) => {
+    if (replyingTo === requestId) {
+      // Close chat
+      setReplyingTo(null);
+      setReplyText("");
+      if (chatPollRef.current) {
+        clearInterval(chatPollRef.current);
+        chatPollRef.current = null;
+      }
+      return;
+    }
+    setReplyingTo(requestId);
+    setReplyText("");
+    setLoadingChat(requestId);
+    await loadChatMessages(requestId);
+    setLoadingChat(null);
+
+    // Poll for new messages
+    if (chatPollRef.current) clearInterval(chatPollRef.current);
+    chatPollRef.current = setInterval(() => loadChatMessages(requestId), 5000);
+  };
+
+  // Clean up polling on unmount
+  useEffect(() => {
+    return () => {
+      if (chatPollRef.current) clearInterval(chatPollRef.current);
+    };
+  }, []);
+
+  const handleSendReply = async (requestId: string) => {
+    if (!replyText.trim() || sendingReply) return;
+    setSendingReply(true);
+    try {
+      const res = await fetch("/api/hire/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hire_request_id: requestId,
+          sender_type: "builder",
+          message: replyText.trim(),
+        }),
+      });
+      if (res.ok) {
+        const { data: newMsg } = await res.json();
+        setChatMessages((prev) => ({
+          ...prev,
+          [requestId]: [...(prev[requestId] || []), newMsg],
+        }));
+        setHireRequests((prev) =>
+          prev.map((r) =>
+            r.id === requestId
+              ? { ...r, status: "replied", reply: r.reply || replyText.trim(), replied_at: r.replied_at || new Date().toISOString() }
+              : r
+          )
+        );
+        setReplyText("");
+      }
+    } catch (err) {
+      console.error("Failed to send reply:", err);
+    }
+    setSendingReply(false);
   };
 
   // Check if already logged today on mount
@@ -860,16 +948,203 @@ export default function DashboardPage() {
                       </p>
                     </div>
 
-                    {request.status === "new" && (
+                    <div className="flex gap-2 shrink-0">
+                      {request.status === "new" && (
+                        <button
+                          onClick={() => handleMarkAsRead(request.id)}
+                          className="btn-brutal btn-brutal-secondary text-xs py-2 px-3 flex items-center gap-1.5"
+                        >
+                          <MailOpen size={14} />
+                          Mark as Read
+                        </button>
+                      )}
                       <button
-                        onClick={() => handleMarkAsRead(request.id)}
-                        className="btn-brutal btn-brutal-secondary text-xs py-2 px-3 flex items-center gap-1.5 shrink-0"
+                        onClick={() => {
+                          if (request.status === "new") handleMarkAsRead(request.id);
+                          handleOpenChat(request.id);
+                        }}
+                        className="btn-brutal text-xs py-2 px-3 flex items-center gap-1.5"
+                        style={{
+                          backgroundColor: replyingTo === request.id ? "#0F0F0F" : "var(--accent)",
+                          color: "#FFFFFF",
+                        }}
                       >
-                        <MailOpen size={14} />
-                        Mark as Read
+                        <MessageCircle size={14} />
+                        {replyingTo === request.id ? "Close Chat" : "Chat"}
                       </button>
-                    )}
+                      <a
+                        href={`/hire/chat/${request.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-brutal btn-brutal-secondary text-xs py-2 px-3 flex items-center gap-1.5"
+                        title="Open client chat page"
+                      >
+                        <ExternalLink size={14} />
+                      </a>
+                    </div>
                   </div>
+
+                  {/* Chat Thread */}
+                  {replyingTo === request.id && (
+                    <div
+                      className="mt-4"
+                      style={{
+                        border: "2px solid #0F0F0F",
+                      }}
+                    >
+                      {/* Messages area */}
+                      <div
+                        style={{
+                          backgroundColor: "#FAFAFA",
+                          maxHeight: "400px",
+                          overflowY: "auto",
+                        }}
+                      >
+                        <div className="p-4 space-y-3">
+                          {loadingChat === request.id ? (
+                            <div className="text-center py-8">
+                              <p className="text-sm text-[#71717A] font-medium">Loading messages...</p>
+                            </div>
+                          ) : (
+                            <>
+                              {/* Original message as first "message" */}
+                              <div className="flex justify-start">
+                                <div className="max-w-[80%]">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <User size={12} className="text-[#71717A]" />
+                                    <span className="text-xs font-bold uppercase text-[#71717A]">
+                                      {request.sender_name}
+                                    </span>
+                                  </div>
+                                  <div
+                                    className="p-3"
+                                    style={{
+                                      backgroundColor: "#FFFFFF",
+                                      border: "2px solid #0F0F0F",
+                                      boxShadow: "2px 2px 0 #000",
+                                    }}
+                                  >
+                                    <p className="text-sm text-[#3F3F46] whitespace-pre-wrap">
+                                      {request.message}
+                                    </p>
+                                  </div>
+                                  <p className="text-xs text-[#A1A1AA] mt-1">
+                                    {new Date(request.created_at).toLocaleTimeString("en-US", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                    {" - "}
+                                    {new Date(request.created_at).toLocaleDateString("en-US", {
+                                      month: "short",
+                                      day: "numeric",
+                                    })}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Thread messages */}
+                              {(chatMessages[request.id] || []).map((msg) => {
+                                const isBuilder = msg.sender_type === "builder";
+                                return (
+                                  <div
+                                    key={msg.id}
+                                    className={`flex ${isBuilder ? "justify-end" : "justify-start"}`}
+                                  >
+                                    <div className="max-w-[80%]">
+                                      <div
+                                        className={`flex items-center gap-2 mb-1 ${
+                                          isBuilder ? "justify-end" : ""
+                                        }`}
+                                      >
+                                        {isBuilder ? (
+                                          <Wrench size={12} className="text-[var(--accent)]" />
+                                        ) : (
+                                          <User size={12} className="text-[#71717A]" />
+                                        )}
+                                        <span className="text-xs font-bold uppercase text-[#71717A]">
+                                          {isBuilder ? "You" : request.sender_name}
+                                        </span>
+                                      </div>
+                                      <div
+                                        className="p-3"
+                                        style={{
+                                          backgroundColor: isBuilder ? "var(--accent)" : "#FFFFFF",
+                                          color: isBuilder ? "#FFFFFF" : "#3F3F46",
+                                          border: "2px solid #0F0F0F",
+                                          boxShadow: "2px 2px 0 #000",
+                                        }}
+                                      >
+                                        <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                                      </div>
+                                      <p
+                                        className={`text-xs text-[#A1A1AA] mt-1 ${
+                                          isBuilder ? "text-right" : ""
+                                        }`}
+                                      >
+                                        {new Date(msg.created_at).toLocaleTimeString("en-US", {
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}
+                                        {" - "}
+                                        {new Date(msg.created_at).toLocaleDateString("en-US", {
+                                          month: "short",
+                                          day: "numeric",
+                                        })}
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+
+                              {(chatMessages[request.id] || []).length === 0 && (
+                                <div className="text-center py-4">
+                                  <p className="text-xs text-[#A1A1AA] font-medium">
+                                    No replies yet. Send a message to start the conversation.
+                                  </p>
+                                </div>
+                              )}
+                            </>
+                          )}
+                          <div ref={chatEndRef} />
+                        </div>
+                      </div>
+
+                      {/* Input area */}
+                      <div
+                        className="p-3 flex gap-2"
+                        style={{
+                          backgroundColor: "#FFFFFF",
+                          borderTop: "2px solid #0F0F0F",
+                        }}
+                      >
+                        <textarea
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSendReply(request.id);
+                            }
+                          }}
+                          rows={2}
+                          placeholder="Type your message..."
+                          className="input-brutal resize-none flex-1"
+                        />
+                        <button
+                          onClick={() => handleSendReply(request.id)}
+                          disabled={!replyText.trim() || sendingReply}
+                          className="btn-brutal self-end text-xs py-2.5 px-4 flex items-center gap-1.5 disabled:opacity-50"
+                          style={{
+                            backgroundColor: "var(--accent)",
+                            color: "#FFFFFF",
+                          }}
+                        >
+                          <Send size={14} />
+                          {sendingReply ? "..." : "Send"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

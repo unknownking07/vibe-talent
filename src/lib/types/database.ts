@@ -56,6 +56,16 @@ export interface HireRequest {
   message: string;
   budget: string | null;
   status: string;
+  reply: string | null;
+  replied_at: string | null;
+  created_at: string;
+}
+
+export interface HireMessage {
+  id: string;
+  hire_request_id: string;
+  sender_type: "builder" | "client";
+  message: string;
   created_at: string;
 }
 

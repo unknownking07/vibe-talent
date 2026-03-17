@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createServerSupabaseClient();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { data, error } = await (supabase as any)
       .from("hire_requests")
       .insert({
         builder_id,
@@ -24,14 +24,16 @@ export async function POST(req: NextRequest) {
         sender_email,
         message,
         budget: budget || null,
-      });
+      })
+      .select("id")
+      .single();
 
     if (error) {
       console.error("Failed to insert hire request:", error);
       return NextResponse.json({ error: "Failed to send hire request" }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, id: data.id });
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
@@ -74,7 +76,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { id, status } = body;
+    const { id, status, reply } = body;
 
     if (!id || !status || !["read", "replied"].includes(status)) {
       return NextResponse.json(
@@ -84,9 +86,16 @@ export async function PATCH(req: NextRequest) {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateData: Record<string, unknown> = { status };
+    if (status === "replied" && reply) {
+      updateData.reply = reply;
+      updateData.replied_at = new Date().toISOString();
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("hire_requests")
-      .update({ status })
+      .update(updateData)
       .eq("id", id)
       .eq("builder_id", user.id);
 
