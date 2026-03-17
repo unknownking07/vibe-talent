@@ -9,6 +9,8 @@ import { StreakCounter } from "@/components/ui/streak-counter";
 import { VibeScore } from "@/components/ui/vibe-score";
 import { ActivityHeatmap } from "@/components/ui/activity-heatmap";
 import { ProjectCard } from "@/components/ui/project-card";
+import { fetchHireRequests } from "@/lib/supabase/queries";
+import type { HireRequest } from "@/lib/types/database";
 import {
   Plus,
   Save,
@@ -18,6 +20,10 @@ import {
   X,
   Clock,
   Check,
+  Inbox,
+  Mail,
+  MailOpen,
+  DollarSign,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -138,6 +144,34 @@ export default function DashboardPage() {
   const [addingProject, setAddingProject] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [activeTab, setActiveTab] = useState<"overview" | "inbox">("overview");
+  const [hireRequests, setHireRequests] = useState<HireRequest[]>([]);
+  const [loadingInbox, setLoadingInbox] = useState(false);
+
+  // Load inbox when tab switches to inbox
+  const loadInbox = async () => {
+    setLoadingInbox(true);
+    const data = await fetchHireRequests();
+    setHireRequests(data);
+    setLoadingInbox(false);
+  };
+
+  const handleMarkAsRead = async (requestId: string) => {
+    try {
+      const res = await fetch("/api/hire", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: requestId, status: "read" }),
+      });
+      if (res.ok) {
+        setHireRequests((prev) =>
+          prev.map((r) => (r.id === requestId ? { ...r, status: "read" } : r))
+        );
+      }
+    } catch (err) {
+      console.error("Failed to mark as read:", err);
+    }
+  };
 
   // Check if already logged today on mount
   useEffect(() => {
@@ -358,8 +392,51 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
-      <h1 className="text-3xl font-extrabold uppercase text-[#0F0F0F] mb-8">Dashboard</h1>
+      <h1 className="text-3xl font-extrabold uppercase text-[#0F0F0F] mb-6">Dashboard</h1>
 
+      {/* Tabs */}
+      <div className="flex gap-2 mb-8">
+        <button
+          onClick={() => setActiveTab("overview")}
+          className="px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide transition-all"
+          style={{
+            backgroundColor: activeTab === "overview" ? "#0F0F0F" : "#FFFFFF",
+            color: activeTab === "overview" ? "#FFFFFF" : "#0F0F0F",
+            border: "2px solid #0F0F0F",
+            boxShadow: activeTab === "overview" ? "none" : "4px 4px 0 #000",
+          }}
+        >
+          Overview
+        </button>
+        <button
+          onClick={() => { setActiveTab("inbox"); if (user) loadInbox(); }}
+          className="px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide transition-all flex items-center gap-2"
+          style={{
+            backgroundColor: activeTab === "inbox" ? "#0F0F0F" : "#FFFFFF",
+            color: activeTab === "inbox" ? "#FFFFFF" : "#0F0F0F",
+            border: "2px solid #0F0F0F",
+            boxShadow: activeTab === "inbox" ? "none" : "4px 4px 0 #000",
+          }}
+        >
+          <Inbox size={16} />
+          Inbox
+          {hireRequests.filter((r) => r.status === "new").length > 0 && (
+            <span
+              className="ml-1 px-2 py-0.5 text-xs font-extrabold"
+              style={{
+                backgroundColor: "var(--accent)",
+                color: "#FFFFFF",
+                border: "2px solid #0F0F0F",
+              }}
+            >
+              {hireRequests.filter((r) => r.status === "new").length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {activeTab === "overview" && (
+      <>
       {/* Stats Overview */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         <div
@@ -687,6 +764,118 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+      </>
+      )}
+
+      {activeTab === "inbox" && (
+        <div>
+          <h2 className="text-lg font-extrabold uppercase text-[#0F0F0F] mb-4 flex items-center gap-2">
+            <Mail size={20} className="text-[var(--accent)]" />
+            Hire Requests
+          </h2>
+
+          {loadingInbox ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="skeleton h-32" />
+              ))}
+            </div>
+          ) : hireRequests.length === 0 ? (
+            <div
+              className="p-12 text-center"
+              style={{
+                backgroundColor: "#FFFFFF",
+                border: "2px solid #0F0F0F",
+                boxShadow: "var(--shadow-brutal)",
+              }}
+            >
+              <Inbox size={48} className="mx-auto text-[#D4D4D8] mb-4" />
+              <h3 className="text-lg font-extrabold uppercase text-[#0F0F0F]">No hire requests yet</h3>
+              <p className="text-sm text-[#52525B] font-medium mt-2">
+                When someone wants to hire you, their requests will appear here.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {hireRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className="p-5"
+                  style={{
+                    backgroundColor: request.status === "new" ? "#FFFBEB" : "#FFFFFF",
+                    border: "2px solid #0F0F0F",
+                    boxShadow: "var(--shadow-brutal-sm)",
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <h3 className="text-base font-extrabold text-[#0F0F0F]">
+                          {request.sender_name}
+                        </h3>
+                        <span
+                          className="px-2.5 py-0.5 text-xs font-extrabold uppercase"
+                          style={{
+                            backgroundColor:
+                              request.status === "new"
+                                ? "var(--accent)"
+                                : request.status === "read"
+                                ? "#E4E4E7"
+                                : "#D1FAE5",
+                            color:
+                              request.status === "new"
+                                ? "#FFFFFF"
+                                : request.status === "read"
+                                ? "#52525B"
+                                : "#065F46",
+                            border: "2px solid #0F0F0F",
+                          }}
+                        >
+                          {request.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-[#52525B] font-medium mt-0.5">
+                        {request.sender_email}
+                      </p>
+
+                      {request.budget && (
+                        <div className="flex items-center gap-1.5 mt-2">
+                          <DollarSign size={14} className="text-[var(--accent)]" />
+                          <span className="text-sm font-bold text-[#0F0F0F]">{request.budget}</span>
+                        </div>
+                      )}
+
+                      <p className="text-sm text-[#3F3F46] mt-3 whitespace-pre-wrap">
+                        {request.message}
+                      </p>
+
+                      <p className="text-xs text-[#A1A1AA] font-bold uppercase mt-3">
+                        {new Date(request.created_at).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+
+                    {request.status === "new" && (
+                      <button
+                        onClick={() => handleMarkAsRead(request.id)}
+                        className="btn-brutal btn-brutal-secondary text-xs py-2 px-3 flex items-center gap-1.5 shrink-0"
+                      >
+                        <MailOpen size={14} />
+                        Mark as Read
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

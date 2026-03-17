@@ -48,6 +48,17 @@ export interface UserWithSocials extends User {
   projects: Project[];
 }
 
+export interface HireRequest {
+  id: string;
+  builder_id: string;
+  sender_name: string;
+  sender_email: string;
+  message: string;
+  budget: string | null;
+  status: string;
+  created_at: string;
+}
+
 export interface Database {
   PostgrestVersion: "12";
   public: {
@@ -81,6 +92,15 @@ export interface Database {
         Row: SocialLinks;
         Insert: Omit<SocialLinks, "id"> & { id?: string };
         Update: Partial<SocialLinks>;
+      };
+      hire_requests: {
+        Row: HireRequest;
+        Insert: Omit<HireRequest, "id" | "created_at" | "status"> & {
+          id?: string;
+          created_at?: string;
+          status?: string;
+        };
+        Update: Partial<HireRequest>;
       };
     };
     Views: Record<string, never>;

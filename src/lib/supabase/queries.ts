@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import type { UserWithSocials } from "@/lib/types/database";
+import type { UserWithSocials, HireRequest } from "@/lib/types/database";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const supabase = () => createClient() as any;
@@ -82,4 +82,16 @@ export async function fetchStreakLogs(userId: string): Promise<Record<string, nu
     heatmap[log.activity_date] = (heatmap[log.activity_date] || 0) + 1;
   }
   return heatmap;
+}
+
+export async function fetchHireRequests(): Promise<HireRequest[]> {
+  const response = await fetch("/api/hire", {
+    method: "GET",
+    credentials: "include",
+  });
+
+  if (!response.ok) return [];
+
+  const { data } = await response.json();
+  return data || [];
 }

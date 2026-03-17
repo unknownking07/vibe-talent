@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { Github, Globe, Bot } from "lucide-react";
 import Link from "next/link";
 import type { UserWithSocials, BadgeLevel } from "@/lib/types/database";
+import { HireModal } from "@/components/ui/hire-modal";
 
 interface ProfileSidebarProps {
   user: UserWithSocials;
@@ -29,6 +31,7 @@ function getBadgeBg(level: BadgeLevel): string {
 }
 
 export function ProfileSidebar({ user }: ProfileSidebarProps) {
+  const [hireModalOpen, setHireModalOpen] = useState(false);
   const socials = user.social_links;
   const initials = user.username.slice(0, 2).toUpperCase();
   const badgeLabel = getBadgeLabel(user.badge_level);
@@ -139,12 +142,19 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
       </div>
 
       {/* Hire button */}
-      <Link
-        href={`/agent/contact/${user.username}`}
+      <button
+        onClick={() => setHireModalOpen(true)}
         className="btn-brutal btn-brutal-primary w-full justify-center text-base mt-3"
       >
         Hire This Builder
-      </Link>
+      </button>
+
+      <HireModal
+        builderId={user.id}
+        builderName={user.username}
+        isOpen={hireModalOpen}
+        onClose={() => setHireModalOpen(false)}
+      />
 
       {/* AI Evaluate */}
       <Link

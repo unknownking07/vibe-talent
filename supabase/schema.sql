@@ -210,3 +210,32 @@ CREATE TRIGGER on_project_change
   AFTER INSERT OR DELETE ON projects
   FOR EACH ROW
   EXECUTE FUNCTION trigger_update_vibe_score_on_project();
+
+-- Hire requests table
+CREATE TABLE hire_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  builder_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  sender_name TEXT NOT NULL,
+  sender_email TEXT NOT NULL,
+  message TEXT NOT NULL,
+  budget TEXT,
+  status TEXT DEFAULT 'new',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_hire_requests_builder_id ON hire_requests(builder_id);
+CREATE INDEX idx_hire_requests_created_at ON hire_requests(created_at DESC);
+
+ALTER TABLE hire_requests ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can insert a hire request (no auth required)
+CREATE POLICY "Anyone can send hire requests"
+  ON hire_requests FOR INSERT WITH CHECK (true);
+
+-- Only the builder can view their own hire requests
+CREATE POLICY "Builders can view own hire requests"
+  ON hire_requests FOR SELECT USING (auth.uid() = builder_id);
+
+-- Only the builder can update their own hire requests
+CREATE POLICY "Builders can update own hire requests"
+  ON hire_requests FOR UPDATE USING (auth.uid() = builder_id);
