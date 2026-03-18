@@ -27,15 +27,20 @@ export function ProfileProjectCard({ project }: ProfileProjectCardProps) {
 
   async function handleReport(reason: string) {
     try {
-      await fetch("/api/report", {
+      const res = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ project_id: project.id, reason }),
       });
-      setReported(true);
-      setShowReportMenu(false);
+      if (res.ok) {
+        setReported(true);
+        setShowReportMenu(false);
+        alert("Thanks for the report! We'll review this project shortly.");
+      } else {
+        alert("Failed to submit report. Please try again.");
+      }
     } catch {
-      alert("Failed to report");
+      alert("Failed to submit report. Please try again.");
     }
   }
 

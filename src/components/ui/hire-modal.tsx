@@ -37,6 +37,23 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
       setError("Please fill in all required fields.");
       return;
     }
+    // Name validation: min 2 chars, letters and spaces only
+    const nameClean = form.sender_name.trim();
+    if (nameClean.length < 2 || !/^[a-zA-Z\s'-]+$/.test(nameClean)) {
+      setError("Please enter a valid name (letters only, at least 2 characters).");
+      return;
+    }
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.sender_email.trim())) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    // Message validation: min 20 chars
+    if (form.message.trim().length < 20) {
+      setError("Please write a more detailed message (at least 20 characters).");
+      return;
+    }
     setError("");
     setSending(true);
 
