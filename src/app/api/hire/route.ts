@@ -173,7 +173,7 @@ export async function DELETE(req: NextRequest) {
     await (supabase as any)
       .from("hire_messages")
       .delete()
-      .eq("request_id", id);
+      .eq("hire_request_id", id);
 
     // Delete the hire request (only if it belongs to this builder)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
