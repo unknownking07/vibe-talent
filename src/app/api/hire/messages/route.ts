@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 
 // Simple in-memory rate limiter: max 60 requests per IP per minute
 const messagesRateMap = new Map<string, { count: number; resetAt: number }>();
@@ -13,6 +14,14 @@ function isMessagesRateLimited(ip: string): boolean {
   }
   entry.count++;
   return entry.count > 60;
+}
+
+// Use a direct client for reading hire requests (RLS blocks anon reads now)
+function getServiceClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 }
 
 export async function GET(req: NextRequest) {
@@ -35,15 +44,22 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Validate UUID format to prevent enumeration
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(hireRequestId)) {
+      return NextResponse.json({ error: "Invalid hire_request_id" }, { status: 400 });
+    }
+
     const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = supabase as any;
+    // Use service client to read hire request (since RLS now blocks anon reads)
+    const sb = getServiceClient();
 
-    // Fetch the hire request to verify it exists
+    // Fetch the hire request
     const { data: hireRequest, error: hrError } = await sb
       .from("hire_requests")
-      .select("*")
+      .select("id, builder_id, sender_name, status")
       .eq("id", hireRequestId)
       .single();
 
@@ -54,10 +70,15 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Fetch all messages for this hire request
+    // Authorization: only the builder (authenticated) or the client (via knowing the request ID) can read
+    // The request ID itself acts as a token for the client — it's a UUID they received when they submitted
+    // But we still restrict what fields are returned for non-builders
+    const isBuilder = user && user.id === hireRequest.builder_id;
+
+    // Fetch messages
     const { data: messages, error: msgError } = await sb
       .from("hire_messages")
-      .select("*")
+      .select("id, hire_request_id, sender_type, message, created_at")
       .eq("hire_request_id", hireRequestId)
       .order("created_at", { ascending: true });
 
@@ -69,8 +90,13 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Return limited hire_request info (no email/budget for non-builders)
+    const safeHireRequest = isBuilder
+      ? hireRequest
+      : { id: hireRequest.id, sender_name: hireRequest.sender_name, status: hireRequest.status };
+
     return NextResponse.json({
-      hire_request: hireRequest,
+      hire_request: safeHireRequest,
       messages: messages || [],
     });
   } catch {
@@ -114,9 +140,7 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = await createServerSupabaseClient();
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = supabase as any;
+    const sb = getServiceClient();
 
     // Fetch the hire request
     const { data: hireRequest, error: hrError } = await sb
@@ -132,7 +156,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // If sender is builder, verify auth
+    // If sender claims to be builder, MUST verify auth
     if (sender_type === "builder") {
       const {
         data: { user },
@@ -149,7 +173,7 @@ export async function POST(req: NextRequest) {
       .insert({
         hire_request_id,
         sender_type,
-        message: message.trim(),
+        message: message.trim().slice(0, 5000),
       })
       .select()
       .single();
@@ -168,7 +192,7 @@ export async function POST(req: NextRequest) {
         .from("hire_requests")
         .update({
           status: "replied",
-          reply: message.trim(),
+          reply: message.trim().slice(0, 5000),
           replied_at: new Date().toISOString(),
         })
         .eq("id", hire_request_id);

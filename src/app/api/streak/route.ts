@@ -1,30 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { calculateStreak, getBadgeLevel, calculateVibeScore } from "@/lib/streak";
 
-// POST /api/streak — Log activity for a user
+// POST /api/streak — Log activity (auth required, logs for authenticated user only)
 export async function POST(request: NextRequest) {
   try {
-    const { user_id } = await request.json();
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user_id) {
-      return NextResponse.json({ error: "user_id is required" }, { status: 400 });
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const today = new Date().toISOString().split("T")[0];
 
-    // In production, this would insert into Supabase:
-    // const { data, error } = await supabase
-    //   .from("streak_logs")
-    //   .upsert({ user_id, activity_date: today }, { onConflict: "user_id,activity_date" });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
+    const { error } = await sb
+      .from("streak_logs")
+      .upsert({ user_id: user.id, activity_date: today }, { onConflict: "user_id,activity_date" });
 
-    // Then fetch all streak logs for the user:
-    // const { data: logs } = await supabase
-    //   .from("streak_logs")
-    //   .select("activity_date")
-    //   .eq("user_id", user_id)
-    //   .order("activity_date", { ascending: true });
+    if (error) {
+      console.error("Failed to log streak:", error);
+      return NextResponse.json({ error: "Failed to log activity" }, { status: 500 });
+    }
 
-    // Mock response
     return NextResponse.json({
       success: true,
       activity_date: today,
@@ -35,20 +35,13 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/streak?user_id=xxx — Get streak info for a user
+// GET /api/streak?user_id=xxx — Get streak info for a user (public)
 export async function GET(request: NextRequest) {
   const userId = request.nextUrl.searchParams.get("user_id");
 
   if (!userId) {
     return NextResponse.json({ error: "user_id is required" }, { status: 400 });
   }
-
-  // In production, fetch from Supabase:
-  // const { data: logs } = await supabase
-  //   .from("streak_logs")
-  //   .select("activity_date")
-  //   .eq("user_id", userId)
-  //   .order("activity_date", { ascending: true });
 
   // Mock: generate some dates
   const dates: string[] = [];
