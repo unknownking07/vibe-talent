@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ExternalLink, Github, Clock, Tag, Pencil, Flag, CheckCircle, AlertCircle, ShieldCheck, Undo2, User } from "lucide-react";
+import { ExternalLink, Github, Clock, Tag, Pencil, Flag, CheckCircle, ShieldCheck, Undo2, User } from "lucide-react";
 import Link from "next/link";
 import type { Project } from "@/lib/types/database";
 
@@ -67,15 +67,14 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
     if (reporting || reported) return;
     setReporting(true);
     try {
-      const token = crypto.randomUUID();
       const res = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ project_id: project.id, reason, reporter_token: token }),
+        body: JSON.stringify({ project_id: project.id, reason }),
       });
       if (res.ok) {
         const data = await res.json();
-        saveReportData(project.id, data.report_id, token);
+        saveReportData(project.id, data.report_id, data.reporter_token);
         setReported(true);
       }
     } catch {
@@ -113,15 +112,10 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <h3 className="font-extrabold uppercase text-[#0F0F0F]">{project.title}</h3>
-          {verified ? (
+          {verified && (
             <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600" title="Verified owner">
               <CheckCircle size={14} />
               Verified
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-[#A1A1AA]" title="Unverified">
-              <AlertCircle size={12} />
-              Unverified
             </span>
           )}
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ExternalLink, Flag, CheckCircle, AlertCircle, Undo2 } from "lucide-react";
+import { ExternalLink, Flag, CheckCircle, Undo2 } from "lucide-react";
 import type { Project } from "@/lib/types/database";
 
 interface ProfileProjectCardProps {
@@ -53,15 +53,14 @@ export function ProfileProjectCard({ project, verified = false }: ProfileProject
 
   async function handleReport(reason: string) {
     try {
-      const token = crypto.randomUUID();
       const res = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ project_id: project.id, reason, reporter_token: token }),
+        body: JSON.stringify({ project_id: project.id, reason }),
       });
       if (res.ok) {
         const data = await res.json();
-        saveReportData(project.id, data.report_id, token);
+        saveReportData(project.id, data.report_id, data.reporter_token);
         setReported(true);
         setShowReportMenu(false);
         setReportStatus("success");
@@ -112,15 +111,10 @@ export function ProfileProjectCard({ project, verified = false }: ProfileProject
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-2">
           <span className="text-[1.1rem] font-extrabold uppercase text-[#0F0F0F]">{project.title}</span>
-          {verified ? (
+          {verified && (
             <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600" title="Verified owner">
               <CheckCircle size={14} />
               Verified
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-[#A1A1AA]" title="Unverified">
-              <AlertCircle size={12} />
-              Unverified
             </span>
           )}
         </div>

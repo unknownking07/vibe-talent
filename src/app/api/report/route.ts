@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { randomUUID } from "crypto";
 
 const AUTO_FLAG_THRESHOLD = 3;
 
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { project_id, reason, reporter_token } = body;
+    const { project_id, reason } = body;
 
     if (!project_id || typeof project_id !== "string") {
       return NextResponse.json(
@@ -60,18 +61,12 @@ export async function POST(req: NextRequest) {
 
     const sb = getSb();
 
-    // Insert the report with optional reporter_token for undo support
-    const insertData: { project_id: string; reason: string; reporter_token?: string } = {
-      project_id,
-      reason,
-    };
-    if (reporter_token && typeof reporter_token === "string") {
-      insertData.reporter_token = reporter_token;
-    }
+    // Generate reporter_token server-side for undo support
+    const reporter_token = randomUUID();
 
     const { data: inserted, error: insertError } = await sb
       .from("project_reports")
-      .insert(insertData)
+      .insert({ project_id, reason, reporter_token })
       .select("id")
       .single();
 
@@ -91,7 +86,7 @@ export async function POST(req: NextRequest) {
 
     if (countError) {
       console.error("Failed to count reports:", countError);
-      return NextResponse.json({ success: true, flagged: false, report_id: inserted?.id });
+      return NextResponse.json({ success: true, flagged: false, report_id: inserted?.id, reporter_token });
     }
 
     // Auto-flag project if threshold reached
@@ -109,7 +104,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, flagged, report_id: inserted?.id });
+    return NextResponse.json({ success: true, flagged, report_id: inserted?.id, reporter_token });
   } catch (err) {
     console.error("Report API error:", err);
     return NextResponse.json(

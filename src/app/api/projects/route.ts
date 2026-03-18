@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-// GET /api/projects — List projects
+// GET /api/projects — List projects (public)
 export async function GET() {
   try {
     const supabase = await createServerSupabaseClient();
@@ -9,6 +9,7 @@ export async function GET() {
     const { data, error } = await (supabase as any)
       .from("projects")
       .select("*")
+      .eq("flagged", false)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -21,30 +22,52 @@ export async function GET() {
   }
 }
 
-// POST /api/projects — Create a project
+// POST /api/projects — Create a project (auth required)
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
-    const body = await request.json();
-    const { user_id, title, description, tech_stack, live_url, github_url, build_time, tags } = body;
 
-    if (!user_id || !title || !description) {
-      return NextResponse.json(
-        { error: "user_id, title, and description are required" },
-        { status: 400 }
-      );
+    // Verify authentication
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const body = await request.json();
+    const { title, description, tech_stack, live_url, github_url, build_time, tags } = body;
+
+    if (!title || typeof title !== "string" || title.trim().length === 0) {
+      return NextResponse.json({ error: "title is required" }, { status: 400 });
+    }
+    if (!description || typeof description !== "string" || description.trim().length === 0) {
+      return NextResponse.json({ error: "description is required" }, { status: 400 });
+    }
+    if (title.length > 100) {
+      return NextResponse.json({ error: "title must be 100 characters or less" }, { status: 400 });
+    }
+    if (description.length > 2000) {
+      return NextResponse.json({ error: "description must be 2000 characters or less" }, { status: 400 });
+    }
+
+    // Validate URLs if provided
+    if (live_url && typeof live_url === "string" && !live_url.match(/^https?:\/\/.+/)) {
+      return NextResponse.json({ error: "live_url must be a valid HTTP URL" }, { status: 400 });
+    }
+    if (github_url && typeof github_url === "string" && !github_url.match(/^https?:\/\/github\.com\/.+/)) {
+      return NextResponse.json({ error: "github_url must be a valid GitHub URL" }, { status: 400 });
+    }
+
+    // Use authenticated user's ID, NOT client-supplied user_id
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any).from("projects").insert({
-      user_id,
-      title,
-      description,
-      tech_stack: tech_stack || [],
+      user_id: user.id,
+      title: title.trim().slice(0, 100),
+      description: description.trim().slice(0, 2000),
+      tech_stack: Array.isArray(tech_stack) ? tech_stack.slice(0, 20).map((t: string) => String(t).trim().slice(0, 50)) : [],
       live_url: live_url || null,
       github_url: github_url || null,
-      build_time: build_time || null,
-      tags: tags || [],
+      build_time: build_time ? String(build_time).trim().slice(0, 50) : null,
+      tags: Array.isArray(tags) ? tags.slice(0, 10).map((t: string) => String(t).trim().slice(0, 30)) : [],
     }).select().single();
 
     if (error) {
@@ -54,5 +77,40 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ project: data }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Failed to create project" }, { status: 500 });
+  }
+}
+
+// DELETE /api/projects — Delete a project (auth required, owner only)
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createServerSupabaseClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { id } = body;
+
+    if (!id || typeof id !== "string") {
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+
+    // Only delete if user owns the project
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("projects")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", user.id);
+
+    if (error) {
+      return NextResponse.json({ error: "Failed to delete project" }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

@@ -170,6 +170,7 @@ export default function DashboardPage() {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [verifyingProjectId, setVerifyingProjectId] = useState<string | null>(null);
   const [verifyMessage, setVerifyMessage] = useState<{ projectId: string; success: boolean; text: string } | null>(null);
+  const [showVerifyGuide, setShowVerifyGuide] = useState(true);
 
   const verifyProject = async (projectId: string) => {
     setVerifyingProjectId(projectId);
@@ -525,6 +526,11 @@ export default function DashboardPage() {
       setAddingProject(false);
       return;
     }
+
+    // Auto-log streak when shipping a project
+    const nowLocal = new Date();
+    const today = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, "0")}-${String(nowLocal.getDate()).padStart(2, "0")}`;
+    await sb.from("streak_logs").upsert({ user_id: user.id, activity_date: today }, { onConflict: "user_id,activity_date" });
 
     // DB trigger auto-updates vibe_score — reload to get fresh data
     await reloadUser();
@@ -964,26 +970,35 @@ export default function DashboardPage() {
           </div>
 
           {/* Verification Guide */}
-          <div
-            className="mb-4 p-4"
-            style={{ backgroundColor: "#FFFBEB", border: "2px solid #0F0F0F" }}
-          >
-            <h3 className="text-sm font-extrabold uppercase text-[#0F0F0F] flex items-center gap-2 mb-2">
-              <ShieldCheck size={16} className="text-green-600" />
-              How to Verify Your Projects
-            </h3>
-            <p className="text-xs text-[#52525B] font-medium leading-relaxed">
-              Verified projects show a green badge, proving you own the code. There are two ways to verify:
-            </p>
-            <ol className="text-xs text-[#52525B] font-medium mt-2 space-y-1.5 list-decimal list-inside leading-relaxed">
-              <li>
-                <strong className="text-[#0F0F0F]">Owner Match (automatic):</strong> If the GitHub repo URL belongs to your GitHub account (the one you signed in with), it verifies instantly.
-              </li>
-              <li>
-                <strong className="text-[#0F0F0F]">Verification File (for collaborators):</strong> Add a file named <code className="bg-white px-1.5 py-0.5 border border-[#E4E4E7] font-mono text-[10px]">.vibetalent</code> to the root of the repo containing your GitHub username. Then click the <strong>Verify</strong> button on the project card below.
-              </li>
-            </ol>
-          </div>
+          {showVerifyGuide && (
+            <div
+              className="mb-4 p-4 relative"
+              style={{ backgroundColor: "#FFFBEB", border: "2px solid #0F0F0F" }}
+            >
+              <button
+                onClick={() => setShowVerifyGuide(false)}
+                className="absolute top-3 right-3 text-[#A1A1AA] hover:text-[#0F0F0F] transition-colors"
+                title="Dismiss"
+              >
+                <X size={14} />
+              </button>
+              <h3 className="text-sm font-extrabold uppercase text-[#0F0F0F] flex items-center gap-2 mb-2">
+                <ShieldCheck size={16} className="text-green-600" />
+                How to Verify Your Projects
+              </h3>
+              <p className="text-xs text-[#52525B] font-medium leading-relaxed">
+                Verified projects show a green badge, proving you own the code. There are two ways to verify:
+              </p>
+              <ol className="text-xs text-[#52525B] font-medium mt-2 space-y-1.5 list-decimal list-inside leading-relaxed">
+                <li>
+                  <strong className="text-[#0F0F0F]">Owner Match (automatic):</strong> If the GitHub repo URL belongs to your GitHub account (the one you signed in with), it verifies instantly.
+                </li>
+                <li>
+                  <strong className="text-[#0F0F0F]">Verification File (for collaborators):</strong> Add a file named <code className="bg-white px-1.5 py-0.5 border border-[#E4E4E7] font-mono text-[10px]">.vibetalent</code> to the root of the repo containing your GitHub username. Then click the <strong>Verify</strong> button on the project card below.
+                </li>
+              </ol>
+            </div>
+          )}
 
           {showProjectForm && (
             <div

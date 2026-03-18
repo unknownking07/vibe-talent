@@ -105,6 +105,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (typeof message !== "string" || message.trim().length === 0) {
+      return NextResponse.json({ error: "Message cannot be empty" }, { status: 400 });
+    }
+
+    if (message.length > 5000) {
+      return NextResponse.json({ error: "Message must be 5000 characters or less" }, { status: 400 });
+    }
+
     const supabase = await createServerSupabaseClient();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

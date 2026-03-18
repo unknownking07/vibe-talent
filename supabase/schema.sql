@@ -232,17 +232,13 @@ ALTER TABLE hire_requests ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can send hire requests"
   ON hire_requests FOR INSERT WITH CHECK (true);
 
--- Only the builder can view their own hire requests
+-- Builder can view their own hire requests; public chat uses service role via API
 CREATE POLICY "Builders can view own hire requests"
   ON hire_requests FOR SELECT USING (auth.uid() = builder_id);
 
 -- Only the builder can update their own hire requests
 CREATE POLICY "Builders can update own hire requests"
   ON hire_requests FOR UPDATE USING (auth.uid() = builder_id);
-
--- Anyone can read a hire request by ID (needed for public chat page)
-CREATE POLICY "Anyone can read hire request by id"
-  ON hire_requests FOR SELECT USING (true);
 
 -- Hire messages table (chat thread per hire request)
 CREATE TABLE hire_messages (
