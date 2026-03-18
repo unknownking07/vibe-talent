@@ -3,7 +3,29 @@ import { createClient } from "@supabase/supabase-js";
 
 const AUTO_FLAG_THRESHOLD = 3;
 
+// Simple in-memory rate limiter: max 10 reports per IP per hour
+const reportRateMap = new Map<string, { count: number; resetAt: number }>();
+
+function isReportRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = reportRateMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    reportRateMap.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 });
+    return false;
+  }
+  entry.count++;
+  return entry.count > 10;
+}
+
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+  if (isReportRateLimited(ip)) {
+    return NextResponse.json(
+      { error: "Too many reports. Please try again later." },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await req.json();
     const { project_id, reason } = body;

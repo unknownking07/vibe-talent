@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userIds = users.map((u: { id: string }) => u.id);
-    const { data: projects } = await sb.from("projects").select("*").in("user_id", userIds);
+    const { data: projects } = await sb.from("projects").select("*").in("user_id", userIds).eq("flagged", false);
 
     const leaderboard = users.map((user: { id: string; username: string; avatar_url: string | null; vibe_score: number; streak: number; longest_streak: number; badge_level: string }, index: number) => ({
       rank: index + 1,

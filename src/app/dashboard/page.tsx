@@ -170,6 +170,20 @@ export default function DashboardPage() {
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Only JPG, PNG, WebP, and GIF images are allowed');
+      return;
+    }
+
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image must be under 2MB');
+      return;
+    }
+
     setUploadingAvatar(true);
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -16,14 +16,21 @@ export default async function HomePage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
 
-    const { data: users } = await sb.from("users").select("*").order("vibe_score", { ascending: false }).limit(3);
-    if (users && users.length > 0) {
-      const userIds = users.map((u: { id: string }) => u.id);
-      const { data: projects } = await sb.from("projects").select("*").in("user_id", userIds).eq("flagged", false);
-      const { data: socials } = await sb.from("social_links").select("*").in("user_id", userIds);
-      topVibecoders = users.map((u: import("@/lib/types/database").User) => ({
+    // Get users who have at least 1 non-flagged project, sorted by vibe_score
+    const { data: allUsers } = await sb.from("users").select("*").order("vibe_score", { ascending: false }).limit(20);
+    if (allUsers && allUsers.length > 0) {
+      const allUserIds = allUsers.map((u: { id: string }) => u.id);
+      const { data: allProjects } = await sb.from("projects").select("*").in("user_id", allUserIds).eq("flagged", false);
+      const { data: socials } = await sb.from("social_links").select("*").in("user_id", allUserIds);
+
+      // Filter to only users with at least 1 shipped project, take top 3
+      const usersWithProjects = allUsers
+        .filter((u: { id: string }) => (allProjects || []).some((p: { user_id: string }) => p.user_id === u.id))
+        .slice(0, 3);
+
+      topVibecoders = usersWithProjects.map((u: import("@/lib/types/database").User) => ({
         ...u,
-        projects: (projects || []).filter((p: { user_id: string }) => p.user_id === u.id),
+        projects: (allProjects || []).filter((p: { user_id: string }) => p.user_id === u.id),
         social_links: (socials || []).find((s: { user_id: string }) => s.user_id === u.id) || null,
       }));
     }

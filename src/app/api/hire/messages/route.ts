@@ -1,7 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
+// Simple in-memory rate limiter: max 60 requests per IP per minute
+const messagesRateMap = new Map<string, { count: number; resetAt: number }>();
+
+function isMessagesRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = messagesRateMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    messagesRateMap.set(ip, { count: 1, resetAt: now + 60 * 1000 });
+    return false;
+  }
+  entry.count++;
+  return entry.count > 60;
+}
+
 export async function GET(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+  if (isMessagesRateLimited(ip)) {
+    return NextResponse.json(
+      { error: "Too many requests. Please slow down." },
+      { status: 429 }
+    );
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     const hireRequestId = searchParams.get("hire_request_id");
@@ -57,6 +79,14 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const postIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+  if (isMessagesRateLimited(postIp)) {
+    return NextResponse.json(
+      { error: "Too many requests. Please slow down." },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await req.json();
     const { hire_request_id, sender_type, message } = body;

@@ -5,6 +5,9 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
+  "X-RateLimit-Limit": "100",
+  "X-RateLimit-Window": "60",
+  "Cache-Control": "public, max-age=60",
 };
 
 export async function GET(
