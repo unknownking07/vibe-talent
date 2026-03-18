@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 
 const AUTO_FLAG_THRESHOLD = 3;
 
@@ -29,9 +29,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const supabase = await createServerSupabaseClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = supabase as any;
+    // Use direct client (not cookie-based) so unauthenticated users can report
+    const sb = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
     // Insert the report
     const { error: insertError } = await sb.from("project_reports").insert({
