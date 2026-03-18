@@ -111,6 +111,7 @@ export default function DashboardPage() {
   }, []);
 
   const [showProjectForm, setShowProjectForm] = useState(false);
+  const [projectError, setProjectError] = useState("");
   const [projectForm, setProjectForm] = useState({
     title: "",
     description: "",
@@ -156,6 +157,7 @@ export default function DashboardPage() {
   const [hireRequests, setHireRequests] = useState<HireRequest[]>([]);
   const [loadingInbox, setLoadingInbox] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [sendingReply, setSendingReply] = useState(false);
   const [chatMessages, setChatMessages] = useState<Record<string, HireMessage[]>>({});
@@ -226,7 +228,6 @@ export default function DashboardPage() {
   };
 
   const handleDeleteRequest = async (requestId: string) => {
-    if (!confirm("Delete this hire request? This cannot be undone.")) return;
     try {
       const res = await fetch("/api/hire", {
         method: "DELETE",
@@ -448,17 +449,18 @@ export default function DashboardPage() {
 
   const handleAddProject = async () => {
     if (!user || addingProject || !projectForm.title || !projectForm.description) return;
+    setProjectError("");
 
     if (projectForm.description.length < 10) {
-      alert("Description must be at least 10 characters.");
+      setProjectError("Description must be at least 10 characters.");
       return;
     }
     if (projectForm.github_url && !projectForm.github_url.startsWith("https://github.com/")) {
-      alert("GitHub URL must start with https://github.com/");
+      setProjectError("GitHub URL must start with https://github.com/");
       return;
     }
     if (projectForm.live_url && !projectForm.live_url.startsWith("http://") && !projectForm.live_url.startsWith("https://")) {
-      alert("Live URL must start with http:// or https://");
+      setProjectError("Live URL must start with http:// or https://");
       return;
     }
 
@@ -507,17 +509,18 @@ export default function DashboardPage() {
 
   const handleSaveEdit = async () => {
     if (!user || !editingProjectId || savingEdit || !projectForm.title || !projectForm.description) return;
+    setProjectError("");
 
     if (projectForm.description.length < 10) {
-      alert("Description must be at least 10 characters.");
+      setProjectError("Description must be at least 10 characters.");
       return;
     }
     if (projectForm.github_url && !projectForm.github_url.startsWith("https://github.com/")) {
-      alert("GitHub URL must start with https://github.com/");
+      setProjectError("GitHub URL must start with https://github.com/");
       return;
     }
     if (projectForm.live_url && !projectForm.live_url.startsWith("http://") && !projectForm.live_url.startsWith("https://")) {
-      alert("Live URL must start with http:// or https://");
+      setProjectError("Live URL must start with http:// or https://");
       return;
     }
 
@@ -914,6 +917,11 @@ export default function DashboardPage() {
               }}
             >
               <h3 className="text-sm font-extrabold uppercase text-[#0F0F0F] mb-3">{editingProjectId ? "Edit Project" : "New Project"}</h3>
+              {projectError && (
+                <div className="p-3 mb-3 text-sm font-bold text-[#991B1B]" style={{ backgroundColor: "#FEE2E2", border: "2px solid #0F0F0F" }}>
+                  {projectError}
+                </div>
+              )}
               <div className="space-y-3">
                 <input
                   type="text"
@@ -1118,14 +1126,32 @@ export default function DashboardPage() {
                       >
                         <ExternalLink size={14} />
                       </a>
-                      <button
-                        onClick={() => handleDeleteRequest(request.id)}
-                        className="btn-brutal text-xs py-2 px-3 flex items-center gap-1.5"
-                        style={{ backgroundColor: "#FEE2E2", color: "#991B1B" }}
-                        title="Delete request"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      {confirmingDelete === request.id ? (
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => { handleDeleteRequest(request.id); setConfirmingDelete(null); }}
+                            className="btn-brutal text-xs py-2 px-3"
+                            style={{ backgroundColor: "#DC2626", color: "#FFFFFF" }}
+                          >
+                            Yes, Delete
+                          </button>
+                          <button
+                            onClick={() => setConfirmingDelete(null)}
+                            className="btn-brutal btn-brutal-secondary text-xs py-2 px-3"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmingDelete(request.id)}
+                          className="btn-brutal text-xs py-2 px-3 flex items-center gap-1.5"
+                          style={{ backgroundColor: "#FEE2E2", color: "#991B1B" }}
+                          title="Delete request"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
                   </div>
 
