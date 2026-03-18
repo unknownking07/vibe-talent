@@ -10,6 +10,31 @@ export async function GET(request: Request) {
     const supabase = await createServerSupabaseClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // Pull avatar from OAuth provider if user doesn't have one
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const oauthAvatar =
+          user.user_metadata?.avatar_url ||
+          user.user_metadata?.picture ||
+          null;
+
+        if (oauthAvatar) {
+          // Check if user already has an avatar
+          const { data: profile } = await supabase
+            .from("users")
+            .select("avatar_url")
+            .eq("id", user.id)
+            .single();
+
+          if (profile && !profile.avatar_url) {
+            await supabase
+              .from("users")
+              .update({ avatar_url: oauthAvatar })
+              .eq("id", user.id);
+          }
+        }
+      }
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
