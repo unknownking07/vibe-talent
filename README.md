@@ -1,4 +1,4 @@
-# VibeCoders
+# VibeTalent
 
 A marketplace for vibecoders who actually ship. Build your reputation through consistency, streaks, and proof of work.
 
