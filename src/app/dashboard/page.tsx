@@ -31,6 +31,7 @@ import {
   Wrench,
   ExternalLink,
   Camera,
+  Trash2,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -221,6 +222,23 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error("Failed to mark as read:", err);
+    }
+  };
+
+  const handleDeleteRequest = async (requestId: string) => {
+    if (!confirm("Delete this hire request? This cannot be undone.")) return;
+    try {
+      const res = await fetch("/api/hire", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: requestId }),
+      });
+      if (res.ok) {
+        setHireRequests((prev) => prev.filter((r) => r.id !== requestId));
+        if (replyingTo === requestId) setReplyingTo(null);
+      }
+    } catch (err) {
+      console.error("Failed to delete request:", err);
     }
   };
 
@@ -1100,6 +1118,14 @@ export default function DashboardPage() {
                       >
                         <ExternalLink size={14} />
                       </a>
+                      <button
+                        onClick={() => handleDeleteRequest(request.id)}
+                        className="btn-brutal text-xs py-2 px-3 flex items-center gap-1.5"
+                        style={{ backgroundColor: "#FEE2E2", color: "#991B1B" }}
+                        title="Delete request"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </div>
 

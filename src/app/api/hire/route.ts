@@ -151,3 +151,45 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "Missing request id" }, { status: 400 });
+    }
+
+    // Delete associated messages first
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
+      .from("hire_messages")
+      .delete()
+      .eq("request_id", id);
+
+    // Delete the hire request (only if it belongs to this builder)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from("hire_requests")
+      .delete()
+      .eq("id", id)
+      .eq("builder_id", user.id);
+
+    if (error) {
+      console.error("Failed to delete hire request:", error);
+      return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
