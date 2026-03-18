@@ -20,14 +20,16 @@ export async function GET(request: Request) {
 
         if (oauthAvatar) {
           // Check if user already has an avatar
-          const { data: profile } = await supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: profile } = await (supabase as any)
             .from("users")
             .select("avatar_url")
             .eq("id", user.id)
             .single();
 
-          if (profile && !profile.avatar_url) {
-            await supabase
+          if (profile && !(profile as any).avatar_url) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase as any)
               .from("users")
               .update({ avatar_url: oauthAvatar })
               .eq("id", user.id);

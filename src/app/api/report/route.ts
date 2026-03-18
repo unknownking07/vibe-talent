@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
 
     // Auto-flag project if threshold reached
     let flagged = false;
-    if (count >= AUTO_FLAG_THRESHOLD) {
+    if (count !== null && count >= AUTO_FLAG_THRESHOLD) {
       const { error: flagError } = await sb
         .from("projects")
         .update({ flagged: true })
