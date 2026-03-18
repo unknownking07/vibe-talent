@@ -19,7 +19,7 @@ export default async function HomePage() {
     const { data: users } = await sb.from("users").select("*").order("vibe_score", { ascending: false }).limit(3);
     if (users && users.length > 0) {
       const userIds = users.map((u: { id: string }) => u.id);
-      const { data: projects } = await sb.from("projects").select("*").in("user_id", userIds);
+      const { data: projects } = await sb.from("projects").select("*").in("user_id", userIds).eq("flagged", false);
       const { data: socials } = await sb.from("social_links").select("*").in("user_id", userIds);
       topVibecoders = users.map((u: import("@/lib/types/database").User) => ({
         ...u,
@@ -28,14 +28,14 @@ export default async function HomePage() {
       }));
     }
 
-    const { data: allProjects } = await sb.from("projects").select("*").order("created_at", { ascending: false }).limit(3);
+    const { data: allProjects } = await sb.from("projects").select("*").eq("flagged", false).order("created_at", { ascending: false }).limit(3);
     featuredProjects = allProjects || [];
 
     // Real stats
     const { count: builderCount } = await sb.from("users").select("*", { count: "exact", head: true });
     totalBuilders = builderCount || 0;
 
-    const { count: projectCount } = await sb.from("projects").select("*", { count: "exact", head: true });
+    const { count: projectCount } = await sb.from("projects").select("*", { count: "exact", head: true }).eq("flagged", false);
     totalProjects = projectCount || 0;
 
     const { data: streakData } = await sb.from("users").select("streak");
