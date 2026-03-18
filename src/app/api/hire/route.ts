@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
+const BLOCKED_DOMAINS = [
+  "mailinator.com", "tempmail.com", "throwaway.email", "guerrillamail.com",
+  "sharklasers.com", "grr.la", "guerrillamailblock.com", "yopmail.com",
+  "fakeinbox.com", "trashmail.com", "dispostable.com", "maildrop.cc",
+  "10minutemail.com", "temp-mail.org", "tempail.com",
+];
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -13,16 +20,51 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Server-side validation
+    const nameClean = String(sender_name).trim();
+    if (nameClean.length < 2 || !/^[a-zA-Z\s'-]+$/.test(nameClean)) {
+      return NextResponse.json({ error: "Invalid name. Use letters only, at least 2 characters." }, { status: 400 });
+    }
+
+    const emailClean = String(sender_email).trim().toLowerCase();
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(emailClean)) {
+      return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
+    }
+
+    const emailDomain = emailClean.split("@")[1];
+    if (BLOCKED_DOMAINS.includes(emailDomain)) {
+      return NextResponse.json({ error: "Disposable email addresses are not allowed." }, { status: 400 });
+    }
+
+    const msgClean = String(message).trim();
+    if (msgClean.length < 20) {
+      return NextResponse.json({ error: "Message must be at least 20 characters." }, { status: 400 });
+    }
+
     const supabase = await createServerSupabaseClient();
+
+    // Rate limit: max 5 hire requests per email per day
+    const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: recentRequests } = await (supabase as any)
+      .from("hire_requests")
+      .select("id")
+      .eq("sender_email", emailClean)
+      .gte("created_at", oneDayAgo);
+
+    if (recentRequests && recentRequests.length >= 5) {
+      return NextResponse.json({ error: "Too many requests. Please try again tomorrow." }, { status: 429 });
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from("hire_requests")
       .insert({
         builder_id,
-        sender_name,
-        sender_email,
-        message,
+        sender_name: nameClean,
+        sender_email: emailClean,
+        message: msgClean,
         budget: budget || null,
       })
       .select("id")

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { X, Send, CheckCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, Send, CheckCircle, Lock } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 interface HireModalProps {
   builderId: string;
@@ -18,6 +19,14 @@ const BUDGET_OPTIONS = [
   "Let's discuss",
 ];
 
+// Block disposable/fake email domains
+const BLOCKED_DOMAINS = [
+  "mailinator.com", "tempmail.com", "throwaway.email", "guerrillamail.com",
+  "sharklasers.com", "grr.la", "guerrillamailblock.com", "yopmail.com",
+  "fakeinbox.com", "trashmail.com", "dispostable.com", "maildrop.cc",
+  "10minutemail.com", "temp-mail.org", "tempail.com",
+];
+
 export function HireModal({ builderId, builderName, isOpen, onClose }: HireModalProps) {
   const [form, setForm] = useState({
     sender_name: "",
@@ -29,6 +38,38 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
   const [requestId, setRequestId] = useState<string | null>(null);
+  const [loggedInUser, setLoggedInUser] = useState<{ name: string; email: string } | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    // Check if user is logged in and auto-fill their info
+    const checkAuth = async () => {
+      const supabase = createClient() as any;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const email = user.email || "";
+        const name =
+          user.user_metadata?.full_name ||
+          user.user_metadata?.name ||
+          user.user_metadata?.user_name ||
+          "";
+        // Also check if they have a profile
+        const { data: profile } = await supabase
+          .from("users")
+          .select("display_name, username")
+          .eq("id", user.id)
+          .single();
+        const displayName = profile?.display_name || name || profile?.username || "";
+        setLoggedInUser({ name: displayName, email });
+        setForm((prev) => ({
+          ...prev,
+          sender_name: displayName,
+          sender_email: email,
+        }));
+      }
+    };
+    checkAuth();
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -43,9 +84,21 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
       setError("Please enter a valid name (letters only, at least 2 characters).");
       return;
     }
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(form.sender_email.trim())) {
+    // Email validation - strict
+    const emailClean = form.sender_email.trim().toLowerCase();
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(emailClean)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    // Block disposable emails
+    const emailDomain = emailClean.split("@")[1];
+    if (BLOCKED_DOMAINS.includes(emailDomain)) {
+      setError("Please use a real email address, not a disposable one.");
+      return;
+    }
+    // Block obviously fake emails
+    if (emailDomain.length < 4 || !emailDomain.includes(".")) {
       setError("Please enter a valid email address.");
       return;
     }
@@ -63,9 +116,9 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           builder_id: builderId,
-          sender_name: form.sender_name,
-          sender_email: form.sender_email,
-          message: form.message,
+          sender_name: nameClean,
+          sender_email: emailClean,
+          message: form.message.trim(),
           budget: form.budget || null,
         }),
       });
@@ -90,7 +143,7 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
   const handleClose = () => {
     setSent(false);
     setRequestId(null);
-    setForm({ sender_name: "", sender_email: "", budget: "", message: "" });
+    setForm({ sender_name: loggedInUser?.name || "", sender_email: loggedInUser?.email || "", budget: "", message: "" });
     setError("");
     onClose();
   };
@@ -194,27 +247,31 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
 
               <div>
                 <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
-                  Your Name *
+                  Your Name * {loggedInUser && <Lock size={10} className="inline ml-1" />}
                 </label>
                 <input
                   type="text"
                   value={form.sender_name}
-                  onChange={(e) => setForm({ ...form, sender_name: e.target.value })}
+                  onChange={(e) => !loggedInUser && setForm({ ...form, sender_name: e.target.value })}
                   placeholder="John Doe"
                   className="input-brutal"
+                  readOnly={!!loggedInUser}
+                  style={loggedInUser ? { backgroundColor: "#F4F4F5", cursor: "not-allowed" } : {}}
                 />
               </div>
 
               <div>
                 <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
-                  Your Email *
+                  Your Email * {loggedInUser && <Lock size={10} className="inline ml-1" />}
                 </label>
                 <input
                   type="email"
                   value={form.sender_email}
-                  onChange={(e) => setForm({ ...form, sender_email: e.target.value })}
+                  onChange={(e) => !loggedInUser && setForm({ ...form, sender_email: e.target.value })}
                   placeholder="john@example.com"
                   className="input-brutal"
+                  readOnly={!!loggedInUser}
+                  style={loggedInUser ? { backgroundColor: "#F4F4F5", cursor: "not-allowed" } : {}}
                 />
               </div>
 
