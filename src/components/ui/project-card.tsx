@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ExternalLink, Github, Clock, Tag, Pencil, Flag } from "lucide-react";
+import { ExternalLink, Github, Clock, Tag, Pencil, Flag, CheckCircle, AlertCircle, ShieldCheck, Undo2, User } from "lucide-react";
+import Link from "next/link";
 import type { Project } from "@/lib/types/database";
 
 const REPORT_REASONS = [
@@ -11,18 +12,44 @@ const REPORT_REASONS = [
   "Other",
 ];
 
-interface ProjectCardProps {
-  project: Project;
-  showAuthor?: boolean;
-  showReport?: boolean;
-  onEdit?: (project: Project) => void;
+function getReportData(projectId: string): { report_id: string; reporter_token: string } | null {
+  try {
+    const raw = localStorage.getItem(`report_${projectId}`);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return null;
 }
 
-export function ProjectCard({ project, onEdit, showReport = true }: ProjectCardProps) {
+function saveReportData(projectId: string, reportId: string, token: string) {
+  localStorage.setItem(`report_${projectId}`, JSON.stringify({ report_id: reportId, reporter_token: token }));
+}
+
+function clearReportData(projectId: string) {
+  localStorage.removeItem(`report_${projectId}`);
+}
+
+interface ProjectCardProps {
+  project: Project;
+  authorUsername?: string;
+  showReport?: boolean;
+  verified?: boolean;
+  onEdit?: (project: Project) => void;
+  onVerify?: (projectId: string) => void;
+}
+
+export function ProjectCard({ project, authorUsername, onEdit, showReport = true, verified = false, onVerify }: ProjectCardProps) {
   const [reportOpen, setReportOpen] = useState(false);
   const [reported, setReported] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [undoing, setUndoing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Check localStorage on mount
+  useEffect(() => {
+    if (getReportData(project.id)) {
+      setReported(true);
+    }
+  }, [project.id]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -40,12 +67,15 @@ export function ProjectCard({ project, onEdit, showReport = true }: ProjectCardP
     if (reporting || reported) return;
     setReporting(true);
     try {
+      const token = crypto.randomUUID();
       const res = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ project_id: project.id, reason }),
+        body: JSON.stringify({ project_id: project.id, reason, reporter_token: token }),
       });
       if (res.ok) {
+        const data = await res.json();
+        saveReportData(project.id, data.report_id, token);
         setReported(true);
       }
     } catch {
@@ -55,12 +85,46 @@ export function ProjectCard({ project, onEdit, showReport = true }: ProjectCardP
     setReportOpen(false);
   };
 
+  const handleUndo = async () => {
+    if (undoing) return;
+    const data = getReportData(project.id);
+    if (!data) return;
+    setUndoing(true);
+    try {
+      const res = await fetch("/api/report", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        clearReportData(project.id);
+        setReported(false);
+      }
+    } catch {
+      // silently fail
+    }
+    setUndoing(false);
+  };
+
   return (
     <div
       className="card-brutal p-5 transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#0F0F0F]"
     >
       <div className="flex items-start justify-between gap-3">
-        <h3 className="font-extrabold uppercase text-[#0F0F0F]">{project.title}</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="font-extrabold uppercase text-[#0F0F0F]">{project.title}</h3>
+          {verified ? (
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600" title="Verified owner">
+              <CheckCircle size={14} />
+              Verified
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-[#A1A1AA]" title="Unverified">
+              <AlertCircle size={12} />
+              Unverified
+            </span>
+          )}
+        </div>
         <div className="flex shrink-0 gap-2">
           {onEdit && (
             <button
@@ -74,7 +138,15 @@ export function ProjectCard({ project, onEdit, showReport = true }: ProjectCardP
           {showReport && !onEdit && (
             <div className="relative" ref={dropdownRef}>
               {reported ? (
-                <span className="text-xs font-bold text-[#71717A]">Reported</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleUndo(); }}
+                  disabled={undoing}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
+                  title="Undo report"
+                >
+                  <Undo2 size={12} />
+                  {undoing ? "Undoing..." : "Undo Report"}
+                </button>
               ) : (
                 <button
                   onClick={(e) => {
@@ -135,6 +207,17 @@ export function ProjectCard({ project, onEdit, showReport = true }: ProjectCardP
         {project.description}
       </p>
 
+      {authorUsername && (
+        <Link
+          href={`/profile/${authorUsername}`}
+          onClick={(e) => e.stopPropagation()}
+          className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-[#71717A] hover:text-[var(--accent)] transition-colors"
+        >
+          <User size={12} />
+          @{authorUsername}
+        </Link>
+      )}
+
       <div className="mt-3 flex flex-wrap gap-1.5">
         {project.tech_stack.map((tech) => (
           <span
@@ -164,6 +247,17 @@ export function ProjectCard({ project, onEdit, showReport = true }: ProjectCardP
           </span>
         )}
       </div>
+
+      {!verified && onVerify && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onVerify(project.id); }}
+          className="mt-3 inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold uppercase text-[#0F0F0F] border-2 border-[#0F0F0F] bg-white hover:bg-[#F5F5F5] transition-colors"
+          title="Verify GitHub ownership"
+        >
+          <ShieldCheck size={14} />
+          Verify
+        </button>
+      )}
     </div>
   );
 }

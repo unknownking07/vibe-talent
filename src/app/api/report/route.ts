@@ -17,6 +17,13 @@ function isReportRateLimited(ip: string): boolean {
   return entry.count > 10;
 }
 
+function getSb() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
   if (isReportRateLimited(ip)) {
@@ -28,7 +35,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { project_id, reason } = body;
+    const { project_id, reason, reporter_token } = body;
 
     if (!project_id || typeof project_id !== "string") {
       return NextResponse.json(
@@ -51,17 +58,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Use direct client (not cookie-based) so unauthenticated users can report
-    const sb = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const sb = getSb();
 
-    // Insert the report
-    const { error: insertError } = await sb.from("project_reports").insert({
+    // Insert the report with optional reporter_token for undo support
+    const insertData: { project_id: string; reason: string; reporter_token?: string } = {
       project_id,
       reason,
-    });
+    };
+    if (reporter_token && typeof reporter_token === "string") {
+      insertData.reporter_token = reporter_token;
+    }
+
+    const { data: inserted, error: insertError } = await sb
+      .from("project_reports")
+      .insert(insertData)
+      .select("id")
+      .single();
 
     if (insertError) {
       console.error("Failed to insert report:", insertError);
@@ -79,8 +91,7 @@ export async function POST(req: NextRequest) {
 
     if (countError) {
       console.error("Failed to count reports:", countError);
-      // Report was still inserted, so return success
-      return NextResponse.json({ success: true, flagged: false });
+      return NextResponse.json({ success: true, flagged: false, report_id: inserted?.id });
     }
 
     // Auto-flag project if threshold reached
@@ -98,12 +109,73 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, flagged });
+    return NextResponse.json({ success: true, flagged, report_id: inserted?.id });
   } catch (err) {
     console.error("Report API error:", err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
     );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { report_id, reporter_token } = body;
+
+    if (!report_id || typeof report_id !== "string") {
+      return NextResponse.json({ error: "report_id is required" }, { status: 400 });
+    }
+
+    if (!reporter_token || typeof reporter_token !== "string") {
+      return NextResponse.json({ error: "reporter_token is required" }, { status: 400 });
+    }
+
+    const sb = getSb();
+
+    // Fetch the report to verify token and get project_id
+    const { data: report, error: fetchError } = await sb
+      .from("project_reports")
+      .select("id, project_id, reporter_token")
+      .eq("id", report_id)
+      .single();
+
+    if (fetchError || !report) {
+      return NextResponse.json({ error: "Report not found" }, { status: 404 });
+    }
+
+    if (report.reporter_token !== reporter_token) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 403 });
+    }
+
+    // Delete the report
+    const { error: deleteError } = await sb
+      .from("project_reports")
+      .delete()
+      .eq("id", report_id);
+
+    if (deleteError) {
+      console.error("Failed to delete report:", deleteError);
+      return NextResponse.json({ error: "Failed to undo report" }, { status: 500 });
+    }
+
+    // Recount reports and unflag if below threshold
+    const { count } = await sb
+      .from("project_reports")
+      .select("*", { count: "exact", head: true })
+      .eq("project_id", report.project_id);
+
+    if (count !== null && count < AUTO_FLAG_THRESHOLD) {
+      await sb
+        .from("projects")
+        .update({ flagged: false })
+        .eq("id", report.project_id);
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Report DELETE error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

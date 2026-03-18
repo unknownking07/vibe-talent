@@ -35,7 +35,7 @@ export default async function HomePage() {
       }));
     }
 
-    const { data: allProjects } = await sb.from("projects").select("*").eq("flagged", false).order("created_at", { ascending: false }).limit(3);
+    const { data: allProjects } = await sb.from("projects").select("*, users!projects_user_id_fkey(username)").eq("flagged", false).order("created_at", { ascending: false }).limit(3);
     featuredProjects = allProjects || [];
 
     // Real stats
@@ -279,7 +279,7 @@ export default async function HomePage() {
           {featuredProjects.length > 0 ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
               {featuredProjects.map((project) => (
-                <ProjectCard key={project.id} project={project} />
+                <ProjectCard key={project.id} project={project} verified={!!(project as any).verified} authorUsername={(project as any).users?.username} />
               ))}
             </div>
           ) : (

@@ -274,15 +274,23 @@ ALTER TABLE hire_requests ADD COLUMN IF NOT EXISTS replied_at TIMESTAMPTZ;
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS flagged BOOLEAN DEFAULT false;
 CREATE INDEX IF NOT EXISTS idx_projects_flagged ON projects(flagged);
 
+-- Add verified column to projects (GitHub repo ownership verification)
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS verified BOOLEAN DEFAULT false;
+
+-- Add github_username column to users (populated from GitHub OAuth on login)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS github_username TEXT;
+
 -- Project reports table (spam prevention)
 CREATE TABLE project_reports (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   reason TEXT NOT NULL,
+  reporter_token UUID,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX idx_project_reports_project_id ON project_reports(project_id);
+CREATE INDEX idx_project_reports_reporter_token ON project_reports(reporter_token);
 
 ALTER TABLE project_reports ENABLE ROW LEVEL SECURITY;
 
@@ -293,3 +301,7 @@ CREATE POLICY "Anyone can submit project reports"
 -- Reports are readable for counting (used by API)
 CREATE POLICY "Reports are readable"
   ON project_reports FOR SELECT USING (true);
+
+-- Anyone can delete reports by token (token matching enforced in API)
+CREATE POLICY "Anyone can delete own reports by token"
+  ON project_reports FOR DELETE USING (true);

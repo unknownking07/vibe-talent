@@ -18,20 +18,41 @@ export async function GET(request: Request) {
           user.user_metadata?.picture ||
           null;
 
-        if (oauthAvatar) {
-          // Check if user already has an avatar
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data: profile } = await (supabase as any)
-            .from("users")
-            .select("avatar_url")
-            .eq("id", user.id)
-            .single();
+        // Extract GitHub username from OAuth metadata
+        // GitHub provides this as user_name or preferred_username
+        const githubUsername =
+          user.user_metadata?.user_name ||
+          user.user_metadata?.preferred_username ||
+          null;
 
-          if (profile && !(profile as any).avatar_url) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: profile } = await (supabase as any)
+          .from("users")
+          .select("avatar_url, github_username")
+          .eq("id", user.id)
+          .single();
+
+        if (profile) {
+          // Build update object with fields that need updating
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const updates: Record<string, any> = {};
+
+          if (oauthAvatar && !(profile as any).avatar_url) {
+            updates.avatar_url = oauthAvatar;
+          }
+
+          // Always update github_username from OAuth metadata on login
+          // NOTE: If the `github_username` column doesn't exist yet, run:
+          // ALTER TABLE users ADD COLUMN IF NOT EXISTS github_username TEXT;
+          if (githubUsername) {
+            updates.github_username = githubUsername;
+          }
+
+          if (Object.keys(updates).length > 0) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await (supabase as any)
               .from("users")
-              .update({ avatar_url: oauthAvatar })
+              .update(updates)
               .eq("id", user.id);
           }
         }

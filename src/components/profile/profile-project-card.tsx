@@ -1,19 +1,43 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ExternalLink, Flag } from "lucide-react";
+import { ExternalLink, Flag, CheckCircle, AlertCircle, Undo2 } from "lucide-react";
 import type { Project } from "@/lib/types/database";
 
 interface ProfileProjectCardProps {
   project: Project;
+  verified?: boolean;
 }
 
 const REPORT_REASONS = ["Spam/Fake", "Inappropriate content", "Broken links", "Other"];
 
-export function ProfileProjectCard({ project }: ProfileProjectCardProps) {
+function getReportData(projectId: string): { report_id: string; reporter_token: string } | null {
+  try {
+    const raw = localStorage.getItem(`report_${projectId}`);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return null;
+}
+
+function saveReportData(projectId: string, reportId: string, token: string) {
+  localStorage.setItem(`report_${projectId}`, JSON.stringify({ report_id: reportId, reporter_token: token }));
+}
+
+function clearReportData(projectId: string) {
+  localStorage.removeItem(`report_${projectId}`);
+}
+
+export function ProfileProjectCard({ project, verified = false }: ProfileProjectCardProps) {
   const [showReportMenu, setShowReportMenu] = useState(false);
   const [reported, setReported] = useState(false);
+  const [undoing, setUndoing] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (getReportData(project.id)) {
+      setReported(true);
+    }
+  }, [project.id]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -29,12 +53,15 @@ export function ProfileProjectCard({ project }: ProfileProjectCardProps) {
 
   async function handleReport(reason: string) {
     try {
+      const token = crypto.randomUUID();
       const res = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ project_id: project.id, reason }),
+        body: JSON.stringify({ project_id: project.id, reason, reporter_token: token }),
       });
       if (res.ok) {
+        const data = await res.json();
+        saveReportData(project.id, data.report_id, token);
         setReported(true);
         setShowReportMenu(false);
         setReportStatus("success");
@@ -51,6 +78,28 @@ export function ProfileProjectCard({ project }: ProfileProjectCardProps) {
     }
   }
 
+  async function handleUndo() {
+    if (undoing) return;
+    const data = getReportData(project.id);
+    if (!data) return;
+    setUndoing(true);
+    try {
+      const res = await fetch("/api/report", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        clearReportData(project.id);
+        setReported(false);
+        setReportStatus("");
+      }
+    } catch {
+      // silently fail
+    }
+    setUndoing(false);
+  }
+
   return (
     <div
       className="flex flex-col gap-3 p-5 cursor-pointer transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#0F0F0F]"
@@ -61,7 +110,20 @@ export function ProfileProjectCard({ project }: ProfileProjectCardProps) {
       }}
     >
       <div className="flex justify-between items-start">
-        <span className="text-[1.1rem] font-extrabold uppercase text-[#0F0F0F]">{project.title}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[1.1rem] font-extrabold uppercase text-[#0F0F0F]">{project.title}</span>
+          {verified ? (
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600" title="Verified owner">
+              <CheckCircle size={14} />
+              Verified
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-[#A1A1AA]" title="Unverified">
+              <AlertCircle size={12} />
+              Unverified
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2 shrink-0">
           {(project.live_url || project.github_url) && (
             <a
@@ -76,7 +138,15 @@ export function ProfileProjectCard({ project }: ProfileProjectCardProps) {
           )}
           <div className="relative" ref={reportRef}>
             {reported ? (
-              <span className="text-xs text-red-500 font-bold">Reported</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleUndo(); }}
+                disabled={undoing}
+                className="inline-flex items-center gap-1 text-xs font-bold text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
+                title="Undo report"
+              >
+                <Undo2 size={12} />
+                {undoing ? "Undoing..." : "Undo Report"}
+              </button>
             ) : (
               <button
                 onClick={(e) => { e.stopPropagation(); setShowReportMenu(!showReportMenu); }}

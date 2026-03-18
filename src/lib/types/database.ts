@@ -24,6 +24,7 @@ export interface Project {
   image_url: string | null;
   build_time: string | null;
   tags: string[];
+  verified: boolean;
   created_at: string;
 }
 
@@ -87,9 +88,10 @@ export interface Database {
       };
       projects: {
         Row: Project;
-        Insert: Omit<Project, "id" | "created_at"> & {
+        Insert: Omit<Project, "id" | "created_at" | "verified"> & {
           id?: string;
           created_at?: string;
+          verified?: boolean;
         };
         Update: Partial<Project>;
       };

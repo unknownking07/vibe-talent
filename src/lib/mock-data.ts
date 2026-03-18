@@ -27,6 +27,7 @@ const mockProjects: Project[] = [
     image_url: null,
     build_time: "2 days",
     tags: ["AI", "SaaS", "Dashboard"],
+    verified: false,
     created_at: "2026-02-15T00:00:00Z",
   },
   {
@@ -40,6 +41,7 @@ const mockProjects: Project[] = [
     image_url: null,
     build_time: "3 days",
     tags: ["Crypto", "Finance", "Dashboard"],
+    verified: false,
     created_at: "2026-01-20T00:00:00Z",
   },
   {
@@ -53,6 +55,7 @@ const mockProjects: Project[] = [
     image_url: null,
     build_time: "1 day",
     tags: ["Blog", "Content", "Developer Tools"],
+    verified: false,
     created_at: "2026-03-01T00:00:00Z",
   },
   {
@@ -66,6 +69,7 @@ const mockProjects: Project[] = [
     image_url: null,
     build_time: "4 days",
     tags: ["AI", "Automation", "Bot"],
+    verified: false,
     created_at: "2026-02-28T00:00:00Z",
   },
   {
@@ -79,6 +83,7 @@ const mockProjects: Project[] = [
     image_url: null,
     build_time: "5 days",
     tags: ["Web3", "NFT", "Marketplace"],
+    verified: false,
     created_at: "2026-01-10T00:00:00Z",
   },
   {
@@ -92,6 +97,7 @@ const mockProjects: Project[] = [
     image_url: null,
     build_time: "6 days",
     tags: ["Mobile", "Health", "Social"],
+    verified: false,
     created_at: "2026-02-10T00:00:00Z",
   },
   {
@@ -105,6 +111,7 @@ const mockProjects: Project[] = [
     image_url: null,
     build_time: "7 days",
     tags: ["DevOps", "Infrastructure", "Monitoring"],
+    verified: false,
     created_at: "2026-01-25T00:00:00Z",
   },
   {
@@ -118,6 +125,7 @@ const mockProjects: Project[] = [
     image_url: null,
     build_time: "3 days",
     tags: ["Design", "UI/UX", "Developer Tools"],
+    verified: false,
     created_at: "2026-03-05T00:00:00Z",
   },
   {
@@ -131,6 +139,7 @@ const mockProjects: Project[] = [
     image_url: null,
     build_time: "10 days",
     tags: ["AI", "ML", "Data Engineering"],
+    verified: false,
     created_at: "2026-02-20T00:00:00Z",
   },
   {
@@ -144,6 +153,7 @@ const mockProjects: Project[] = [
     image_url: null,
     build_time: "14 days",
     tags: ["Game Dev", "WebGL", "Multiplayer"],
+    verified: false,
     created_at: "2026-01-05T00:00:00Z",
   },
   {
@@ -157,6 +167,7 @@ const mockProjects: Project[] = [
     image_url: null,
     build_time: "12 days",
     tags: ["Backend", "Systems", "Performance"],
+    verified: false,
     created_at: "2026-03-10T00:00:00Z",
   },
 ];

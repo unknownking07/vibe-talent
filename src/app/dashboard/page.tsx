@@ -32,6 +32,7 @@ import {
   ExternalLink,
   Camera,
   Trash2,
+  ShieldCheck,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -152,6 +153,7 @@ export default function DashboardPage() {
   const [saving, setSaving] = useState(false);
   const [addingProject, setAddingProject] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [editingOriginalGithubUrl, setEditingOriginalGithubUrl] = useState<string>("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "inbox">("overview");
   const [hireRequests, setHireRequests] = useState<HireRequest[]>([]);
@@ -166,6 +168,30 @@ export default function DashboardPage() {
   const chatPollRef = useRef<NodeJS.Timeout | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [verifyingProjectId, setVerifyingProjectId] = useState<string | null>(null);
+  const [verifyMessage, setVerifyMessage] = useState<{ projectId: string; success: boolean; text: string } | null>(null);
+
+  const verifyProject = async (projectId: string) => {
+    setVerifyingProjectId(projectId);
+    setVerifyMessage(null);
+    try {
+      const res = await fetch("/api/projects/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: projectId }),
+      });
+      const data = await res.json();
+      if (data.verified) {
+        setVerifyMessage({ projectId, success: true, text: data.reason || "Project verified!" });
+        await reloadUser();
+      } else {
+        setVerifyMessage({ projectId, success: false, text: data.reason || "Verification failed." });
+      }
+    } catch {
+      setVerifyMessage({ projectId, success: false, text: "Verification request failed." });
+    }
+    setVerifyingProjectId(null);
+  };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -483,7 +509,7 @@ export default function DashboardPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
 
-    const { error } = await sb.from("projects").insert({
+    const { data: insertedProject, error } = await sb.from("projects").insert({
       user_id: user.id,
       title: projectForm.title,
       description: projectForm.description,
@@ -492,7 +518,7 @@ export default function DashboardPage() {
       github_url: projectForm.github_url || null,
       build_time: projectForm.build_time || null,
       tags: projectForm.tags ? projectForm.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [],
-    });
+    }).select("id").single();
 
     if (error) {
       console.error("Failed to add project:", error);
@@ -505,10 +531,16 @@ export default function DashboardPage() {
     setProjectForm({ title: "", description: "", tech_stack: "", live_url: "", github_url: "", build_time: "", tags: "" });
     setShowProjectForm(false);
     setAddingProject(false);
+
+    // Auto-verify if project has a GitHub URL
+    if (projectForm.github_url && insertedProject?.id) {
+      verifyProject(insertedProject.id);
+    }
   };
 
   const handleStartEdit = (project: import("@/lib/types/database").Project) => {
     setEditingProjectId(project.id);
+    setEditingOriginalGithubUrl(project.github_url || "");
     setProjectForm({
       title: project.title,
       description: project.description || "",
@@ -560,10 +592,20 @@ export default function DashboardPage() {
     }
 
     await reloadUser();
+
+    // Auto-verify if GitHub URL changed
+    const githubUrlChanged = projectForm.github_url !== editingOriginalGithubUrl;
+    const savedEditingId = editingProjectId;
+
     setProjectForm({ title: "", description: "", tech_stack: "", live_url: "", github_url: "", build_time: "", tags: "" });
     setShowProjectForm(false);
     setEditingProjectId(null);
+    setEditingOriginalGithubUrl("");
     setSavingEdit(false);
+
+    if (githubUrlChanged && projectForm.github_url && savedEditingId) {
+      verifyProject(savedEditingId);
+    }
   };
 
   if (loading) {
@@ -921,6 +963,28 @@ export default function DashboardPage() {
             </button>
           </div>
 
+          {/* Verification Guide */}
+          <div
+            className="mb-4 p-4"
+            style={{ backgroundColor: "#FFFBEB", border: "2px solid #0F0F0F" }}
+          >
+            <h3 className="text-sm font-extrabold uppercase text-[#0F0F0F] flex items-center gap-2 mb-2">
+              <ShieldCheck size={16} className="text-green-600" />
+              How to Verify Your Projects
+            </h3>
+            <p className="text-xs text-[#52525B] font-medium leading-relaxed">
+              Verified projects show a green badge, proving you own the code. There are two ways to verify:
+            </p>
+            <ol className="text-xs text-[#52525B] font-medium mt-2 space-y-1.5 list-decimal list-inside leading-relaxed">
+              <li>
+                <strong className="text-[#0F0F0F]">Owner Match (automatic):</strong> If the GitHub repo URL belongs to your GitHub account (the one you signed in with), it verifies instantly.
+              </li>
+              <li>
+                <strong className="text-[#0F0F0F]">Verification File (for collaborators):</strong> Add a file named <code className="bg-white px-1.5 py-0.5 border border-[#E4E4E7] font-mono text-[10px]">.vibetalent</code> to the root of the repo containing your GitHub username. Then click the <strong>Verify</strong> button on the project card below.
+              </li>
+            </ol>
+          </div>
+
           {showProjectForm && (
             <div
               className="p-5 mb-4"
@@ -1006,7 +1070,24 @@ export default function DashboardPage() {
 
           <div className="space-y-4">
             {user.projects.map((project) => (
-              <ProjectCard key={project.id} project={project} onEdit={handleStartEdit} />
+              <div key={project.id}>
+                <ProjectCard
+                  project={project}
+                  onEdit={handleStartEdit}
+                  verified={!!(project as any).verified}
+                  onVerify={verifyProject}
+                />
+                {verifyingProjectId === project.id && (
+                  <div className="mt-1 px-5 py-2 text-xs font-bold text-[#71717A] uppercase">
+                    Verifying...
+                  </div>
+                )}
+                {verifyMessage && verifyMessage.projectId === project.id && (
+                  <div className={`mt-1 px-5 py-2 text-xs font-bold uppercase ${verifyMessage.success ? "text-green-600" : "text-orange-600"}`}>
+                    {verifyMessage.text}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>
