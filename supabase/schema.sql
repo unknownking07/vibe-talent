@@ -11,7 +11,6 @@ CREATE TYPE badge_level AS ENUM ('none', 'bronze', 'silver', 'gold', 'diamond');
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   username TEXT UNIQUE NOT NULL,
-  email TEXT UNIQUE NOT NULL,
   bio TEXT,
   avatar_url TEXT,
   streak INTEGER DEFAULT 0,

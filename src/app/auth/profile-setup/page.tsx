@@ -41,7 +41,6 @@ export default function ProfileSetupPage() {
     const { error: userError } = await (supabase.from("users") as any).insert({
       id: user.id,
       username,
-      email: user.email!,
       bio: bio || null,
     });
 

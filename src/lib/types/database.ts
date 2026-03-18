@@ -3,7 +3,6 @@ export type BadgeLevel = "none" | "bronze" | "silver" | "gold" | "diamond";
 export interface User {
   id: string;
   username: string;
-  email: string;
   bio: string | null;
   avatar_url: string | null;
   streak: number;

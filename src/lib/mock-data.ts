@@ -176,7 +176,7 @@ export const mockUsers: UserWithSocials[] = [
   {
     id: "u1",
     username: "vibemaster",
-    email: "vibemaster@demo.com",
+
     bio: "Full-stack vibecoder shipping products daily. I turn ideas into deployed apps before my coffee gets cold.",
     avatar_url: null,
     streak: 127,
@@ -198,7 +198,6 @@ export const mockUsers: UserWithSocials[] = [
   {
     id: "u2",
     username: "shipfast_dev",
-    email: "ship@demo.com",
     bio: "Building in public. 90-day streak and counting. React + Node specialist.",
     avatar_url: null,
     streak: 94,
@@ -220,7 +219,6 @@ export const mockUsers: UserWithSocials[] = [
   {
     id: "u3",
     username: "code_ninja",
-    email: "ninja@demo.com",
     bio: "Python & AI enthusiast. Automating everything one bot at a time.",
     avatar_url: null,
     streak: 45,
@@ -242,7 +240,6 @@ export const mockUsers: UserWithSocials[] = [
   {
     id: "u4",
     username: "web3_builder",
-    email: "web3@demo.com",
     bio: "Solidity dev gone full-stack. Building the decentralized future, one vibe at a time.",
     avatar_url: null,
     streak: 210,
@@ -264,7 +261,6 @@ export const mockUsers: UserWithSocials[] = [
   {
     id: "u5",
     username: "indie_hacker",
-    email: "indie@demo.com",
     bio: "Solo founder building micro-SaaS products. Shipped 12 projects in 6 months.",
     avatar_url: null,
     streak: 380,
@@ -286,7 +282,6 @@ export const mockUsers: UserWithSocials[] = [
   {
     id: "u6",
     username: "midnight_coder",
-    email: "midnight@demo.com",
     bio: "I code after midnight. Dark mode is not a preference, it's a lifestyle.",
     avatar_url: null,
     streak: 15,
@@ -308,7 +303,6 @@ export const mockUsers: UserWithSocials[] = [
   {
     id: "u7",
     username: "mobile_mira",
-    email: "mira@demo.com",
     bio: "Mobile-first developer. React Native by day, Flutter experiments by night. 30+ apps on the stores.",
     avatar_url: null,
     streak: 68,
@@ -330,7 +324,6 @@ export const mockUsers: UserWithSocials[] = [
   {
     id: "u8",
     username: "infra_ivan",
-    email: "ivan@demo.com",
     bio: "DevOps engineer who treats infrastructure as code. If it's not in a container, it doesn't exist.",
     avatar_url: null,
     streak: 302,
@@ -352,7 +345,6 @@ export const mockUsers: UserWithSocials[] = [
   {
     id: "u9",
     username: "pixel_priya",
-    email: "priya@demo.com",
     bio: "Designer who codes. Bridging the gap between Figma and production with pixel-perfect components.",
     avatar_url: null,
     streak: 22,
@@ -374,7 +366,6 @@ export const mockUsers: UserWithSocials[] = [
   {
     id: "u10",
     username: "data_diego",
-    email: "diego@demo.com",
     bio: "ML engineer turning messy data into production models. Python, TensorFlow, and too many Jupyter notebooks.",
     avatar_url: null,
     streak: 156,
@@ -396,7 +387,6 @@ export const mockUsers: UserWithSocials[] = [
   {
     id: "u11",
     username: "gamedev_grace",
-    email: "grace@demo.com",
     bio: "Unity developer and creative coder. Making games that run everywhere, even in your browser.",
     avatar_url: null,
     streak: 8,
@@ -418,7 +408,6 @@ export const mockUsers: UserWithSocials[] = [
   {
     id: "u12",
     username: "rust_renzo",
-    email: "renzo@demo.com",
     bio: "Systems programmer obsessed with performance. Rust and Go for backends, PostgreSQL for everything else.",
     avatar_url: null,
     streak: 245,
