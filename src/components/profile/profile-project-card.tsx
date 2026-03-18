@@ -25,6 +25,8 @@ export function ProfileProjectCard({ project }: ProfileProjectCardProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const [reportStatus, setReportStatus] = useState<"" | "success" | "error">("");
+
   async function handleReport(reason: string) {
     try {
       const res = await fetch("/api/report", {
@@ -35,12 +37,17 @@ export function ProfileProjectCard({ project }: ProfileProjectCardProps) {
       if (res.ok) {
         setReported(true);
         setShowReportMenu(false);
-        alert("Thanks for the report! We'll review this project shortly.");
+        setReportStatus("success");
+        setTimeout(() => setReportStatus(""), 3000);
       } else {
-        alert("Failed to submit report. Please try again.");
+        setReportStatus("error");
+        setShowReportMenu(false);
+        setTimeout(() => setReportStatus(""), 3000);
       }
     } catch {
-      alert("Failed to submit report. Please try again.");
+      setReportStatus("error");
+      setShowReportMenu(false);
+      setTimeout(() => setReportStatus(""), 3000);
     }
   }
 
@@ -115,6 +122,13 @@ export function ProfileProjectCard({ project }: ProfileProjectCardProps) {
           </span>
         ))}
       </div>
+
+      {reportStatus === "success" && (
+        <p className="text-xs font-bold text-green-700 mt-2">Thanks for the report! We&apos;ll review this project shortly.</p>
+      )}
+      {reportStatus === "error" && (
+        <p className="text-xs font-bold text-red-600 mt-2">Failed to submit report. Please try again.</p>
+      )}
     </div>
   );
 }
