@@ -88,26 +88,27 @@ export default function DashboardPage() {
 
       const actualStreak = Math.max(profile.streak, calculatedStreak);
       const actualLongest = Math.max(profile.longest_streak, calculatedStreak);
+      const actualVibeScore = (actualStreak * 2) + ((projects || []).length * 5);
 
-      // Sync DB if streak was wrong
-      if (actualStreak !== profile.streak || actualLongest !== profile.longest_streak) {
-        await sb.from("users").update({
-          streak: actualStreak,
-          longest_streak: actualLongest,
-          vibe_score: (actualStreak * 2) + ((projects || []).length * 5),
-        }).eq("id", authUser.id);
-      }
-
+      // Show UI immediately, don't wait for DB sync
       setUser({
         ...profile,
         streak: actualStreak,
         longest_streak: actualLongest,
-        vibe_score: (actualStreak * 2) + ((projects || []).length * 5),
+        vibe_score: actualVibeScore,
         projects: projects || [],
         social_links: socials || null,
       });
-
       setLoading(false);
+
+      // Sync DB in background if streak was wrong (non-blocking)
+      if (actualStreak !== profile.streak || actualLongest !== profile.longest_streak) {
+        sb.from("users").update({
+          streak: actualStreak,
+          longest_streak: actualLongest,
+          vibe_score: actualVibeScore,
+        }).eq("id", authUser.id);
+      }
     }
     loadUser();
   }, []);
@@ -405,12 +406,14 @@ export default function DashboardPage() {
     if (!authUser) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
-    const { data: profile } = await sb.from("users").select("*").eq("id", authUser.id).single();
+    const { data: profile } = await sb.from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, created_at").eq("id", authUser.id).single();
     if (!profile) return;
-    const { data: projects } = await sb.from("projects").select("*").eq("user_id", authUser.id).order("created_at", { ascending: false });
-    const { data: socials } = await sb.from("social_links").select("*").eq("user_id", authUser.id).single();
+    const [{ data: projects }, { data: socials }, streakData] = await Promise.all([
+      sb.from("projects").select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at").eq("user_id", authUser.id).order("created_at", { ascending: false }),
+      sb.from("social_links").select("id, user_id, twitter, telegram, github, website, farcaster").eq("user_id", authUser.id).single(),
+      fetchStreakLogs(authUser.id),
+    ]);
     setUser({ ...profile, projects: projects || [], social_links: socials || null });
-    const streakData = await fetchStreakLogs(authUser.id);
     setHeatmapData(streakData);
   };
 
