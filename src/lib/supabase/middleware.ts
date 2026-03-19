@@ -39,11 +39,14 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
+  // Use getSession() (reads cookies locally, no network call) for the
+  // middleware guard. The dashboard component calls getUser() itself for
+  // the verified auth state — no need to do it twice.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  if (!user) {
+  if (!session) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);

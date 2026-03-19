@@ -62,7 +62,7 @@ export default function ProfileSetupPage() {
       });
     }
 
-    router.push("/dashboard");
+    window.location.href = "/dashboard";
   };
 
   return (
