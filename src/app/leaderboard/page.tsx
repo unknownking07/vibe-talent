@@ -8,6 +8,7 @@ import { StreakCounter } from "@/components/ui/streak-counter";
 import { VibeScore } from "@/components/ui/vibe-score";
 import { Trophy, Flame, Code2, Zap } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 type Tab = "vibe_score" | "streak" | "projects";
 
@@ -128,7 +129,7 @@ export default function LeaderboardPage() {
                 }}
               >
                 {user.avatar_url ? (
-                  <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
+                  <Image src={user.avatar_url} alt={user.username} width={64} height={64} className="w-full h-full object-cover" />
                 ) : (
                   initials
                 )}
@@ -186,7 +187,7 @@ export default function LeaderboardPage() {
                         style={{ backgroundColor: "#0F0F0F", border: "2px solid #0F0F0F" }}
                       >
                         {user.avatar_url ? (
-                          <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
+                          <Image src={user.avatar_url} alt={user.username} width={64} height={64} className="w-full h-full object-cover" />
                         ) : (
                           initials
                         )}

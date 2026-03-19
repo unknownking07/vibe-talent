@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { fetchStreakLogs } from "@/lib/supabase/queries";
 import { BadgeDisplay } from "@/components/ui/badge-display";
@@ -833,7 +834,7 @@ export default function DashboardPage() {
                 onClick={() => avatarInputRef.current?.click()}
               >
                 {user.avatar_url ? (
-                  <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
+                  <Image src={user.avatar_url} alt={user.username} width={80} height={80} className="w-full h-full object-cover" />
                 ) : (
                   user.username.slice(0, 2).toUpperCase()
                 )}

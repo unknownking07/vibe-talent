@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import type { MatchResult } from "@/lib/types/agent";
 import { BadgeDisplay } from "@/components/ui/badge-display";
 import { StreakCounter } from "@/components/ui/streak-counter";
@@ -44,7 +45,7 @@ export function MatchCard({ match, rank }: MatchCardProps) {
             style={{ backgroundColor: "#0F0F0F", border: "2px solid #0F0F0F" }}
           >
             {user.avatar_url ? (
-              <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
+              <Image src={user.avatar_url} alt={user.username} width={48} height={48} className="w-full h-full object-cover" />
             ) : (
               initials
             )}

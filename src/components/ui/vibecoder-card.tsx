@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { BadgeDisplay } from "./badge-display";
 import { StreakCounter } from "./streak-counter";
 import { VibeScore } from "./vibe-score";
@@ -41,7 +42,7 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
             }}
           >
             {user.avatar_url ? (
-              <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
+              <Image src={user.avatar_url} alt={user.username} width={48} height={48} className="w-full h-full object-cover" />
             ) : (
               initials
             )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Github, Globe, Bot, Code2 } from "lucide-react";
 import Link from "next/link";
 import type { UserWithSocials, BadgeLevel } from "@/lib/types/database";
@@ -56,9 +57,11 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
             }}
           >
             {user.avatar_url ? (
-              <img
+              <Image
                 src={user.avatar_url}
                 alt={user.username}
+                width={128}
+                height={128}
                 className="w-full h-full object-cover"
               />
             ) : (
