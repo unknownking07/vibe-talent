@@ -4,6 +4,8 @@ import { ProjectCard } from "@/components/ui/project-card";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { Flame, TrendingUp, Award, Zap, ArrowRight, Code2, Target, Users } from "lucide-react";
 
+export const revalidate = 60; // Cache home page for 60 seconds
+
 export default async function HomePage() {
   let topVibecoders: import("@/lib/types/database").UserWithSocials[] = [];
   let featuredProjects: import("@/lib/types/database").Project[] = [];
