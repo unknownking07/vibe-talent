@@ -10,6 +10,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
+  // Only run the expensive auth check on protected routes
+  const isProtectedRoute = request.nextUrl.pathname.startsWith("/dashboard");
+  if (!isProtectedRoute) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -37,8 +43,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect /dashboard route
-  if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
+  if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);

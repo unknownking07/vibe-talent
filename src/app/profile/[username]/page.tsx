@@ -22,10 +22,13 @@ export default function ProfilePage({
   useEffect(() => {
     async function load() {
       const userData = await fetchUserByUsername(username);
-      setUser(userData);
       if (userData) {
-        const streaks = await fetchStreakLogs(userData.id);
-        setHeatmapData(streaks);
+        // Fetch streak logs in parallel with setting user state
+        const streaksPromise = fetchStreakLogs(userData.id);
+        setUser(userData);
+        setHeatmapData(await streaksPromise);
+      } else {
+        setUser(null);
       }
       setLoading(false);
     }

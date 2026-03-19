@@ -15,7 +15,7 @@ export async function GET(
 
     const { data: user, error } = await sb
       .from("users")
-      .select("*")
+      .select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, created_at")
       .eq("username", username)
       .single();
 
@@ -23,21 +23,25 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const { data: projects } = await sb
-      .from("projects")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+    const [{ data: projects }, { data: socialLinks }] = await Promise.all([
+      sb
+        .from("projects")
+        .select("id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at")
+        .eq("user_id", user.id)
+        .eq("flagged", false)
+        .order("created_at", { ascending: false }),
+      sb
+        .from("social_links")
+        .select("twitter, telegram, github, website, farcaster")
+        .eq("user_id", user.id)
+        .single(),
+    ]);
 
-    const { data: socialLinks } = await sb
-      .from("social_links")
-      .select("*")
-      .eq("user_id", user.id)
-      .single();
+    const { id: _id, ...publicUser } = user;
 
     return NextResponse.json({
       user: {
-        ...user,
+        ...publicUser,
         projects: projects || [],
         social_links: socialLinks || null,
       },

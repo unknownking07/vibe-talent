@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const orderColumn = sort === "projects" ? "vibe_score" : sort === "streak" ? "longest_streak" : "vibe_score";
     const { data: users, error } = await sb
       .from("users")
-      .select("*")
+      .select("id, username, avatar_url, vibe_score, streak, longest_streak, badge_level")
       .order(orderColumn, { ascending: false })
       .limit(limit);
 
@@ -23,11 +23,10 @@ export async function GET(request: NextRequest) {
     }
 
     const userIds = users.map((u: { id: string }) => u.id);
-    const { data: projects } = await sb.from("projects").select("*").in("user_id", userIds).eq("flagged", false);
+    const { data: projects } = await sb.from("projects").select("user_id").in("user_id", userIds).eq("flagged", false);
 
     const leaderboard = users.map((user: { id: string; username: string; avatar_url: string | null; vibe_score: number; streak: number; longest_streak: number; badge_level: string }, index: number) => ({
       rank: index + 1,
-      id: user.id,
       username: user.username,
       avatar_url: user.avatar_url,
       vibe_score: user.vibe_score,

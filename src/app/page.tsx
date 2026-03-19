@@ -16,12 +16,36 @@ export default async function HomePage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
 
-    // Get users who have at least 1 non-flagged project, sorted by vibe_score
-    const { data: allUsers } = await sb.from("users").select("*").order("vibe_score", { ascending: false }).limit(20);
+    // Run all independent queries in parallel
+    const [
+      { data: allUsers },
+      { data: featuredProjectsData },
+      { count: builderCount },
+      { count: projectCount },
+      { data: streakData },
+    ] = await Promise.all([
+      sb.from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, created_at").order("vibe_score", { ascending: false }).limit(20),
+      sb.from("projects").select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at, users!projects_user_id_fkey(username)").eq("flagged", false).order("created_at", { ascending: false }).limit(3),
+      sb.from("users").select("id", { count: "exact", head: true }),
+      sb.from("projects").select("id", { count: "exact", head: true }).eq("flagged", false),
+      sb.from("users").select("streak"),
+    ]);
+
+    featuredProjects = featuredProjectsData || [];
+    totalBuilders = builderCount || 0;
+    totalProjects = projectCount || 0;
+
+    if (streakData && streakData.length > 0) {
+      const sum = streakData.reduce((acc: number, u: { streak: number }) => acc + u.streak, 0);
+      avgStreak = Math.round(sum / streakData.length);
+    }
+
     if (allUsers && allUsers.length > 0) {
       const allUserIds = allUsers.map((u: { id: string }) => u.id);
-      const { data: allProjects } = await sb.from("projects").select("*").in("user_id", allUserIds).eq("flagged", false);
-      const { data: socials } = await sb.from("social_links").select("*").in("user_id", allUserIds);
+      const [{ data: allProjects }, { data: socials }] = await Promise.all([
+        sb.from("projects").select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at").in("user_id", allUserIds).eq("flagged", false),
+        sb.from("social_links").select("id, user_id, twitter, telegram, github, website, farcaster").in("user_id", allUserIds),
+      ]);
 
       // Filter to only users with at least 1 shipped project, take top 3
       const usersWithProjects = allUsers
@@ -33,22 +57,6 @@ export default async function HomePage() {
         projects: (allProjects || []).filter((p: { user_id: string }) => p.user_id === u.id),
         social_links: (socials || []).find((s: { user_id: string }) => s.user_id === u.id) || null,
       }));
-    }
-
-    const { data: allProjects } = await sb.from("projects").select("*, users!projects_user_id_fkey(username)").eq("flagged", false).order("created_at", { ascending: false }).limit(3);
-    featuredProjects = allProjects || [];
-
-    // Real stats
-    const { count: builderCount } = await sb.from("users").select("*", { count: "exact", head: true });
-    totalBuilders = builderCount || 0;
-
-    const { count: projectCount } = await sb.from("projects").select("*", { count: "exact", head: true }).eq("flagged", false);
-    totalProjects = projectCount || 0;
-
-    const { data: streakData } = await sb.from("users").select("streak");
-    if (streakData && streakData.length > 0) {
-      const sum = streakData.reduce((acc: number, u: { streak: number }) => acc + u.streak, 0);
-      avgStreak = Math.round(sum / streakData.length);
     }
   } catch {
     // Supabase not configured, show empty state

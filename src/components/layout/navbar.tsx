@@ -21,10 +21,17 @@ export function Navbar() {
 
   useEffect(() => {
     const supabase = createClient();
+    // Check auth once on mount, then listen for changes
     supabase.auth.getUser().then(({ data: { user } }) => {
       setIsLoggedIn(!!user);
     });
-  }, [pathname]);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session?.user);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleLogout = async () => {
     const supabase = createClient();

@@ -149,21 +149,21 @@ export default function LeaderboardPage() {
 
       {/* Table */}
       <div
-        className="overflow-hidden"
+        className="overflow-x-auto"
         style={{
           border: "2px solid #0F0F0F",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        <table className="w-full">
+        <table className="w-full min-w-[500px]">
           <thead>
             <tr style={{ backgroundColor: "#0F0F0F" }}>
-              <th className="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-white">Rank</th>
-              <th className="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-white">Builder</th>
-              <th className="px-4 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-white">Vibe Score</th>
-              <th className="px-4 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-white hidden sm:table-cell">Streak</th>
-              <th className="px-4 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-white hidden sm:table-cell">Projects</th>
-              <th className="px-4 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-white">Badge</th>
+              <th className="px-3 sm:px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-white">Rank</th>
+              <th className="px-3 sm:px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-white">Builder</th>
+              <th className="px-3 sm:px-4 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-white">Vibe Score</th>
+              <th className="px-3 sm:px-4 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-white hidden sm:table-cell">Streak</th>
+              <th className="px-3 sm:px-4 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-white hidden sm:table-cell">Projects</th>
+              <th className="px-3 sm:px-4 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-white">Badge</th>
             </tr>
           </thead>
           <tbody>
@@ -178,8 +178,8 @@ export default function LeaderboardPage() {
                     borderBottom: "2px solid #0F0F0F",
                   }}
                 >
-                  <td className="px-4 py-3 text-sm font-extrabold font-mono text-[#71717A]">#{i + 1}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 sm:px-4 py-3 text-sm font-extrabold font-mono text-[#71717A]">#{i + 1}</td>
+                  <td className="px-3 sm:px-4 py-3">
                     <Link href={`/profile/${user.username}`} className="flex items-center gap-3 hover:text-[var(--accent)] transition-colors">
                       <div
                         className="flex h-8 w-8 items-center justify-center text-xs font-extrabold text-white shrink-0 overflow-hidden"
@@ -194,16 +194,16 @@ export default function LeaderboardPage() {
                       <span className="font-bold text-sm uppercase">@{user.username}</span>
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-3 sm:px-4 py-3 text-right">
                     <VibeScore score={user.vibe_score} size="sm" />
                   </td>
-                  <td className="px-4 py-3 text-right hidden sm:table-cell">
+                  <td className="px-3 sm:px-4 py-3 text-right hidden sm:table-cell">
                     <StreakCounter streak={user.streak} size="sm" />
                   </td>
-                  <td className="px-4 py-3 text-right text-sm font-bold text-[#52525B] hidden sm:table-cell">
+                  <td className="px-3 sm:px-4 py-3 text-right text-sm font-bold text-[#52525B] hidden sm:table-cell">
                     {user.projects.length}
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-3 sm:px-4 py-3 text-right">
                     <BadgeDisplay level={user.badge_level} size="sm" />
                   </td>
                 </tr>
