@@ -10,7 +10,6 @@ import { StreakCounter } from "@/components/ui/streak-counter";
 import { VibeScore } from "@/components/ui/vibe-score";
 import { ActivityHeatmap } from "@/components/ui/activity-heatmap";
 import { ProjectCard } from "@/components/ui/project-card";
-import { fetchHireRequests } from "@/lib/supabase/queries";
 import type { HireRequest, HireMessage } from "@/lib/types/database";
 import {
   Plus,
@@ -51,13 +50,15 @@ export default function DashboardPage() {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) { setLoading(false); return; }
 
-      // Step 2: Fetch profile + projects + socials + streaks ALL in parallel (single round trip)
-      const [{ data: profile }, { data: projects }, { data: socials }, streakData] = await Promise.all([
+      // Step 2: Fetch profile + projects + socials + streaks + inbox ALL in parallel (single round trip)
+      const [{ data: profile }, { data: projects }, { data: socials }, streakData, { data: inboxData }] = await Promise.all([
         sb.from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, created_at").eq("id", authUser.id).single(),
         sb.from("projects").select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at").eq("user_id", authUser.id).order("created_at", { ascending: false }),
         sb.from("social_links").select("id, user_id, twitter, telegram, github, website, farcaster").eq("user_id", authUser.id).single(),
         fetchStreakLogs(authUser.id),
+        sb.from("hire_requests").select("*").eq("builder_id", authUser.id).order("created_at", { ascending: false }),
       ]);
+      setHireRequests(inboxData || []);
 
       if (!profile) {
         window.location.href = "/auth/profile-setup";
@@ -248,11 +249,17 @@ export default function DashboardPage() {
     setUploadingAvatar(false);
   };
 
-  // Load inbox when tab switches to inbox
+  // Refresh inbox data directly from Supabase (skip API route hop)
   const loadInbox = async () => {
     setLoadingInbox(true);
-    const data = await fetchHireRequests();
-    setHireRequests(data);
+    const supabase = createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
+      .from("hire_requests")
+      .select("*")
+      .eq("builder_id", user?.id)
+      .order("created_at", { ascending: false });
+    setHireRequests(data || []);
     setLoadingInbox(false);
   };
 
