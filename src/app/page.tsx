@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { VibecoderCard } from "@/components/ui/vibecoder-card";
 import { ProjectCard } from "@/components/ui/project-card";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { fetchHomepageDataCached } from "@/lib/supabase/server-queries";
 import { Flame, TrendingUp, Award, Zap, ArrowRight, Code2, Target, Users } from "lucide-react";
 
-export const revalidate = 60; // Cache home page for 60 seconds
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   let topVibecoders: import("@/lib/types/database").UserWithSocials[] = [];
@@ -14,52 +14,12 @@ export default async function HomePage() {
   let avgStreak = 0;
 
   try {
-    const supabase = await createServerSupabaseClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = supabase as any;
-
-    // Run all independent queries in parallel
-    const [
-      { data: allUsers },
-      { data: featuredProjectsData },
-      { count: builderCount },
-      { count: projectCount },
-      { data: streakData },
-    ] = await Promise.all([
-      sb.from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, created_at").order("vibe_score", { ascending: false }).limit(20),
-      sb.from("projects").select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at, users!projects_user_id_fkey(username)").eq("flagged", false).order("created_at", { ascending: false }).limit(3),
-      sb.from("users").select("id", { count: "exact", head: true }),
-      sb.from("projects").select("id", { count: "exact", head: true }).eq("flagged", false),
-      sb.from("users").select("streak"),
-    ]);
-
-    featuredProjects = featuredProjectsData || [];
-    totalBuilders = builderCount || 0;
-    totalProjects = projectCount || 0;
-
-    if (streakData && streakData.length > 0) {
-      const sum = streakData.reduce((acc: number, u: { streak: number }) => acc + u.streak, 0);
-      avgStreak = Math.round(sum / streakData.length);
-    }
-
-    if (allUsers && allUsers.length > 0) {
-      const allUserIds = allUsers.map((u: { id: string }) => u.id);
-      const [{ data: allProjects }, { data: socials }] = await Promise.all([
-        sb.from("projects").select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at").in("user_id", allUserIds).eq("flagged", false),
-        sb.from("social_links").select("id, user_id, twitter, telegram, github, website, farcaster").in("user_id", allUserIds),
-      ]);
-
-      // Filter to only users with at least 1 shipped project, take top 3
-      const usersWithProjects = allUsers
-        .filter((u: { id: string }) => (allProjects || []).some((p: { user_id: string }) => p.user_id === u.id))
-        .slice(0, 3);
-
-      topVibecoders = usersWithProjects.map((u: import("@/lib/types/database").User) => ({
-        ...u,
-        projects: (allProjects || []).filter((p: { user_id: string }) => p.user_id === u.id),
-        social_links: (socials || []).find((s: { user_id: string }) => s.user_id === u.id) || null,
-      }));
-    }
+    const data = await fetchHomepageDataCached();
+    topVibecoders = data.topVibecoders;
+    featuredProjects = data.featuredProjects;
+    totalBuilders = data.totalBuilders;
+    totalProjects = data.totalProjects;
+    avgStreak = data.avgStreak;
   } catch {
     // Supabase not configured, show empty state
   }

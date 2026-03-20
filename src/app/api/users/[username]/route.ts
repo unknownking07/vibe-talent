@@ -39,13 +39,20 @@ export async function GET(
 
     const { id: _id, ...publicUser } = user;
 
-    return NextResponse.json({
-      user: {
-        ...publicUser,
-        projects: projects || [],
-        social_links: socialLinks || null,
+    return NextResponse.json(
+      {
+        user: {
+          ...publicUser,
+          projects: projects || [],
+          social_links: socialLinks || null,
+        },
       },
-    });
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+        },
+      }
+    );
   } catch {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }

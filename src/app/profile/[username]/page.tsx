@@ -1,53 +1,20 @@
-"use client";
-
-import { use, useState, useEffect } from "react";
-import { fetchUserByUsername, fetchStreakLogs } from "@/lib/supabase/queries";
+import { fetchUserByUsernameCached, fetchStreakLogsCached } from "@/lib/supabase/server-queries";
 import { ProfileSidebar } from "@/components/profile/profile-sidebar";
 import { StatsRibbon } from "@/components/profile/stats-ribbon";
 import { ProfileHeatmap } from "@/components/profile/profile-heatmap";
 import { ProfileProjectCard } from "@/components/profile/profile-project-card";
 import Link from "next/link";
-import type { UserWithSocials } from "@/lib/types/database";
 
-export default function ProfilePage({
+export const dynamic = "force-dynamic";
+
+export default async function ProfilePage({
   params,
 }: {
   params: Promise<{ username: string }>;
 }) {
-  const { username } = use(params);
-  const [user, setUser] = useState<UserWithSocials | null>(null);
-  const [heatmapData, setHeatmapData] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
+  const { username } = await params;
 
-  useEffect(() => {
-    async function load() {
-      const userData = await fetchUserByUsername(username);
-      if (userData) {
-        // Fetch streak logs in parallel with setting user state
-        const streaksPromise = fetchStreakLogs(userData.id);
-        setUser(userData);
-        setHeatmapData(await streaksPromise);
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    }
-    load();
-  }, [username]);
-
-  if (loading) {
-    return (
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
-        <div className="grid lg:grid-cols-[320px_1fr] gap-8">
-          <div className="skeleton h-96" />
-          <div className="space-y-4">
-            <div className="skeleton h-24" />
-            <div className="skeleton h-48" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const user = await fetchUserByUsernameCached(username);
 
   if (!user) {
     return (
@@ -57,6 +24,8 @@ export default function ProfilePage({
       </div>
     );
   }
+
+  const heatmapData = await fetchStreakLogsCached(user.id);
 
   return (
     <div className="flex justify-center p-4 sm:p-8">

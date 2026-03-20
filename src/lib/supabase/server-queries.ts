@@ -1,0 +1,176 @@
+import { unstable_cache } from "next/cache";
+import { createClient } from "@supabase/supabase-js";
+import type { UserWithSocials } from "@/lib/types/database";
+
+const USER_FIELDS = "id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, created_at";
+const PROJECT_FIELDS = "id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at";
+const SOCIAL_FIELDS = "id, user_id, twitter, telegram, github, website, farcaster";
+
+// Cookie-free client for use inside unstable_cache (no auth context needed for public reads)
+function getPublicClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+
+async function _fetchAllUsers(): Promise<UserWithSocials[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = getPublicClient() as any;
+
+  const { data: users, error } = await sb
+    .from("users")
+    .select(USER_FIELDS)
+    .order("vibe_score", { ascending: false });
+
+  if (error || !users) return [];
+
+  const userIds = users.map((u: UserWithSocials) => u.id);
+
+  const [{ data: projects }, { data: socialLinks }] = await Promise.all([
+    sb
+      .from("projects")
+      .select(PROJECT_FIELDS)
+      .in("user_id", userIds)
+      .eq("flagged", false),
+    sb
+      .from("social_links")
+      .select(SOCIAL_FIELDS)
+      .in("user_id", userIds),
+  ]);
+
+  return users.map((user: UserWithSocials) => ({
+    ...user,
+    projects: (projects || []).filter((p: { user_id: string }) => p.user_id === user.id),
+    social_links: (socialLinks || []).find((s: { user_id: string }) => s.user_id === user.id) || null,
+  }));
+}
+
+async function _fetchUserByUsername(username: string): Promise<UserWithSocials | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = getPublicClient() as any;
+
+  const { data: user, error } = await sb
+    .from("users")
+    .select(USER_FIELDS)
+    .eq("username", username)
+    .single();
+
+  if (error || !user) return null;
+
+  const [{ data: projects }, { data: socialLinks }] = await Promise.all([
+    sb
+      .from("projects")
+      .select(PROJECT_FIELDS)
+      .eq("user_id", user.id)
+      .eq("flagged", false)
+      .order("created_at", { ascending: false }),
+    sb
+      .from("social_links")
+      .select(SOCIAL_FIELDS)
+      .eq("user_id", user.id)
+      .single(),
+  ]);
+
+  return {
+    ...user,
+    projects: projects || [],
+    social_links: socialLinks || null,
+  };
+}
+
+async function _fetchStreakLogs(userId: string): Promise<Record<string, number>> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = getPublicClient() as any;
+
+  const { data, error } = await sb
+    .from("streak_logs")
+    .select("activity_date")
+    .eq("user_id", userId);
+
+  if (error || !data) return {};
+
+  const heatmap: Record<string, number> = {};
+  for (const log of data) {
+    heatmap[log.activity_date] = (heatmap[log.activity_date] || 0) + 1;
+  }
+  return heatmap;
+}
+
+// Homepage data — single cached function for all homepage queries
+async function _fetchHomepageData() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = getPublicClient() as any;
+
+  const [
+    { data: allUsers },
+    { data: featuredProjectsData },
+    { count: builderCount },
+    { count: projectCount },
+    { data: streakData },
+  ] = await Promise.all([
+    sb.from("users").select(USER_FIELDS).order("vibe_score", { ascending: false }).limit(20),
+    sb.from("projects").select(`${PROJECT_FIELDS}, users!projects_user_id_fkey(username)`).eq("flagged", false).order("created_at", { ascending: false }).limit(3),
+    sb.from("users").select("id", { count: "exact", head: true }),
+    sb.from("projects").select("id", { count: "exact", head: true }).eq("flagged", false),
+    sb.from("users").select("streak"),
+  ]);
+
+  const totalBuilders = builderCount || 0;
+  const totalProjects = projectCount || 0;
+  const featuredProjects = featuredProjectsData || [];
+
+  let avgStreak = 0;
+  if (streakData && streakData.length > 0) {
+    const sum = streakData.reduce((acc: number, u: { streak: number }) => acc + u.streak, 0);
+    avgStreak = Math.round(sum / streakData.length);
+  }
+
+  let topVibecoders: UserWithSocials[] = [];
+  if (allUsers && allUsers.length > 0) {
+    const allUserIds = allUsers.map((u: { id: string }) => u.id);
+    const [{ data: allProjects }, { data: socials }] = await Promise.all([
+      sb.from("projects").select(PROJECT_FIELDS).in("user_id", allUserIds).eq("flagged", false),
+      sb.from("social_links").select(SOCIAL_FIELDS).in("user_id", allUserIds),
+    ]);
+
+    const usersWithProjects = allUsers
+      .filter((u: { id: string }) => (allProjects || []).some((p: { user_id: string }) => p.user_id === u.id))
+      .slice(0, 3);
+
+    topVibecoders = usersWithProjects.map((u: import("@/lib/types/database").User) => ({
+      ...u,
+      projects: (allProjects || []).filter((p: { user_id: string }) => p.user_id === u.id),
+      social_links: (socials || []).find((s: { user_id: string }) => s.user_id === u.id) || null,
+    }));
+  }
+
+  return { topVibecoders, featuredProjects, totalBuilders, totalProjects, avgStreak };
+}
+
+export const fetchHomepageDataCached = unstable_cache(
+  _fetchHomepageData,
+  ["homepage-data"],
+  { revalidate: 60 }
+);
+
+// Cached versions — revalidate every 60 seconds
+export const fetchAllUsersCached = unstable_cache(
+  _fetchAllUsers,
+  ["all-users"],
+  { revalidate: 60 }
+);
+
+export const fetchUserByUsernameCached = (username: string) =>
+  unstable_cache(
+    () => _fetchUserByUsername(username),
+    [`user-${username}`],
+    { revalidate: 60 }
+  )();
+
+export const fetchStreakLogsCached = (userId: string) =>
+  unstable_cache(
+    () => _fetchStreakLogs(userId),
+    [`streak-logs-${userId}`],
+    { revalidate: 60 }
+  )();

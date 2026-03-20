@@ -36,7 +36,14 @@ export async function GET(request: NextRequest) {
       project_count: (projects || []).filter((p: { user_id: string }) => p.user_id === user.id).length,
     }));
 
-    return NextResponse.json({ leaderboard });
+    return NextResponse.json(
+      { leaderboard },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+        },
+      }
+    );
   } catch {
     return NextResponse.json({ leaderboard: [] });
   }

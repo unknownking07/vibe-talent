@@ -32,13 +32,21 @@ export async function GET(
       );
     }
 
+    // Fetch projects and social links in parallel
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: projects, error: projectsError } = await (supabase as any)
-      .from("projects")
-      .select("id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, created_at")
-      .eq("user_id", user.id)
-      .eq("flagged", false)
-      .order("created_at", { ascending: false });
+    const [{ data: projects, error: projectsError }, { data: socialLinks, error: socialLinksError }] = await Promise.all([
+      (supabase as any)
+        .from("projects")
+        .select("id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, created_at")
+        .eq("user_id", user.id)
+        .eq("flagged", false)
+        .order("created_at", { ascending: false }),
+      (supabase as any)
+        .from("social_links")
+        .select("twitter, telegram, github, website, farcaster")
+        .eq("user_id", user.id)
+        .single(),
+    ]);
 
     if (projectsError) {
       console.error("Failed to fetch projects:", projectsError);
@@ -47,13 +55,6 @@ export async function GET(
         { status: 500, headers: corsHeaders }
       );
     }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: socialLinks, error: socialLinksError } = await (supabase as any)
-      .from("social_links")
-      .select("twitter, telegram, github, website, farcaster")
-      .eq("user_id", user.id)
-      .single();
 
     if (socialLinksError && socialLinksError.code !== "PGRST116") {
       console.error("Failed to fetch social links:", socialLinksError);
