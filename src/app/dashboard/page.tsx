@@ -44,23 +44,25 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadUser() {
       const supabase = createClient();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sb = supabase as any;
+
+      // Step 1: Get auth user (required before anything else)
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) { setLoading(false); return; }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const sb = supabase as any;
-      const { data: profile } = await sb.from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, created_at").eq("id", authUser.id).single();
-      if (!profile) {
-        // User hasn't set up profile yet — redirect
-        window.location.href = "/auth/profile-setup";
-        return;
-      }
-
-      const [{ data: projects }, { data: socials }, streakData] = await Promise.all([
+      // Step 2: Fetch profile + projects + socials + streaks ALL in parallel (single round trip)
+      const [{ data: profile }, { data: projects }, { data: socials }, streakData] = await Promise.all([
+        sb.from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, created_at").eq("id", authUser.id).single(),
         sb.from("projects").select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at").eq("user_id", authUser.id).order("created_at", { ascending: false }),
         sb.from("social_links").select("id, user_id, twitter, telegram, github, website, farcaster").eq("user_id", authUser.id).single(),
         fetchStreakLogs(authUser.id),
       ]);
+
+      if (!profile) {
+        window.location.href = "/auth/profile-setup";
+        return;
+      }
       setHeatmapData(streakData);
 
       // Calculate actual streak from streak_logs (in case DB trigger didn't run)
