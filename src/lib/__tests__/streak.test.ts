@@ -76,10 +76,11 @@ describe("calculateStreak", () => {
   it("correctly identifies current streak when active yesterday", () => {
     const today = new Date();
     const dates: string[] = [];
+    const toLocalDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     for (let i = 5; i >= 1; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      dates.push(d.toISOString().split("T")[0]);
+      dates.push(toLocalDate(d));
     }
     const result = calculateStreak(dates);
     expect(result.currentStreak).toBe(5);

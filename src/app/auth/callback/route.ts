@@ -34,10 +34,9 @@ export async function GET(request: Request) {
 
         if (profile) {
           // Build update object with fields that need updating
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const updates: Record<string, any> = {};
+          const updates: Record<string, string> = {};
 
-          if (oauthAvatar && !(profile as any).avatar_url) {
+          if (oauthAvatar && !(profile as Record<string, unknown>).avatar_url) {
             updates.avatar_url = oauthAvatar;
           }
 

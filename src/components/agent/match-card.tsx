@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import type { MatchResult } from "@/lib/types/agent";
 import { BadgeDisplay } from "@/components/ui/badge-display";
-import { StreakCounter } from "@/components/ui/streak-counter";
 import { Bot, ArrowRight } from "lucide-react";
 
 interface MatchCardProps {

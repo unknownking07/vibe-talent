@@ -145,9 +145,7 @@ export default function ProfileSetupPage() {
 
       if (hasLinks) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: dbError } = await (
-          supabase.from("social_links") as any
-        ).upsert(
+        const { error: dbError } = await (supabase.from("social_links") as any).upsert(
           {
             user_id: userId,
             github: socials.github || null,
@@ -187,9 +185,7 @@ export default function ProfileSetupPage() {
         .filter(Boolean);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: dbError } = await (
-        supabase.from("projects") as any
-      ).insert({
+      const { error: dbError } = await (supabase.from("projects") as any).insert({
         user_id: userId,
         title: project.title,
         description: project.description,
@@ -216,9 +212,7 @@ export default function ProfileSetupPage() {
       const today = new Date().toISOString().split("T")[0];
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: dbError } = await (
-        supabase.from("streak_logs") as any
-      ).upsert(
+      const { error: dbError } = await (supabase.from("streak_logs") as any).upsert(
         {
           user_id: userId,
           log_date: today,

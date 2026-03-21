@@ -154,7 +154,6 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: Record<string, unknown> = { status };
     if (status === "replied" && reply) {
       updateData.reply = reply;
