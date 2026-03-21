@@ -1,4 +1,5 @@
 import { fetchUserByUsernameCached, fetchStreakLogsCached } from "@/lib/supabase/server-queries";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { ProfileSidebar } from "@/components/profile/profile-sidebar";
 import { StatsRibbon } from "@/components/profile/stats-ribbon";
 import { ProfileHeatmap } from "@/components/profile/profile-heatmap";
@@ -73,11 +74,21 @@ export default async function ProfilePage({
 
   const heatmapData = await fetchStreakLogsCached(user.id);
 
+  // Check if the logged-in user is viewing their own profile
+  let isOwner = false;
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    isOwner = authUser?.id === user.id;
+  } catch {
+    // Not logged in — isOwner stays false
+  }
+
   return (
     <div className="flex justify-center p-4 sm:p-8">
       <div className="w-full max-w-[1200px] grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 items-start">
         {/* Sidebar */}
-        <ProfileSidebar user={user} />
+        <ProfileSidebar user={user} isOwner={isOwner} />
 
         {/* Main Content */}
         <div className="flex flex-col gap-6">

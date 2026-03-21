@@ -10,6 +10,7 @@ import { ShareCardModal } from "@/components/profile/share-card-modal";
 
 interface ProfileSidebarProps {
   user: UserWithSocials;
+  isOwner?: boolean;
 }
 
 function getBadgeLabel(level: BadgeLevel): string | null {
@@ -32,7 +33,7 @@ function getBadgeBg(level: BadgeLevel): string {
   }
 }
 
-export function ProfileSidebar({ user }: ProfileSidebarProps) {
+export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
   const [hireModalOpen, setHireModalOpen] = useState(false);
   const [shareCardOpen, setShareCardOpen] = useState(false);
   const socials = user.social_links;
@@ -176,20 +177,24 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
         onClose={() => setHireModalOpen(false)}
       />
 
-      {/* Share Card */}
-      <button
-        onClick={() => setShareCardOpen(true)}
-        className="btn-brutal btn-brutal-secondary w-full justify-center text-sm flex items-center gap-2"
-      >
-        <Share2 size={14} />
-        Share Card
-      </button>
+      {/* Share Card - only visible to profile owner */}
+      {isOwner && (
+        <>
+          <button
+            onClick={() => setShareCardOpen(true)}
+            className="btn-brutal btn-brutal-secondary w-full justify-center text-sm flex items-center gap-2"
+          >
+            <Share2 size={14} />
+            Share Card
+          </button>
 
-      <ShareCardModal
-        username={user.username}
-        isOpen={shareCardOpen}
-        onClose={() => setShareCardOpen(false)}
-      />
+          <ShareCardModal
+            username={user.username}
+            isOpen={shareCardOpen}
+            onClose={() => setShareCardOpen(false)}
+          />
+        </>
+      )}
 
       {/* AI Evaluate */}
       <Link

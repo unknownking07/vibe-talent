@@ -96,8 +96,8 @@ export default function ProfileSetupPage() {
 
   const validateUsername = (value: string) => {
     if (value.length < 3) return "Username must be at least 3 characters";
-    if (!/^[a-z_]+$/.test(value))
-      return "Only lowercase letters and underscores allowed";
+    if (!/^[a-z0-9_]+$/.test(value))
+      return "Only lowercase letters, numbers, and underscores allowed";
     return null;
   };
 
@@ -239,7 +239,7 @@ export default function ProfileSetupPage() {
 
   /* ── Progress bar ────────────────────────────────────────── */
 
-  const ProgressBar = () => (
+  const progressBar = (
     <div className="flex items-center justify-center gap-2 mb-8">
       {[1, 2, 3, 4].map((s) => (
         <div key={s} className="flex items-center gap-2">
@@ -273,22 +273,21 @@ export default function ProfileSetupPage() {
 
   /* ── Error display ───────────────────────────────────────── */
 
-  const ErrorBox = () =>
-    error ? (
-      <div
-        className="p-3 text-sm font-bold text-[#991B1B]"
-        style={{
-          backgroundColor: "#FEF2F2",
-          border: "2px solid #0F0F0F",
-        }}
-      >
-        {error}
-      </div>
-    ) : null;
+  const errorBox = error ? (
+    <div
+      className="p-3 text-sm font-bold text-[#991B1B]"
+      style={{
+        backgroundColor: "#FEF2F2",
+        border: "2px solid #0F0F0F",
+      }}
+    >
+      {error}
+    </div>
+  ) : null;
 
   /* ── Step 1: Profile Basics ──────────────────────────────── */
 
-  const Step1 = () => (
+  const step1Content = (
     <div className="space-y-5">
       <div className="flex items-center gap-3 mb-2">
         <div
@@ -320,7 +319,7 @@ export default function ProfileSetupPage() {
           onChange={(e) =>
             setProfile({
               ...profile,
-              username: e.target.value.toLowerCase().replace(/[^a-z_]/g, ""),
+              username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""),
             })
           }
           placeholder="your_username"
@@ -328,7 +327,7 @@ export default function ProfileSetupPage() {
           required
         />
         <p className="text-[10px] text-[#52525B] mt-1">
-          Min 3 chars. Lowercase letters and underscores only.
+          Min 3 chars. Lowercase letters, numbers, and underscores only.
         </p>
       </div>
 
@@ -345,7 +344,7 @@ export default function ProfileSetupPage() {
         />
       </div>
 
-      <ErrorBox />
+      {errorBox}
 
       <button
         type="button"
@@ -361,7 +360,7 @@ export default function ProfileSetupPage() {
 
   /* ── Step 2: Social Links ────────────────────────────────── */
 
-  const Step2 = () => (
+  const step2Content = (
     <div className="space-y-5">
       <div className="flex items-center gap-3 mb-2">
         <div
@@ -435,7 +434,7 @@ export default function ProfileSetupPage() {
         />
       </div>
 
-      <ErrorBox />
+      {errorBox}
 
       <div className="flex items-center gap-3">
         <button
@@ -475,7 +474,7 @@ export default function ProfileSetupPage() {
 
   /* ── Step 3: First Project ───────────────────────────────── */
 
-  const Step3 = () => (
+  const step3Content = (
     <div className="space-y-5">
       <div className="flex items-center gap-3 mb-2">
         <div
@@ -556,7 +555,7 @@ export default function ProfileSetupPage() {
         />
       </div>
 
-      <ErrorBox />
+      {errorBox}
 
       <div className="flex items-center gap-3">
         <button
@@ -596,7 +595,7 @@ export default function ProfileSetupPage() {
 
   /* ── Step 4: First Streak ────────────────────────────────── */
 
-  const Step4 = () => (
+  const step4Content = (
     <div className="space-y-6 text-center">
       <div className="flex items-center justify-center gap-3 mb-2">
         <div
@@ -640,7 +639,7 @@ export default function ProfileSetupPage() {
             </p>
           </div>
 
-          <ErrorBox />
+          {errorBox}
 
           <button
             type="button"
@@ -725,7 +724,7 @@ export default function ProfileSetupPage() {
       </div>
 
       {/* Progress */}
-      <ProgressBar />
+      {progressBar}
 
       {/* Card */}
       <div
@@ -736,10 +735,10 @@ export default function ProfileSetupPage() {
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        {step === 1 && <Step1 />}
-        {step === 2 && <Step2 />}
-        {step === 3 && <Step3 />}
-        {step === 4 && <Step4 />}
+        {step === 1 && step1Content}
+        {step === 2 && step2Content}
+        {step === 3 && step3Content}
+        {step === 4 && step4Content}
       </div>
     </div>
   );
