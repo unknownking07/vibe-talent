@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { fetchStreakLogs } from "@/lib/supabase/queries";
 import { BadgeDisplay } from "@/components/ui/badge-display";
 import type { UserWithSocials } from "@/lib/types/database";
 import { StreakCounter } from "@/components/ui/streak-counter";
-import { VibeScore } from "@/components/ui/vibe-score";
 import { ActivityHeatmap } from "@/components/ui/activity-heatmap";
 import { ProjectCard } from "@/components/ui/project-card";
 import type { HireRequest, HireMessage } from "@/lib/types/database";
@@ -24,7 +23,6 @@ import {
   Mail,
   MailOpen,
   DollarSign,
-  Reply,
   Send,
   MessageCircle,
   User,
@@ -40,6 +38,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<UserWithSocials | null>(null);
   const [heatmapData, setHeatmapData] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [hireRequests, setHireRequests] = useState<HireRequest[]>([]);
 
   useEffect(() => {
     async function loadUser() {
@@ -150,6 +149,7 @@ export default function DashboardPage() {
     ide: "",
   });
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (user) {
       setProfileForm({
@@ -163,6 +163,7 @@ export default function DashboardPage() {
       });
     }
   }, [user]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const [todayLogged, setTodayLogged] = useState(false);
   const [logging, setLogging] = useState(false);
@@ -173,7 +174,6 @@ export default function DashboardPage() {
   const [editingOriginalGithubUrl, setEditingOriginalGithubUrl] = useState<string>("");
   const [savingEdit, setSavingEdit] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "inbox">("overview");
-  const [hireRequests, setHireRequests] = useState<HireRequest[]>([]);
   const [loadingInbox, setLoadingInbox] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
@@ -193,6 +193,23 @@ export default function DashboardPage() {
   const projectImageInputRef = useRef<HTMLInputElement>(null);
   const [syncingGithub, setSyncingGithub] = useState(false);
   const [githubSyncResult, setGithubSyncResult] = useState<string | null>(null);
+
+  const reloadUser = useCallback(async () => {
+    const supabase = createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
+    const { data: profile } = await sb.from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, created_at").eq("id", authUser.id).single();
+    if (!profile) return;
+    const [{ data: projects }, { data: socials }, streakData] = await Promise.all([
+      sb.from("projects").select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at").eq("user_id", authUser.id).order("created_at", { ascending: false }),
+      sb.from("social_links").select("id, user_id, twitter, telegram, github, website, farcaster").eq("user_id", authUser.id).single(),
+      fetchStreakLogs(authUser.id),
+    ]);
+    setUser({ ...profile, projects: projects || [], social_links: socials || null });
+    setHeatmapData(streakData);
+  }, []);
 
   const verifyProject = async (projectId: string) => {
     setVerifyingProjectId(projectId);
@@ -295,7 +312,6 @@ export default function DashboardPage() {
         setGithubSyncResult(`\u2713 Synced! Found ${data.events_found} events, logged ${data.dates_logged} day(s).`);
         await reloadUser();
         // Update heatmap
-        const supabase = createClient();
         const streakData = await fetchStreakLogs(user!.id);
         setHeatmapData(streakData);
       } else if (data.error) {
@@ -470,24 +486,7 @@ export default function DashboardPage() {
     updateCountdown();
     const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
-  }, [todayLogged]);
-
-  const reloadUser = async () => {
-    const supabase = createClient();
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = supabase as any;
-    const { data: profile } = await sb.from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, created_at").eq("id", authUser.id).single();
-    if (!profile) return;
-    const [{ data: projects }, { data: socials }, streakData] = await Promise.all([
-      sb.from("projects").select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at").eq("user_id", authUser.id).order("created_at", { ascending: false }),
-      sb.from("social_links").select("id, user_id, twitter, telegram, github, website, farcaster").eq("user_id", authUser.id).single(),
-      fetchStreakLogs(authUser.id),
-    ]);
-    setUser({ ...profile, projects: projects || [], social_links: socials || null });
-    setHeatmapData(streakData);
-  };
+  }, [todayLogged, reloadUser]);
 
   const handleLogActivity = async () => {
     if (!user || todayLogged || logging) return;
@@ -1212,7 +1211,7 @@ export default function DashboardPage() {
                 <ProjectCard
                   project={project}
                   onEdit={handleStartEdit}
-                  verified={!!(project as any).verified}
+                  verified={!!project.verified}
                   onVerify={verifyProject}
                 />
                 {verifyingProjectId === project.id && (

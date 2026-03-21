@@ -44,6 +44,7 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
     if (!isOpen) return;
     // Check if user is logged in and auto-fill their info
     const checkAuth = async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const supabase = createClient() as any;
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {

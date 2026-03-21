@@ -15,14 +15,15 @@ export function ShareCardModal({ username, isOpen, onClose }: ShareCardModalProp
   const [downloading, setDownloading] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
   const cardUrl = `/api/share-card/${username}`;
-
-  // Reset state when modal opens
+  // Reset state when modal opens — setState here is intentional for prop-driven resets
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (isOpen) {
       setLoading(true);
       setCopied(false);
     }
   }, [isOpen]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Close on escape
   useEffect(() => {

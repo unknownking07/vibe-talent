@@ -30,15 +30,9 @@ function clearReportData(projectId: string) {
 
 export function ProfileProjectCard({ project, verified = false }: ProfileProjectCardProps) {
   const [showReportMenu, setShowReportMenu] = useState(false);
-  const [reported, setReported] = useState(false);
+  const [reported, setReported] = useState(() => !!getReportData(project.id));
   const [undoing, setUndoing] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (getReportData(project.id)) {
-      setReported(true);
-    }
-  }, [project.id]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

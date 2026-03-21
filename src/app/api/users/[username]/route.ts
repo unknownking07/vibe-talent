@@ -37,7 +37,7 @@ export async function GET(
         .single(),
     ]);
 
-    const { id: _id, ...publicUser } = user;
+    const { id: _id, ...publicUser } = user; // eslint-disable-line @typescript-eslint/no-unused-vars
 
     return NextResponse.json(
       {

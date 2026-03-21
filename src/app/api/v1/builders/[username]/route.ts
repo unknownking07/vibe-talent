@@ -33,7 +33,7 @@ export async function GET(
     }
 
     // Fetch projects and social links in parallel
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     const [{ data: projects, error: projectsError }, { data: socialLinks, error: socialLinksError }] = await Promise.all([
       (supabase as any)
         .from("projects")
@@ -47,6 +47,7 @@ export async function GET(
         .eq("user_id", user.id)
         .single(),
     ]);
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     if (projectsError) {
       console.error("Failed to fetch projects:", projectsError);

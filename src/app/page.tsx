@@ -249,8 +249,9 @@ export default async function HomePage() {
 
           {featuredProjects.length > 0 ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
-              {featuredProjects.map((project) => (
-                <ProjectCard key={project.id} project={project} verified={!!(project as any).verified} authorUsername={(project as any).users?.username} />
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {featuredProjects.map((project: any) => (
+                <ProjectCard key={project.id} project={project} verified={!!project.verified} authorUsername={project.users?.username} />
               ))}
             </div>
           ) : (

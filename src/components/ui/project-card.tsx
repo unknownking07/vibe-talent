@@ -40,17 +40,12 @@ interface ProjectCardProps {
 
 export function ProjectCard({ project, authorUsername, onEdit, showReport = true, verified = false, onVerify }: ProjectCardProps) {
   const [reportOpen, setReportOpen] = useState(false);
-  const [reported, setReported] = useState(false);
+  const [reported, setReported] = useState(() => !!getReportData(project.id));
   const [reporting, setReporting] = useState(false);
   const [undoing, setUndoing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Check localStorage on mount
-  useEffect(() => {
-    if (getReportData(project.id)) {
-      setReported(true);
-    }
-  }, [project.id]);
+  // Check localStorage on mount — initialized via lazy state to avoid setState in effect
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

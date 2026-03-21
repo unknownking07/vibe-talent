@@ -1,4 +1,4 @@
-import type { UserWithSocials, BadgeLevel, SocialLinks } from "./database";
+import type { UserWithSocials, BadgeLevel } from "./database";
 
 export interface EvaluationDimensions {
   consistency: number;
