@@ -33,6 +33,7 @@ import {
   Camera,
   Trash2,
   ShieldCheck,
+  Zap,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -803,7 +804,7 @@ export default function DashboardPage() {
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
-          <VibeScore score={user.vibe_score} size="sm" />
+          <Zap size={20} className="text-[var(--accent)] fill-[var(--accent)] mb-2" />
           <div className="text-2xl font-extrabold font-mono text-[var(--accent)]">{user.vibe_score}</div>
           <div className="text-xs font-bold uppercase tracking-wide text-[#71717A] mt-1">Vibe Score</div>
         </div>
