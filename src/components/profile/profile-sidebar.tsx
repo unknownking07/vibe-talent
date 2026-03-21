@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Github, Globe, Bot, Code2 } from "lucide-react";
+import { Github, Globe, Bot, Code2, Share2 } from "lucide-react";
 import Link from "next/link";
 import type { UserWithSocials, BadgeLevel } from "@/lib/types/database";
 import { HireModal } from "@/components/ui/hire-modal";
+import { ShareCardModal } from "@/components/profile/share-card-modal";
 
 interface ProfileSidebarProps {
   user: UserWithSocials;
@@ -33,6 +34,7 @@ function getBadgeBg(level: BadgeLevel): string {
 
 export function ProfileSidebar({ user }: ProfileSidebarProps) {
   const [hireModalOpen, setHireModalOpen] = useState(false);
+  const [shareCardOpen, setShareCardOpen] = useState(false);
   const socials = user.social_links;
   const initials = user.username.slice(0, 2).toUpperCase();
   const badgeLabel = getBadgeLabel(user.badge_level);
@@ -172,6 +174,21 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
         builderName={user.username}
         isOpen={hireModalOpen}
         onClose={() => setHireModalOpen(false)}
+      />
+
+      {/* Share Card */}
+      <button
+        onClick={() => setShareCardOpen(true)}
+        className="btn-brutal btn-brutal-secondary w-full justify-center text-sm flex items-center gap-2"
+      >
+        <Share2 size={14} />
+        Share Card
+      </button>
+
+      <ShareCardModal
+        username={user.username}
+        isOpen={shareCardOpen}
+        onClose={() => setShareCardOpen(false)}
       />
 
       {/* AI Evaluate */}

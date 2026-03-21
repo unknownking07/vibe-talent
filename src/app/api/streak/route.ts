@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { calculateStreak, getBadgeLevel, calculateVibeScore } from "@/lib/streak";
+import { messagesLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
 
 // POST /api/streak — Log activity (auth required, logs for authenticated user only)
 export async function POST(request: NextRequest) {
+  // Rate limit: reuse messages limiter (60/min per IP)
+  const { success } = await checkRateLimit(messagesLimiter, getIP(request));
+  if (!success) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   try {
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();

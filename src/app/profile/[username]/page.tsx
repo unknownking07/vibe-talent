@@ -3,7 +3,43 @@ import { ProfileSidebar } from "@/components/profile/profile-sidebar";
 import { StatsRibbon } from "@/components/profile/stats-ribbon";
 import { ProfileHeatmap } from "@/components/profile/profile-heatmap";
 import { ProfileProjectCard } from "@/components/profile/profile-project-card";
+import ReviewsSection from "@/components/profile/reviews-section";
 import Link from "next/link";
+import type { Metadata } from "next";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.dev";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  const { username } = await params;
+  const user = await fetchUserByUsernameCached(username);
+
+  if (!user) {
+    return { title: "Builder Not Found" };
+  }
+
+  const title = `@${user.username} — VibeTalent`;
+  const description = user.bio
+    ? `${user.bio.slice(0, 150)} | ${user.streak}-day streak, ${user.projects.length} projects`
+    : `${user.streak}-day streak, ${user.projects.length} projects on VibeTalent`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: `${siteUrl}/profile/${username}`,
+    },
+    openGraph: {
+      title,
+      description,
+      url: `${siteUrl}/profile/${username}`,
+      type: "profile",
+    },
+  };
+}
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +49,16 @@ export default async function ProfilePage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
+
+  // Validate username format to prevent unnecessary DB queries
+  if (!username || username.length > 50 || !/^[a-zA-Z0-9_-]+$/.test(username)) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
+        <h1 className="text-2xl font-extrabold uppercase text-[#0F0F0F]">Invalid username</h1>
+        <p className="mt-2 text-[#52525B] font-medium">This is not a valid username.</p>
+      </div>
+    );
+  }
 
   const user = await fetchUserByUsernameCached(username);
 
@@ -91,6 +137,9 @@ export default async function ProfilePage({
               </div>
             )}
           </section>
+
+          {/* Reviews Section */}
+          <ReviewsSection builderId={user.id} />
         </div>
       </div>
     </div>

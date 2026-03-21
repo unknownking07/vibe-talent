@@ -105,6 +105,16 @@ export default function DashboardPage() {
       });
       setLoading(false);
 
+      // Auto-sync GitHub if configured and hasn't synced recently
+      if (socials?.github) {
+        const lastSync = localStorage.getItem("last_github_sync");
+        const oneHourAgo = Date.now() - 3600000;
+        if (!lastSync || Number(lastSync) < oneHourAgo) {
+          localStorage.setItem("last_github_sync", Date.now().toString());
+          fetch("/api/github/activity", { method: "POST" }).catch(console.error);
+        }
+      }
+
       // Sync DB in background if streak was wrong (non-blocking)
       if (actualStreak !== profile.streak || actualLongest !== profile.longest_streak) {
         sb.from("users").update({
@@ -177,6 +187,11 @@ export default function DashboardPage() {
   const [verifyingProjectId, setVerifyingProjectId] = useState<string | null>(null);
   const [verifyMessage, setVerifyMessage] = useState<{ projectId: string; success: boolean; text: string } | null>(null);
   const [showVerifyGuide, setShowVerifyGuide] = useState(true);
+  const [projectImageFile, setProjectImageFile] = useState<File | null>(null);
+  const [projectImagePreview, setProjectImagePreview] = useState<string | null>(null);
+  const projectImageInputRef = useRef<HTMLInputElement>(null);
+  const [syncingGithub, setSyncingGithub] = useState(false);
+  const [githubSyncResult, setGithubSyncResult] = useState<string | null>(null);
 
   const verifyProject = async (projectId: string) => {
     setVerifyingProjectId(projectId);
@@ -247,6 +262,52 @@ export default function DashboardPage() {
     await sb.from("users").update({ avatar_url: avatarUrl }).eq("id", user.id);
     setUser({ ...user, avatar_url: avatarUrl });
     setUploadingAvatar(false);
+  };
+
+  const handleProjectImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Only JPG, PNG, WebP, and GIF images are allowed');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image must be under 5MB');
+      return;
+    }
+
+    setProjectImageFile(file);
+    setProjectImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleGithubSync = async () => {
+    if (syncingGithub) return;
+    setSyncingGithub(true);
+    setGithubSyncResult(null);
+    try {
+      const res = await fetch("/api/github/activity", { method: "POST" });
+      const data = await res.json();
+      if (data.synced) {
+        setGithubSyncResult(`\u2713 Synced! Found ${data.events_found} events, logged ${data.dates_logged} day(s).`);
+        await reloadUser();
+        // Update heatmap
+        const supabase = createClient();
+        const streakData = await fetchStreakLogs(user!.id);
+        setHeatmapData(streakData);
+      } else if (data.error) {
+        setGithubSyncResult(`\u26A0 ${data.error}`);
+      } else {
+        setGithubSyncResult("No recent GitHub activity found.");
+      }
+    } catch {
+      setGithubSyncResult("Failed to sync GitHub activity.");
+    }
+    setSyncingGithub(false);
+    // Clear message after 5 seconds
+    setTimeout(() => setGithubSyncResult(null), 5000);
   };
 
   // Refresh inbox data directly from Supabase (skip API route hop)
@@ -541,6 +602,17 @@ export default function DashboardPage() {
       return;
     }
 
+    // Upload project image if selected
+    if (projectImageFile && insertedProject?.id) {
+      const ext = projectImageFile.name.split(".").pop();
+      const filePath = `${user.id}/${insertedProject.id}/image.${ext}`;
+      const { error: uploadError } = await sb.storage.from("project-images").upload(filePath, projectImageFile, { upsert: true });
+      if (!uploadError) {
+        const { data: { publicUrl } } = sb.storage.from("project-images").getPublicUrl(filePath);
+        await sb.from("projects").update({ image_url: `${publicUrl}?t=${Date.now()}` }).eq("id", insertedProject.id);
+      }
+    }
+
     // Auto-log streak when shipping a project
     const nowLocal = new Date();
     const today = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, "0")}-${String(nowLocal.getDate()).padStart(2, "0")}`;
@@ -549,6 +621,8 @@ export default function DashboardPage() {
     // DB trigger auto-updates vibe_score — reload to get fresh data
     await reloadUser();
     setProjectForm({ title: "", description: "", tech_stack: "", live_url: "", github_url: "", build_time: "", tags: "" });
+    setProjectImageFile(null);
+    setProjectImagePreview(null);
     setShowProjectForm(false);
     setAddingProject(false);
 
@@ -808,6 +882,25 @@ export default function DashboardPage() {
         <div className="mt-2">
           <BadgeDisplay level={user.badge_level} />
         </div>
+        {/* GitHub Sync */}
+        {user.social_links?.github && (
+          <div className="mt-4 pt-4 border-t-2 border-zinc-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Code2 size={16} className="text-[#52525B]" />
+                <span className="text-sm font-bold text-[#52525B]">GitHub Auto-Sync</span>
+              </div>
+              <button onClick={handleGithubSync} disabled={syncingGithub} className="btn-brutal btn-brutal-secondary text-xs py-1.5 px-3">
+                {syncingGithub ? "Syncing..." : "Sync Now"}
+              </button>
+            </div>
+            {githubSyncResult && (
+              <p className={`text-xs mt-2 font-medium ${githubSyncResult.startsWith("\u2713") ? "text-emerald-700" : githubSyncResult.startsWith("\u26A0") ? "text-amber-700" : "text-zinc-500"}`}>
+                {githubSyncResult}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Activity Heatmap */}
@@ -1082,6 +1175,22 @@ export default function DashboardPage() {
                     onChange={(e) => setProjectForm({ ...projectForm, tags: e.target.value })}
                     className="input-brutal"
                   />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Project Screenshot</label>
+                  <div className="flex items-center gap-4">
+                    {projectImagePreview && (
+                      <div className="relative w-24 h-16 border-2 border-[#0F0F0F]">
+                        <Image src={projectImagePreview} alt="Preview" fill className="object-cover" />
+                        <button onClick={() => { setProjectImageFile(null); setProjectImagePreview(null); }} className="absolute -top-2 -right-2 w-5 h-5 bg-[#0F0F0F] text-white rounded-full flex items-center justify-center text-xs">&times;</button>
+                      </div>
+                    )}
+                    <button type="button" onClick={() => projectImageInputRef.current?.click()} className="btn-brutal btn-brutal-secondary text-xs py-1.5 px-3">
+                      <Camera size={14} className="mr-1 inline" /> {projectImagePreview ? "Change" : "Add Image"}
+                    </button>
+                    <input ref={projectImageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleProjectImageSelect} className="hidden" />
+                  </div>
+                  <p className="text-xs text-[#71717A] mt-1">Max 5MB. JPG, PNG, WebP, GIF.</p>
                 </div>
                 <button
                   onClick={editingProjectId ? handleSaveEdit : handleAddProject}

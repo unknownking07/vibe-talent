@@ -300,3 +300,31 @@ CREATE POLICY "Reports are readable"
 -- Anyone can delete reports by token (token matching enforced in API)
 CREATE POLICY "Anyone can delete own reports by token"
   ON project_reports FOR DELETE USING (true);
+
+-- Reviews table (client reviews of builders)
+CREATE TABLE reviews (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  builder_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reviewer_name TEXT NOT NULL,
+  reviewer_email TEXT NOT NULL,
+  hire_request_id UUID REFERENCES hire_requests(id) ON DELETE SET NULL,
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  comment TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_reviews_builder_id ON reviews(builder_id);
+CREATE INDEX idx_reviews_hire_request_id ON reviews(hire_request_id);
+
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can submit reviews"
+  ON reviews FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Reviews are publicly readable"
+  ON reviews FOR SELECT USING (true);
+
+-- Storage bucket for project images
+-- Create "project-images" bucket in Supabase dashboard with public access
+-- Path: project-images/{userId}/{projectId}/image.ext
+-- Max size: 5MB, allowed types: image/jpeg, image/png, image/webp, image/gif

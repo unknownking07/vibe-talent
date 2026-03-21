@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ExternalLink, Github, Clock, Tag, Pencil, Flag, CheckCircle, ShieldCheck, Undo2, User } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import type { Project } from "@/lib/types/database";
 
 const REPORT_REASONS = [
@@ -107,8 +108,19 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
 
   return (
     <div
-      className="card-brutal p-5 transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#0F0F0F]"
+      className="card-brutal overflow-hidden transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#0F0F0F]"
     >
+      {project.image_url && (
+        <div className="relative w-full h-40 border-b-2 border-[#0F0F0F]">
+          <Image
+            src={project.image_url}
+            alt={project.title}
+            fill
+            className="object-cover"
+          />
+        </div>
+      )}
+      <div className="p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <h3 className="font-extrabold uppercase text-[#0F0F0F]">{project.title}</h3>
@@ -252,6 +264,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
           Verify
         </button>
       )}
+      </div>
     </div>
   );
 }

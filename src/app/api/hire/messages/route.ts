@@ -1,20 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
-
-// Simple in-memory rate limiter: max 60 requests per IP per minute
-const messagesRateMap = new Map<string, { count: number; resetAt: number }>();
-
-function isMessagesRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const entry = messagesRateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    messagesRateMap.set(ip, { count: 1, resetAt: now + 60 * 1000 });
-    return false;
-  }
-  entry.count++;
-  return entry.count > 60;
-}
+import { messagesLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
 
 // Use a direct client for reading hire requests (RLS blocks anon reads now)
 function getServiceClient() {
@@ -25,8 +12,8 @@ function getServiceClient() {
 }
 
 export async function GET(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
-  if (isMessagesRateLimited(ip)) {
+  const { success } = await checkRateLimit(messagesLimiter, getIP(req));
+  if (!success) {
     return NextResponse.json(
       { error: "Too many requests. Please slow down." },
       { status: 429 }
@@ -105,8 +92,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const postIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
-  if (isMessagesRateLimited(postIp)) {
+  const { success } = await checkRateLimit(messagesLimiter, getIP(req));
+  if (!success) {
     return NextResponse.json(
       { error: "Too many requests. Please slow down." },
       { status: 429 }
@@ -165,6 +152,13 @@ export async function POST(req: NextRequest) {
       if (!user || user.id !== hireRequest.builder_id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
+    }
+
+    // If sender claims to be client, verify they know the hire_request_id
+    // The hire_request_id acts as a token — only the original sender has it
+    // Also verify the hire request exists and hasn't been deleted
+    if (sender_type === "client" && !hireRequest) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Insert the message

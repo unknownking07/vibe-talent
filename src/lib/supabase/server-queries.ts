@@ -27,7 +27,7 @@ async function _fetchAllUsers(): Promise<UserWithSocials[]> {
 
   const userIds = users.map((u: UserWithSocials) => u.id);
 
-  const [{ data: projects }, { data: socialLinks }] = await Promise.all([
+  const [{ data: projects }, { data: socialLinks }, { data: latestLogs }] = await Promise.all([
     sb
       .from("projects")
       .select(PROJECT_FIELDS)
@@ -37,12 +37,26 @@ async function _fetchAllUsers(): Promise<UserWithSocials[]> {
       .from("social_links")
       .select(SOCIAL_FIELDS)
       .in("user_id", userIds),
+    sb
+      .from("streak_logs")
+      .select("user_id, activity_date")
+      .in("user_id", userIds)
+      .order("activity_date", { ascending: false }),
   ]);
+
+  // Build a map of user_id -> latest activity_date
+  const lastActivityMap: Record<string, string> = {};
+  for (const log of (latestLogs || [])) {
+    if (!lastActivityMap[log.user_id]) {
+      lastActivityMap[log.user_id] = log.activity_date;
+    }
+  }
 
   return users.map((user: UserWithSocials) => ({
     ...user,
     projects: (projects || []).filter((p: { user_id: string }) => p.user_id === user.id),
     social_links: (socialLinks || []).find((s: { user_id: string }) => s.user_id === user.id) || null,
+    last_activity_date: lastActivityMap[user.id] || null,
   }));
 }
 

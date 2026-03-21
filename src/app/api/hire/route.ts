@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
+import { sendHireNotification } from "@/lib/email";
 
 const BLOCKED_DOMAINS = [
   "mailinator.com", "tempmail.com", "throwaway.email", "guerrillamail.com",
@@ -74,6 +76,31 @@ export async function POST(req: NextRequest) {
       console.error("Failed to insert hire request:", error);
       return NextResponse.json({ error: "Failed to send hire request" }, { status: 500 });
     }
+
+    // Fire-and-forget: send email notification to builder
+    const serviceClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    serviceClient.auth.admin.getUserById(builder_id).then(({ data: userData }) => {
+      if (userData?.user?.email) {
+        // Look up the builder's username
+        serviceClient
+          .from("users")
+          .select("username")
+          .eq("id", builder_id)
+          .single()
+          .then(({ data: builderData }) => {
+            sendHireNotification({
+              builderEmail: userData.user!.email!,
+              builderUsername: builderData?.username || "builder",
+              senderName: nameClean,
+              message: msgClean,
+              requestId: data.id,
+            }).catch(console.error);
+          });
+      }
+    }).catch(console.error);
 
     return NextResponse.json({ success: true, id: data.id });
   } catch {

@@ -4,7 +4,8 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 // GET /api/leaderboard?sort=vibe_score|streak|projects&limit=10
 export async function GET(request: NextRequest) {
   const sort = request.nextUrl.searchParams.get("sort") || "vibe_score";
-  const limit = parseInt(request.nextUrl.searchParams.get("limit") || "10");
+  const rawLimit = parseInt(request.nextUrl.searchParams.get("limit") || "10");
+  const limit = Math.min(Math.max(isNaN(rawLimit) ? 10 : rawLimit, 1), 100);
 
   try {
     const supabase = await createServerSupabaseClient();

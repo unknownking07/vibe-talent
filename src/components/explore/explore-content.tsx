@@ -13,6 +13,17 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
   const [sortBy, setSortBy] = useState<SortOption>("vibe_score");
   const [badgeFilter, setBadgeFilter] = useState<BadgeLevel | "all">("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedTech, setSelectedTech] = useState<string[]>([]);
+  const [minStreak, setMinStreak] = useState(0);
+  const [maxStreak, setMaxStreak] = useState(365);
+  const [availableOnly, setAvailableOnly] = useState(false);
+  const [hasProjects, setHasProjects] = useState(false);
+
+  const allTechStacks = useMemo(() => {
+    const techs = new Set<string>();
+    users.forEach(u => u.projects.forEach(p => p.tech_stack.forEach(t => techs.add(t))));
+    return [...techs].sort();
+  }, [users]);
 
   const filteredUsers = useMemo(() => {
     let filtered = [...users];
@@ -34,6 +45,24 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
       filtered = filtered.filter((u) => u.badge_level === badgeFilter);
     }
 
+    if (selectedTech.length > 0) {
+      filtered = filtered.filter(u =>
+        u.projects.some(p => p.tech_stack.some(t => selectedTech.includes(t)))
+      );
+    }
+    if (minStreak > 0) {
+      filtered = filtered.filter(u => u.streak >= minStreak);
+    }
+    if (maxStreak < 365) {
+      filtered = filtered.filter(u => u.streak <= maxStreak);
+    }
+    if (availableOnly) {
+      filtered = filtered.filter(u => u.streak > 0);
+    }
+    if (hasProjects) {
+      filtered = filtered.filter(u => u.projects.length > 0);
+    }
+
     switch (sortBy) {
       case "vibe_score":
         filtered.sort((a, b) => b.vibe_score - a.vibe_score);
@@ -50,7 +79,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
     }
 
     return filtered;
-  }, [users, search, sortBy, badgeFilter]);
+  }, [users, search, sortBy, badgeFilter, selectedTech, minStreak, maxStreak, availableOnly, hasProjects]);
 
   return (
     <>
@@ -144,9 +173,92 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
                 <option value="none">No Badge</option>
               </select>
             </div>
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-2 block">Tech Stack</label>
+              <div className="flex flex-wrap gap-1.5">
+                {allTechStacks.slice(0, 20).map((tech) => (
+                  <button key={tech} onClick={() => setSelectedTech(prev => prev.includes(tech) ? prev.filter(t => t !== tech) : [...prev, tech])}
+                    className="px-2.5 py-1 text-xs font-bold transition-all"
+                    style={{
+                      backgroundColor: selectedTech.includes(tech) ? "var(--accent)" : "#FFFFFF",
+                      color: selectedTech.includes(tech) ? "#FFFFFF" : "#0F0F0F",
+                      border: "2px solid #0F0F0F",
+                    }}>
+                    {tech}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-2 block">Streak Range</label>
+              <div className="flex items-center gap-2">
+                <input type="number" min={0} max={365} value={minStreak} onChange={(e) => setMinStreak(Number(e.target.value))}
+                  className="input-brutal w-20 text-center text-sm py-1.5" placeholder="Min" />
+                <span className="text-sm font-bold text-[#71717A]">to</span>
+                <input type="number" min={0} max={365} value={maxStreak} onChange={(e) => setMaxStreak(Number(e.target.value))}
+                  className="input-brutal w-20 text-center text-sm py-1.5" placeholder="Max" />
+                <span className="text-xs font-bold text-[#71717A]">days</span>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setAvailableOnly(!availableOnly)}
+                className="px-3 py-1.5 text-xs font-bold transition-all"
+                style={{
+                  backgroundColor: availableOnly ? "#0F0F0F" : "#FFFFFF",
+                  color: availableOnly ? "#FFFFFF" : "#0F0F0F",
+                  border: "2px solid #0F0F0F",
+                }}>
+                🟢 Active Only
+              </button>
+              <button onClick={() => setHasProjects(!hasProjects)}
+                className="px-3 py-1.5 text-xs font-bold transition-all"
+                style={{
+                  backgroundColor: hasProjects ? "#0F0F0F" : "#FFFFFF",
+                  color: hasProjects ? "#FFFFFF" : "#0F0F0F",
+                  border: "2px solid #0F0F0F",
+                }}>
+                📦 Has Projects
+              </button>
+            </div>
           </div>
         )}
       </div>
+
+      {/* Active Filter Pills */}
+      {(selectedTech.length > 0 || minStreak > 0 || maxStreak < 365 || availableOnly || hasProjects) && (
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {selectedTech.map(tech => (
+            <span key={tech} className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[var(--accent)] text-white border-2 border-[#0F0F0F]">
+              {tech}
+              <button onClick={() => setSelectedTech(prev => prev.filter(t => t !== tech))} className="hover:opacity-70">×</button>
+            </span>
+          ))}
+          {minStreak > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[#0F0F0F] text-white border-2 border-[#0F0F0F]">
+              Min: {minStreak}d <button onClick={() => setMinStreak(0)} className="hover:opacity-70">×</button>
+            </span>
+          )}
+          {maxStreak < 365 && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[#0F0F0F] text-white border-2 border-[#0F0F0F]">
+              Max: {maxStreak}d <button onClick={() => setMaxStreak(365)} className="hover:opacity-70">×</button>
+            </span>
+          )}
+          {availableOnly && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[#0F0F0F] text-white border-2 border-[#0F0F0F]">
+              Active Only <button onClick={() => setAvailableOnly(false)} className="hover:opacity-70">×</button>
+            </span>
+          )}
+          {hasProjects && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[#0F0F0F] text-white border-2 border-[#0F0F0F]">
+              Has Projects <button onClick={() => setHasProjects(false)} className="hover:opacity-70">×</button>
+            </span>
+          )}
+          <button onClick={() => { setSelectedTech([]); setMinStreak(0); setMaxStreak(365); setAvailableOnly(false); setHasProjects(false); }}
+            className="px-2 py-1 text-xs font-bold text-[var(--accent)] hover:underline">
+            Clear all
+          </button>
+        </div>
+      )}
 
       {/* Results count */}
       <p className="mb-4 text-sm font-bold uppercase tracking-wide text-[#71717A]">
@@ -171,7 +283,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
         >
           <p className="text-[#52525B] font-bold uppercase">No builders match your search.</p>
           <button
-            onClick={() => { setSearch(""); setBadgeFilter("all"); }}
+            onClick={() => { setSearch(""); setBadgeFilter("all"); setSelectedTech([]); setMinStreak(0); setMaxStreak(365); setAvailableOnly(false); setHasProjects(false); }}
             className="mt-3 text-sm font-bold uppercase text-[var(--accent)] hover:underline"
           >
             Clear filters

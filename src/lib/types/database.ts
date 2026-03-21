@@ -46,6 +46,7 @@ export interface SocialLinks {
 export interface UserWithSocials extends User {
   social_links: SocialLinks | null;
   projects: Project[];
+  last_activity_date?: string | null;
 }
 
 export interface HireRequest {
@@ -66,6 +67,17 @@ export interface HireMessage {
   hire_request_id: string;
   sender_type: "builder" | "client";
   message: string;
+  created_at: string;
+}
+
+export interface Review {
+  id: string;
+  builder_id: string;
+  reviewer_name: string;
+  reviewer_email: string;
+  hire_request_id: string | null;
+  rating: number;
+  comment: string | null;
   created_at: string;
 }
 

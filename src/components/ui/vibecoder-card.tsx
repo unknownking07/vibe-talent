@@ -5,7 +5,7 @@ import Image from "next/image";
 import { BadgeDisplay } from "./badge-display";
 import { StreakCounter } from "./streak-counter";
 import { VibeScore } from "./vibe-score";
-import { Code2, ExternalLink } from "lucide-react";
+import { Code2, ExternalLink, Activity } from "lucide-react";
 import type { UserWithSocials } from "@/lib/types/database";
 
 interface VibecoderCardProps {
@@ -13,8 +13,27 @@ interface VibecoderCardProps {
   rank?: number;
 }
 
+function getActivityLabel(lastActivityDate?: string | null): { text: string; color: string } | null {
+  if (!lastActivityDate) return null;
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+
+  if (lastActivityDate === today) return { text: "Active today", color: "text-emerald-600" };
+  if (lastActivityDate === yesterdayStr) return { text: "Active yesterday", color: "text-emerald-500" };
+
+  const diffMs = now.getTime() - new Date(lastActivityDate).getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays <= 7) return { text: `Active ${diffDays}d ago`, color: "text-amber-600" };
+
+  return null;
+}
+
 export function VibecoderCard({ user, rank }: VibecoderCardProps) {
   const initials = user.username.slice(0, 2).toUpperCase();
+  const activity = getActivityLabel(user.last_activity_date);
 
   return (
     <Link href={`/profile/${user.username}`}>
@@ -55,6 +74,13 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
               </h3>
               <BadgeDisplay level={user.badge_level} size="sm" />
             </div>
+
+            {activity && (
+              <span className={`inline-flex items-center gap-1 text-xs font-bold ${activity.color} mt-0.5`}>
+                <Activity size={10} />
+                {activity.text}
+              </span>
+            )}
 
             {user.bio && (
               <p className="mt-1 text-sm text-[#52525B] font-medium line-clamp-2">

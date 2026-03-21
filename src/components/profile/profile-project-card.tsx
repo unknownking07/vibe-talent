@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { ExternalLink, Flag, CheckCircle, Undo2 } from "lucide-react";
+import Image from "next/image";
 import type { Project } from "@/lib/types/database";
 
 interface ProfileProjectCardProps {
@@ -101,13 +102,19 @@ export function ProfileProjectCard({ project, verified = false }: ProfileProject
 
   return (
     <div
-      className="flex flex-col gap-3 p-5 cursor-pointer transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#0F0F0F]"
+      className="flex flex-col overflow-hidden cursor-pointer transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#0F0F0F]"
       style={{
         backgroundColor: "#FFFFFF",
         border: "2px solid #0F0F0F",
         boxShadow: "var(--shadow-brutal-sm)",
       }}
     >
+      {project.image_url && (
+        <div className="relative w-full h-48 border-b-2 border-[#0F0F0F]">
+          <Image src={project.image_url} alt={project.title} fill className="object-cover" />
+        </div>
+      )}
+      <div className="flex flex-col gap-3 p-5 flex-grow">
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-2">
           <span className="text-[1.1rem] font-extrabold uppercase text-[#0F0F0F]">{project.title}</span>
@@ -193,6 +200,7 @@ export function ProfileProjectCard({ project, verified = false }: ProfileProject
       {reportStatus === "error" && (
         <p className="text-xs font-bold text-red-600 mt-2">Failed to submit report. Please try again.</p>
       )}
+      </div>
     </div>
   );
 }
