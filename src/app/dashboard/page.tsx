@@ -803,9 +803,8 @@ export default function DashboardPage() {
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
-          <div className="mb-2">
-            <VibeScore score={user.vibe_score} size="sm" />
-          </div>
+          <VibeScore score={user.vibe_score} size="sm" />
+          <div className="text-2xl font-extrabold font-mono text-[var(--accent)]">{user.vibe_score}</div>
           <div className="text-xs font-bold uppercase tracking-wide text-[#71717A] mt-1">Vibe Score</div>
         </div>
         <div
