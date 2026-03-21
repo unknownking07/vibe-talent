@@ -1,0 +1,21 @@
+language: "en-US"
+early_access: false
+reviews:
+  profile: "assertive"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  path_instructions:
+    - path: "src/app/api/**"
+      instructions: "Review for security issues, proper error handling, rate limiting, and SQL injection risks with Supabase queries."
+    - path: "src/components/**"
+      instructions: "Check for accessibility, proper React 19 patterns, and responsive design."
+    - path: "src/lib/**"
+      instructions: "Review for edge cases, proper TypeScript types, and test coverage."
+  auto_review:
+    enabled: true
+    drafts: false
+chat:
+  auto_reply: true
