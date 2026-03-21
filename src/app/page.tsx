@@ -1,3 +1,4 @@
+// Homepage - Main landing page for VibeTalent
 import Link from "next/link";
 import { VibecoderCard } from "@/components/ui/vibecoder-card";
 import { ProjectCard } from "@/components/ui/project-card";
