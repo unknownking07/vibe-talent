@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Star, MessageSquare } from "lucide-react";
+import { Star, MessageSquare, Send } from "lucide-react";
 import type { Review } from "@/lib/types/database";
 
 interface ReviewsSectionProps {
   builderId: string;
+  isOwner?: boolean;
 }
 
 function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
@@ -26,6 +27,47 @@ function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
   );
 }
 
+function ClickableStars({
+  rating,
+  onRate,
+  size = 28,
+}: {
+  rating: number;
+  onRate: (r: number) => void;
+  size?: number;
+}) {
+  const [hovered, setHovered] = useState(0);
+
+  return (
+    <div className="flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => onRate(star)}
+          onMouseEnter={() => setHovered(star)}
+          onMouseLeave={() => setHovered(0)}
+          className="transition-transform hover:scale-110"
+        >
+          <Star
+            size={size}
+            className={
+              star <= (hovered || rating)
+                ? "fill-amber-500 text-amber-500"
+                : "text-zinc-300 hover:text-amber-300"
+            }
+          />
+        </button>
+      ))}
+      {rating > 0 && (
+        <span className="ml-2 text-sm font-bold text-zinc-500">
+          {rating}/5
+        </span>
+      )}
+    </div>
+  );
+}
+
 function timeAgo(dateStr: string): string {
   const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
   if (seconds < 60) return "just now";
@@ -39,11 +81,21 @@ function timeAgo(dateStr: string): string {
   return `${months}mo ago`;
 }
 
-export default function ReviewsSection({ builderId }: ReviewsSectionProps) {
+export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSectionProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [avgRating, setAvgRating] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  // Review form state
+  const [showForm, setShowForm] = useState(false);
+  const [formRating, setFormRating] = useState(0);
+  const [formName, setFormName] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [formComment, setFormComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   useEffect(() => {
     async function loadReviews() {
@@ -65,6 +117,56 @@ export default function ReviewsSection({ builderId }: ReviewsSectionProps) {
     }
     loadReviews();
   }, [builderId]);
+
+  const handleSubmitReview = async () => {
+    if (!formName.trim() || !formEmail.trim() || formRating === 0) {
+      setSubmitError("Please fill in your name, email, and select a rating.");
+      return;
+    }
+
+    setSubmitError("");
+    setSubmitting(true);
+
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          builder_id: builderId,
+          reviewer_name: formName.trim(),
+          reviewer_email: formEmail.trim(),
+          rating: formRating,
+          comment: formComment.trim() || null,
+        }),
+      });
+
+      if (res.ok) {
+        setSubmitSuccess(true);
+        setShowForm(false);
+        setFormRating(0);
+        setFormName("");
+        setFormEmail("");
+        setFormComment("");
+
+        // Reload reviews
+        const reviewsRes = await fetch(`/api/reviews?builder_id=${builderId}`);
+        if (reviewsRes.ok) {
+          const data = await reviewsRes.json();
+          setReviews(data.reviews || []);
+          setAvgRating(data.average_rating || 0);
+        }
+
+        setTimeout(() => setSubmitSuccess(false), 3000);
+      } else {
+        const data = await res.json();
+        setSubmitError(data.error || "Failed to submit review.");
+      }
+    } catch {
+      setSubmitError("Failed to submit review. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -89,57 +191,165 @@ export default function ReviewsSection({ builderId }: ReviewsSectionProps) {
     );
   }
 
-  if (reviews.length === 0) {
-    return (
-      <div className="card-brutal p-6">
-        <h3 className="text-lg font-bold text-zinc-900 mb-2 flex items-center gap-2">
-          <MessageSquare size={20} />
-          Reviews
-        </h3>
-        <p className="text-zinc-500 text-sm">No reviews yet.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="card-brutal p-6">
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
           <MessageSquare size={20} />
           Reviews
         </h3>
-        <div className="flex items-center gap-2">
-          <StarRating rating={Math.round(avgRating)} size={18} />
-          <span className="font-mono font-bold text-zinc-900">{avgRating}</span>
-          <span className="text-zinc-500 text-sm">({reviews.length})</span>
+        <div className="flex items-center gap-3">
+          {reviews.length > 0 && (
+            <div className="flex items-center gap-2">
+              <StarRating rating={Math.round(avgRating)} size={18} />
+              <span className="font-mono font-bold text-zinc-900">{avgRating}</span>
+              <span className="text-zinc-500 text-sm">({reviews.length})</span>
+            </div>
+          )}
+          {!isOwner && !showForm && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="btn-brutal text-xs py-1.5 px-3"
+              style={{ backgroundColor: "var(--accent)", color: "#FFFFFF" }}
+            >
+              Write a Review
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="space-y-4">
-        {reviews.map((review) => (
-          <div
-            key={review.id}
-            className="border-2 border-zinc-200 p-4"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3">
-                <span className="font-bold text-zinc-900 text-sm">
-                  {review.reviewer_name}
-                </span>
-                <StarRating rating={review.rating} size={14} />
-              </div>
-              <span className="text-zinc-400 text-xs font-mono">
-                {timeAgo(review.created_at)}
-              </span>
-            </div>
-            {review.comment && (
-              <p className="text-zinc-600 text-sm leading-relaxed">
-                {review.comment}
-              </p>
-            )}
+      {/* Success message */}
+      {submitSuccess && (
+        <div
+          className="p-3 mb-4 text-sm font-bold text-emerald-800"
+          style={{ backgroundColor: "#D1FAE5", border: "2px solid #0F0F0F" }}
+        >
+          Thanks for your review!
+        </div>
+      )}
+
+      {/* Review form */}
+      {showForm && (
+        <div
+          className="mb-6 p-5 space-y-4"
+          style={{ backgroundColor: "#FAFAFA", border: "2px solid #0F0F0F" }}
+        >
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-extrabold uppercase text-[#0F0F0F]">
+              Write a Review
+            </h4>
+            <button
+              onClick={() => { setShowForm(false); setSubmitError(""); }}
+              className="text-xs font-bold text-zinc-500 hover:text-zinc-900"
+            >
+              Cancel
+            </button>
           </div>
-        ))}
-      </div>
+
+          {/* Star selection */}
+          <div>
+            <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-2 block">
+              Rating *
+            </label>
+            <ClickableStars rating={formRating} onRate={setFormRating} />
+          </div>
+
+          {/* Name & Email */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+                Your Name *
+              </label>
+              <input
+                type="text"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                placeholder="John Doe"
+                className="input-brutal w-full"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+                Email *
+              </label>
+              <input
+                type="email"
+                value={formEmail}
+                onChange={(e) => setFormEmail(e.target.value)}
+                placeholder="john@example.com"
+                className="input-brutal w-full"
+              />
+            </div>
+          </div>
+
+          {/* Comment */}
+          <div>
+            <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+              Comment (optional)
+            </label>
+            <textarea
+              value={formComment}
+              onChange={(e) => setFormComment(e.target.value)}
+              placeholder="How was your experience working with this builder?"
+              rows={3}
+              className="input-brutal w-full resize-none"
+              maxLength={1000}
+            />
+          </div>
+
+          {/* Error */}
+          {submitError && (
+            <div
+              className="p-3 text-sm font-bold text-[#991B1B]"
+              style={{ backgroundColor: "#FEF2F2", border: "2px solid #0F0F0F" }}
+            >
+              {submitError}
+            </div>
+          )}
+
+          {/* Submit */}
+          <button
+            onClick={handleSubmitReview}
+            disabled={submitting || formRating === 0}
+            className="btn-brutal btn-brutal-primary w-full justify-center text-sm flex items-center gap-2"
+          >
+            <Send size={14} />
+            {submitting ? "Submitting..." : "Submit Review"}
+          </button>
+        </div>
+      )}
+
+      {/* Reviews list */}
+      {reviews.length === 0 ? (
+        <p className="text-zinc-500 text-sm">No reviews yet.{!isOwner && " Be the first to leave one!"}</p>
+      ) : (
+        <div className="space-y-4">
+          {reviews.map((review) => (
+            <div
+              key={review.id}
+              className="border-2 border-zinc-200 p-4"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <span className="font-bold text-zinc-900 text-sm">
+                    {review.reviewer_name}
+                  </span>
+                  <StarRating rating={review.rating} size={14} />
+                </div>
+                <span className="text-zinc-400 text-xs font-mono">
+                  {timeAgo(review.created_at)}
+                </span>
+              </div>
+              {review.comment && (
+                <p className="text-zinc-600 text-sm leading-relaxed">
+                  {review.comment}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

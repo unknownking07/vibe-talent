@@ -150,7 +150,7 @@ export default async function ProfilePage({
           </section>
 
           {/* Reviews Section */}
-          <ReviewsSection builderId={user.id} />
+          <ReviewsSection builderId={user.id} isOwner={isOwner} />
         </div>
       </div>
     </div>
