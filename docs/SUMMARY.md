@@ -1,0 +1,16 @@
+# Table of contents
+
+* [Introduction](README.md)
+* [Getting Started](getting-started.md)
+* [Architecture & Tech Stack](architecture.md)
+* [Authentication & Security](authentication-and-security.md)
+* [Database Schema](database-schema.md)
+* [API Reference](api-reference.md)
+* [Core Features](core-features.md)
+  * [Vibe Score](core-features.md#vibe-score)
+  * [Streak System](core-features.md#streak-system)
+  * [Badge System](core-features.md#badge-system)
+  * [Project Showcase](core-features.md#project-showcase)
+* [Marketplace & Hiring](marketplace-and-hiring.md)
+* [AI Agent](ai-agent.md)
+* [Deployment & Infrastructure](deployment.md)
