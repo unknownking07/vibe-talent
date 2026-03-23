@@ -103,10 +103,10 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
 
   return (
     <div
-      className="card-brutal overflow-hidden transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#0F0F0F]"
+      className="card-brutal transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#0F0F0F]"
     >
       {project.image_url && (
-        <div className="relative w-full h-40 border-b-2 border-[#0F0F0F]">
+        <div className="relative w-full h-40 overflow-hidden border-b-2 border-[#0F0F0F]">
           <Image
             src={project.image_url}
             alt={project.title}
@@ -161,7 +161,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
                 </button>
               )}
               {reportOpen && (
-                <div className="absolute right-0 top-6 z-50 w-44 max-h-48 overflow-y-auto border-2 border-[#0F0F0F] bg-white shadow-[4px_4px_0_#0F0F0F]">
+                <div className="absolute right-0 top-6 z-50 w-44 border-2 border-[#0F0F0F] bg-white shadow-[4px_4px_0_#0F0F0F]">
                   {REPORT_REASONS.map((reason) => (
                     <button
                       key={reason}
