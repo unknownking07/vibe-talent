@@ -1,23 +1,40 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { VibecoderCard } from "@/components/ui/vibecoder-card";
-import { Search, SlidersHorizontal, Bot } from "lucide-react";
+import { Search, SlidersHorizontal, Bot, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import type { BadgeLevel, UserWithSocials } from "@/lib/types/database";
 
+const PAGE_SIZE = 15;
 type SortOption = "vibe_score" | "streak" | "projects" | "newest";
 
 export function ExploreContent({ users }: { users: UserWithSocials[] }) {
-  const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState<SortOption>("vibe_score");
-  const [badgeFilter, setBadgeFilter] = useState<BadgeLevel | "all">("all");
+  const [search, _setSearch] = useState("");
+  const [sortBy, _setSortBy] = useState<SortOption>("vibe_score");
+  const [badgeFilter, _setBadgeFilter] = useState<BadgeLevel | "all">("all");
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedTech, setSelectedTech] = useState<string[]>([]);
-  const [minStreak, setMinStreak] = useState(0);
-  const [maxStreak, setMaxStreak] = useState(365);
-  const [availableOnly, setAvailableOnly] = useState(false);
-  const [hasProjects, setHasProjects] = useState(false);
+  const [selectedTech, _setSelectedTech] = useState<string[]>([]);
+  const [minStreak, _setMinStreak] = useState(0);
+  const [maxStreak, _setMaxStreak] = useState(365);
+  const [availableOnly, _setAvailableOnly] = useState(false);
+  const [hasProjects, _setHasProjects] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Wrap filter setters to auto-reset pagination
+  const setSearch = useCallback((v: string) => { _setSearch(v); setCurrentPage(1); }, []);
+  const setSortBy = useCallback((v: SortOption) => { _setSortBy(v); setCurrentPage(1); }, []);
+  const setBadgeFilter = useCallback((v: BadgeLevel | "all") => { _setBadgeFilter(v); setCurrentPage(1); }, []);
+  const setSelectedTech = useCallback((v: string[] | ((prev: string[]) => string[])) => { _setSelectedTech(v); setCurrentPage(1); }, []);
+  const setMinStreak = useCallback((v: number) => { _setMinStreak(v); setCurrentPage(1); }, []);
+  const setMaxStreak = useCallback((v: number) => { _setMaxStreak(v); setCurrentPage(1); }, []);
+  const setAvailableOnly = useCallback((v: boolean) => { _setAvailableOnly(v); setCurrentPage(1); }, []);
+  const setHasProjects = useCallback((v: boolean) => { _setHasProjects(v); setCurrentPage(1); }, []);
+
+  const goToPage = useCallback((page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
   const allTechStacks = useMemo(() => {
     const techs = new Set<string>();
@@ -80,6 +97,13 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
 
     return filtered;
   }, [users, search, sortBy, badgeFilter, selectedTech, minStreak, maxStreak, availableOnly, hasProjects]);
+
+  const totalPages = Math.ceil(filteredUsers.length / PAGE_SIZE);
+  const activePage = currentPage > totalPages ? 1 : currentPage;
+  const paginatedUsers = filteredUsers.slice(
+    (activePage - 1) * PAGE_SIZE,
+    activePage * PAGE_SIZE
+  );
 
   return (
     <>
@@ -262,16 +286,65 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
 
       {/* Results count */}
       <p className="mb-4 text-sm font-bold uppercase tracking-wide text-[#71717A]">
-        {`${filteredUsers.length} builder${filteredUsers.length !== 1 ? "s" : ""} found`}
+        {filteredUsers.length > PAGE_SIZE
+          ? `Showing ${(activePage - 1) * PAGE_SIZE + 1}–${Math.min(activePage * PAGE_SIZE, filteredUsers.length)} of ${filteredUsers.length} builders`
+          : `${filteredUsers.length} builder${filteredUsers.length !== 1 ? "s" : ""} found`}
       </p>
 
       {/* Grid */}
       {filteredUsers.length > 0 ? (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
-          {filteredUsers.map((user) => (
-            <VibecoderCard key={user.id} user={user} />
-          ))}
-        </div>
+        <>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
+            {paginatedUsers.map((user) => (
+              <VibecoderCard key={user.id} user={user} />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-10">
+              <button
+                onClick={() => goToPage(activePage - 1)}
+                disabled={activePage === 1}
+                className="flex items-center justify-center w-10 h-10 font-extrabold uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "2px solid #0F0F0F",
+                  boxShadow: "var(--shadow-brutal-sm)",
+                }}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => goToPage(page)}
+                  className="flex items-center justify-center w-10 h-10 text-sm font-extrabold uppercase transition-all"
+                  style={{
+                    backgroundColor: activePage === page ? "#0F0F0F" : "#FFFFFF",
+                    color: activePage === page ? "#FFFFFF" : "#0F0F0F",
+                    border: "2px solid #0F0F0F",
+                    boxShadow: activePage === page ? "none" : "var(--shadow-brutal-sm)",
+                  }}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                onClick={() => goToPage(activePage + 1)}
+                disabled={activePage === totalPages}
+                className="flex items-center justify-center w-10 h-10 font-extrabold uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "2px solid #0F0F0F",
+                  boxShadow: "var(--shadow-brutal-sm)",
+                }}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <div
           className="p-12 text-center"
