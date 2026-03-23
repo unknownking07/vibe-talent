@@ -134,9 +134,22 @@ describe("calculateVibeScore", () => {
     expect(calculateVibeScore(0, 0, "diamond")).toBe(40);
   });
 
-  it("combines all factors correctly", () => {
+  it("combines all factors correctly (backward compatible)", () => {
+    // Without verifiedCount: treats all as verified
     // 10*2 + 3*5 + 20 = 20 + 15 + 20 = 55
     expect(calculateVibeScore(10, 3, "silver")).toBe(55);
+  });
+
+  it("gives full points only to verified projects", () => {
+    // 0*2 + (2 verified * 5) + (1 unverified * 1) + 0 = 11
+    expect(calculateVibeScore(0, 3, "none", 2)).toBe(11);
+  });
+
+  it("penalizes all-unverified projects", () => {
+    // 0*2 + (0 verified * 5) + (5 unverified * 1) + 0 = 5
+    expect(calculateVibeScore(0, 5, "none", 0)).toBe(5);
+    // vs all verified: 0*2 + 5*5 + 0 = 25
+    expect(calculateVibeScore(0, 5, "none", 5)).toBe(25);
   });
 });
 

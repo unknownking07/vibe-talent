@@ -113,6 +113,42 @@ describe("evaluateUser", () => {
     expect(manyResult.dimensions.project_quality).toBeGreaterThan(fewResult.dimensions.project_quality);
   });
 
+  it("flags unverified projects as a risk", () => {
+    const user = createMockUser({
+      projects: [
+        {
+          id: "p-1", user_id: "user-1", title: "Fake", description: "Unverified project",
+          tech_stack: ["React"], live_url: null, github_url: null, image_url: null,
+          build_time: null, tags: [], verified: false, created_at: "2025-01-01T00:00:00Z",
+        },
+      ],
+    });
+    const result = evaluateUser(user);
+    expect(result.risks.some(r => r.includes("unverified") || r.includes("ownership"))).toBe(true);
+  });
+
+  it("gives higher project quality score to verified projects", () => {
+    const verifiedUser = createMockUser({
+      projects: Array.from({ length: 3 }, (_, i) => ({
+        id: `p-${i}`, user_id: "user-1", title: `Proj ${i}`,
+        description: "A well-documented project with comprehensive features",
+        tech_stack: ["React"], live_url: `https://p${i}.dev`, github_url: `https://github.com/t/p${i}`,
+        image_url: null, build_time: null, tags: [], verified: true, created_at: "2025-01-01T00:00:00Z",
+      })),
+    });
+    const unverifiedUser = createMockUser({
+      projects: Array.from({ length: 3 }, (_, i) => ({
+        id: `p-${i}`, user_id: "user-1", title: `Proj ${i}`,
+        description: "A well-documented project with comprehensive features",
+        tech_stack: ["React"], live_url: `https://p${i}.dev`, github_url: `https://github.com/t/p${i}`,
+        image_url: null, build_time: null, tags: [], verified: false, created_at: "2025-01-01T00:00:00Z",
+      })),
+    });
+    const vResult = evaluateUser(verifiedUser);
+    const uResult = evaluateUser(unverifiedUser);
+    expect(vResult.dimensions.project_quality).toBeGreaterThan(uResult.dimensions.project_quality);
+  });
+
   it("returns max 5 strengths and max 4 risks", () => {
     const user = createMockUser({
       streak: 200,

@@ -11,15 +11,17 @@ function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
     (user.streak * 0.6 + user.longest_streak * 0.4) / 3.65 * 10
   );
 
-  // Project Quality: count, URLs, description length
-  const projCount = user.projects.length;
-  const withLiveUrl = user.projects.filter(p => p.live_url).length;
-  const withGithub = user.projects.filter(p => p.github_url).length;
-  const avgDescLen = projCount > 0
-    ? user.projects.reduce((sum, p) => sum + p.description.length, 0) / projCount
+  // Project Quality: verified projects weighted heavily, unverified penalized
+  const verifiedProjects = user.projects.filter(p => p.verified);
+  const unverifiedProjects = user.projects.filter(p => !p.verified);
+  const withLiveUrl = verifiedProjects.filter(p => p.live_url).length;
+  const withGithub = verifiedProjects.filter(p => p.github_url).length;
+  const avgDescLen = verifiedProjects.length > 0
+    ? verifiedProjects.reduce((sum, p) => sum + p.description.length, 0) / verifiedProjects.length
     : 0;
   const project_quality = clamp(0, 100,
-    projCount * 15 + withLiveUrl * 10 + withGithub * 5 + (avgDescLen > 50 ? 10 : 0)
+    verifiedProjects.length * 15 + unverifiedProjects.length * 2 +
+    withLiveUrl * 10 + withGithub * 5 + (avgDescLen > 50 ? 10 : 0)
   );
 
   // Tech Breadth: unique technologies
@@ -77,7 +79,9 @@ function extractStrengths(user: UserWithSocials, dims: EvaluationDimensions): st
   else if (user.streak > 30) strengths.push(`${user.streak}-day streak shows dedication`);
   if (user.badge_level === "diamond") strengths.push("Diamond badge holder — top tier");
   else if (user.badge_level === "gold") strengths.push("Gold badge — proven consistency");
-  if (user.projects.length >= 3) strengths.push(`${user.projects.length} shipped projects`);
+  const verifiedProjCount = user.projects.filter(p => p.verified).length;
+  if (verifiedProjCount >= 3) strengths.push(`${verifiedProjCount} verified shipped projects`);
+  else if (user.projects.length >= 3) strengths.push(`${user.projects.length} shipped projects`);
   if (dims.tech_breadth > 60) strengths.push("Diverse tech stack");
   if (user.projects.some(p => p.live_url)) strengths.push("Has live deployed projects");
   if (user.projects.some(p => p.github_url)) strengths.push("Open source contributor");
@@ -87,6 +91,10 @@ function extractStrengths(user: UserWithSocials, dims: EvaluationDimensions): st
 
 function extractRisks(user: UserWithSocials, dims: EvaluationDimensions): string[] {
   const risks: string[] = [];
+  const unverifiedCount = user.projects.filter(p => !p.verified).length;
+  const verifiedCount = user.projects.filter(p => p.verified).length;
+  if (unverifiedCount > 0 && verifiedCount === 0) risks.push("No verified projects — ownership unconfirmed");
+  else if (unverifiedCount > verifiedCount) risks.push(`${unverifiedCount} of ${user.projects.length} projects are unverified`);
   if (user.streak === 0) risks.push("Currently inactive — no active streak");
   if (user.projects.length < 2) risks.push("Limited project portfolio");
   if (!user.social_links?.telegram) risks.push("No Telegram for quick communication");
