@@ -1,0 +1,15 @@
+# Table of contents
+
+* [Untitled](README.md)
+* [VibeCoders — Product Requirements Document](PRD.md)
+* [VibeTalent](docs/README.md)
+  * [Table of contents](docs/SUMMARY.md)
+  * [AI Agent](docs/ai-agent.md)
+  * [API Reference](docs/api-reference.md)
+  * [Architecture & Tech Stack](docs/architecture.md)
+  * [Authentication & Security](docs/authentication-and-security.md)
+  * [Core Features](docs/core-features.md)
+  * [Database Schema](docs/database-schema.md)
+  * [Deployment & Infrastructure](docs/deployment.md)
+  * [Getting Started](docs/getting-started.md)
+  * [Marketplace & Hiring](docs/marketplace-and-hiring.md)
