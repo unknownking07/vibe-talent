@@ -63,15 +63,21 @@ export function calculateStreak(activityDates: string[]): {
 
 /**
  * Calculate vibe score based on streak and projects.
- * Formula: (Current Streak × 2) + (Projects Built × 5) + (Badge Bonus)
+ * Formula: (Current Streak × 2) + (Verified Projects × 5) + (Unverified × 1) + (Badge Bonus)
+ * Only verified projects get full points to prevent gaming with fake repos.
  */
 export function calculateVibeScore(
   currentStreak: number,
   projectCount: number,
-  badgeLevel: BadgeLevel
+  badgeLevel: BadgeLevel,
+  verifiedCount?: number
 ): number {
   const streakPoints = currentStreak * 2;
-  const projectPoints = projectCount * 5;
+
+  // Verified projects get full 5 points, unverified only get 1 point
+  const verified = verifiedCount ?? projectCount;
+  const unverified = projectCount - verified;
+  const projectPoints = verified * 5 + unverified * 1;
 
   const badgeBonusMap: Record<BadgeLevel, number> = {
     none: 0,

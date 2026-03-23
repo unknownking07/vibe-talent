@@ -4,12 +4,14 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { Flame, Github, Mail, Lock } from "lucide-react";
+import OAuthConsentModal from "@/components/auth/oauth-consent-modal";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [consentProvider, setConsentProvider] = useState<"github" | "google" | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +75,7 @@ export default function LoginPage() {
       >
         <div className="space-y-3">
           <button
-            onClick={handleGitHubLogin}
+            onClick={() => setConsentProvider("github")}
             className="w-full flex items-center justify-center gap-2 px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white cursor-pointer transition-colors hover:bg-[#2a2a2a]"
             style={{
               backgroundColor: "#0F0F0F",
@@ -85,7 +87,7 @@ export default function LoginPage() {
           </button>
 
           <button
-            onClick={handleGoogleLogin}
+            onClick={() => setConsentProvider("google")}
             className="w-full flex items-center justify-center gap-2 px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-[#0F0F0F] cursor-pointer transition-colors hover:bg-[#F5F5F5]"
             style={{
               backgroundColor: "#FFFFFF",
@@ -170,6 +172,18 @@ export default function LoginPage() {
           Sign Up
         </Link>
       </p>
+
+      {consentProvider && (
+        <OAuthConsentModal
+          provider={consentProvider}
+          onConfirm={() => {
+            if (consentProvider === "github") handleGitHubLogin();
+            else handleGoogleLogin();
+            setConsentProvider(null);
+          }}
+          onCancel={() => setConsentProvider(null)}
+        />
+      )}
     </div>
   );
 }
