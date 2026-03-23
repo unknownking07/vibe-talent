@@ -161,7 +161,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
                 </button>
               )}
               {reportOpen && (
-                <div className="absolute right-0 top-6 z-50 w-44 border-2 border-[#0F0F0F] bg-white shadow-[4px_4px_0_#0F0F0F]">
+                <div className="absolute right-0 top-6 z-50 w-44 max-h-48 overflow-y-auto border-2 border-[#0F0F0F] bg-white shadow-[4px_4px_0_#0F0F0F]">
                   {REPORT_REASONS.map((reason) => (
                     <button
                       key={reason}
