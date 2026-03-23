@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { Flame, Github, Mail, Lock, User, Check } from "lucide-react";
+import OAuthConsentModal from "@/components/auth/oauth-consent-modal";
 
 export default function SignUpPage() {
   const [username, setUsername] = useState("");
@@ -12,6 +13,7 @@ export default function SignUpPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [consentProvider, setConsentProvider] = useState<"github" | "google" | null>(null);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,7 +116,7 @@ export default function SignUpPage() {
       >
         <div className="space-y-3">
           <button
-            onClick={handleGitHubSignUp}
+            onClick={() => setConsentProvider("github")}
             className="w-full flex items-center justify-center gap-2 px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white cursor-pointer transition-colors hover:bg-[#2a2a2a]"
             style={{
               backgroundColor: "#0F0F0F",
@@ -126,7 +128,7 @@ export default function SignUpPage() {
           </button>
 
           <button
-            onClick={handleGoogleSignUp}
+            onClick={() => setConsentProvider("google")}
             className="w-full flex items-center justify-center gap-2 px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-[#0F0F0F] cursor-pointer transition-colors hover:bg-[#F5F5F5]"
             style={{
               backgroundColor: "#FFFFFF",
@@ -229,6 +231,18 @@ export default function SignUpPage() {
           Sign In
         </Link>
       </p>
+
+      {consentProvider && (
+        <OAuthConsentModal
+          provider={consentProvider}
+          onConfirm={() => {
+            if (consentProvider === "github") handleGitHubSignUp();
+            else handleGoogleSignUp();
+            setConsentProvider(null);
+          }}
+          onCancel={() => setConsentProvider(null)}
+        />
+      )}
     </div>
   );
 }
