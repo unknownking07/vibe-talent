@@ -215,9 +215,9 @@ export default function ProfileSetupPage() {
       const { error: dbError } = await (supabase.from("streak_logs") as any).upsert(
         {
           user_id: userId,
-          log_date: today,
+          activity_date: today,
         },
-        { onConflict: "user_id,log_date" }
+        { onConflict: "user_id,activity_date" }
       );
 
       if (dbError) throw dbError;
