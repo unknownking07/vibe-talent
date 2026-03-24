@@ -1,18 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { BadgeDisplay } from "@/components/ui/badge-display";
 import type { UserWithSocials } from "@/lib/types/database";
 import { StreakCounter } from "@/components/ui/streak-counter";
 import { VibeScore } from "@/components/ui/vibe-score";
-import { Trophy, Flame, Code2, Zap } from "lucide-react";
+import { Trophy, Flame, Code2, Zap, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
+const PAGE_SIZE = 15;
 type Tab = "vibe_score" | "streak" | "projects";
 
 export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
-  const [activeTab, setActiveTab] = useState<Tab>("vibe_score");
+  const [activeTab, _setActiveTab] = useState<Tab>("vibe_score");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const setActiveTab = useCallback((v: Tab) => { _setActiveTab(v); setCurrentPage(1); }, []);
+  const goToPage = useCallback((page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
   const sortedUsers = [...users]
     .filter((user) => {
@@ -43,6 +51,12 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
   ];
 
   const podium = sortedUsers.slice(0, 3);
+  const totalPages = Math.ceil(sortedUsers.length / PAGE_SIZE);
+  const activePage = currentPage > totalPages ? 1 : currentPage;
+  const paginatedUsers = sortedUsers.slice(
+    (activePage - 1) * PAGE_SIZE,
+    activePage * PAGE_SIZE
+  );
 
   return (
     <>
@@ -142,7 +156,8 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
             </tr>
           </thead>
           <tbody>
-            {sortedUsers.map((user, i) => {
+            {paginatedUsers.map((user, i) => {
+              const rank = (activePage - 1) * PAGE_SIZE + i + 1;
               const initials = user.username.slice(0, 2).toUpperCase();
               return (
                 <tr
@@ -153,7 +168,7 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                     borderBottom: "2px solid #0F0F0F",
                   }}
                 >
-                  <td className="px-3 sm:px-4 py-3 text-sm font-extrabold font-mono text-[#71717A]">#{i + 1}</td>
+                  <td className="px-3 sm:px-4 py-3 text-sm font-extrabold font-mono text-[#71717A]">#{rank}</td>
                   <td className="px-3 sm:px-4 py-3">
                     <Link href={`/profile/${user.username}`} className="flex items-center gap-3 hover:text-[var(--accent)] transition-colors">
                       <div
@@ -187,6 +202,58 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
           </tbody>
         </table>
       </div>
+
+      {/* Results count + Pagination */}
+      {sortedUsers.length > PAGE_SIZE && (
+        <>
+          <p className="mt-4 text-sm font-bold uppercase tracking-wide text-[#71717A] text-center">
+            Showing {(activePage - 1) * PAGE_SIZE + 1}–{Math.min(activePage * PAGE_SIZE, sortedUsers.length)} of {sortedUsers.length} builders
+          </p>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-4">
+              <button
+                onClick={() => goToPage(activePage - 1)}
+                disabled={activePage === 1}
+                className="flex items-center justify-center w-10 h-10 font-extrabold uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "2px solid #0F0F0F",
+                  boxShadow: "var(--shadow-brutal-sm)",
+                }}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => goToPage(page)}
+                  className="flex items-center justify-center w-10 h-10 text-sm font-extrabold uppercase transition-all"
+                  style={{
+                    backgroundColor: activePage === page ? "#0F0F0F" : "#FFFFFF",
+                    color: activePage === page ? "#FFFFFF" : "#0F0F0F",
+                    border: "2px solid #0F0F0F",
+                    boxShadow: activePage === page ? "none" : "var(--shadow-brutal-sm)",
+                  }}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                onClick={() => goToPage(activePage + 1)}
+                disabled={activePage === totalPages}
+                className="flex items-center justify-center w-10 h-10 font-extrabold uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "2px solid #0F0F0F",
+                  boxShadow: "var(--shadow-brutal-sm)",
+                }}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </>
   );
 }
