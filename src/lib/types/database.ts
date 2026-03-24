@@ -81,6 +81,19 @@ export interface Review {
   created_at: string;
 }
 
+export type NotificationType = "hire_request" | "streak_milestone" | "badge_earned" | "project_verified" | "project_flagged";
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  read: boolean;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
 export interface Database {
   PostgrestVersion: "12";
   public: {
@@ -124,6 +137,15 @@ export interface Database {
           status?: string;
         };
         Update: Partial<HireRequest>;
+      };
+      notifications: {
+        Row: Notification;
+        Insert: Omit<Notification, "id" | "created_at" | "read"> & {
+          id?: string;
+          created_at?: string;
+          read?: boolean;
+        };
+        Update: Partial<Notification>;
       };
     };
     Views: Record<string, never>;

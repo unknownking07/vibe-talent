@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Flame, Menu, X, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { NotificationBell } from "@/components/ui/notification-bell";
 
 const navLinks = [
   { href: "/explore", label: "Explore" },
@@ -81,6 +82,10 @@ export function Navbar() {
             </Link>
           ))}
           {isLoggedIn ? (
+            <>
+            <div className="ml-3">
+              <NotificationBell />
+            </div>
             <button
               onClick={handleLogout}
               className="btn-brutal ml-3 text-sm py-2 px-5 flex items-center gap-2"
@@ -94,6 +99,7 @@ export function Navbar() {
               <LogOut size={14} />
               Logout
             </button>
+            </>
           ) : (
             <Link
               href="/auth/signup"
@@ -136,6 +142,11 @@ export function Navbar() {
             </Link>
           ))}
           {isLoggedIn ? (
+            <>
+            <div className="mt-2 flex items-center gap-3">
+              <NotificationBell />
+              <span className="text-sm font-bold uppercase tracking-wide text-[#0F0F0F]">Notifications</span>
+            </div>
             <button
               onClick={() => { handleLogout(); setMobileOpen(false); }}
               className="btn-brutal mt-2 w-full justify-center text-sm py-2.5 flex items-center gap-2"
@@ -148,6 +159,7 @@ export function Navbar() {
               <LogOut size={14} />
               Logout
             </button>
+            </>
           ) : (
             <Link
               href="/auth/signup"

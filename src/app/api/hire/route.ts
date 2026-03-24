@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendHireNotification } from "@/lib/email";
+import { createNotification } from "@/lib/notifications";
 
 const BLOCKED_DOMAINS = [
   "mailinator.com", "tempmail.com", "throwaway.email", "guerrillamail.com",
@@ -76,6 +77,15 @@ export async function POST(req: NextRequest) {
       console.error("Failed to insert hire request:", error);
       return NextResponse.json({ error: "Failed to send hire request" }, { status: 500 });
     }
+
+    // Fire-and-forget: create in-app notification
+    createNotification({
+      user_id: builder_id,
+      type: "hire_request",
+      title: "New hire request",
+      message: `${nameClean} wants to hire you`,
+      metadata: { hire_request_id: data.id, sender_name: nameClean },
+    }).catch(console.error);
 
     // Fire-and-forget: send email notification to builder
     const serviceClient = createClient(

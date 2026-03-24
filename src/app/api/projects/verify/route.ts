@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createNotification } from "@/lib/notifications";
 
 export async function POST(request: Request) {
   try {
@@ -101,6 +102,14 @@ export async function POST(request: Request) {
         .update({ verified: true })
         .eq("id", project_id);
 
+      createNotification({
+        user_id: user.id,
+        type: "project_verified",
+        title: "Project verified",
+        message: `Your project has been verified via owner match.`,
+        metadata: { project_id },
+      }).catch(console.error);
+
       return NextResponse.json({
         verified: true,
         reason: "Repository owner matches your GitHub username.",
@@ -141,6 +150,14 @@ export async function POST(request: Request) {
             .from("projects")
             .update({ verified: true })
             .eq("id", project_id);
+
+          createNotification({
+            user_id: user.id,
+            type: "project_verified",
+            title: "Project verified",
+            message: `Your project has been verified via verification file.`,
+            metadata: { project_id },
+          }).catch(console.error);
 
           return NextResponse.json({
             verified: true,
