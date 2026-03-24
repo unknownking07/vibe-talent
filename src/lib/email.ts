@@ -83,3 +83,157 @@ export async function sendHireNotification({
     console.error("Failed to send hire notification email:", error);
   }
 }
+
+/**
+ * Send an email when a user hits a streak milestone. Fire-and-forget.
+ */
+export async function sendStreakMilestoneEmail({
+  email,
+  username,
+  streakDays,
+}: {
+  email: string;
+  username: string;
+  streakDays: number;
+}): Promise<void> {
+  const client = getResend();
+  if (!client) return;
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.dev";
+
+  try {
+    await client.emails.send({
+      from: "VibeTalent <notifications@vibetalent.dev>",
+      to: email,
+      subject: `You hit a ${streakDays}-day streak! | VibeTalent`,
+      html: `
+        <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #0F0F0F; background: #FFFFFF;">
+          <div style="background: #0F0F0F; color: #FFFFFF; padding: 24px 32px;">
+            <h1 style="margin: 0; font-size: 20px; font-weight: 800;">⚡ VibeTalent</h1>
+          </div>
+          <div style="padding: 32px;">
+            <h2 style="color: #0F0F0F; font-size: 24px; font-weight: 700; margin: 0 0 16px;">
+              🔥 ${streakDays}-Day Streak!
+            </h2>
+            <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
+              Hey <strong>@${username}</strong>, you've been coding for <strong>${streakDays} consecutive days</strong>. Keep the momentum going!
+            </p>
+            <a href="${siteUrl}/dashboard" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
+              View Dashboard
+            </a>
+          </div>
+          <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
+            <p style="color: #71717A; font-size: 12px; margin: 0;">
+              You received this because you hit a streak milestone on VibeTalent.
+            </p>
+          </div>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error("Failed to send streak milestone email:", error);
+  }
+}
+
+/**
+ * Send an email when a user earns a new badge. Fire-and-forget.
+ */
+export async function sendBadgeEarnedEmail({
+  email,
+  username,
+  badgeLevel,
+}: {
+  email: string;
+  username: string;
+  badgeLevel: string;
+}): Promise<void> {
+  const client = getResend();
+  if (!client) return;
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.dev";
+  const badgeEmoji: Record<string, string> = { bronze: "🥉", silver: "🥈", gold: "🥇", diamond: "💎" };
+
+  try {
+    await client.emails.send({
+      from: "VibeTalent <notifications@vibetalent.dev>",
+      to: email,
+      subject: `You earned a ${badgeLevel} badge! | VibeTalent`,
+      html: `
+        <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #0F0F0F; background: #FFFFFF;">
+          <div style="background: #0F0F0F; color: #FFFFFF; padding: 24px 32px;">
+            <h1 style="margin: 0; font-size: 20px; font-weight: 800;">⚡ VibeTalent</h1>
+          </div>
+          <div style="padding: 32px;">
+            <h2 style="color: #0F0F0F; font-size: 24px; font-weight: 700; margin: 0 0 16px;">
+              ${badgeEmoji[badgeLevel] || "🏅"} ${badgeLevel.charAt(0).toUpperCase() + badgeLevel.slice(1)} Badge Earned!
+            </h2>
+            <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
+              Congrats <strong>@${username}</strong>! Your consistency has earned you the <strong>${badgeLevel}</strong> badge. This badge is permanently displayed on your profile.
+            </p>
+            <a href="${siteUrl}/dashboard" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
+              View Your Profile
+            </a>
+          </div>
+          <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
+            <p style="color: #71717A; font-size: 12px; margin: 0;">
+              You received this because you earned a new badge on VibeTalent.
+            </p>
+          </div>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error("Failed to send badge earned email:", error);
+  }
+}
+
+/**
+ * Send an email when a project is verified. Fire-and-forget.
+ */
+export async function sendProjectVerifiedEmail({
+  email,
+  username,
+  projectTitle,
+}: {
+  email: string;
+  username: string;
+  projectTitle: string;
+}): Promise<void> {
+  const client = getResend();
+  if (!client) return;
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.dev";
+
+  try {
+    await client.emails.send({
+      from: "VibeTalent <notifications@vibetalent.dev>",
+      to: email,
+      subject: `Your project "${projectTitle}" is verified! | VibeTalent`,
+      html: `
+        <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #0F0F0F; background: #FFFFFF;">
+          <div style="background: #0F0F0F; color: #FFFFFF; padding: 24px 32px;">
+            <h1 style="margin: 0; font-size: 20px; font-weight: 800;">⚡ VibeTalent</h1>
+          </div>
+          <div style="padding: 32px;">
+            <h2 style="color: #0F0F0F; font-size: 24px; font-weight: 700; margin: 0 0 16px;">
+              ✅ Project Verified!
+            </h2>
+            <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
+              Hey <strong>@${username}</strong>, your project <strong>"${projectTitle}"</strong> has been verified. It now shows a verified badge in your profile and listings.
+            </p>
+            <a href="${siteUrl}/dashboard" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
+              View Dashboard
+            </a>
+          </div>
+          <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
+            <p style="color: #71717A; font-size: 12px; margin: 0;">
+              You received this because your project was verified on VibeTalent.
+            </p>
+          </div>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error("Failed to send project verified email:", error);
+  }
+}

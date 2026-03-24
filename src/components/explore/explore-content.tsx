@@ -19,6 +19,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
   const [maxStreak, _setMaxStreak] = useState(365);
   const [availableOnly, _setAvailableOnly] = useState(false);
   const [hasProjects, _setHasProjects] = useState(false);
+  const [verifiedOnly, _setVerifiedOnly] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
   // Wrap filter setters to auto-reset pagination
@@ -30,6 +31,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
   const setMaxStreak = useCallback((v: number) => { _setMaxStreak(v); setCurrentPage(1); }, []);
   const setAvailableOnly = useCallback((v: boolean) => { _setAvailableOnly(v); setCurrentPage(1); }, []);
   const setHasProjects = useCallback((v: boolean) => { _setHasProjects(v); setCurrentPage(1); }, []);
+  const setVerifiedOnly = useCallback((v: boolean) => { _setVerifiedOnly(v); setCurrentPage(1); }, []);
 
   const goToPage = useCallback((page: number) => {
     setCurrentPage(page);
@@ -79,6 +81,9 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
     if (hasProjects) {
       filtered = filtered.filter(u => u.projects.length > 0);
     }
+    if (verifiedOnly) {
+      filtered = filtered.filter(u => u.projects.some(p => p.verified));
+    }
 
     switch (sortBy) {
       case "vibe_score":
@@ -96,7 +101,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
     }
 
     return filtered;
-  }, [users, search, sortBy, badgeFilter, selectedTech, minStreak, maxStreak, availableOnly, hasProjects]);
+  }, [users, search, sortBy, badgeFilter, selectedTech, minStreak, maxStreak, availableOnly, hasProjects, verifiedOnly]);
 
   const totalPages = Math.ceil(filteredUsers.length / PAGE_SIZE);
   const activePage = currentPage > totalPages ? 1 : currentPage;
@@ -243,13 +248,22 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
                 }}>
                 📦 Has Projects
               </button>
+              <button onClick={() => setVerifiedOnly(!verifiedOnly)}
+                className="px-3 py-1.5 text-xs font-bold transition-all"
+                style={{
+                  backgroundColor: verifiedOnly ? "#0F0F0F" : "#FFFFFF",
+                  color: verifiedOnly ? "#FFFFFF" : "#0F0F0F",
+                  border: "2px solid #0F0F0F",
+                }}>
+                ✅ Verified Projects
+              </button>
             </div>
           </div>
         )}
       </div>
 
       {/* Active Filter Pills */}
-      {(selectedTech.length > 0 || minStreak > 0 || maxStreak < 365 || availableOnly || hasProjects) && (
+      {(selectedTech.length > 0 || minStreak > 0 || maxStreak < 365 || availableOnly || hasProjects || verifiedOnly) && (
         <div className="flex flex-wrap gap-1.5 mb-4">
           {selectedTech.map(tech => (
             <span key={tech} className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[var(--accent)] text-white border-2 border-[#0F0F0F]">
@@ -277,7 +291,12 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
               Has Projects <button onClick={() => setHasProjects(false)} className="hover:opacity-70">×</button>
             </span>
           )}
-          <button onClick={() => { setSelectedTech([]); setMinStreak(0); setMaxStreak(365); setAvailableOnly(false); setHasProjects(false); }}
+          {verifiedOnly && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[#0F0F0F] text-white border-2 border-[#0F0F0F]">
+              Verified <button onClick={() => setVerifiedOnly(false)} className="hover:opacity-70">×</button>
+            </span>
+          )}
+          <button onClick={() => { setSelectedTech([]); setMinStreak(0); setMaxStreak(365); setAvailableOnly(false); setHasProjects(false); setVerifiedOnly(false); }}
             className="px-2 py-1 text-xs font-bold text-[var(--accent)] hover:underline">
             Clear all
           </button>
@@ -356,7 +375,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
         >
           <p className="text-[#52525B] font-bold uppercase">No builders match your search.</p>
           <button
-            onClick={() => { setSearch(""); setBadgeFilter("all"); setSelectedTech([]); setMinStreak(0); setMaxStreak(365); setAvailableOnly(false); setHasProjects(false); }}
+            onClick={() => { setSearch(""); setBadgeFilter("all"); setSelectedTech([]); setMinStreak(0); setMaxStreak(365); setAvailableOnly(false); setHasProjects(false); setVerifiedOnly(false); }}
             className="mt-3 text-sm font-bold uppercase text-[var(--accent)] hover:underline"
           >
             Clear filters

@@ -324,6 +324,74 @@ CREATE POLICY "Anyone can submit reviews"
 CREATE POLICY "Reviews are publicly readable"
   ON reviews FOR SELECT USING (true);
 
+-- ==========================================
+-- NOTIFICATIONS
+-- ==========================================
+
+CREATE TABLE notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK (type IN ('hire_request', 'streak_milestone', 'badge_earned', 'project_verified', 'project_flagged')),
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  read BOOLEAN DEFAULT false,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_notifications_user ON notifications(user_id, read, created_at DESC);
+
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own notifications"
+  ON notifications FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own notifications"
+  ON notifications FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Service can insert notifications"
+  ON notifications FOR INSERT WITH CHECK (true);
+
+-- Auto-create notification when badge level changes
+CREATE OR REPLACE FUNCTION notify_badge_change()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF OLD.badge_level IS DISTINCT FROM NEW.badge_level AND NEW.badge_level != 'none' THEN
+    INSERT INTO notifications (user_id, type, title, message, metadata)
+    VALUES (
+      NEW.id, 'badge_earned', 'Badge earned!',
+      'You earned the ' || NEW.badge_level || ' badge!',
+      jsonb_build_object('badge_level', NEW.badge_level)
+    );
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER on_badge_change
+  AFTER UPDATE OF badge_level ON users
+  FOR EACH ROW EXECUTE FUNCTION notify_badge_change();
+
+-- Auto-create notification on streak milestones
+CREATE OR REPLACE FUNCTION notify_streak_milestone()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.streak IN (7, 30, 90, 180, 365) AND (OLD.streak IS NULL OR OLD.streak < NEW.streak) THEN
+    INSERT INTO notifications (user_id, type, title, message, metadata)
+    VALUES (
+      NEW.id, 'streak_milestone', NEW.streak || '-day streak!',
+      'You hit a ' || NEW.streak || '-day coding streak!',
+      jsonb_build_object('streak_days', NEW.streak)
+    );
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER on_streak_milestone
+  AFTER UPDATE OF streak ON users
+  FOR EACH ROW EXECUTE FUNCTION notify_streak_milestone();
+
 -- Storage bucket for project images
 -- Create "project-images" bucket in Supabase dashboard with public access
 -- Path: project-images/{userId}/{projectId}/image.ext

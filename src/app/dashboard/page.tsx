@@ -34,6 +34,38 @@ import {
   Zap,
 } from "lucide-react";
 
+/**
+ * Extract a bare username from a value that might be a full URL or @-prefixed handle.
+ * For twitter/github/telegram: strips common URL prefixes and leading @.
+ * Returns just the username portion.
+ */
+function extractUsername(value: string, platform: "twitter" | "github" | "telegram"): string {
+  let v = value.trim();
+  if (!v) return "";
+
+  // Remove trailing slashes
+  v = v.replace(/\/+$/, "");
+
+  // Strip known URL prefixes
+  const patterns: Record<string, RegExp[]> = {
+    twitter: [/^https?:\/\/(www\.)?(twitter|x)\.com\//i],
+    github: [/^https?:\/\/(www\.)?github\.com\//i],
+    telegram: [/^https?:\/\/(www\.)?(t\.me|telegram\.me)\//i],
+  };
+
+  for (const re of patterns[platform]) {
+    v = v.replace(re, "");
+  }
+
+  // Remove leading @
+  v = v.replace(/^@/, "");
+
+  // Take only the first path segment (username)
+  v = v.split("/")[0];
+
+  return v;
+}
+
 export default function DashboardPage() {
   const [user, setUser] = useState<UserWithSocials | null>(null);
   const [heatmapData, setHeatmapData] = useState<Record<string, number>>({});
@@ -193,6 +225,24 @@ export default function DashboardPage() {
   const projectImageInputRef = useRef<HTMLInputElement>(null);
   const [syncingGithub, setSyncingGithub] = useState(false);
   const [githubSyncResult, setGithubSyncResult] = useState<string | null>(null);
+  const [lastSyncLabel, setLastSyncLabel] = useState<string | null>(null);
+
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const ts = localStorage.getItem("last_github_sync");
+    if (ts) {
+      const diff = Date.now() - Number(ts);
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) setLastSyncLabel("just now");
+      else if (mins < 60) setLastSyncLabel(`${mins}m ago`);
+      else {
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) setLastSyncLabel(`${hrs}h ago`);
+        else setLastSyncLabel(`${Math.floor(hrs / 24)}d ago`);
+      }
+    }
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const reloadUser = useCallback(async () => {
     const supabase = createClient();
@@ -309,6 +359,8 @@ export default function DashboardPage() {
       const res = await fetch("/api/github/activity", { method: "POST" });
       const data = await res.json();
       if (data.synced) {
+        localStorage.setItem("last_github_sync", Date.now().toString());
+        setLastSyncLabel("just now");
         setGithubSyncResult(`\u2713 Synced! Found ${data.events_found} events, logged ${data.dates_logged} day(s).`);
         await reloadUser();
         // Update heatmap
@@ -898,6 +950,11 @@ export default function DashboardPage() {
                 {githubSyncResult}
               </p>
             )}
+            {lastSyncLabel && !githubSyncResult && (
+              <p className="text-xs mt-2 font-medium text-zinc-400">
+                Last synced {lastSyncLabel}
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -982,36 +1039,48 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">X (Twitter)</label>
-                <input
-                  type="text"
-                  value={profileForm.twitter}
-                  onChange={(e) => setProfileForm({ ...profileForm, twitter: e.target.value })}
-                  placeholder="username"
-                  className="input-brutal"
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] font-bold text-sm select-none">@</span>
+                  <input
+                    type="text"
+                    value={profileForm.twitter}
+                    onChange={(e) => setProfileForm({ ...profileForm, twitter: extractUsername(e.target.value, "twitter") })}
+                    placeholder="username"
+                    className="input-brutal"
+                    style={{ paddingLeft: "1.75rem" }}
+                  />
+                </div>
               </div>
               <div>
                 <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">GitHub</label>
-                <input
-                  type="text"
-                  value={profileForm.github}
-                  onChange={(e) => setProfileForm({ ...profileForm, github: e.target.value })}
-                  placeholder="username"
-                  className="input-brutal"
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] font-bold text-sm select-none">@</span>
+                  <input
+                    type="text"
+                    value={profileForm.github}
+                    onChange={(e) => setProfileForm({ ...profileForm, github: extractUsername(e.target.value, "github") })}
+                    placeholder="username"
+                    className="input-brutal"
+                    style={{ paddingLeft: "1.75rem" }}
+                  />
+                </div>
               </div>
               <div>
                 <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Telegram</label>
-                <input
-                  type="text"
-                  value={profileForm.telegram}
-                  onChange={(e) => setProfileForm({ ...profileForm, telegram: e.target.value })}
-                  placeholder="username"
-                  className="input-brutal"
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] font-bold text-sm select-none">@</span>
+                  <input
+                    type="text"
+                    value={profileForm.telegram}
+                    onChange={(e) => setProfileForm({ ...profileForm, telegram: extractUsername(e.target.value, "telegram") })}
+                    placeholder="username"
+                    className="input-brutal"
+                    style={{ paddingLeft: "1.75rem" }}
+                  />
+                </div>
               </div>
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Website</label>
+                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Portfolio</label>
                 <input
                   type="text"
                   value={profileForm.website}
