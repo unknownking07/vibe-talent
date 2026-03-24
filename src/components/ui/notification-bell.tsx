@@ -8,6 +8,7 @@ import type { Notification } from "@/lib/types/database";
 const typeIcons: Record<string, typeof Bell> = {
   hire_request: Mail,
   streak_milestone: Flame,
+  streak_warning: AlertTriangle,
   badge_earned: Trophy,
   project_verified: CheckCircle,
   project_flagged: AlertTriangle,
@@ -16,6 +17,7 @@ const typeIcons: Record<string, typeof Bell> = {
 const typeColors: Record<string, string> = {
   hire_request: "#FF3A00",
   streak_milestone: "#F59E0B",
+  streak_warning: "#EF4444",
   badge_earned: "#8B5CF6",
   project_verified: "#10B981",
   project_flagged: "#EF4444",
