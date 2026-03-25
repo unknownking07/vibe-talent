@@ -134,3 +134,14 @@ CREATE TRIGGER on_review_change
   AFTER INSERT ON reviews
   FOR EACH ROW
   EXECUTE FUNCTION trigger_update_vibe_score_on_review();
+
+-- Backfill: recompute vibe_score and badge_level for all existing users
+DO $$
+DECLARE
+  uid UUID;
+BEGIN
+  FOR uid IN SELECT id FROM users LOOP
+    PERFORM update_user_streak(uid);
+  END LOOP;
+END;
+$$;

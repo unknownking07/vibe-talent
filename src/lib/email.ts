@@ -2,6 +2,15 @@ import { Resend } from "resend";
 
 let resend: Resend | null = null;
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function getResend(): Resend | null {
   if (resend) return resend;
   const apiKey = process.env.RESEND_API_KEY;
@@ -255,6 +264,7 @@ export async function sendStreakWarningEmail({
   if (!client) return;
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.dev";
+  const safeUsername = escapeHtml(username);
 
   try {
     await client.emails.send({
@@ -271,7 +281,7 @@ export async function sendStreakWarningEmail({
               ⚠️ Streak Ending Soon!
             </h2>
             <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-              Hey <strong>@${username}</strong>, your <strong>${streakDays}-day streak</strong> will reset at midnight if you don't log activity today. Don't let it slip!
+              Hey <strong>@${safeUsername}</strong>, your <strong>${streakDays}-day streak</strong> will reset within the next 6 hours if you don't log activity today. Don't let it slip!
             </p>
             <a href="${siteUrl}/dashboard" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
               Log Activity Now

@@ -164,9 +164,17 @@ BEGIN
       WHEN GREATEST(longest_streak, v_longest_streak) >= 30 THEN 'bronze'::badge_level
       ELSE 'none'::badge_level
     END,
-    vibe_score = (v_current_streak * 2) + (
-      (SELECT COUNT(*) FROM projects WHERE projects.user_id = p_user_id) * 5
-    ) + CASE
+    vibe_score = (v_current_streak * 2) + COALESCE((
+      SELECT SUM(
+        CASE WHEN verified THEN 5 ELSE 1 END
+        + CASE WHEN verified AND live_url IS NOT NULL AND live_url != '' THEN 3 ELSE 0 END
+        + CASE WHEN verified AND github_url IS NOT NULL AND github_url != '' THEN 2 ELSE 0 END
+        + CASE WHEN verified AND length(description) > 50 THEN 2 ELSE 0 END
+        + CASE WHEN verified AND image_url IS NOT NULL AND image_url != '' THEN 1 ELSE 0 END
+        + CASE WHEN verified AND array_length(tech_stack, 1) >= 3 THEN 2 ELSE 0 END
+      )
+      FROM projects WHERE projects.user_id = p_user_id AND NOT COALESCE(flagged, false)
+    ), 0) + CASE
       WHEN GREATEST(longest_streak, v_longest_streak) >= 365 THEN 40
       WHEN GREATEST(longest_streak, v_longest_streak) >= 180 THEN 30
       WHEN GREATEST(longest_streak, v_longest_streak) >= 90 THEN 20
@@ -206,7 +214,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER on_project_change
-  AFTER INSERT OR DELETE ON projects
+  AFTER INSERT OR UPDATE OR DELETE ON projects
   FOR EACH ROW
   EXECUTE FUNCTION trigger_update_vibe_score_on_project();
 

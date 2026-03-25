@@ -126,14 +126,13 @@ export default function DashboardPage() {
 
       const actualStreak = Math.max(profile.streak, calculatedStreak);
       const actualLongest = Math.max(profile.longest_streak, calculatedStreak);
-      const actualVibeScore = (actualStreak * 2) + ((projects || []).length * 5);
 
       // Show UI immediately, don't wait for DB sync
+      // vibe_score is computed by the DB trigger — use the value from the profile
       setUser({
         ...profile,
         streak: actualStreak,
         longest_streak: actualLongest,
-        vibe_score: actualVibeScore,
         projects: projects || [],
         social_links: socials || null,
       });
@@ -150,11 +149,11 @@ export default function DashboardPage() {
       }
 
       // Sync DB in background if streak was wrong (non-blocking)
+      // Don't write vibe_score — the DB trigger is the single source of truth
       if (actualStreak !== profile.streak || actualLongest !== profile.longest_streak) {
         sb.from("users").update({
           streak: actualStreak,
           longest_streak: actualLongest,
-          vibe_score: actualVibeScore,
         }).eq("id", authUser.id);
       }
     }
@@ -571,10 +570,10 @@ export default function DashboardPage() {
     setLogging(false);
 
     // Also update DB directly in case trigger doesn't exist
+    // Don't write vibe_score — the DB trigger is the single source of truth
     await sb.from("users").update({
       streak: newStreak,
       longest_streak: newLongest,
-      vibe_score: (newStreak * 2) + (user.projects.length * 5),
     }).eq("id", user.id);
   };
 
