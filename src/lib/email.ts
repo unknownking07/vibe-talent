@@ -299,3 +299,70 @@ export async function sendStreakWarningEmail({
     console.error("Failed to send streak warning email:", error);
   }
 }
+
+/**
+ * Send an email when a builder receives a new review. Fire-and-forget.
+ */
+export async function sendReviewNotificationEmail({
+  email,
+  username,
+  reviewerName,
+  rating,
+  comment,
+}: {
+  email: string;
+  username: string;
+  reviewerName: string;
+  rating: number;
+  comment: string | null;
+}): Promise<void> {
+  const client = getResend();
+  if (!client) return;
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.dev";
+  const safeReviewer = escapeHtml(reviewerName);
+  const safeComment = comment ? escapeHtml(comment.slice(0, 200)) : null;
+  const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
+
+  try {
+    await client.emails.send({
+      from: "VibeTalent <notifications@vibetalent.work>",
+      to: email,
+      subject: `New ${rating}-star review from ${reviewerName} | VibeTalent`,
+      html: `
+        <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #0F0F0F; background: #FFFFFF;">
+          <div style="background: #0F0F0F; color: #FFFFFF; padding: 24px 32px;">
+            <h1 style="margin: 0; font-size: 20px; font-weight: 800;">⚡ VibeTalent</h1>
+          </div>
+          <div style="padding: 32px;">
+            <h2 style="color: #0F0F0F; font-size: 24px; font-weight: 700; margin: 0 0 16px;">
+              ⭐ New Review
+            </h2>
+            <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
+              Hey <strong>@${escapeHtml(username)}</strong>, you received a new review!
+            </p>
+            <div style="border: 2px solid #0F0F0F; padding: 20px; margin: 0 0 24px;">
+              <p style="color: #F59E0B; font-size: 20px; margin: 0 0 8px; letter-spacing: 2px;">
+                ${stars}
+              </p>
+              <p style="color: #0F0F0F; font-size: 14px; margin: 0 0 8px;">
+                <strong>From:</strong> ${safeReviewer}
+              </p>
+              ${safeComment ? `<p style="color: #52525B; font-size: 14px; line-height: 1.5; margin: 0;">"${safeComment}${(comment?.length || 0) > 200 ? "..." : ""}"</p>` : ""}
+            </div>
+            <a href="${siteUrl}/dashboard" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
+              View Dashboard
+            </a>
+          </div>
+          <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
+            <p style="color: #71717A; font-size: 12px; margin: 0;">
+              You received this because someone reviewed you on VibeTalent.
+            </p>
+          </div>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error("Failed to send review notification email:", error);
+  }
+}
