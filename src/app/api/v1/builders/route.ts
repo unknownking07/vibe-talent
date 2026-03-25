@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
       if (skillList.length > 0) {
         builders = builders.filter((b: { tech_stack: string[] }) =>
           skillList.some((skill) =>
-            b.tech_stack.some((t) => t.toLowerCase().includes(skill))
+            (b.tech_stack ?? []).some((t) => t.toLowerCase().includes(skill))
           )
         );
       }

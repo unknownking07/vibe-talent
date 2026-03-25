@@ -174,7 +174,7 @@ export function ProfileProjectCard({ project, verified = false }: ProfileProject
       <p className="text-[0.9rem] text-[#52525B] font-medium flex-grow">{project.description}</p>
 
       <div className="flex flex-wrap gap-1.5 mt-2">
-        {project.tech_stack.map((tech) => (
+        {(project.tech_stack ?? []).map((tech) => (
           <span
             key={tech}
             className="font-mono text-xs font-bold uppercase text-[#0F0F0F] px-2.5 py-1"

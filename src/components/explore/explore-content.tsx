@@ -40,7 +40,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
 
   const allTechStacks = useMemo(() => {
     const techs = new Set<string>();
-    users.forEach(u => u.projects.forEach(p => p.tech_stack.forEach(t => techs.add(t))));
+    users.forEach(u => u.projects.forEach(p => (p.tech_stack ?? []).forEach(t => techs.add(t))));
     return [...techs].sort();
   }, [users]);
 
@@ -54,8 +54,8 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
           u.username.toLowerCase().includes(q) ||
           u.bio?.toLowerCase().includes(q) ||
           u.projects.some((p) =>
-            p.tech_stack.some((t) => t.toLowerCase().includes(q)) ||
-            p.tags.some((t) => t.toLowerCase().includes(q))
+            (p.tech_stack ?? []).some((t) => t.toLowerCase().includes(q)) ||
+            (p.tags ?? []).some((t) => t.toLowerCase().includes(q))
           )
       );
     }
@@ -66,7 +66,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
 
     if (selectedTech.length > 0) {
       filtered = filtered.filter(u =>
-        u.projects.some(p => p.tech_stack.some(t => selectedTech.includes(t)))
+        u.projects.some(p => (p.tech_stack ?? []).some(t => selectedTech.includes(t)))
       );
     }
     if (minStreak > 0) {

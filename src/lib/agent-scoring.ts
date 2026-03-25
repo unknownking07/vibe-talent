@@ -25,7 +25,7 @@ function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
   );
 
   // Tech Breadth: unique technologies
-  const allTech = new Set(user.projects.flatMap(p => p.tech_stack.map(t => t.toLowerCase())));
+  const allTech = new Set(user.projects.flatMap(p => (p.tech_stack ?? []).map(t => t.toLowerCase())));
   const tech_breadth = clamp(0, 100, allTech.size * 12);
 
   // Activity Recency: based on active streak
@@ -140,9 +140,9 @@ export function matchUsers(users: UserWithSocials[], task: TaskRequest): MatchRe
   const requestedTech = task.tech_stack.map(t => t.toLowerCase().trim()).filter(Boolean);
 
   const results = users.map(user => {
-    const userTech = user.projects.flatMap(p => p.tech_stack.map(t => t.toLowerCase()));
+    const userTech = user.projects.flatMap(p => (p.tech_stack ?? []).map(t => t.toLowerCase()));
     const userTechSet = new Set(userTech);
-    const userTags = user.projects.flatMap(p => p.tags.map(t => t.toLowerCase()));
+    const userTags = user.projects.flatMap(p => (p.tags ?? []).map(t => t.toLowerCase()));
 
     // Skill overlap (40%)
     const matchedSkills = requestedTech.filter(t => userTechSet.has(t));
