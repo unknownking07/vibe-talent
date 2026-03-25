@@ -238,6 +238,7 @@ export async function sendProjectVerifiedEmail({
   }
 }
 
+
 /**
  * Send an email warning a user their streak is about to end. Fire-and-forget.
  */

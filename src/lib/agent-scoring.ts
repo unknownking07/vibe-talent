@@ -33,10 +33,14 @@ function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
     ? clamp(0, 100, 60 + Math.min(40, user.streak * 0.4))
     : 20;
 
-  // Reputation: based on vibe_score and badge
+  // Reputation: based on vibe_score, badge, and client reviews
   const badgeBonus = { none: 0, bronze: 10, silver: 20, gold: 35, diamond: 50 };
+  const reviews = (user as unknown as Record<string, unknown>).reviews as Array<{ rating: number }> | undefined;
+  const reviewBonus = reviews && reviews.length > 0
+    ? Math.min(25, Math.round((reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) * reviews.length * 1.5))
+    : 0;
   const reputation = clamp(0, 100,
-    (user.vibe_score / 9) + (badgeBonus[user.badge_level] || 0)
+    (user.vibe_score / 9) + (badgeBonus[user.badge_level] || 0) + reviewBonus
   );
 
   return { consistency, project_quality, tech_breadth, activity_recency, reputation };

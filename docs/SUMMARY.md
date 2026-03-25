@@ -1,16 +1,30 @@
 # Table of contents
 
+## Welcome
+
 * [Introduction](README.md)
-* [Getting Started](getting-started.md)
-* [Architecture & Tech Stack](architecture.md)
-* [Authentication & Security](authentication-and-security.md)
-* [Database Schema](database-schema.md)
-* [API Reference](api-reference.md)
-* [Core Features](core-features.md)
-  * [Vibe Score](core-features.md#vibe-score)
-  * [Streak System](core-features.md#streak-system)
-  * [Badge System](core-features.md#badge-system)
-  * [Project Showcase](core-features.md#project-showcase)
-* [Marketplace & Hiring](marketplace-and-hiring.md)
-* [AI Agent](ai-agent.md)
-* [Deployment & Infrastructure](deployment.md)
+
+## For Builders
+
+* [Getting Started as a Builder](builders/getting-started.md)
+* [Understanding Your Vibe Score](builders/vibe-score.md)
+* [Streaks & Badges](builders/streaks-and-badges.md)
+* [Showcasing Your Projects](builders/projects.md)
+* [Getting Hired](builders/getting-hired.md)
+* [GitHub Integration](builders/github-sync.md)
+
+## For Clients
+
+* [Finding Builders](clients/finding-builders.md)
+* [Hiring a Builder](clients/hiring.md)
+* [AI-Powered Matching](clients/ai-matching.md)
+
+## Developers
+
+* [Dev Setup](developers/setup.md)
+* [Architecture & Tech Stack](developers/architecture.md)
+* [Database Schema](developers/database-schema.md)
+* [API Reference](developers/api-reference.md)
+* [Authentication & Security](developers/authentication-and-security.md)
+* [AI Agent System](developers/ai-agent.md)
+* [Deployment & Infrastructure](developers/deployment.md)

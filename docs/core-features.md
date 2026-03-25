@@ -7,14 +7,28 @@ The **Vibe Score** is the single number that represents a builder's reputation. 
 ### Formula
 
 ```
-vibe_score = (current_streak × 2) + (project_count × 5) + badge_bonus
+vibe_score = (current_streak × 2) + Σ project_quality_scores + badge_bonus + review_bonus
 ```
 
-| Component | Multiplier | Why |
+| Component | How It Works | Why |
 |---|---|---|
 | Current Streak | ×2 per day | Rewards active, consistent builders |
-| Project Count | ×5 per project | Rewards shipped work |
+| Project Quality Score | Up to 15 pts per verified project | Rewards polished, complete project listings |
 | Badge Bonus | +10 to +40 | Rewards long-term dedication |
+| Review Bonus | avg_rating × count × 2, max 50 | Rewards real client satisfaction |
+
+**Per-Project Quality Scoring (verified projects only):**
+
+| Signal | Points |
+|---|---|
+| Base (verified) | 5 pts |
+| Base (unverified) | 1 pt |
+| Live URL present | +3 pts |
+| GitHub URL present | +2 pts |
+| Description > 50 chars | +2 pts |
+| Screenshot/image | +1 pt |
+| Tech stack ≥ 3 items | +2 pts |
+| **Max per verified project** | **15 pts** |
 
 **Badge Bonuses:**
 
@@ -25,20 +39,31 @@ vibe_score = (current_streak × 2) + (project_count × 5) + badge_bonus
 | Gold | +30 |
 | Diamond | +40 |
 
+### Quality vs Consistency Balance
+
+The Vibe Score is designed so that **quality and consistency both matter**:
+
+- **Consistency** (streaks + badges) gets you noticed and shows reliability
+- **Quality** (project completeness + reviews) proves you ship real, polished work
+
+A builder with 5 verified projects with live demos and 3 five-star reviews can outrank a builder with a longer streak but no shipped projects. This ensures the leaderboard rewards builders who actually deliver, not just those who log activity daily.
+
 ### Example Calculations
 
-| Builder | Streak | Projects | Badge | Vibe Score |
-|---|---|---|---|---|
-| Beginner | 5 days | 1 project | none | (5×2) + (1×5) + 0 = **15** |
-| Active | 45 days | 3 projects | bronze | (45×2) + (3×5) + 10 = **115** |
-| Veteran | 180 days | 10 projects | gold | (180×2) + (10×5) + 30 = **440** |
+| Builder | Streak | Projects | Badge | Reviews | Vibe Score |
+|---|---|---|---|---|---|
+| Beginner | 5 days | 1 unverified | none | none | (5×2) + 1 + 0 + 0 = **11** |
+| Active | 45 days | 3 verified (full) | bronze | none | (45×2) + (3×15) + 10 + 0 = **145** |
+| Quality shipper | 30 days | 5 verified (full) | bronze | 3 × 5-star | (30×2) + (5×15) + 10 + 30 = **175** |
+| Veteran | 180 days | 10 verified (full) | gold | 5 × 5-star | (180×2) + (10×15) + 30 + 50 = **590** |
 
 ### Auto-Calculation
 
 The Vibe Score is **never manually set**. It's recalculated automatically by the `update_user_streak()` database function whenever:
 
 - A streak log is inserted (daily activity)
-- A project is created or deleted
+- A project is created, updated, or deleted
+- A review is submitted
 
 ---
 
