@@ -331,7 +331,7 @@ CREATE POLICY "Reviews are publicly readable"
 CREATE TABLE notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  type TEXT NOT NULL CHECK (type IN ('hire_request', 'streak_milestone', 'badge_earned', 'project_verified', 'project_flagged')),
+  type TEXT NOT NULL CHECK (type IN ('hire_request', 'streak_milestone', 'streak_warning', 'badge_earned', 'project_verified', 'project_flagged')),
   title TEXT NOT NULL,
   message TEXT NOT NULL,
   read BOOLEAN DEFAULT false,

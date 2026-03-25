@@ -60,8 +60,10 @@ function extractUsername(value: string, platform: "twitter" | "github" | "telegr
   // Remove leading @
   v = v.replace(/^@/, "");
 
-  // Take only the first path segment (username)
+  // Drop query/hash and take only first segment
+  v = v.split(/[?#]/)[0];
   v = v.split("/")[0];
+  v = v.trim();
 
   return v;
 }

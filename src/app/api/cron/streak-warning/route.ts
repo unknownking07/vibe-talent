@@ -12,11 +12,13 @@ import { sendStreakWarningEmail } from "@/lib/email";
  */
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const authHeader = req.headers.get("authorization");
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (!cronSecret) {
+    console.error("CRON_SECRET is not configured");
+    return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
+  }
+  const authHeader = req.headers.get("authorization");
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const supabase = createClient(
@@ -83,15 +85,15 @@ export async function GET(req: NextRequest) {
     const userIds = usersToWarn.map((u) => u.id);
     const emailMap = new Map<string, string>();
 
-    // Batch fetch auth users (Supabase admin listUsers)
-    const { data: authData } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-    if (authData?.users) {
-      for (const authUser of authData.users) {
-        if (userIds.includes(authUser.id) && authUser.email) {
-          emailMap.set(authUser.id, authUser.email);
+    // Fetch emails for at-risk users via parallel getUserById calls
+    await Promise.all(
+      userIds.map(async (uid) => {
+        const { data } = await supabase.auth.admin.getUserById(uid);
+        if (data?.user?.email) {
+          emailMap.set(uid, data.user.email);
         }
-      }
-    }
+      })
+    );
 
     // Send warnings
     const warnings: Promise<void>[] = [];
