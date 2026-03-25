@@ -50,7 +50,7 @@ export async function sendHireNotification({
 
   try {
     await client.emails.send({
-      from: "VibeTalent <notifications@vibetalent.dev>",
+      from: "VibeTalent <notifications@vibetalent.work>",
       to: builderEmail,
       subject: `New hire request from ${senderName} | VibeTalent`,
       html: `
@@ -112,7 +112,7 @@ export async function sendStreakMilestoneEmail({
 
   try {
     await client.emails.send({
-      from: "VibeTalent <notifications@vibetalent.dev>",
+      from: "VibeTalent <notifications@vibetalent.work>",
       to: email,
       subject: `You hit a ${streakDays}-day streak! | VibeTalent`,
       html: `
@@ -164,7 +164,7 @@ export async function sendBadgeEarnedEmail({
 
   try {
     await client.emails.send({
-      from: "VibeTalent <notifications@vibetalent.dev>",
+      from: "VibeTalent <notifications@vibetalent.work>",
       to: email,
       subject: `You earned a ${badgeLevel} badge! | VibeTalent`,
       html: `
@@ -215,7 +215,7 @@ export async function sendProjectVerifiedEmail({
 
   try {
     await client.emails.send({
-      from: "VibeTalent <notifications@vibetalent.dev>",
+      from: "VibeTalent <notifications@vibetalent.work>",
       to: email,
       subject: `Your project "${projectTitle}" is verified! | VibeTalent`,
       html: `
@@ -268,7 +268,7 @@ export async function sendStreakWarningEmail({
 
   try {
     await client.emails.send({
-      from: "VibeTalent <notifications@vibetalent.dev>",
+      from: "VibeTalent <notifications@vibetalent.work>",
       to: email,
       subject: `Your ${streakDays}-day streak is about to end! | VibeTalent`,
       html: `
