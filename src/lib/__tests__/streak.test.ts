@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { calculateStreak, calculateVibeScore, getBadgeLevel, getBadgeInfo } from "../streak";
+import { calculateStreak, calculateVibeScore, calculateProjectScore, getBadgeLevel, getBadgeInfo } from "../streak";
+import type { ProjectScoreInput } from "../streak";
 
 describe("calculateStreak", () => {
   it("returns 0 for empty array", () => {
@@ -150,6 +151,95 @@ describe("calculateVibeScore", () => {
     expect(calculateVibeScore(0, 5, "none", 0)).toBe(5);
     // vs all verified: 0*2 + 5*5 + 0 = 25
     expect(calculateVibeScore(0, 5, "none", 5)).toBe(25);
+  });
+});
+
+describe("calculateProjectScore", () => {
+  const baseProject: ProjectScoreInput = {
+    verified: true,
+    live_url: null,
+    github_url: null,
+    description: "Short",
+    image_url: null,
+    tech_stack: [],
+  };
+
+  it("returns 1 for unverified project regardless of quality", () => {
+    const project = { ...baseProject, verified: false, live_url: "https://example.com", github_url: "https://github.com/x", description: "A very long description that is over fifty characters for sure", image_url: "https://img.com/x.png", tech_stack: ["React", "Node", "PostgreSQL"] };
+    expect(calculateProjectScore(project)).toBe(1);
+  });
+
+  it("returns 5 for a bare verified project", () => {
+    expect(calculateProjectScore(baseProject)).toBe(5);
+  });
+
+  it("adds 3 for live URL", () => {
+    expect(calculateProjectScore({ ...baseProject, live_url: "https://example.com" })).toBe(8);
+  });
+
+  it("adds 2 for GitHub URL", () => {
+    expect(calculateProjectScore({ ...baseProject, github_url: "https://github.com/x" })).toBe(7);
+  });
+
+  it("adds 2 for description >50 chars", () => {
+    expect(calculateProjectScore({ ...baseProject, description: "A very long description that is definitely over fifty characters long" })).toBe(7);
+  });
+
+  it("adds 1 for image", () => {
+    expect(calculateProjectScore({ ...baseProject, image_url: "https://img.com/x.png" })).toBe(6);
+  });
+
+  it("adds 2 for tech stack ≥3", () => {
+    expect(calculateProjectScore({ ...baseProject, tech_stack: ["React", "Node", "PostgreSQL"] })).toBe(7);
+  });
+
+  it("maxes out at 15 for a fully loaded verified project", () => {
+    const maxProject: ProjectScoreInput = {
+      verified: true,
+      live_url: "https://example.com",
+      github_url: "https://github.com/x",
+      description: "A very long description that is definitely over fifty characters long for quality",
+      image_url: "https://img.com/x.png",
+      tech_stack: ["React", "Node", "PostgreSQL"],
+    };
+    expect(calculateProjectScore(maxProject)).toBe(15);
+  });
+});
+
+describe("calculateVibeScore with project details", () => {
+  const bareProject: ProjectScoreInput = {
+    verified: true,
+    live_url: null,
+    github_url: null,
+    description: "Short",
+    image_url: null,
+    tech_stack: [],
+  };
+
+  const qualityProject: ProjectScoreInput = {
+    verified: true,
+    live_url: "https://example.com",
+    github_url: "https://github.com/x",
+    description: "A comprehensive project description that exceeds fifty characters easily",
+    image_url: "https://img.com/x.png",
+    tech_stack: ["React", "TypeScript", "Tailwind"],
+  };
+
+  it("scores project array correctly", () => {
+    // 0*2 + 15 (quality) + 5 (bare) + 0 (badge) = 20
+    expect(calculateVibeScore(0, [qualityProject, bareProject], "none")).toBe(20);
+  });
+
+  it("quality projects outweigh streaks", () => {
+    // 3 quality projects: 0*2 + 45 + 0 = 45
+    const qualityScore = calculateVibeScore(0, [qualityProject, qualityProject, qualityProject], "none");
+    // 20-day streak, no projects: 20*2 + 0 + 0 = 40
+    const streakScore = calculateVibeScore(20, [], "none");
+    expect(qualityScore).toBeGreaterThan(streakScore);
+  });
+
+  it("empty project array gives 0 project points", () => {
+    expect(calculateVibeScore(5, [], "none")).toBe(10); // 5*2 + 0 + 0
   });
 });
 
