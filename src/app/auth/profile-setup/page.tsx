@@ -49,6 +49,7 @@ export default function ProfileSetupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [oauthAvatarUrl, setOauthAvatarUrl] = useState<string | null>(null);
   const [streakLogged, setStreakLogged] = useState(false);
 
   // Step 1
@@ -86,6 +87,12 @@ export default function ProfileSetupPage() {
         return;
       }
       setUserId(user.id);
+      // Grab OAuth avatar from provider metadata
+      const avatar =
+        user.user_metadata?.avatar_url ||
+        user.user_metadata?.picture ||
+        null;
+      setOauthAvatarUrl(avatar);
     };
     checkAuth();
   }, [router]);
@@ -120,6 +127,7 @@ export default function ProfileSetupPage() {
           id: userId,
           username: profile.username,
           bio: profile.bio || null,
+          ...(oauthAvatarUrl ? { avatar_url: oauthAvatarUrl } : {}),
         },
         { onConflict: "id" }
       );

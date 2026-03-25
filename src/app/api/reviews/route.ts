@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     const sb = getSb();
     const { data, error } = await sb
       .from("reviews")
-      .select("id, builder_id, reviewer_name, rating, comment, created_at")
+      .select("id, builder_id, reviewer_name, reviewer_email, rating, comment, created_at")
       .eq("builder_id", builderId)
       .order("created_at", { ascending: false });
 
@@ -55,6 +55,60 @@ export async function GET(req: NextRequest) {
     });
   } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { review_id, reviewer_email } = body;
+
+    if (!review_id || !reviewer_email) {
+      return NextResponse.json(
+        { error: "review_id and reviewer_email are required" },
+        { status: 400 }
+      );
+    }
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(review_id)) {
+      return NextResponse.json({ error: "Invalid review_id" }, { status: 400 });
+    }
+
+    const emailClean = String(reviewer_email).trim().toLowerCase();
+    const sb = getSb();
+
+    // Verify the review exists and belongs to this email
+    const { data: review, error: fetchErr } = await sb
+      .from("reviews")
+      .select("id, reviewer_email")
+      .eq("id", review_id)
+      .single();
+
+    if (fetchErr || !review) {
+      return NextResponse.json({ error: "Review not found" }, { status: 404 });
+    }
+
+    if (review.reviewer_email !== emailClean) {
+      return NextResponse.json(
+        { error: "Email does not match. You can only delete your own review." },
+        { status: 403 }
+      );
+    }
+
+    const { error: deleteErr } = await sb
+      .from("reviews")
+      .delete()
+      .eq("id", review_id);
+
+    if (deleteErr) {
+      console.error("Failed to delete review:", deleteErr);
+      return NextResponse.json({ error: "Failed to delete review" }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 }
 
@@ -122,6 +176,21 @@ export async function POST(req: NextRequest) {
     }
 
     const sb = getSb();
+
+    // Prevent duplicate reviews: one review per email per builder
+    const { data: existingByEmail } = await sb
+      .from("reviews")
+      .select("id")
+      .eq("builder_id", builder_id)
+      .eq("reviewer_email", emailClean)
+      .maybeSingle();
+
+    if (existingByEmail) {
+      return NextResponse.json(
+        { error: "You have already reviewed this builder. Delete your existing review first to submit a new one." },
+        { status: 409 }
+      );
+    }
 
     // Validate hire_request_id if provided
     if (hire_request_id) {
