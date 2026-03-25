@@ -20,13 +20,16 @@ export async function createNotification(params: {
 }): Promise<void> {
   try {
     const sb = getServiceClient();
-    await sb.from("notifications").insert({
+    const { error } = await sb.from("notifications").insert({
       user_id: params.user_id,
       type: params.type,
       title: params.title,
       message: params.message,
       metadata: params.metadata || {},
     });
+    if (error) {
+      console.error("Failed to create notification:", error);
+    }
   } catch (error) {
     console.error("Failed to create notification:", error);
   }
