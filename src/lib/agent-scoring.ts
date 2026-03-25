@@ -35,7 +35,7 @@ function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
 
   // Reputation: based on vibe_score, badge, and client reviews
   const badgeBonus = { none: 0, bronze: 10, silver: 20, gold: 35, diamond: 50 };
-  const reviews = (user as Record<string, unknown>).reviews as Array<{ rating: number }> | undefined;
+  const reviews = (user as unknown as Record<string, unknown>).reviews as Array<{ rating: number }> | undefined;
   const reviewBonus = reviews && reviews.length > 0
     ? Math.min(25, Math.round((reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) * reviews.length * 1.5))
     : 0;
