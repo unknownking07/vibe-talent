@@ -220,7 +220,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
       )}
 
       <div className="mt-3 flex flex-wrap gap-1.5">
-        {project.tech_stack.map((tech) => (
+        {(project.tech_stack ?? []).map((tech) => (
           <span
             key={tech}
             className="px-2 py-0.5 text-xs font-bold uppercase text-[#0F0F0F]"
@@ -241,7 +241,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
             {project.build_time}
           </span>
         )}
-        {project.tags.length > 0 && (
+        {(project.tags ?? []).length > 0 && (
           <span className="flex items-center gap-1">
             <Tag size={12} />
             {project.tags.join(", ")}
