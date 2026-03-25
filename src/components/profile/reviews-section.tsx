@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Star, MessageSquare, Send } from "lucide-react";
+import { Star, MessageSquare, Send, Trash2 } from "lucide-react";
 import type { Review } from "@/lib/types/database";
 
 interface ReviewsSectionProps {
@@ -96,6 +96,10 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteEmail, setDeleteEmail] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     async function loadReviews() {
@@ -165,6 +169,47 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
       setSubmitError("Failed to submit review. Please try again.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteReview = async () => {
+    if (!deleteId || !deleteEmail.trim()) {
+      setDeleteError("Please enter your email to confirm deletion.");
+      return;
+    }
+
+    setDeleteError("");
+    setDeleting(true);
+
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          review_id: deleteId,
+          reviewer_email: deleteEmail.trim(),
+        }),
+      });
+
+      if (res.ok) {
+        setDeleteId(null);
+        setDeleteEmail("");
+
+        // Reload reviews
+        const reviewsRes = await fetch(`/api/reviews?builder_id=${builderId}`);
+        if (reviewsRes.ok) {
+          const data = await reviewsRes.json();
+          setReviews(data.reviews || []);
+          setAvgRating(data.average_rating || 0);
+        }
+      } else {
+        const data = await res.json();
+        setDeleteError(data.error || "Failed to delete review.");
+      }
+    } catch {
+      setDeleteError("Failed to delete review. Please try again.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -337,14 +382,60 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
                   </span>
                   <StarRating rating={review.rating} size={14} />
                 </div>
-                <span className="text-zinc-400 text-xs font-mono">
-                  {timeAgo(review.created_at)}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-zinc-400 text-xs font-mono">
+                    {timeAgo(review.created_at)}
+                  </span>
+                  {!isOwner && (
+                    <button
+                      onClick={() => { setDeleteId(review.id); setDeleteEmail(""); setDeleteError(""); }}
+                      className="text-zinc-400 hover:text-red-500 transition-colors"
+                      title="Delete your review"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
               {review.comment && (
                 <p className="text-zinc-600 text-sm leading-relaxed">
                   {review.comment}
                 </p>
+              )}
+              {deleteId === review.id && (
+                <div
+                  className="mt-3 p-3 space-y-2"
+                  style={{ backgroundColor: "#FEF2F2", border: "2px solid #0F0F0F" }}
+                >
+                  <p className="text-xs font-bold text-zinc-700">
+                    Enter the email you used when writing this review to confirm deletion:
+                  </p>
+                  <input
+                    type="email"
+                    value={deleteEmail}
+                    onChange={(e) => setDeleteEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="input-brutal w-full text-sm"
+                  />
+                  {deleteError && (
+                    <p className="text-xs font-bold text-red-600">{deleteError}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleDeleteReview}
+                      disabled={deleting}
+                      className="btn-brutal text-xs py-1.5 px-3 bg-red-500 text-white hover:bg-red-600"
+                    >
+                      {deleting ? "Deleting..." : "Confirm Delete"}
+                    </button>
+                    <button
+                      onClick={() => { setDeleteId(null); setDeleteError(""); }}
+                      className="btn-brutal text-xs py-1.5 px-3"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           ))}
