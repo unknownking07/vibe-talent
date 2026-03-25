@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
@@ -47,8 +48,13 @@ export async function GET(request: Request) {
           user.user_metadata?.preferred_username ||
           null;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: profile } = await (supabase as any)
+        // Use service role client for DB operations to bypass RLS
+        const adminSb = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+
+        const { data: profile } = await adminSb
           .from("users")
           .select("avatar_url, github_username")
           .eq("id", user.id)
@@ -57,7 +63,7 @@ export async function GET(request: Request) {
         if (profile) {
           const updates: Record<string, string> = {};
 
-          if (oauthAvatar && !(profile as Record<string, unknown>).avatar_url) {
+          if (oauthAvatar && !profile.avatar_url) {
             updates.avatar_url = oauthAvatar;
           }
 
@@ -66,8 +72,7 @@ export async function GET(request: Request) {
           }
 
           if (Object.keys(updates).length > 0) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (supabase as any)
+            await adminSb
               .from("users")
               .update(updates)
               .eq("id", user.id);
