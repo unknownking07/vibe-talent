@@ -81,7 +81,7 @@ export interface Review {
   created_at: string;
 }
 
-export type NotificationType = "hire_request" | "streak_milestone" | "streak_warning" | "badge_earned" | "project_verified" | "project_flagged";
+export type NotificationType = "hire_request" | "streak_milestone" | "streak_warning" | "badge_earned" | "project_verified" | "project_flagged" | "new_review";
 
 export interface Notification {
   id: string;

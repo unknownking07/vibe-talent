@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Bell, Flame, Trophy, CheckCircle, AlertTriangle, Mail } from "lucide-react";
+import { Bell, Flame, Trophy, CheckCircle, AlertTriangle, Mail, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Notification } from "@/lib/types/database";
 
@@ -12,6 +12,7 @@ const typeIcons: Record<string, typeof Bell> = {
   badge_earned: Trophy,
   project_verified: CheckCircle,
   project_flagged: AlertTriangle,
+  new_review: Star,
 };
 
 const typeColors: Record<string, string> = {
@@ -21,6 +22,7 @@ const typeColors: Record<string, string> = {
   badge_earned: "#8B5CF6",
   project_verified: "#10B981",
   project_flagged: "#EF4444",
+  new_review: "#F59E0B",
 };
 
 function timeAgo(dateStr: string): string {

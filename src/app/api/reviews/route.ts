@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { reviewLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
+import { createNotification } from "@/lib/notifications";
+import { sendReviewNotificationEmail } from "@/lib/email";
 
 const BLOCKED_DOMAINS = [
   "mailinator.com", "tempmail.com", "throwaway.email", "guerrillamail.com",
@@ -254,6 +256,36 @@ export async function POST(req: NextRequest) {
       console.error("Failed to insert review:", error);
       return NextResponse.json({ error: "Failed to submit review" }, { status: 500 });
     }
+
+    // Fire-and-forget: in-app notification for the builder
+    createNotification({
+      user_id: builder_id,
+      type: "new_review",
+      title: "New review received",
+      message: `${nameClean} left you a ${ratingNum}-star review`,
+      metadata: { review_id: data.id, reviewer_name: nameClean, rating: ratingNum },
+    }).catch(console.error);
+
+    // Fire-and-forget: email notification to the builder
+    const adminSb = getAdminSb();
+    adminSb.auth.admin.getUserById(builder_id).then(({ data: userData }) => {
+      if (userData?.user?.email) {
+        adminSb
+          .from("users")
+          .select("username")
+          .eq("id", builder_id)
+          .single()
+          .then(({ data: builderData }) => {
+            sendReviewNotificationEmail({
+              email: userData.user!.email!,
+              username: builderData?.username || "builder",
+              reviewerName: nameClean,
+              rating: ratingNum,
+              comment: commentClean,
+            }).catch(console.error);
+          });
+      }
+    }).catch(console.error);
 
     return NextResponse.json({ success: true, id: data.id });
   } catch {
