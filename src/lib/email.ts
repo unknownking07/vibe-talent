@@ -237,3 +237,54 @@ export async function sendProjectVerifiedEmail({
     console.error("Failed to send project verified email:", error);
   }
 }
+
+/**
+ * Send an email warning a user their streak is about to end. Fire-and-forget.
+ */
+export async function sendStreakWarningEmail({
+  email,
+  username,
+  streakDays,
+}: {
+  email: string;
+  username: string;
+  streakDays: number;
+}): Promise<void> {
+  const client = getResend();
+  if (!client) return;
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.dev";
+
+  try {
+    await client.emails.send({
+      from: "VibeTalent <notifications@vibetalent.dev>",
+      to: email,
+      subject: `Your ${streakDays}-day streak is about to end! | VibeTalent`,
+      html: `
+        <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #0F0F0F; background: #FFFFFF;">
+          <div style="background: #0F0F0F; color: #FFFFFF; padding: 24px 32px;">
+            <h1 style="margin: 0; font-size: 20px; font-weight: 800;">⚡ VibeTalent</h1>
+          </div>
+          <div style="padding: 32px;">
+            <h2 style="color: #EF4444; font-size: 24px; font-weight: 700; margin: 0 0 16px;">
+              ⚠️ Streak Ending Soon!
+            </h2>
+            <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
+              Hey <strong>@${username}</strong>, your <strong>${streakDays}-day streak</strong> will reset at midnight if you don't log activity today. Don't let it slip!
+            </p>
+            <a href="${siteUrl}/dashboard" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
+              Log Activity Now
+            </a>
+          </div>
+          <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
+            <p style="color: #71717A; font-size: 12px; margin: 0;">
+              You received this because your streak is about to expire on VibeTalent.
+            </p>
+          </div>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error("Failed to send streak warning email:", error);
+  }
+}
