@@ -240,46 +240,99 @@ Badges are permanent achievements earned through sustained streak consistency.
 
 **Priority:** P0 (Must Have)
 
-The Vibe Score is the single composite metric that represents a vibecoder's overall reputation.
+The Vibe Score is the single composite metric that represents a vibecoder's overall reputation. It balances **consistency** (are you showing up?) with **quality** (are you shipping real, polished work?).
 
 #### Formula
 
 ```
-Vibe Score = (Current Streak × 2) + (Projects Built × 5) + Badge Bonus
+Vibe Score = (Current Streak × 2) + Σ Project Quality Scores + Badge Bonus + Review Bonus
 ```
 
 #### Component Breakdown
 
-| Component | Multiplier | Rationale |
-|-----------|-----------|-----------|
-| Current Streak | ×2 | Rewards active, ongoing consistency |
-| Projects Built | ×5 | Rewards tangible output and shipping |
+| Component | How It Works | Rationale |
+|-----------|-------------|-----------|
+| Current Streak | ×2 per day | Rewards active, ongoing consistency |
+| Project Quality Score | Up to 15 pts per verified project | Rewards polished, complete project listings |
 | Badge Bonus | +10/20/30/40 | Rewards historical consistency milestones |
+| Review Bonus | avg_rating × count × 2, max 50 | Rewards real client satisfaction |
+
+#### Per-Project Quality Scoring
+
+Verified projects earn bonus points based on completeness. This ensures that quality project listings are worth significantly more than bare-bones entries.
+
+| Quality Signal | Points | Condition |
+|----------------|--------|-----------|
+| Base (verified) | 5 pts | Project has verified GitHub ownership |
+| Base (unverified) | 1 pt | Any project without verification |
+| Live URL | +3 pts | Deployed project link present |
+| GitHub URL | +2 pts | Source code repository linked |
+| Detailed description | +2 pts | Description longer than 50 characters |
+| Screenshot/image | +1 pt | Preview image uploaded |
+| Tech stack breadth | +2 pts | 3 or more technologies listed |
+| **Max per verified project** | **15 pts** | |
+
+#### Review Bonus
+
+Client reviews directly impact a builder's Vibe Score:
+
+```
+Review Bonus = MIN(50, ROUND(avg_rating × review_count × 2))
+```
+
+| Reviews | Avg Rating | Bonus |
+|---------|-----------|-------|
+| 1 review | 5 stars | 10 pts |
+| 3 reviews | 5 stars | 30 pts |
+| 5 reviews | 5 stars | 50 pts (cap) |
+| 3 reviews | 3 stars | 18 pts |
+
+#### 3.4.1 Quality vs Consistency Balance
+
+**Design Philosophy:** Consistency gets you noticed. Quality makes you hireable.
+
+The Vibe Score is intentionally designed so that both signals carry weight:
+
+- **Consistency** (streaks + badges) creates a reliable baseline. Clients trust builders who show up every day.
+- **Quality** (project completeness + reviews) differentiates the best builders. A polished project with a live demo, verified code, and a 5-star review is worth more than a week of streak points.
+
+This means a builder with fewer streak days but excellent shipped projects and great reviews can outrank a pure streak grinder. The leaderboard rewards builders who **deliver**, not just those who log in.
+
+**Example comparison:**
+
+| Builder | Streak | Projects (verified, full) | Reviews | Score |
+|---------|--------|--------------------------|---------|-------|
+| Streak grinder | 100 days | 2 (unverified, bare) | None | (100×2) + (2×1) + 0 + 0 = **202** |
+| Quality shipper | 30 days | 5 (verified, complete) | 3 × 5-star | (30×2) + (5×15) + 10 + 30 = **175** |
+
+The streak grinder leads initially — but their score is fragile (one missed day and streak points vanish). The quality shipper's score is resilient: projects, badges, and reviews persist permanently.
 
 #### Example Calculations
 
-| Vibecoder | Streak | Projects | Badge | Score |
-|-----------|--------|----------|-------|-------|
-| New user | 5 | 1 | None | (5×2) + (1×5) + 0 = **15** |
-| Active builder | 45 | 8 | Bronze | (45×2) + (8×5) + 10 = **140** |
-| Consistent shipper | 120 | 15 | Silver | (120×2) + (15×5) + 20 = **335** |
-| Diamond vibecoder | 380 | 20 | Diamond | (380×2) + (20×5) + 40 = **900** |
+| Vibecoder | Streak | Projects | Badge | Reviews | Score |
+|-----------|--------|----------|-------|---------|-------|
+| New user | 5 | 1 unverified | None | None | (5×2) + 1 + 0 + 0 = **11** |
+| Active builder | 45 | 3 verified (full) | Bronze | None | (45×2) + (3×15) + 10 + 0 = **145** |
+| Quality shipper | 30 | 5 verified (full) | Bronze | 3 × 5-star | (30×2) + (5×15) + 10 + 30 = **175** |
+| Diamond vibecoder | 380 | 10 verified (full) | Diamond | 5 × 5-star | (380×2) + (10×15) + 40 + 50 = **1000** |
 
 #### Future Score Enhancements (V2)
 
 | Bonus | Points | Condition |
 |-------|--------|-----------|
-| GitHub repos linked | +2 per repo | Verified via GitHub API |
-| Client testimonial | +15 per testimonial | After completed hire |
-| Project with 100+ stars | +10 per project | Verified via GitHub API |
+| GitHub stars | +2 per 10 stars | Verified via GitHub API |
+| Community upvotes | +1 per upvote | Peer validation of project quality |
+| Hire completion rate | +10 per completed hire | Tracks actual delivery |
 | Verified identity | +25 (one-time) | KYC or social verification |
 
 #### Acceptance Criteria
 
-- [ ] Vibe Score recalculates on every streak log and project add/remove
+- [ ] Vibe Score recalculates on every streak log, project change, and review submission
 - [ ] Score is displayed with lightning bolt icon and purple accent
 - [ ] Score updates are reflected immediately across all pages
 - [ ] Score cannot go negative
+- [ ] Quality signals (project completeness) are factored into per-project scoring
+- [ ] Review bonus is capped at 50 points
 
 ---
 

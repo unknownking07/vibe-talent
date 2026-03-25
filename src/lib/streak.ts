@@ -62,15 +62,52 @@ export function calculateStreak(activityDates: string[]): {
 }
 
 /**
- * Calculate vibe score based on streak and projects.
- * Formula: (Current Streak × 2) + (Verified Projects × 5) + (Unverified × 1) + (Badge Bonus)
- * Only verified projects get full points to prevent gaming with fake repos.
+ * Calculate quality score for an individual project.
+ * Verified projects earn bonus points for completeness (live URL, description, etc).
+ * Max score per verified project: 15 pts.
+ */
+export function calculateProjectQualityScore(project: {
+  verified?: boolean;
+  live_url?: string | null;
+  github_url?: string | null;
+  description: string;
+  image_url?: string | null;
+  tech_stack: string[];
+}): number {
+  let score = project.verified ? 5 : 1;
+  if (project.verified) {
+    if (project.live_url) score += 3;
+    if (project.github_url) score += 2;
+    if (project.description.length > 50) score += 2;
+    if (project.image_url) score += 1;
+    if (project.tech_stack.length >= 3) score += 2;
+  }
+  return score;
+}
+
+/**
+ * Calculate review bonus from client ratings.
+ * Formula: avg_rating × review_count × 2, capped at 50.
+ * This ensures quality builders with real client feedback get a meaningful boost.
+ */
+export function calculateReviewBonus(avgRating: number, reviewCount: number): number {
+  if (reviewCount === 0) return 0;
+  return Math.min(50, Math.round(avgRating * reviewCount * 2));
+}
+
+/**
+ * Calculate vibe score based on streak, projects, badges, and reviews.
+ * Formula: (Current Streak × 2) + Σ Project Quality Scores + Badge Bonus + Review Bonus
+ *
+ * Quality signals ensure that builders who ship polished, verified projects
+ * with live demos and client reviews rank higher than pure streak grinders.
  */
 export function calculateVibeScore(
   currentStreak: number,
   projectCount: number,
   badgeLevel: BadgeLevel,
-  verifiedCount?: number
+  verifiedCount?: number,
+  reviewBonus: number = 0
 ): number {
   const streakPoints = currentStreak * 2;
 
@@ -87,7 +124,7 @@ export function calculateVibeScore(
     diamond: 40,
   };
 
-  return streakPoints + projectPoints + badgeBonusMap[badgeLevel];
+  return streakPoints + projectPoints + badgeBonusMap[badgeLevel] + reviewBonus;
 }
 
 /**

@@ -40,3 +40,9 @@ Traditional hiring is broken for indie developers and vibecoders. VibeTalent sol
 - **Vibecoders** who want to prove their consistency and get discovered
 - **Clients** looking to hire reliable developers based on real track records
 - **AI Agents** that need structured talent data via the public API
+
+### Where to Start
+
+- **Builders** — [Get started as a builder →](builders/getting-started.md)
+- **Clients** — [Find your next developer →](clients/finding-builders.md)
+- **Developers** — [Set up the dev environment →](developers/setup.md)
