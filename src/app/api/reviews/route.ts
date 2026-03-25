@@ -16,6 +16,13 @@ function getSb() {
   );
 }
 
+function getAdminSb() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -33,7 +40,7 @@ export async function GET(req: NextRequest) {
     const sb = getSb();
     const { data, error } = await sb
       .from("reviews")
-      .select("id, builder_id, reviewer_name, reviewer_email, rating, comment, created_at")
+      .select("id, builder_id, reviewer_name, rating, comment, created_at")
       .eq("builder_id", builderId)
       .order("created_at", { ascending: false });
 
@@ -76,7 +83,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     const emailClean = String(reviewer_email).trim().toLowerCase();
-    const sb = getSb();
+    const sb = getAdminSb();
 
     // Verify the review exists and belongs to this email
     const { data: review, error: fetchErr } = await sb
