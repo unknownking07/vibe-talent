@@ -144,7 +144,45 @@ export default function DashboardPage() {
         const oneHourAgo = Date.now() - 3600000;
         if (!lastSync || Number(lastSync) < oneHourAgo) {
           localStorage.setItem("last_github_sync", Date.now().toString());
-          fetch("/api/github/activity", { method: "POST" }).catch(console.error);
+          fetch("/api/github/activity", { method: "POST" })
+            .then(res => res.json())
+            .then(data => {
+              if (data.synced && data.dates_logged > 0) {
+                // Re-fetch streak data and update UI after successful sync
+                fetchStreakLogs(authUser.id).then(newStreakData => {
+                  setHeatmapData(newStreakData);
+                  // Re-check if today was logged
+                  const nowLocal = new Date();
+                  const todayStr = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, "0")}-${String(nowLocal.getDate()).padStart(2, "0")}`;
+                  if (newStreakData[todayStr]) {
+                    setTodayLogged(true);
+                  }
+                  // Recalculate streak from new data
+                  const newDates = Object.keys(newStreakData).sort().reverse();
+                  let newStreak = 0;
+                  if (newDates.length > 0) {
+                    const yLocal = new Date(nowLocal.getTime() - 86400000);
+                    const yesterdayStr = `${yLocal.getFullYear()}-${String(yLocal.getMonth() + 1).padStart(2, "0")}-${String(yLocal.getDate()).padStart(2, "0")}`;
+                    if (newDates[0] === todayStr || newDates[0] === yesterdayStr) {
+                      newStreak = 1;
+                      for (let i = 1; i < newDates.length; i++) {
+                        const curr = new Date(newDates[i - 1]);
+                        const prev = new Date(newDates[i]);
+                        if ((curr.getTime() - prev.getTime()) / 86400000 === 1) {
+                          newStreak++;
+                        } else break;
+                      }
+                    }
+                  }
+                  setUser(prev => prev ? {
+                    ...prev,
+                    streak: Math.max(prev.streak, newStreak),
+                    longest_streak: Math.max(prev.longest_streak, newStreak),
+                  } : prev);
+                });
+              }
+            })
+            .catch(console.error);
         }
       }
 
