@@ -63,7 +63,8 @@ export async function GET(request: Request) {
         if (profile) {
           const updates: Record<string, string> = {};
 
-          if (oauthAvatar && !profile.avatar_url) {
+          // Always sync avatar from OAuth provider on login
+          if (oauthAvatar) {
             updates.avatar_url = oauthAvatar;
           }
 
