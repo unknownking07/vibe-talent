@@ -1354,7 +1354,7 @@ export default function DashboardPage() {
                     </button>
                     <input ref={projectImageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleProjectImageSelect} className="hidden" />
                   </div>
-                  <p className="text-xs text-[#71717A] mt-1">Max 5MB. JPG, PNG, WebP, GIF.</p>
+                  <p className="text-xs text-[#71717A] mt-1">Recommended: 1280×720px (16:9). Max 5MB. JPG, PNG, WebP, GIF.</p>
                 </div>
                 <button
                   onClick={editingProjectId ? handleSaveEdit : handleAddProject}
