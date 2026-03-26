@@ -85,26 +85,23 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
       filtered = filtered.filter(u => u.projects.some(p => p.verified));
     }
 
-    // Profile completeness score for tiebreaking — profiles with projects,
-    // bio, and recent activity rank higher than empty shell profiles
-    const completeness = (u: typeof filtered[0]) => {
-      let score = 0;
-      if (u.projects.length > 0) score += 3;
-      if (u.bio) score += 2;
-      if (u.last_activity_date) score += 1;
-      if (u.avatar_url) score += 1;
-      return score;
+    // Profile tier: profiles with both projects AND bio sort first,
+    // then profiles with just bio, then empty profiles last
+    const profileTier = (u: typeof filtered[0]) => {
+      if (u.projects.length > 0 && u.bio) return 2; // best — has projects + bio
+      if (u.projects.length > 0 || u.bio) return 1; // partial — has one of them
+      return 0; // empty — no projects, no bio
     };
 
     switch (sortBy) {
       case "vibe_score":
-        filtered.sort((a, b) => b.vibe_score - a.vibe_score || completeness(b) - completeness(a));
+        filtered.sort((a, b) => profileTier(b) - profileTier(a) || b.vibe_score - a.vibe_score);
         break;
       case "streak":
-        filtered.sort((a, b) => b.streak - a.streak || completeness(b) - completeness(a));
+        filtered.sort((a, b) => profileTier(b) - profileTier(a) || b.streak - a.streak);
         break;
       case "projects":
-        filtered.sort((a, b) => b.projects.length - a.projects.length || completeness(b) - completeness(a));
+        filtered.sort((a, b) => profileTier(b) - profileTier(a) || b.projects.length - a.projects.length);
         break;
       case "newest":
         filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
