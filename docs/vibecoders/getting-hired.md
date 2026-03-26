@@ -4,7 +4,7 @@ VibeTalent is designed to make you discoverable to clients who need reliable dev
 
 ## How Clients Find You
 
-Clients discover builders through three channels:
+Clients discover vibecoders through three channels:
 
 ### 1. Explore Page
 The main marketplace at `/explore`. Clients can:
@@ -15,10 +15,10 @@ The main marketplace at `/explore`. Clients can:
 Your profile card shows your avatar, bio, streak, badge, Vibe Score, and top tech stack tags. Make them count.
 
 ### 2. Leaderboard
-The `/leaderboard` page ranks all builders. The top 3 get prominent "podium" placement. Being on the first page of the leaderboard is prime real estate.
+The `/leaderboard` page ranks all vibecoders. The top 3 get prominent "podium" placement. Being on the first page of the leaderboard is prime real estate.
 
 ### 3. AI Matching
-Clients can use the AI agent to describe their project, and the agent recommends the best-fit builders based on:
+Clients can use the AI agent to describe their project, and the agent recommends the best-fit vibecoders based on:
 - **Skill overlap** — Does your tech stack match their needs?
 - **Consistency** — Active streak and badge level
 - **Project quality** — Verified projects with live demos
@@ -71,9 +71,9 @@ Reviews directly boost your Vibe Score (up to +50 points) and show future client
 
 ## Tips for Getting More Hire Requests
 
-1. **Fill out your social links** — Telegram and Twitter make you easy to contact
-2. **Keep your streak alive** — Active streaks signal availability
-3. **Ship real projects** — Verified projects with live URLs are your best marketing
-4. **Write a compelling bio** — "Full-stack builder specializing in AI + SaaS" beats "I code stuff"
-5. **Respond quickly** — Clients often reach out to multiple builders. First to respond wins.
+1. **Ship real projects** — Verified projects with live URLs are your best marketing
+2. **Fill out your social links** — Telegram and Twitter make you easy to contact
+3. **Keep your streak alive** — Active streaks signal availability
+4. **Write a compelling bio** — "Full-stack vibecoder specializing in AI + SaaS" beats "I code stuff"
+5. **Respond quickly** — Clients often reach out to multiple vibecoders. First to respond wins.
 6. **Ask for reviews** — After a successful project, ask your client to leave a review on VibeTalent

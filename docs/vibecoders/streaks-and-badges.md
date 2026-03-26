@@ -67,7 +67,7 @@ Day 200:    Streak breaks (missed a day)
 ### Where Badges Appear
 
 - Next to your username on your **profile page**
-- On your **explore card** when clients browse builders
+- On your **explore card** when clients browse vibecoders
 - On the **leaderboard** next to your rank
 - On your **share card** for social media
 

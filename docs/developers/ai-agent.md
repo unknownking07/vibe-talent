@@ -1,20 +1,20 @@
 # AI Agent
 
-VibeTalent includes an experimental AI agent system that intelligently matches builders to client needs and provides structured evaluation reports.
+VibeTalent includes an experimental AI agent system that intelligently matches vibecoders to client needs and provides structured evaluation reports.
 
 ## Overview
 
 The AI agent lives at `/agent/*` and provides three core capabilities:
 
-1. **Builder Evaluation** — Score and analyze individual builders
-2. **Builder Matching** — Find the best builders for a specific job
+1. **VibeCoder Evaluation** — Score and analyze individual vibecoders
+2. **VibeCoder Matching** — Find the best vibecoders for a specific job
 3. **Message Generation** — Auto-compose hire messages
 
 ## Agent Scoring System
 
 ### Evaluation Criteria
 
-The agent evaluates builders across five dimensions:
+The agent evaluates vibecoders across five dimensions:
 
 | Dimension | Weight | What It Measures |
 |---|---|---|
@@ -27,7 +27,7 @@ The agent evaluates builders across five dimensions:
 ### Scoring Algorithm
 
 ```
-For each builder:
+For each vibecoder:
   1. Normalize each dimension to 0-100
   2. Apply weighted scoring:
      - Consistency: streak length, regularity
@@ -41,11 +41,11 @@ For each builder:
 
 ### Evaluation Report
 
-The agent generates a structured report for each builder:
+The agent generates a structured report for each vibecoder:
 
 ```
 ┌─────────────────────────────────┐
-│ Builder: @alice                 │
+│ VibeCoder: @alice               │
 │ Overall Score: 87/100           │
 ├─────────────────────────────────┤
 │ Consistency:    ████████░░  85  │
@@ -65,14 +65,14 @@ The agent generates a structured report for each builder:
 └─────────────────────────────────┘
 ```
 
-## Builder Matching
+## VibeCoder Matching
 
 ### How Matching Works
 
 When a client describes their project needs, the agent:
 
 1. **Parses requirements** — Extracts tech stack, timeline, and budget signals
-2. **Queries builders** — Filters by relevant skills
+2. **Queries vibecoders** — Filters by relevant skills
 3. **Scores candidates** — Evaluates each against the five dimensions
 4. **Ranks results** — Returns top matches with explanations
 
@@ -80,7 +80,7 @@ When a client describes their project needs, the agent:
 
 | Factor | How It's Used |
 |---|---|
-| **Skill overlap** | Builder's tech_stack vs. required technologies |
+| **Skill overlap** | VibeCoder's tech_stack vs. required technologies |
 | **Availability signal** | Active streak suggests availability |
 | **Budget alignment** | Past project complexity vs. stated budget |
 | **Track record** | Reviews and completed hire requests |
@@ -89,23 +89,23 @@ When a client describes their project needs, the agent:
 
 ### `/agent` — Main Interface
 
-Entry point with options to find, evaluate, or contact builders.
+Entry point with options to find, evaluate, or contact vibecoders.
 
-### `/agent/find` — Find Builders
+### `/agent/find` — Find VibeCoders
 
-Describe your project and the agent suggests matching builders.
+Describe your project and the agent suggests matching vibecoders.
 
-### `/agent/evaluate/{username}` — Evaluate Builder
+### `/agent/evaluate/{username}` — Evaluate VibeCoder
 
-Get a detailed evaluation report for a specific builder.
+Get a detailed evaluation report for a specific vibecoder.
 
-### `/agent/contact/{username}` — Contact Builder
+### `/agent/contact/{username}` — Contact VibeCoder
 
 AI-assisted message generation for hire requests.
 
 ### `/agent/chat` — Chat Interface
 
-Conversational interface for natural language builder search.
+Conversational interface for natural language vibecoder search.
 
 ## Agent Components
 
@@ -114,15 +114,15 @@ Conversational interface for natural language builder search.
 | `AgentThinking` | Loading animation while agent processes |
 | `ChatInput` | Text input for conversational interface |
 | `ChatMessage` | Renders agent responses with formatting |
-| `EvaluationReport` | Visual builder evaluation display |
-| `MatchCard` | Builder match result card |
+| `EvaluationReport` | Visual vibecoder evaluation display |
+| `MatchCard` | VibeCoder match result card |
 
 ## Public API for Agents
 
 External AI agents can integrate with VibeTalent through the v1 API:
 
 ```
-# Search builders by skills
+# Search vibecoders by skills
 GET /api/v1/builders?skills=react,node&min_streak=30&sort=vibe_score
 
 # Get full profile

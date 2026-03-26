@@ -11,7 +11,7 @@ Base URL: `https://vibetalent.work/api/v1`
 
 All v1 endpoints include CORS headers and return JSON. No authentication required.
 
-### List Builders
+### List VibeCoders
 
 ```
 GET /api/v1/builders
@@ -54,7 +54,7 @@ GET /api/v1/builders
 }
 ```
 
-### Get Builder Profile
+### Get VibeCoder Profile
 
 ```
 GET /api/v1/builders/{username}
@@ -137,7 +137,7 @@ POST /api/streak
 GET /api/users/{username}
 ```
 
-Returns public profile data for a builder.
+Returns public profile data for a vibecoder.
 
 ### Reviews
 
@@ -145,7 +145,7 @@ Returns public profile data for a builder.
 GET /api/reviews?builder_id={uuid}
 ```
 
-Returns all reviews for a builder.
+Returns all reviews for a vibecoder.
 
 ```
 POST /api/reviews
@@ -186,7 +186,7 @@ Undo a report using the `reporter_token`.
 GET /api/hire
 ```
 
-**Requires authentication.** Returns all hire requests for the authenticated builder.
+**Requires authentication.** Returns all hire requests for the authenticated vibecoder.
 
 ```
 POST /api/hire
@@ -252,7 +252,7 @@ GET /api/cron/reset-streaks
 GET /api/share-card/{username}
 ```
 
-Returns a dynamically generated PNG image of a builder's profile card (for social sharing).
+Returns a dynamically generated PNG image of a vibecoder's profile card (for social sharing).
 
 ## Error Responses
 

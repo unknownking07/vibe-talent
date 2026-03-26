@@ -130,8 +130,8 @@ Client submits hire form (no auth required)
     → Rate limit check
     → Insert hire_request
     → Send email notification via Resend
-  → Builder sees request in /dashboard
-  → Builder replies → Chat thread via hire_messages
+  → VibeCoder sees request in /dashboard
+  → VibeCoder replies → Chat thread via hire_messages
 ```
 
 ## Key Design Decisions
