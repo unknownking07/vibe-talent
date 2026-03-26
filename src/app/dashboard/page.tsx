@@ -75,14 +75,15 @@ export default function DashboardPage() {
   const [hireRequests, setHireRequests] = useState<HireRequest[]>([]);
 
   useEffect(() => {
-    async function loadUser() {
+    let cancelled = false;
+    let loaded = false;
+
+    async function loadUserData(authUser: import("@supabase/supabase-js").User) {
+      if (loaded || cancelled) return;
+      loaded = true;
       const supabase = createClient();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any;
-
-      // Step 1: Get auth user (required before anything else)
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) { setLoading(false); return; }
 
       // Step 2: Fetch profile + projects + socials + streaks + inbox ALL in parallel (single round trip)
       const [{ data: profile }, { data: projects }, { data: socials }, streakData, { data: inboxData }] = await Promise.all([
@@ -195,7 +196,31 @@ export default function DashboardPage() {
         }).eq("id", authUser.id);
       }
     }
-    loadUser();
+
+    // Try immediate auth check first
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+      if (cancelled) return;
+      if (authUser) {
+        loadUserData(authUser);
+      }
+    });
+
+    // Also listen for auth state changes — catches the case where
+    // session isn't ready yet after OAuth redirect / profile setup
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (cancelled) return;
+      if (session?.user) {
+        loadUserData(session.user);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const [showProjectForm, setShowProjectForm] = useState(false);
@@ -662,13 +687,21 @@ export default function DashboardPage() {
       setProjectError("Description must be at least 10 characters.");
       return;
     }
-    if (projectForm.github_url && !projectForm.github_url.startsWith("https://github.com/")) {
-      setProjectError("GitHub URL must start with https://github.com/");
-      return;
+    if (projectForm.github_url) {
+      const ghPattern = /^https:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+\/?$/;
+      if (!ghPattern.test(projectForm.github_url.trim())) {
+        setProjectError("GitHub URL must be in the format: https://github.com/username/repo");
+        return;
+      }
     }
-    if (projectForm.live_url && !projectForm.live_url.startsWith("http://") && !projectForm.live_url.startsWith("https://")) {
-      setProjectError("Live URL must start with http:// or https://");
-      return;
+    if (projectForm.live_url) {
+      try {
+        const url = new URL(projectForm.live_url.trim());
+        if (!["http:", "https:"].includes(url.protocol)) throw new Error();
+      } catch {
+        setProjectError("Live URL must be a valid URL starting with http:// or https://");
+        return;
+      }
     }
 
     setAddingProject(true);
@@ -746,13 +779,21 @@ export default function DashboardPage() {
       setProjectError("Description must be at least 10 characters.");
       return;
     }
-    if (projectForm.github_url && !projectForm.github_url.startsWith("https://github.com/")) {
-      setProjectError("GitHub URL must start with https://github.com/");
-      return;
+    if (projectForm.github_url) {
+      const ghPattern = /^https:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+\/?$/;
+      if (!ghPattern.test(projectForm.github_url.trim())) {
+        setProjectError("GitHub URL must be in the format: https://github.com/username/repo");
+        return;
+      }
     }
-    if (projectForm.live_url && !projectForm.live_url.startsWith("http://") && !projectForm.live_url.startsWith("https://")) {
-      setProjectError("Live URL must start with http:// or https://");
-      return;
+    if (projectForm.live_url) {
+      try {
+        const url = new URL(projectForm.live_url.trim());
+        if (!["http:", "https:"].includes(url.protocol)) throw new Error();
+      } catch {
+        setProjectError("Live URL must be a valid URL starting with http:// or https://");
+        return;
+      }
     }
 
     setSavingEdit(true);

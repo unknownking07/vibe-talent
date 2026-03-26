@@ -38,7 +38,7 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
   return (
     <Link href={`/profile/${user.username}`}>
       <div
-        className="group relative p-5 transition-all card-brutal hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#0F0F0F]"
+        className="group relative p-5 transition-all card-brutal hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#0F0F0F] h-full flex flex-col"
       >
         {rank && (
           <div
@@ -52,7 +52,7 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
           </div>
         )}
 
-        <div className="flex items-start gap-4">
+        <div className="flex items-start gap-4 flex-1">
           <div
             className="flex h-12 w-12 shrink-0 items-center justify-center text-sm font-extrabold text-white overflow-hidden"
             style={{
@@ -82,11 +82,9 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
               </span>
             )}
 
-            {user.bio && (
-              <p className="mt-1 text-sm text-[#52525B] font-medium line-clamp-2">
-                {user.bio}
-              </p>
-            )}
+            <p className="mt-1 text-sm text-[#52525B] font-medium line-clamp-2">
+              {user.bio || "No bio yet"}
+            </p>
 
             <div className="mt-3 flex items-center gap-4 flex-wrap">
               <StreakCounter streak={user.streak} size="sm" />
@@ -97,9 +95,9 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
               </div>
             </div>
 
-            {user.projects.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {user.projects.slice(0, 3).map((p) => (
+            <div className="mt-3 flex flex-wrap gap-1.5 min-h-[28px]">
+              {user.projects.length > 0 ? (
+                user.projects.slice(0, 3).map((p) => (
                   <span
                     key={p.id}
                     className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold text-[#0F0F0F]"
@@ -111,9 +109,13 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
                     <ExternalLink size={10} />
                     {p.title}
                   </span>
-                ))}
-              </div>
-            )}
+                ))
+              ) : (
+                <span className="text-xs font-medium text-zinc-400 italic">
+                  No projects shipped yet
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
