@@ -93,7 +93,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
       const hasStreak = u.streak > 0;
       if (hasProj && hasBio && hasScore && hasStreak) return 3; // complete — shown first
       if (hasProj && hasBio) return 2; // has projects + bio
-      if (hasProj || hasBio) return 1; // has one of them
+      if (hasProj || hasBio || hasStreak) return 1; // has one of them
       return 0; // empty shell
     };
 
