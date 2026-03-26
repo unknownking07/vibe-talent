@@ -85,15 +85,26 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
       filtered = filtered.filter(u => u.projects.some(p => p.verified));
     }
 
+    // Profile completeness score for tiebreaking — profiles with projects,
+    // bio, and recent activity rank higher than empty shell profiles
+    const completeness = (u: typeof filtered[0]) => {
+      let score = 0;
+      if (u.projects.length > 0) score += 3;
+      if (u.bio) score += 2;
+      if (u.last_activity_date) score += 1;
+      if (u.avatar_url) score += 1;
+      return score;
+    };
+
     switch (sortBy) {
       case "vibe_score":
-        filtered.sort((a, b) => b.vibe_score - a.vibe_score);
+        filtered.sort((a, b) => b.vibe_score - a.vibe_score || completeness(b) - completeness(a));
         break;
       case "streak":
-        filtered.sort((a, b) => b.streak - a.streak);
+        filtered.sort((a, b) => b.streak - a.streak || completeness(b) - completeness(a));
         break;
       case "projects":
-        filtered.sort((a, b) => b.projects.length - a.projects.length);
+        filtered.sort((a, b) => b.projects.length - a.projects.length || completeness(b) - completeness(a));
         break;
       case "newest":
         filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());

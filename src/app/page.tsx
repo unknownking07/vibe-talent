@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { VibecoderCard } from "@/components/ui/vibecoder-card";
 import { ProjectCard } from "@/components/ui/project-card";
+import { HeroCTA } from "@/components/ui/hero-cta";
 import { fetchHomepageDataCached } from "@/lib/supabase/server-queries";
 import { Flame, TrendingUp, Award, Zap, ArrowRight, Code2, Target, Users } from "lucide-react";
 
@@ -55,13 +56,7 @@ export default async function HomePage() {
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/dashboard"
-              className="btn-brutal btn-brutal-primary text-base flex items-center gap-2"
-            >
-              Create Your Profile
-              <ArrowRight size={18} />
-            </Link>
+            <HeroCTA />
             <Link
               href="/explore"
               className="btn-brutal btn-brutal-secondary text-base"
@@ -277,14 +272,10 @@ export default async function HomePage() {
             Start building your vibe coding reputation today. Create a profile,
             start your streak, and let AI agents match you with clients.
           </p>
-          <Link
-            href="/dashboard"
-            className="btn-brutal btn-brutal-primary mt-8 text-base inline-flex items-center gap-2"
+          <HeroCTA
+            className="mt-8 inline-flex"
             style={{ boxShadow: "6px 6px 0 #FFFFFF" }}
-          >
-            Create Your Profile
-            <ArrowRight size={18} />
-          </Link>
+          />
         </div>
       </section>
     </div>
