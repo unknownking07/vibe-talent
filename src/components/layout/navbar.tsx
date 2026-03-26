@@ -14,6 +14,8 @@ const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
 ];
 
+const DOCS_URL = "https://vibe-talent.gitbook.io/untitled";
+
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -81,6 +83,20 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
+          <a
+            href={DOCS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-brutal ml-2 text-sm py-2 px-4 font-bold uppercase tracking-wide whitespace-nowrap"
+            style={{
+              backgroundColor: "var(--accent)",
+              color: "#FFFFFF",
+              border: "2px solid #0F0F0F",
+              boxShadow: "var(--shadow-brutal-sm)",
+            }}
+          >
+            Docs
+          </a>
           {isLoggedIn ? (
             <>
             <div className="ml-3">
@@ -141,6 +157,16 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
+          <a
+            href={DOCS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setMobileOpen(false)}
+            className="block px-4 py-3 text-sm font-bold uppercase tracking-wide"
+            style={{ color: "var(--accent)" }}
+          >
+            How to Use
+          </a>
           {isLoggedIn ? (
             <>
             <div className="mt-2 flex items-center gap-3">

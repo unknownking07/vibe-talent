@@ -37,6 +37,7 @@ export function Footer() {
               <Link href="/explore" className="text-sm font-semibold text-[#52525B] hover:text-[var(--accent)] transition-colors">Explore</Link>
               <Link href="/leaderboard" className="text-sm font-semibold text-[#52525B] hover:text-[var(--accent)] transition-colors">Leaderboard</Link>
               <Link href="/dashboard" className="text-sm font-semibold text-[#52525B] hover:text-[var(--accent)] transition-colors">Dashboard</Link>
+              <a href="https://vibe-talent.gitbook.io/untitled" target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-[#52525B] hover:text-[var(--accent)] transition-colors">Docs</a>
             </div>
           </div>
         </div>
