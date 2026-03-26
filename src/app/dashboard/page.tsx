@@ -768,6 +768,9 @@ export default function DashboardPage() {
       build_time: project.build_time || "",
       tags: project.tags?.join(", ") || "",
     });
+    // Load existing image preview
+    setProjectImageFile(null);
+    setProjectImagePreview(project.image_url || null);
     setShowProjectForm(true);
   };
 
@@ -817,6 +820,17 @@ export default function DashboardPage() {
       return;
     }
 
+    // Upload project image if a new file was selected
+    if (projectImageFile && user && editingProjectId) {
+      const ext = projectImageFile.name.split(".").pop();
+      const filePath = `${user.id}/${editingProjectId}/image.${ext}`;
+      const { error: uploadError } = await sb.storage.from("project-images").upload(filePath, projectImageFile, { upsert: true });
+      if (!uploadError) {
+        const { data: { publicUrl } } = sb.storage.from("project-images").getPublicUrl(filePath);
+        await sb.from("projects").update({ image_url: `${publicUrl}?t=${Date.now()}` }).eq("id", editingProjectId);
+      }
+    }
+
     await reloadUser();
 
     // Auto-verify if GitHub URL changed
@@ -824,6 +838,8 @@ export default function DashboardPage() {
     const savedEditingId = editingProjectId;
 
     setProjectForm({ title: "", description: "", tech_stack: "", live_url: "", github_url: "", build_time: "", tags: "" });
+    setProjectImageFile(null);
+    setProjectImagePreview(null);
     setShowProjectForm(false);
     setEditingProjectId(null);
     setEditingOriginalGithubUrl("");
