@@ -4,19 +4,19 @@
 
 * [Introduction](README.md)
 
-## For Builders
+## For VibeCoders
 
-* [Getting Started as a Builder](builders/getting-started.md)
-* [Understanding Your Vibe Score](builders/vibe-score.md)
-* [Streaks & Badges](builders/streaks-and-badges.md)
-* [Showcasing Your Projects](builders/projects.md)
-* [Getting Hired](builders/getting-hired.md)
-* [GitHub Integration](builders/github-sync.md)
+* [Getting Started as a VibeCoder](vibecoders/getting-started.md)
+* [Understanding Your Vibe Score](vibecoders/vibe-score.md)
+* [Streaks & Badges](vibecoders/streaks-and-badges.md)
+* [Showcasing Your Projects](vibecoders/projects.md)
+* [Getting Hired](vibecoders/getting-hired.md)
+* [GitHub Integration](vibecoders/github-sync.md)
 
 ## For Clients
 
-* [Finding Builders](clients/finding-builders.md)
-* [Hiring a Builder](clients/hiring.md)
+* [Finding VibeCoders](clients/finding-builders.md)
+* [Hiring a VibeCoder](clients/hiring.md)
 * [AI-Powered Matching](clients/ai-matching.md)
 
 ## Developers

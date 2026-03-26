@@ -57,10 +57,10 @@ SUPABASE_SERVICE_ROLE_KEY=...
 
 Run the SQL migrations in your Supabase SQL Editor. The schema includes these tables:
 
-- `users` — Builder profiles and scores
+- `users` — VibeCoder profiles and scores
 - `projects` — Shipped project portfolios
 - `streak_logs` — Daily activity records
-- `social_links` — Builder contact info
+- `social_links` — VibeCoder contact info
 - `hire_requests` — Client inquiries
 - `hire_messages` — Chat threads
 - `reviews` — Client feedback
@@ -109,10 +109,10 @@ src/
 │   ├── api/                # Backend API endpoints
 │   ├── auth/               # Login, signup, profile setup
 │   ├── agent/              # AI matching interface
-│   ├── dashboard/          # Authenticated builder dashboard
+│   ├── dashboard/          # Authenticated vibecoder dashboard
 │   ├── explore/            # Public talent marketplace
 │   ├── leaderboard/        # Public rankings
-│   ├── profile/[username]/ # Public builder profiles
+│   ├── profile/[username]/ # Public vibecoder profiles
 │   ├── layout.tsx          # Root layout
 │   └── page.tsx            # Landing page
 ├── components/             # Reusable React components

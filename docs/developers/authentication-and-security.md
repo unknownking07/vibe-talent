@@ -88,9 +88,9 @@ Streak logs are private — no one else can see your raw activity data. Only the
 | Operation | Policy |
 |---|---|
 | **INSERT** | Public — anyone can submit (no auth required) |
-| **SELECT** | Builder only — `auth.uid() = builder_id` |
-| **UPDATE** | Builder only — status changes, replies |
-| **DELETE** | Builder only |
+| **SELECT** | VibeCoder only — `auth.uid() = builder_id` |
+| **UPDATE** | VibeCoder only — status changes, replies |
+| **DELETE** | VibeCoder only |
 
 ### Hire Messages
 
@@ -191,7 +191,7 @@ Access-Control-Allow-Methods: GET, POST, OPTIONS
 Access-Control-Allow-Headers: Content-Type, Authorization
 ```
 
-These endpoints serve read-only builder data and accept hire requests — no authentication required by design (to enable AI agent integrations).
+These endpoints serve read-only vibecoder data and accept hire requests — no authentication required by design (to enable AI agent integrations).
 
 ### No Secrets in Client Code
 
