@@ -85,12 +85,16 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
       filtered = filtered.filter(u => u.projects.some(p => p.verified));
     }
 
-    // Profile tier: profiles with both projects AND bio sort first,
-    // then profiles with just bio, then empty profiles last
+    // Profile tier: complete profiles always first, then partial, then empty
     const profileTier = (u: typeof filtered[0]) => {
-      if (u.projects.length > 0 && u.bio) return 2; // best — has projects + bio
-      if (u.projects.length > 0 || u.bio) return 1; // partial — has one of them
-      return 0; // empty — no projects, no bio
+      const hasProj = u.projects.length > 0;
+      const hasBio = !!u.bio;
+      const hasScore = u.vibe_score > 0;
+      const hasStreak = u.streak > 0;
+      if (hasProj && hasBio && hasScore && hasStreak) return 3; // complete — shown first
+      if (hasProj && hasBio) return 2; // has projects + bio
+      if (hasProj || hasBio) return 1; // has one of them
+      return 0; // empty shell
     };
 
     switch (sortBy) {
