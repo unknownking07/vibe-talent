@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Star, MessageSquare, Send, Trash2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import type { Review } from "@/lib/types/database";
 
 interface ReviewsSectionProps {
@@ -100,6 +101,29 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
   const [deleteEmail, setDeleteEmail] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Auto-fetch logged-in user's name and email
+  useEffect(() => {
+    async function loadUser() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setIsLoggedIn(true);
+        setFormEmail(user.email || "");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: profile } = await (supabase as any)
+          .from("users")
+          .select("username")
+          .eq("id", user.id)
+          .single();
+        if (profile) {
+          setFormName(profile.username || "");
+        }
+      }
+    }
+    loadUser();
+  }, []);
 
   useEffect(() => {
     async function loadReviews() {
@@ -124,7 +148,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
 
   const handleSubmitReview = async () => {
     if (!formName.trim() || !formEmail.trim() || formRating === 0) {
-      setSubmitError("Please fill in your name, email, and select a rating.");
+      setSubmitError(isLoggedIn ? "Please select a rating." : "Please fill in your name, email, and select a rating.");
       return;
     }
 
@@ -300,33 +324,44 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
             <ClickableStars rating={formRating} onRate={setFormRating} />
           </div>
 
-          {/* Name & Email */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Name (auto-filled if logged in) */}
+          {isLoggedIn ? (
             <div>
               <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
-                Your Name *
+                Reviewing as
               </label>
-              <input
-                type="text"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                placeholder="John Doe"
-                className="input-brutal w-full"
-              />
+              <div className="input-brutal w-full bg-zinc-100 text-zinc-700 cursor-default">
+                {formName}
+              </div>
             </div>
-            <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
-                Email *
-              </label>
-              <input
-                type="email"
-                value={formEmail}
-                onChange={(e) => setFormEmail(e.target.value)}
-                placeholder="john@example.com"
-                className="input-brutal w-full"
-              />
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+                  Your Name *
+                </label>
+                <input
+                  type="text"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="John Doe"
+                  className="input-brutal w-full"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  value={formEmail}
+                  onChange={(e) => setFormEmail(e.target.value)}
+                  placeholder="john@example.com"
+                  className="input-brutal w-full"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Comment */}
           <div>
