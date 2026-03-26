@@ -7,7 +7,7 @@ VibeTalent exposes two sets of APIs:
 
 ## Public API (v1)
 
-Base URL: `https://vibetalent.dev/api/v1`
+Base URL: `https://vibetalent.work/api/v1`
 
 All v1 endpoints include CORS headers and return JSON. No authentication required.
 

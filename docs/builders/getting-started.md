@@ -10,7 +10,7 @@ Instead of writing a resume, you build a track record that proves itself.
 
 ## Step 1: Sign Up
 
-Head to [vibetalent.dev](https://vibetalent.dev) and click **Create Profile**.
+Head to [vibetalent.work](https://vibetalent.work) and click **Create Profile**.
 
 You can sign up with:
 
@@ -25,7 +25,7 @@ Once you're in, head to your **Dashboard** and fill out your profile:
 
 | Field | Why It Matters |
 |---|---|
-| **Username** | This is your public handle — it appears in your profile URL (`vibetalent.dev/profile/you`) |
+| **Username** | This is your public handle — it appears in your profile URL (`vibetalent.work/profile/you`) |
 | **Bio** | A short description of who you are and what you build. Clients read this first. |
 | **Avatar** | A profile photo makes you look real and trustworthy |
 | **Social Links** | Connect your Twitter, GitHub, Telegram, website, and Farcaster so clients can reach you |
