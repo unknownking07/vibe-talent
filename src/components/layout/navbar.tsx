@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Flame, Menu, X, LogOut } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Flame, Menu, X, LogOut, Settings, User, Users } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { NotificationBell } from "@/components/ui/notification-bell";
 
@@ -21,27 +22,73 @@ export function Navbar() {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState<{ username: string; avatar_url: string | null } | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const supabase = createClient();
     // Check auth once on mount, then listen for changes
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       setIsLoggedIn(!!user);
+      if (user) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: profile } = await (supabase as any)
+          .from("users")
+          .select("username, avatar_url")
+          .eq("id", user.id)
+          .single();
+        if (profile) {
+          setUserProfile({ username: profile.username, avatar_url: profile.avatar_url });
+        }
+      }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setIsLoggedIn(!!session?.user);
+      if (session?.user) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: profile } = await (supabase as any)
+          .from("users")
+          .select("username, avatar_url")
+          .eq("id", session.user.id)
+          .single();
+        if (profile) {
+          setUserProfile({ username: profile.username, avatar_url: profile.avatar_url });
+        }
+      } else {
+        setUserProfile(null);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setProfileDropdownOpen(false);
+      }
+    }
+    if (profileDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [profileDropdownOpen]);
+
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
     setIsLoggedIn(false);
+    setUserProfile(null);
+    setProfileDropdownOpen(false);
     router.push("/");
   };
+
+  const initials = userProfile?.username
+    ? userProfile.username.slice(0, 2).toUpperCase()
+    : "??";
 
   return (
     <nav
@@ -102,19 +149,77 @@ export function Navbar() {
             <div className="ml-3">
               <NotificationBell />
             </div>
-            <button
-              onClick={handleLogout}
-              className="btn-brutal ml-3 text-sm py-2 px-5 flex items-center gap-2"
-              style={{
-                backgroundColor: "#0F0F0F",
-                color: "#FFFFFF",
-                border: "2px solid #0F0F0F",
-                boxShadow: "var(--shadow-brutal-sm)",
-              }}
-            >
-              <LogOut size={14} />
-              Logout
-            </button>
+            {/* Profile Avatar Dropdown */}
+            <div className="relative ml-3" ref={dropdownRef}>
+              <button
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                className="flex items-center justify-center overflow-hidden"
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  border: "2px solid #0F0F0F",
+                  backgroundColor: "#0F0F0F",
+                  cursor: "pointer",
+                }}
+              >
+                {userProfile?.avatar_url ? (
+                  <Image
+                    src={userProfile.avatar_url}
+                    alt={userProfile.username}
+                    width={40}
+                    height={40}
+                    className="w-full h-full object-cover"
+                    style={{ borderRadius: "50%" }}
+                  />
+                ) : (
+                  <span className="text-sm font-extrabold text-white">{initials}</span>
+                )}
+              </button>
+              {profileDropdownOpen && (
+                <div
+                  className="absolute right-0 top-12 z-50 w-48"
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "2px solid #0F0F0F",
+                    boxShadow: "var(--shadow-brutal-sm)",
+                  }}
+                >
+                  <Link
+                    href={`/profile/${userProfile?.username || ""}`}
+                    onClick={() => setProfileDropdownOpen(false)}
+                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide text-[#0F0F0F] hover:bg-[#F4F4F5] transition-colors"
+                  >
+                    <User size={16} />
+                    My Profile
+                  </Link>
+                  <Link
+                    href="/settings"
+                    onClick={() => setProfileDropdownOpen(false)}
+                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide text-[#0F0F0F] hover:bg-[#F4F4F5] transition-colors"
+                  >
+                    <Settings size={16} />
+                    Settings
+                  </Link>
+                  <Link
+                    href="/settings#referral"
+                    onClick={() => setProfileDropdownOpen(false)}
+                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide text-[#0F0F0F] hover:bg-[#F4F4F5] transition-colors"
+                  >
+                    <Users size={16} />
+                    Referral
+                  </Link>
+                  <div style={{ borderTop: "2px solid #0F0F0F" }} />
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide text-[#0F0F0F] hover:bg-[#F4F4F5] transition-colors w-full text-left"
+                  >
+                    <LogOut size={16} />
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
             </>
           ) : (
             <Link
@@ -144,6 +249,36 @@ export function Navbar() {
             backgroundColor: "#FFFFFF",
           }}
         >
+          {/* Mobile: Show avatar + username at top if logged in */}
+          {isLoggedIn && userProfile && (
+            <div className="flex items-center gap-3 py-3 mb-1" style={{ borderBottom: "1px solid #E4E4E7" }}>
+              <div
+                className="flex items-center justify-center overflow-hidden"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: "50%",
+                  border: "2px solid #0F0F0F",
+                  backgroundColor: "#0F0F0F",
+                }}
+              >
+                {userProfile.avatar_url ? (
+                  <Image
+                    src={userProfile.avatar_url}
+                    alt={userProfile.username}
+                    width={36}
+                    height={36}
+                    className="w-full h-full object-cover"
+                    style={{ borderRadius: "50%" }}
+                  />
+                ) : (
+                  <span className="text-xs font-extrabold text-white">{initials}</span>
+                )}
+              </div>
+              <span className="text-sm font-extrabold text-[#0F0F0F]">{userProfile.username}</span>
+            </div>
+          )}
+
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -173,6 +308,31 @@ export function Navbar() {
               <NotificationBell />
               <span className="text-sm font-bold uppercase tracking-wide text-[#0F0F0F]">Notifications</span>
             </div>
+            {userProfile && (
+              <>
+                <Link
+                  href={`/profile/${userProfile.username}`}
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-4 py-3 mt-1 text-sm font-bold uppercase tracking-wide text-[#0F0F0F]"
+                >
+                  My Profile
+                </Link>
+                <Link
+                  href="/settings"
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-4 py-3 text-sm font-bold uppercase tracking-wide text-[#0F0F0F]"
+                >
+                  Settings
+                </Link>
+                <Link
+                  href="/settings#referral"
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-4 py-3 text-sm font-bold uppercase tracking-wide text-[#0F0F0F]"
+                >
+                  Referral
+                </Link>
+              </>
+            )}
             <button
               onClick={() => { handleLogout(); setMobileOpen(false); }}
               className="btn-brutal mt-2 w-full justify-center text-sm py-2.5 flex items-center gap-2"
@@ -183,7 +343,7 @@ export function Navbar() {
               }}
             >
               <LogOut size={14} />
-              Logout
+              Log out
             </button>
             </>
           ) : (
