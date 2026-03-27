@@ -52,14 +52,21 @@ export default function DashboardPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any;
 
+      try {
       // Fetch profile + projects + socials + streaks + inbox ALL in parallel (single round trip)
-      const [{ data: profile }, { data: projects }, { data: socials }, streakData, { data: inboxData }] = await Promise.all([
-        sb.from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, streak_freezes_remaining, streak_freezes_used, referral_count, created_at").eq("id", authUser.id).single(),
-        sb.from("projects").select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at").eq("user_id", authUser.id).order("created_at", { ascending: false }),
-        sb.from("social_links").select("id, user_id, twitter, telegram, github, website, farcaster").eq("user_id", authUser.id).single(),
+      const results = await Promise.allSettled([
+        sb.from("users").select("*").eq("id", authUser.id).single(),
+        sb.from("projects").select("*").eq("user_id", authUser.id).order("created_at", { ascending: false }),
+        sb.from("social_links").select("*").eq("user_id", authUser.id).single(),
         fetchStreakLogs(authUser.id),
         sb.from("hire_requests").select("*").eq("builder_id", authUser.id).order("created_at", { ascending: false }),
       ]);
+
+      const profile = results[0].status === "fulfilled" ? results[0].value?.data : null;
+      const projects = results[1].status === "fulfilled" ? results[1].value?.data : [];
+      const socials = results[2].status === "fulfilled" ? results[2].value?.data : null;
+      const streakData = results[3].status === "fulfilled" ? results[3].value : {};
+      const inboxData = results[4].status === "fulfilled" ? results[4].value?.data : [];
       setHireRequests(inboxData || []);
 
       if (!profile) {
@@ -92,8 +99,8 @@ export default function DashboardPage() {
         }
       }
 
-      const actualStreak = Math.max(profile.streak, calculatedStreak);
-      const actualLongest = Math.max(profile.longest_streak, calculatedStreak);
+      const actualStreak = Math.max(profile.streak || 0, calculatedStreak);
+      const actualLongest = Math.max(profile.longest_streak || 0, calculatedStreak);
 
       // Show UI immediately, don't wait for DB sync
       // vibe_score is computed by the DB trigger — use the value from the profile
@@ -156,11 +163,15 @@ export default function DashboardPage() {
 
       // Sync DB in background if streak was wrong (non-blocking)
       // Don't write vibe_score — the DB trigger is the single source of truth
-      if (actualStreak !== profile.streak || actualLongest !== profile.longest_streak) {
+      if (profile && (actualStreak !== profile.streak || actualLongest !== profile.longest_streak)) {
         sb.from("users").update({
           streak: actualStreak,
           longest_streak: actualLongest,
         }).eq("id", authUser.id);
+      }
+      } catch (err) {
+        console.error("Dashboard loadUserData failed:", err);
+        setLoading(false);
       }
     }
 
