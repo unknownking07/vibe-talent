@@ -2,6 +2,7 @@ import Link from "next/link";
 import { VibecoderCard } from "@/components/ui/vibecoder-card";
 import { ProjectCard } from "@/components/ui/project-card";
 import { HeroCTA } from "@/components/ui/hero-cta";
+import { TestimonialScroll } from "@/components/ui/testimonial-scroll";
 import { fetchHomepageDataCached } from "@/lib/supabase/server-queries";
 import { Flame, TrendingUp, Award, Zap, ArrowRight, Code2, Target, Users } from "lucide-react";
 
@@ -49,7 +50,7 @@ export default async function HomePage() {
                 "@type": "Organization",
                 name: "VibeTalent",
                 url: "https://vibetalent.work",
-                logo: "https://vibetalent.work/og-image.png",
+                logo: "https://vibetalent.work/opengraph-image",
                 sameAs: [],
               },
             ],
@@ -283,6 +284,22 @@ export default async function HomePage() {
               <p className="text-[#52525B] font-bold uppercase">No projects shipped yet. Start building!</p>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section
+        style={{
+          borderTop: "2px solid #0F0F0F",
+          backgroundColor: "#F5F5F5",
+        }}
+      >
+        <div className="py-16">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 mb-8">
+            <h2 className="text-3xl font-extrabold uppercase text-[#0F0F0F]">What People Say</h2>
+            <p className="mt-2 text-[#52525B] font-medium">Real feedback from the community on X</p>
+          </div>
+          <TestimonialScroll />
         </div>
       </section>
 

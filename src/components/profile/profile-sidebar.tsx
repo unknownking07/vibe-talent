@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Github, Globe, Bot, Code2, Share2, Link2 as LinkIcon, Check } from "lucide-react";
+import { Github, Globe, Bot, Code2, Share2, Link2 as LinkIcon, Check, Send } from "lucide-react";
 import Link from "next/link";
 import type { UserWithSocials, BadgeLevel } from "@/lib/types/database";
 import { HireModal } from "@/components/ui/hire-modal";
@@ -162,6 +162,7 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
             href={`https://github.com/${socials.github}`}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={`${user.username} on GitHub`}
             className="w-10 h-10 flex items-center justify-center text-[#0F0F0F] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_#0F0F0F]"
             style={{
               backgroundColor: "#FFFFFF",
@@ -177,6 +178,7 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
             href={`https://x.com/${socials.twitter}`}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={`${user.username} on X (Twitter)`}
             className="w-10 h-10 flex items-center justify-center text-[#0F0F0F] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_#0F0F0F]"
             style={{
               backgroundColor: "#FFFFFF",
@@ -184,7 +186,23 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
               boxShadow: "3px 3px 0 #0F0F0F",
             }}
           >
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            <svg aria-hidden="true" width={16} height={16} viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          </a>
+        )}
+        {socials?.telegram && (
+          <a
+            href={`https://t.me/${socials.telegram.replace("@", "")}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${user.username} on Telegram`}
+            className="w-10 h-10 flex items-center justify-center text-[#0F0F0F] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_#0F0F0F]"
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "2px solid #0F0F0F",
+              boxShadow: "3px 3px 0 #0F0F0F",
+            }}
+          >
+            <Send size={16} />
           </a>
         )}
         {socials?.website && (
@@ -192,6 +210,7 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
             href={socials.website}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={`${user.username}'s website`}
             className="w-10 h-10 flex items-center justify-center text-[#0F0F0F] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_#0F0F0F]"
             style={{
               backgroundColor: "#FFFFFF",

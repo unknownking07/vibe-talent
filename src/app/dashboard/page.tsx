@@ -1130,71 +1130,60 @@ export default function DashboardPage() {
 
       {/* Embeddable Badge */}
       <div
-        className="p-6 mb-8"
+        className="p-5 mb-8"
         style={{
           backgroundColor: "#FFFFFF",
           border: "2px solid #0F0F0F",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        <h2 className="text-lg font-extrabold uppercase flex items-center gap-2 text-[#0F0F0F] mb-4">
-          <ExternalLink size={20} className="text-[var(--accent)]" />
+        <h2 className="text-base font-extrabold uppercase flex items-center gap-2 text-[#0F0F0F] mb-3">
+          <ExternalLink size={16} className="text-[var(--accent)]" />
           Embeddable Badge
         </h2>
-        <p className="text-sm text-[#52525B] font-medium mb-4">
-          Add your VibeTalent badge to your GitHub README or website
-        </p>
 
-        {/* Badge Preview */}
-        <div className="mb-4 p-4 bg-zinc-50 border-2 border-zinc-200 flex items-center justify-center">
+        <div className="flex items-center gap-4 p-3 bg-zinc-50 border-2 border-zinc-200 mb-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={`/api/badge/${user.username}`}
             alt={`${user.username}'s VibeTalent badge`}
-            height={36}
+            height={28}
           />
         </div>
 
-        {/* Copy Markdown */}
-        <div className="space-y-3">
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A]">Markdown (GitHub README)</label>
-              <button
-                onClick={() => {
-                  const siteUrl = window.location.origin;
-                  navigator.clipboard.writeText(`[![VibeTalent](${siteUrl}/api/badge/${user.username})](${siteUrl}/profile/${user.username})`);
-                  setBadgeCopied("md");
-                  setTimeout(() => setBadgeCopied(null), 2000);
-                }}
-                className="text-xs font-bold text-[var(--accent)] hover:underline"
-              >
-                {badgeCopied === "md" ? "Copied!" : "Copy"}
-              </button>
-            </div>
-            <code className="block p-2 text-xs font-mono bg-zinc-100 border-2 border-zinc-200 break-all">
-              {`[![VibeTalent](${typeof window !== "undefined" ? window.location.origin : "https://vibetalent.work"}/api/badge/${user.username})](${typeof window !== "undefined" ? window.location.origin : "https://vibetalent.work"}/profile/${user.username})`}
-            </code>
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A]">HTML (Website)</label>
-              <button
-                onClick={() => {
-                  const siteUrl = window.location.origin;
-                  navigator.clipboard.writeText(`<a href="${siteUrl}/profile/${user.username}"><img src="${siteUrl}/api/badge/${user.username}" alt="VibeTalent Badge" /></a>`);
-                  setBadgeCopied("html");
-                  setTimeout(() => setBadgeCopied(null), 2000);
-                }}
-                className="text-xs font-bold text-[var(--accent)] hover:underline"
-              >
-                {badgeCopied === "html" ? "Copied!" : "Copy"}
-              </button>
-            </div>
-            <code className="block p-2 text-xs font-mono bg-zinc-100 border-2 border-zinc-200 break-all">
-              {`<a href="${typeof window !== "undefined" ? window.location.origin : "https://vibetalent.work"}/profile/${user.username}"><img src="${typeof window !== "undefined" ? window.location.origin : "https://vibetalent.work"}/api/badge/${user.username}" alt="VibeTalent Badge" /></a>`}
-            </code>
-          </div>
+        <div className="flex gap-2">
+          {(() => {
+            const siteUrl = "https://vibetalent.work";
+            const encodedName = encodeURIComponent(user.username);
+            const badgeImgUrl = `${siteUrl}/api/badge/${encodedName}`;
+            const profileUrl = `${siteUrl}/profile/${encodedName}`;
+            return (
+              <>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`[![VibeTalent](${badgeImgUrl})](${profileUrl})`);
+                    setBadgeCopied("md");
+                    setTimeout(() => setBadgeCopied(null), 2000);
+                  }}
+                  className="btn-brutal flex-1 flex items-center justify-center gap-1.5 text-xs py-2"
+                  style={{ backgroundColor: badgeCopied === "md" ? "#D1FAE5" : "#FFFFFF" }}
+                >
+                  {badgeCopied === "md" ? "Copied!" : "Copy Markdown"}
+                </button>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`<a href="${profileUrl}"><img src="${badgeImgUrl}" alt="VibeTalent Badge" /></a>`);
+                    setBadgeCopied("html");
+                    setTimeout(() => setBadgeCopied(null), 2000);
+                  }}
+                  className="btn-brutal flex-1 flex items-center justify-center gap-1.5 text-xs py-2"
+                  style={{ backgroundColor: badgeCopied === "html" ? "#D1FAE5" : "#FFFFFF" }}
+                >
+                  {badgeCopied === "html" ? "Copied!" : "Copy HTML"}
+                </button>
+              </>
+            );
+          })()}
         </div>
       </div>
 
