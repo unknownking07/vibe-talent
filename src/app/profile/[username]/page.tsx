@@ -5,6 +5,7 @@ import { StatsRibbon } from "@/components/profile/stats-ribbon";
 import { ProfileHeatmap } from "@/components/profile/profile-heatmap";
 import { ProfileProjectCard } from "@/components/profile/profile-project-card";
 import ReviewsSection from "@/components/profile/reviews-section";
+import { ProfileViewTracker } from "@/components/profile/profile-view-tracker";
 import Link from "next/link";
 import type { Metadata } from "next";
 
@@ -115,6 +116,7 @@ export default async function ProfilePage({
 
   return (
     <div className="flex justify-center p-4 sm:p-8">
+      {!isOwner && <ProfileViewTracker viewedUserId={user.id} />}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

@@ -9,6 +9,8 @@ import type { UserWithSocials } from "@/lib/types/database";
 import { StreakCounter } from "@/components/ui/streak-counter";
 import { ActivityHeatmap } from "@/components/ui/activity-heatmap";
 import { ProjectCard } from "@/components/ui/project-card";
+import { ProfileViewsWidget } from "@/components/dashboard/profile-views-widget";
+import { EmailPreferences } from "@/components/dashboard/email-preferences";
 import type { HireRequest, HireMessage } from "@/lib/types/database";
 import {
   Plus,
@@ -1185,6 +1187,12 @@ export default function DashboardPage() {
             );
           })()}
         </div>
+      </div>
+
+      {/* Profile Views + Email Preferences */}
+      <div className="grid lg:grid-cols-2 gap-8 mb-8">
+        <ProfileViewsWidget />
+        <EmailPreferences />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
