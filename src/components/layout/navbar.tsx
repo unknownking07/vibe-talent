@@ -28,43 +28,43 @@ export function Navbar() {
 
   useEffect(() => {
     const supabase = createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
+
+    async function fetchProfile(userId: string, email?: string) {
+      try {
+        const { data: profile, error } = await sb
+          .from("users")
+          .select("username, avatar_url")
+          .eq("id", userId)
+          .single();
+        if (error) console.error("Navbar profile fetch error:", error);
+        if (profile && profile.username) {
+          setUserProfile({ username: profile.username, avatar_url: profile.avatar_url });
+        } else if (email) {
+          // Fallback: use email prefix as display name
+          setUserProfile({ username: email.split("@")[0], avatar_url: null });
+        }
+      } catch (err) {
+        console.error("Navbar profile fetch failed:", err);
+        if (email) {
+          setUserProfile({ username: email.split("@")[0], avatar_url: null });
+        }
+      }
+    }
+
     // Check auth once on mount, then listen for changes
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
       setIsLoggedIn(!!user);
       if (user) {
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data: profile, error } = await (supabase as any)
-            .from("users")
-            .select("username, avatar_url")
-            .eq("id", user.id)
-            .single();
-          if (error) console.error("Navbar profile fetch error:", error);
-          if (profile) {
-            setUserProfile({ username: profile.username, avatar_url: profile.avatar_url });
-          }
-        } catch (err) {
-          console.error("Navbar profile fetch failed:", err);
-        }
+        fetchProfile(user.id, user.email);
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session?.user);
       if (session?.user) {
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { data: profile } = await (supabase as any)
-            .from("users")
-            .select("username, avatar_url")
-            .eq("id", session.user.id)
-            .single();
-          if (profile) {
-            setUserProfile({ username: profile.username, avatar_url: profile.avatar_url });
-          }
-        } catch (err) {
-          console.error("Navbar auth change profile fetch failed:", err);
-        }
+        fetchProfile(session.user.id, session.user.email);
       } else {
         setUserProfile(null);
       }

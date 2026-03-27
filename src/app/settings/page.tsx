@@ -63,23 +63,32 @@ export default function SettingsPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any;
 
-      const [{ data: profile }, { data: projects }, { data: socials }] = await Promise.all([
-        sb.from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, streak_freezes_remaining, streak_freezes_used, referral_count, created_at").eq("id", authUser.id).single(),
-        sb.from("projects").select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at").eq("user_id", authUser.id).order("created_at", { ascending: false }),
-        sb.from("social_links").select("id, user_id, twitter, telegram, github, website, farcaster").eq("user_id", authUser.id).single(),
-      ]);
+      try {
+        const results = await Promise.allSettled([
+          sb.from("users").select("*").eq("id", authUser.id).single(),
+          sb.from("projects").select("*").eq("user_id", authUser.id).order("created_at", { ascending: false }),
+          sb.from("social_links").select("*").eq("user_id", authUser.id).single(),
+        ]);
 
-      if (!profile) {
-        window.location.href = "/auth/profile-setup";
-        return;
+        const profile = results[0].status === "fulfilled" ? results[0].value?.data : null;
+        const projects = results[1].status === "fulfilled" ? results[1].value?.data : [];
+        const socials = results[2].status === "fulfilled" ? results[2].value?.data : null;
+
+        if (!profile) {
+          window.location.href = "/auth/profile-setup";
+          return;
+        }
+
+        setUser({
+          ...profile,
+          projects: projects || [],
+          social_links: socials || null,
+        });
+      } catch (err) {
+        console.error("Settings loadUserData failed:", err);
+      } finally {
+        setLoading(false);
       }
-
-      setUser({
-        ...profile,
-        projects: projects || [],
-        social_links: socials || null,
-      });
-      setLoading(false);
     }
 
     const supabase = createClient();
@@ -108,7 +117,6 @@ export default function SettingsPage() {
   }, []);
 
   // Populate form when user loads
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (user) {
       setProfileForm({
@@ -122,7 +130,6 @@ export default function SettingsPage() {
       });
     }
   }, [user]);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
