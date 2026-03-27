@@ -87,6 +87,8 @@ export default function SettingsPage() {
       if (cancelled) return;
       if (authUser) {
         loadUserData(authUser);
+      } else {
+        window.location.href = "/auth/login";
       }
     });
 

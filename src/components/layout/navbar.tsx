@@ -32,14 +32,19 @@ export function Navbar() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       setIsLoggedIn(!!user);
       if (user) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: profile } = await (supabase as any)
-          .from("users")
-          .select("username, avatar_url")
-          .eq("id", user.id)
-          .single();
-        if (profile) {
-          setUserProfile({ username: profile.username, avatar_url: profile.avatar_url });
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: profile, error } = await (supabase as any)
+            .from("users")
+            .select("username, avatar_url")
+            .eq("id", user.id)
+            .single();
+          if (error) console.error("Navbar profile fetch error:", error);
+          if (profile) {
+            setUserProfile({ username: profile.username, avatar_url: profile.avatar_url });
+          }
+        } catch (err) {
+          console.error("Navbar profile fetch failed:", err);
         }
       }
     });
@@ -47,14 +52,18 @@ export function Navbar() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setIsLoggedIn(!!session?.user);
       if (session?.user) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: profile } = await (supabase as any)
-          .from("users")
-          .select("username, avatar_url")
-          .eq("id", session.user.id)
-          .single();
-        if (profile) {
-          setUserProfile({ username: profile.username, avatar_url: profile.avatar_url });
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: profile } = await (supabase as any)
+            .from("users")
+            .select("username, avatar_url")
+            .eq("id", session.user.id)
+            .single();
+          if (profile) {
+            setUserProfile({ username: profile.username, avatar_url: profile.avatar_url });
+          }
+        } catch (err) {
+          console.error("Navbar auth change profile fetch failed:", err);
         }
       } else {
         setUserProfile(null);
@@ -134,7 +143,7 @@ export function Navbar() {
             href={DOCS_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-brutal ml-2 text-sm py-2 px-4 font-bold uppercase tracking-wide whitespace-nowrap"
+            className="btn-brutal ml-2 text-xs py-1.5 px-3 font-bold uppercase tracking-wide whitespace-nowrap"
             style={{
               backgroundColor: "var(--accent)",
               color: "#FFFFFF",
@@ -155,8 +164,8 @@ export function Navbar() {
                 onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                 className="flex items-center justify-center overflow-hidden"
                 style={{
-                  width: 40,
-                  height: 40,
+                  width: 44,
+                  height: 44,
                   borderRadius: "50%",
                   border: "2px solid #0F0F0F",
                   backgroundColor: "#0F0F0F",
@@ -167,8 +176,8 @@ export function Navbar() {
                   <Image
                     src={userProfile.avatar_url}
                     alt={userProfile.username}
-                    width={40}
-                    height={40}
+                    width={44}
+                    height={44}
                     className="w-full h-full object-cover"
                     style={{ borderRadius: "50%" }}
                   />
