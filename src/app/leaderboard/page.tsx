@@ -18,7 +18,7 @@ export default async function LeaderboardPage() {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://vibetalent.work" },
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://www.vibetalent.work" },
       { "@type": "ListItem", position: 2, name: "Leaderboard", item: "https://vibetalent.work/leaderboard" },
     ],
   };

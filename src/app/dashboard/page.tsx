@@ -965,7 +965,7 @@ export default function DashboardPage() {
 
         <div className="flex gap-2">
           {(() => {
-            const siteUrl = "https://vibetalent.work";
+            const siteUrl = "https://www.vibetalent.work";
             const encodedName = encodeURIComponent(user.username);
             const badgeImgUrl = `${siteUrl}/api/badge/${encodedName}`;
             const profileUrl = `${siteUrl}/profile/${encodedName}`;
@@ -1155,7 +1155,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {user.projects.map((project) => (
             <div key={project.id}>
               <ProjectCard
@@ -1165,12 +1165,12 @@ export default function DashboardPage() {
                 onVerify={verifyProject}
               />
               {verifyingProjectId === project.id && (
-                <div className="mt-1 px-5 py-2 text-xs font-bold text-[#71717A] uppercase">
+                <div className="mt-1 px-4 py-1.5 text-[10px] font-bold text-[#71717A] uppercase">
                   Verifying...
                 </div>
               )}
               {verifyMessage && verifyMessage.projectId === project.id && (
-                <div className={`mt-1 px-5 py-2 text-xs font-bold uppercase ${verifyMessage.success ? "text-green-600" : "text-orange-600"}`}>
+                <div className={`mt-1 px-4 py-1.5 text-[10px] font-bold uppercase ${verifyMessage.success ? "text-green-600" : "text-orange-600"}`}>
                   {verifyMessage.text}
                 </div>
               )}

@@ -8,7 +8,7 @@ const corsHeaders = {
 
 export async function GET() {
   const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.work";
+    process.env.NEXT_PUBLIC_SITE_URL || "https://www.vibetalent.work";
 
   const manifest = {
     schema_version: "v1",
