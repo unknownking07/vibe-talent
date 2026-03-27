@@ -91,7 +91,25 @@ export interface Referral {
   created_at: string;
 }
 
-export type NotificationType = "hire_request" | "streak_milestone" | "streak_warning" | "badge_earned" | "project_verified" | "project_flagged" | "new_review";
+export type NotificationType = "hire_request" | "streak_milestone" | "streak_warning" | "badge_earned" | "project_verified" | "project_flagged" | "new_review" | "profile_view_summary" | "weekly_digest" | "vibe_score_milestone";
+
+export interface ProfileView {
+  id: string;
+  viewed_user_id: string;
+  viewer_user_id: string | null;
+  viewer_ip_hash: string | null;
+  viewed_at: string;
+}
+
+export interface EmailPreferences {
+  user_id: string;
+  profile_view_digest: boolean;
+  streak_reminders: boolean;
+  milestone_alerts: boolean;
+  weekly_digest: boolean;
+  hire_notifications: boolean;
+  updated_at: string;
+}
 
 export interface Notification {
   id: string;
