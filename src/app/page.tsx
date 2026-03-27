@@ -296,7 +296,7 @@ export default async function HomePage() {
       >
         <div className="py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 mb-8">
-            <h2 className="text-3xl font-extrabold uppercase text-[#0F0F0F]">What Builders Say</h2>
+            <h2 className="text-3xl font-extrabold uppercase text-[#0F0F0F]">What People Say</h2>
             <p className="mt-2 text-[#52525B] font-medium">Real feedback from the community on X</p>
           </div>
           <TestimonialScroll />
