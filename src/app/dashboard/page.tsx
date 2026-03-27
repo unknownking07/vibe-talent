@@ -10,7 +10,6 @@ import { StreakCounter } from "@/components/ui/streak-counter";
 import { ActivityHeatmap } from "@/components/ui/activity-heatmap";
 import { ProjectCard } from "@/components/ui/project-card";
 import { ProfileViewsWidget } from "@/components/dashboard/profile-views-widget";
-import { EmailPreferences } from "@/components/dashboard/email-preferences";
 import type { HireRequest, HireMessage } from "@/lib/types/database";
 import {
   Plus,
@@ -34,49 +33,13 @@ import {
   Trash2,
   ShieldCheck,
   Zap,
-  Users,
 } from "lucide-react";
-
-/**
- * Extract a bare username from a value that might be a full URL or @-prefixed handle.
- * For twitter/github/telegram: strips common URL prefixes and leading @.
- * Returns just the username portion.
- */
-function extractUsername(value: string, platform: "twitter" | "github" | "telegram"): string {
-  let v = value.trim();
-  if (!v) return "";
-
-  // Remove trailing slashes
-  v = v.replace(/\/+$/, "");
-
-  // Strip known URL prefixes
-  const patterns: Record<string, RegExp[]> = {
-    twitter: [/^https?:\/\/(www\.)?(twitter|x)\.com\//i],
-    github: [/^https?:\/\/(www\.)?github\.com\//i],
-    telegram: [/^https?:\/\/(www\.)?(t\.me|telegram\.me)\//i],
-  };
-
-  for (const re of patterns[platform]) {
-    v = v.replace(re, "");
-  }
-
-  // Remove leading @
-  v = v.replace(/^@/, "");
-
-  // Drop query/hash and take only first segment
-  v = v.split(/[?#]/)[0];
-  v = v.split("/")[0];
-  v = v.trim();
-
-  return v;
-}
 
 export default function DashboardPage() {
   const [user, setUser] = useState<UserWithSocials | null>(null);
   const [heatmapData, setHeatmapData] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [hireRequests, setHireRequests] = useState<HireRequest[]>([]);
-  const [referralCopied, setReferralCopied] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -239,36 +202,9 @@ export default function DashboardPage() {
     tags: "",
   });
 
-  const [profileForm, setProfileForm] = useState({
-    username: "",
-    bio: "",
-    twitter: "",
-    github: "",
-    telegram: "",
-    website: "",
-    ide: "",
-  });
-
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    if (user) {
-      setProfileForm({
-        username: user.username,
-        bio: user.bio || "",
-        twitter: user.social_links?.twitter || "",
-        github: user.social_links?.github || "",
-        telegram: user.social_links?.telegram || "",
-        website: user.social_links?.website || "",
-        ide: user.social_links?.farcaster || "",
-      });
-    }
-  }, [user]);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
   const [todayLogged, setTodayLogged] = useState(false);
   const [logging, setLogging] = useState(false);
   const [countdown, setCountdown] = useState("");
-  const [saving, setSaving] = useState(false);
   const [addingProject, setAddingProject] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingOriginalGithubUrl, setEditingOriginalGithubUrl] = useState<string>("");
@@ -284,8 +220,6 @@ export default function DashboardPage() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatPollRef = useRef<NodeJS.Timeout | null>(null);
   const [badgeCopied, setBadgeCopied] = useState<string | null>(null);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [verifyingProjectId, setVerifyingProjectId] = useState<string | null>(null);
   const [verifyMessage, setVerifyMessage] = useState<{ projectId: string; success: boolean; text: string } | null>(null);
   const [showVerifyGuide, setShowVerifyGuide] = useState(true);
@@ -296,7 +230,6 @@ export default function DashboardPage() {
   const [githubSyncResult, setGithubSyncResult] = useState<string | null>(null);
   const [lastSyncLabel, setLastSyncLabel] = useState<string | null>(null);
 
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const ts = localStorage.getItem("last_github_sync");
     if (ts) {
@@ -311,7 +244,6 @@ export default function DashboardPage() {
       }
     }
   }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const reloadUser = useCallback(async () => {
     const supabase = createClient();
@@ -350,55 +282,6 @@ export default function DashboardPage() {
       setVerifyMessage({ projectId, success: false, text: "Verification request failed." });
     }
     setVerifyingProjectId(null);
-  };
-
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!allowedTypes.includes(file.type)) {
-      alert('Only JPG, PNG, WebP, and GIF images are allowed');
-      return;
-    }
-
-    // Validate file size (2MB max)
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Image must be under 2MB');
-      return;
-    }
-
-    setUploadingAvatar(true);
-    const supabase = createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = supabase as any;
-    const ext = file.name.split(".").pop();
-    const filePath = `${user.id}/avatar.${ext}`;
-
-    // Upload to storage
-    const { error: uploadError } = await sb.storage
-      .from("avatars")
-      .upload(filePath, file, { upsert: true });
-
-    if (uploadError) {
-      console.error("Upload failed:", uploadError);
-      setUploadingAvatar(false);
-      return;
-    }
-
-    // Get public URL
-    const { data: { publicUrl } } = sb.storage
-      .from("avatars")
-      .getPublicUrl(filePath);
-
-    // Add cache-busting timestamp
-    const avatarUrl = `${publicUrl}?t=${Date.now()}`;
-
-    // Update user record
-    await sb.from("users").update({ avatar_url: avatarUrl }).eq("id", user.id);
-    setUser({ ...user, avatar_url: avatarUrl });
-    setUploadingAvatar(false);
   };
 
   const handleProjectImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -643,45 +526,6 @@ export default function DashboardPage() {
       streak: newStreak,
       longest_streak: newLongest,
     }).eq("id", user.id);
-  };
-
-  const handleSaveProfile = async () => {
-    if (!user || saving) return;
-    setSaving(true);
-    const supabase = createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = supabase as any;
-
-    await sb
-      .from("users")
-      .update({ username: profileForm.username, bio: profileForm.bio })
-      .eq("id", user.id);
-
-    // Upsert social links (farcaster column stores IDE choice)
-    await sb.from("social_links").upsert({
-      user_id: user.id,
-      twitter: profileForm.twitter || null,
-      github: profileForm.github || null,
-      telegram: profileForm.telegram || null,
-      website: profileForm.website || null,
-      farcaster: profileForm.ide || null,
-    }, { onConflict: "user_id" });
-
-    setUser({
-      ...user,
-      username: profileForm.username,
-      bio: profileForm.bio,
-      social_links: {
-        id: user.social_links?.id || "",
-        user_id: user.id,
-        twitter: profileForm.twitter || null,
-        github: profileForm.github || null,
-        telegram: profileForm.telegram || null,
-        website: profileForm.website || null,
-        farcaster: profileForm.ide || null,
-      },
-    });
-    setSaving(false);
   };
 
   const handleAddProject = async () => {
@@ -1085,52 +929,7 @@ export default function DashboardPage() {
         <ActivityHeatmap data={heatmapData} />
       </div>
 
-      {/* Referral */}
-      <div
-        className="p-6 mb-8"
-        style={{
-          backgroundColor: "#FFFFFF",
-          border: "2px solid #0F0F0F",
-          boxShadow: "var(--shadow-brutal)",
-        }}
-      >
-        <h2 className="text-lg font-extrabold uppercase flex items-center gap-2 text-[#0F0F0F] mb-2">
-          <Users size={20} className="text-[var(--accent)]" />
-          Invite Builders
-        </h2>
-        <p className="text-sm text-[#52525B] font-medium mb-4">
-          Share your referral link. When someone signs up, you get a bonus streak day!
-        </p>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            readOnly
-            value={`${typeof window !== "undefined" ? window.location.origin : "https://vibetalent.work"}/auth/signup?ref=${user.username}`}
-            className="input-brutal flex-1 text-sm font-mono"
-          />
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(`${window.location.origin}/auth/signup?ref=${user.username}`);
-              setReferralCopied(true);
-              setTimeout(() => setReferralCopied(false), 2000);
-            }}
-            className="btn-brutal text-sm px-4"
-            style={{
-              backgroundColor: referralCopied ? "#D1FAE5" : "var(--accent)",
-              color: referralCopied ? "#065F46" : "#FFFFFF",
-            }}
-          >
-            {referralCopied ? "Copied!" : "Copy"}
-          </button>
-        </div>
-        {(user.referral_count ?? 0) > 0 && (
-          <p className="text-sm font-bold text-[#0F0F0F] mt-3">
-            You&apos;ve referred {user.referral_count} builder{user.referral_count !== 1 ? "s" : ""}!
-          </p>
-        )}
-      </div>
-
-      {/* Embeddable Badge */}
+      {/* Embeddable Badge for GitHub */}
       <div
         className="p-5 mb-8"
         style={{
@@ -1141,7 +940,7 @@ export default function DashboardPage() {
       >
         <h2 className="text-base font-extrabold uppercase flex items-center gap-2 text-[#0F0F0F] mb-3">
           <ExternalLink size={16} className="text-[var(--accent)]" />
-          Embeddable Badge
+          Embeddable Badge for GitHub
         </h2>
 
         <div className="flex items-center gap-4 p-3 bg-zinc-50 border-2 border-zinc-200 mb-3">
@@ -1189,336 +988,183 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Profile Views + Email Preferences */}
-      <div className="grid lg:grid-cols-2 gap-8 mb-8">
+      {/* Profile Views */}
+      <div className="mb-8">
         <ProfileViewsWidget />
-        <EmailPreferences />
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Edit Profile */}
-        <div
-          className="p-6"
-          style={{
-            backgroundColor: "#FFFFFF",
-            border: "2px solid #0F0F0F",
-            boxShadow: "var(--shadow-brutal)",
-          }}
-        >
-          <h2 className="text-lg font-extrabold uppercase text-[#0F0F0F] mb-4">Edit Profile</h2>
-          <div className="space-y-4">
-            {/* Avatar Upload */}
-            <div className="flex items-center gap-4">
-              <div
-                className="relative w-20 h-20 flex items-center justify-center text-2xl font-extrabold text-white cursor-pointer group"
-                style={{ backgroundColor: "#0F0F0F", border: "2px solid #0F0F0F" }}
-                onClick={() => avatarInputRef.current?.click()}
-              >
-                {user.avatar_url ? (
-                  <Image src={user.avatar_url} alt={user.username} width={80} height={80} className="w-full h-full object-cover" />
-                ) : (
-                  user.username.slice(0, 2).toUpperCase()
-                )}
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Camera size={20} className="text-white" />
-                </div>
-              </div>
-              <div>
-                <button
-                  onClick={() => avatarInputRef.current?.click()}
-                  disabled={uploadingAvatar}
-                  className="text-sm font-bold text-[var(--accent)] hover:underline"
-                >
-                  {uploadingAvatar ? "Uploading..." : "Change Avatar"}
-                </button>
-                <p className="text-xs text-[#71717A] mt-1">JPG, PNG. Max 2MB.</p>
-              </div>
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarUpload}
-                className="hidden"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Username</label>
-              <input
-                type="text"
-                value={profileForm.username}
-                onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
-                className="input-brutal"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Bio</label>
-              <textarea
-                value={profileForm.bio}
-                onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
-                rows={3}
-                className="input-brutal resize-none"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">X (Twitter)</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] font-bold text-sm select-none">@</span>
-                  <input
-                    type="text"
-                    value={profileForm.twitter}
-                    onChange={(e) => setProfileForm({ ...profileForm, twitter: extractUsername(e.target.value, "twitter") })}
-                    placeholder="username"
-                    className="input-brutal"
-                    style={{ paddingLeft: "1.75rem" }}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">GitHub</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] font-bold text-sm select-none">@</span>
-                  <input
-                    type="text"
-                    value={profileForm.github}
-                    onChange={(e) => setProfileForm({ ...profileForm, github: extractUsername(e.target.value, "github") })}
-                    placeholder="username"
-                    className="input-brutal"
-                    style={{ paddingLeft: "1.75rem" }}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Telegram</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] font-bold text-sm select-none">@</span>
-                  <input
-                    type="text"
-                    value={profileForm.telegram}
-                    onChange={(e) => setProfileForm({ ...profileForm, telegram: extractUsername(e.target.value, "telegram") })}
-                    placeholder="username"
-                    className="input-brutal"
-                    style={{ paddingLeft: "1.75rem" }}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Portfolio</label>
-                <input
-                  type="text"
-                  value={profileForm.website}
-                  onChange={(e) => setProfileForm({ ...profileForm, website: e.target.value })}
-                  placeholder="https://..."
-                  className="input-brutal"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Vibe Coding IDE</label>
-              <select
-                value={profileForm.ide}
-                onChange={(e) => setProfileForm({ ...profileForm, ide: e.target.value })}
-                className="input-brutal"
-              >
-                <option value="">Select your IDE...</option>
-                <option value="Claude Code (Pro)">Claude Code (Pro)</option>
-                <option value="Claude Code (Max 5x)">Claude Code (Max 5x)</option>
-                <option value="Claude Code (Max 20x)">Claude Code (Max 20x)</option>
-                <option value="Cursor">Cursor</option>
-                <option value="Windsurf">Windsurf</option>
-                <option value="Antigravity">Antigravity</option>
-                <option value="Bolt">Bolt</option>
-                <option value="Lovable">Lovable</option>
-                <option value="Replit Agent">Replit Agent</option>
-                <option value="GitHub Copilot">GitHub Copilot</option>
-                <option value="VS Code + AI">VS Code + AI</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            <button
-              onClick={handleSaveProfile}
-              disabled={saving}
-              className="btn-brutal btn-brutal-primary text-sm flex items-center gap-2"
-            >
-              <Save size={16} />
-              {saving ? "Saving..." : "Save Profile"}
-            </button>
-          </div>
+      {/* Your Projects */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-extrabold uppercase text-[#0F0F0F]">Your Projects</h2>
+          <button
+            onClick={() => {
+              if (showProjectForm) {
+                setShowProjectForm(false);
+                setEditingProjectId(null);
+                setProjectForm({ title: "", description: "", tech_stack: "", live_url: "", github_url: "", build_time: "", tags: "" });
+              } else {
+                setShowProjectForm(true);
+              }
+            }}
+            className="btn-brutal btn-brutal-secondary text-sm flex items-center gap-2 py-2 px-4"
+          >
+            {showProjectForm ? <X size={16} /> : <Plus size={16} />}
+            {showProjectForm ? "Cancel" : "Add Project"}
+          </button>
         </div>
 
-        {/* Projects */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-extrabold uppercase text-[#0F0F0F]">Your Projects</h2>
+        {/* Verification Guide */}
+        {showVerifyGuide && (
+          <div
+            className="mb-4 p-4 relative"
+            style={{ backgroundColor: "#FFFBEB", border: "2px solid #0F0F0F" }}
+          >
             <button
-              onClick={() => {
-                if (showProjectForm) {
-                  setShowProjectForm(false);
-                  setEditingProjectId(null);
-                  setProjectForm({ title: "", description: "", tech_stack: "", live_url: "", github_url: "", build_time: "", tags: "" });
-                } else {
-                  setShowProjectForm(true);
-                }
-              }}
-              className="btn-brutal btn-brutal-secondary text-sm flex items-center gap-2 py-2 px-4"
+              onClick={() => setShowVerifyGuide(false)}
+              className="absolute top-3 right-3 text-[#A1A1AA] hover:text-[#0F0F0F] transition-colors"
+              title="Dismiss"
             >
-              {showProjectForm ? <X size={16} /> : <Plus size={16} />}
-              {showProjectForm ? "Cancel" : "Add Project"}
+              <X size={14} />
             </button>
+            <h3 className="text-sm font-extrabold uppercase text-[#0F0F0F] flex items-center gap-2 mb-2">
+              <ShieldCheck size={16} className="text-green-600" />
+              How to Verify Your Projects
+            </h3>
+            <p className="text-xs text-[#52525B] font-medium leading-relaxed">
+              Verified projects show a green badge, proving you own the code. There are two ways to verify:
+            </p>
+            <ol className="text-xs text-[#52525B] font-medium mt-2 space-y-1.5 list-decimal list-inside leading-relaxed">
+              <li>
+                <strong className="text-[#0F0F0F]">Owner Match (automatic):</strong> If the GitHub repo URL belongs to your GitHub account (the one you signed in with), it verifies instantly.
+              </li>
+              <li>
+                <strong className="text-[#0F0F0F]">Verification File (for collaborators):</strong> Add a file named <code className="bg-white px-1.5 py-0.5 border border-[#E4E4E7] font-mono text-[10px]">.vibetalent</code> to the root of the repo containing your GitHub username. Then click the <strong>Verify</strong> button on the project card below.
+              </li>
+            </ol>
           </div>
+        )}
 
-          {/* Verification Guide */}
-          {showVerifyGuide && (
-            <div
-              className="mb-4 p-4 relative"
-              style={{ backgroundColor: "#FFFBEB", border: "2px solid #0F0F0F" }}
-            >
+        {showProjectForm && (
+          <div
+            className="p-5 mb-4"
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "2px solid #0F0F0F",
+              boxShadow: "var(--shadow-brutal-sm)",
+            }}
+          >
+            <h3 className="text-sm font-extrabold uppercase text-[#0F0F0F] mb-3">{editingProjectId ? "Edit Project" : "New Project"}</h3>
+            {projectError && (
+              <div className="p-3 mb-3 text-sm font-bold text-[#991B1B]" style={{ backgroundColor: "#FEE2E2", border: "2px solid #0F0F0F" }}>
+                {projectError}
+              </div>
+            )}
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Project name"
+                value={projectForm.title}
+                onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })}
+                className="input-brutal"
+              />
+              <textarea
+                placeholder="Description"
+                value={projectForm.description}
+                onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
+                rows={2}
+                className="input-brutal resize-none"
+              />
+              <input
+                type="text"
+                placeholder="Tech stack (comma separated)"
+                value={projectForm.tech_stack}
+                onChange={(e) => setProjectForm({ ...projectForm, tech_stack: e.target.value })}
+                className="input-brutal"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  placeholder="Live URL"
+                  value={projectForm.live_url}
+                  onChange={(e) => setProjectForm({ ...projectForm, live_url: e.target.value })}
+                  className="input-brutal"
+                />
+                <input
+                  type="text"
+                  placeholder="GitHub URL"
+                  value={projectForm.github_url}
+                  onChange={(e) => setProjectForm({ ...projectForm, github_url: e.target.value })}
+                  className="input-brutal"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  placeholder="Build time (e.g., 2 days)"
+                  value={projectForm.build_time}
+                  onChange={(e) => setProjectForm({ ...projectForm, build_time: e.target.value })}
+                  className="input-brutal"
+                />
+                <input
+                  type="text"
+                  placeholder="Tags (comma separated)"
+                  value={projectForm.tags}
+                  onChange={(e) => setProjectForm({ ...projectForm, tags: e.target.value })}
+                  className="input-brutal"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Project Screenshot</label>
+                <div className="flex items-center gap-4">
+                  {projectImagePreview && (
+                    <div className="relative w-24 h-16 border-2 border-[#0F0F0F]">
+                      <Image src={projectImagePreview} alt="Preview" fill className="object-cover" />
+                      <button onClick={() => { setProjectImageFile(null); setProjectImagePreview(null); }} className="absolute -top-2 -right-2 w-5 h-5 bg-[#0F0F0F] text-white rounded-full flex items-center justify-center text-xs">&times;</button>
+                    </div>
+                  )}
+                  <button type="button" onClick={() => projectImageInputRef.current?.click()} className="btn-brutal btn-brutal-secondary text-xs py-1.5 px-3">
+                    <Camera size={14} className="mr-1 inline" /> {projectImagePreview ? "Change" : "Add Image"}
+                  </button>
+                  <input ref={projectImageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleProjectImageSelect} className="hidden" />
+                </div>
+                <p className="text-xs text-[#71717A] mt-1">Recommended: 1280×720px (16:9). Max 5MB. JPG, PNG, WebP, GIF.</p>
+              </div>
               <button
-                onClick={() => setShowVerifyGuide(false)}
-                className="absolute top-3 right-3 text-[#A1A1AA] hover:text-[#0F0F0F] transition-colors"
-                title="Dismiss"
+                onClick={editingProjectId ? handleSaveEdit : handleAddProject}
+                disabled={(editingProjectId ? savingEdit : addingProject) || !projectForm.title || !projectForm.description}
+                className="btn-brutal btn-brutal-primary text-sm flex items-center gap-2 disabled:opacity-50"
               >
-                <X size={14} />
+                {editingProjectId ? <Save size={16} /> : <Plus size={16} />}
+                {editingProjectId
+                  ? (savingEdit ? "Saving..." : "Save Changes")
+                  : (addingProject ? "Adding..." : "Add Project")}
               </button>
-              <h3 className="text-sm font-extrabold uppercase text-[#0F0F0F] flex items-center gap-2 mb-2">
-                <ShieldCheck size={16} className="text-green-600" />
-                How to Verify Your Projects
-              </h3>
-              <p className="text-xs text-[#52525B] font-medium leading-relaxed">
-                Verified projects show a green badge, proving you own the code. There are two ways to verify:
-              </p>
-              <ol className="text-xs text-[#52525B] font-medium mt-2 space-y-1.5 list-decimal list-inside leading-relaxed">
-                <li>
-                  <strong className="text-[#0F0F0F]">Owner Match (automatic):</strong> If the GitHub repo URL belongs to your GitHub account (the one you signed in with), it verifies instantly.
-                </li>
-                <li>
-                  <strong className="text-[#0F0F0F]">Verification File (for collaborators):</strong> Add a file named <code className="bg-white px-1.5 py-0.5 border border-[#E4E4E7] font-mono text-[10px]">.vibetalent</code> to the root of the repo containing your GitHub username. Then click the <strong>Verify</strong> button on the project card below.
-                </li>
-              </ol>
             </div>
-          )}
+          </div>
+        )}
 
-          {showProjectForm && (
-            <div
-              className="p-5 mb-4"
-              style={{
-                backgroundColor: "#FFFFFF",
-                border: "2px solid #0F0F0F",
-                boxShadow: "var(--shadow-brutal-sm)",
-              }}
-            >
-              <h3 className="text-sm font-extrabold uppercase text-[#0F0F0F] mb-3">{editingProjectId ? "Edit Project" : "New Project"}</h3>
-              {projectError && (
-                <div className="p-3 mb-3 text-sm font-bold text-[#991B1B]" style={{ backgroundColor: "#FEE2E2", border: "2px solid #0F0F0F" }}>
-                  {projectError}
+        <div className="space-y-4">
+          {user.projects.map((project) => (
+            <div key={project.id}>
+              <ProjectCard
+                project={project}
+                onEdit={handleStartEdit}
+                verified={!!project.verified}
+                onVerify={verifyProject}
+              />
+              {verifyingProjectId === project.id && (
+                <div className="mt-1 px-5 py-2 text-xs font-bold text-[#71717A] uppercase">
+                  Verifying...
                 </div>
               )}
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Project name"
-                  value={projectForm.title}
-                  onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })}
-                  className="input-brutal"
-                />
-                <textarea
-                  placeholder="Description"
-                  value={projectForm.description}
-                  onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
-                  rows={2}
-                  className="input-brutal resize-none"
-                />
-                <input
-                  type="text"
-                  placeholder="Tech stack (comma separated)"
-                  value={projectForm.tech_stack}
-                  onChange={(e) => setProjectForm({ ...projectForm, tech_stack: e.target.value })}
-                  className="input-brutal"
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    placeholder="Live URL"
-                    value={projectForm.live_url}
-                    onChange={(e) => setProjectForm({ ...projectForm, live_url: e.target.value })}
-                    className="input-brutal"
-                  />
-                  <input
-                    type="text"
-                    placeholder="GitHub URL"
-                    value={projectForm.github_url}
-                    onChange={(e) => setProjectForm({ ...projectForm, github_url: e.target.value })}
-                    className="input-brutal"
-                  />
+              {verifyMessage && verifyMessage.projectId === project.id && (
+                <div className={`mt-1 px-5 py-2 text-xs font-bold uppercase ${verifyMessage.success ? "text-green-600" : "text-orange-600"}`}>
+                  {verifyMessage.text}
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="text"
-                    placeholder="Build time (e.g., 2 days)"
-                    value={projectForm.build_time}
-                    onChange={(e) => setProjectForm({ ...projectForm, build_time: e.target.value })}
-                    className="input-brutal"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Tags (comma separated)"
-                    value={projectForm.tags}
-                    onChange={(e) => setProjectForm({ ...projectForm, tags: e.target.value })}
-                    className="input-brutal"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Project Screenshot</label>
-                  <div className="flex items-center gap-4">
-                    {projectImagePreview && (
-                      <div className="relative w-24 h-16 border-2 border-[#0F0F0F]">
-                        <Image src={projectImagePreview} alt="Preview" fill className="object-cover" />
-                        <button onClick={() => { setProjectImageFile(null); setProjectImagePreview(null); }} className="absolute -top-2 -right-2 w-5 h-5 bg-[#0F0F0F] text-white rounded-full flex items-center justify-center text-xs">&times;</button>
-                      </div>
-                    )}
-                    <button type="button" onClick={() => projectImageInputRef.current?.click()} className="btn-brutal btn-brutal-secondary text-xs py-1.5 px-3">
-                      <Camera size={14} className="mr-1 inline" /> {projectImagePreview ? "Change" : "Add Image"}
-                    </button>
-                    <input ref={projectImageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleProjectImageSelect} className="hidden" />
-                  </div>
-                  <p className="text-xs text-[#71717A] mt-1">Recommended: 1280×720px (16:9). Max 5MB. JPG, PNG, WebP, GIF.</p>
-                </div>
-                <button
-                  onClick={editingProjectId ? handleSaveEdit : handleAddProject}
-                  disabled={(editingProjectId ? savingEdit : addingProject) || !projectForm.title || !projectForm.description}
-                  className="btn-brutal btn-brutal-primary text-sm flex items-center gap-2 disabled:opacity-50"
-                >
-                  {editingProjectId ? <Save size={16} /> : <Plus size={16} />}
-                  {editingProjectId
-                    ? (savingEdit ? "Saving..." : "Save Changes")
-                    : (addingProject ? "Adding..." : "Add Project")}
-                </button>
-              </div>
+              )}
             </div>
-          )}
-
-          <div className="space-y-4">
-            {user.projects.map((project) => (
-              <div key={project.id}>
-                <ProjectCard
-                  project={project}
-                  onEdit={handleStartEdit}
-                  verified={!!project.verified}
-                  onVerify={verifyProject}
-                />
-                {verifyingProjectId === project.id && (
-                  <div className="mt-1 px-5 py-2 text-xs font-bold text-[#71717A] uppercase">
-                    Verifying...
-                  </div>
-                )}
-                {verifyMessage && verifyMessage.projectId === project.id && (
-                  <div className={`mt-1 px-5 py-2 text-xs font-bold uppercase ${verifyMessage.success ? "text-green-600" : "text-orange-600"}`}>
-                    {verifyMessage.text}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
       </div>
       </>
