@@ -8,7 +8,7 @@ import ReviewsSection from "@/components/profile/reviews-section";
 import Link from "next/link";
 import type { Metadata } from "next";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.dev";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.work";
 
 export async function generateMetadata({
   params,
@@ -38,6 +38,20 @@ export async function generateMetadata({
       description,
       url: `${siteUrl}/profile/${username}`,
       type: "profile",
+      images: [
+        {
+          url: `${siteUrl}/profile/${username}/opengraph-image`,
+          width: 1200,
+          height: 630,
+          alt: `@${username} on VibeTalent`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [`${siteUrl}/profile/${username}/opengraph-image`],
     },
   };
 }
@@ -74,6 +88,21 @@ export default async function ProfilePage({
 
   const heatmapData = await fetchStreakLogsCached(user.id);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: user.username,
+    url: `https://vibetalent.work/profile/${user.username}`,
+    image: user.avatar_url || undefined,
+    description: user.bio || `Builder on VibeTalent with a ${user.streak}-day streak`,
+    sameAs: [
+      user.social_links?.github ? `https://github.com/${user.social_links.github}` : null,
+      user.social_links?.twitter ? `https://x.com/${user.social_links.twitter}` : null,
+      user.social_links?.website || null,
+    ].filter(Boolean),
+    knowsAbout: user.projects.flatMap((p: { tech_stack: string[] }) => p.tech_stack).filter((v: string, i: number, a: string[]) => a.indexOf(v) === i),
+  };
+
   // Check if the logged-in user is viewing their own profile
   let isOwner = false;
   try {
@@ -86,6 +115,10 @@ export default async function ProfilePage({
 
   return (
     <div className="flex justify-center p-4 sm:p-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="w-full max-w-[1200px] grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 items-start">
         {/* Sidebar */}
         <ProfileSidebar user={user} isOwner={isOwner} />

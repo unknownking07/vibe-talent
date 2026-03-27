@@ -8,7 +8,7 @@ const corsHeaders = {
 
 export async function GET() {
   const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.xyz";
+    process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.work";
 
   const spec = {
     openapi: "3.0.0",

@@ -42,7 +42,7 @@ export function AgentThinking({ steps, onComplete }: AgentThinkingProps) {
           style={{ backgroundColor: "var(--accent)" }}
         />
         <span className="text-xs font-extrabold uppercase tracking-wider text-white">
-          AI Agent Processing
+          VibeFinder Bot Processing
         </span>
       </div>
 

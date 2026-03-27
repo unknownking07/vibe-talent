@@ -27,6 +27,36 @@ export default async function HomePage() {
 
   return (
     <div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "WebSite",
+                name: "VibeTalent",
+                url: "https://vibetalent.work",
+                description:
+                  "The marketplace for vibe coders who ship consistently. Find developers based on streaks, shipped projects, and vibe scores.",
+                potentialAction: {
+                  "@type": "SearchAction",
+                  target: "https://vibetalent.work/explore?q={search_term_string}",
+                  "query-input": "required name=search_term_string",
+                },
+              },
+              {
+                "@type": "Organization",
+                name: "VibeTalent",
+                url: "https://vibetalent.work",
+                logo: "https://vibetalent.work/og-image.png",
+                sameAs: [],
+              },
+            ],
+          }),
+        }}
+      />
+
       {/* Hero */}
       <section className="relative">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-24 pb-20 text-center">
@@ -39,7 +69,7 @@ export default async function HomePage() {
             }}
           >
             <Flame size={14} className="text-[var(--accent)]" />
-            <span>The AI-powered vibecoders marketplace</span>
+            <span>The vibecoders marketplace</span>
           </div>
 
           <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight uppercase text-[#0F0F0F]">
@@ -270,7 +300,7 @@ export default async function HomePage() {
           <h2 className="text-3xl sm:text-4xl font-extrabold uppercase text-white">Join the Marketplace</h2>
           <p className="mt-4 text-zinc-400 font-medium max-w-xl mx-auto">
             Start building your vibe coding reputation today. Create a profile,
-            start your streak, and let AI agents match you with clients.
+            start your streak, and let VibeFinder Bot match you with clients.
           </p>
           <HeroCTA
             className="mt-8 inline-flex"

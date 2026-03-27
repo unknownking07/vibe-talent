@@ -1,14 +1,34 @@
 import { fetchAllUsersCached } from "@/lib/supabase/server-queries";
 import { LeaderboardContent } from "@/components/leaderboard/leaderboard-content";
 import { Trophy } from "lucide-react";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Leaderboard | VibeTalent",
+  description:
+    "See the top vibe coders ranked by vibe score, streak, and projects shipped. The most consistent builders on the platform.",
+};
 
 export const dynamic = "force-dynamic";
 
 export default async function LeaderboardPage() {
   const users = await fetchAllUsersCached();
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://vibetalent.work" },
+      { "@type": "ListItem", position: 2, name: "Leaderboard", item: "https://vibetalent.work/leaderboard" },
+    ],
+  };
+
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="text-center mb-10">
         <div
           className="inline-flex items-center justify-center w-16 h-16 mb-4"

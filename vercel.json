@@ -7,6 +7,14 @@
     {
       "path": "/api/cron/reset-streaks",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/github-sync",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/reset-freezes",
+      "schedule": "0 0 1 * *"
     }
   ]
 }

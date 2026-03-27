@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     // Get users with active streaks
     const { data: activeUsers, error: fetchError } = await supabase
       .from("users")
-      .select("id, username, streak")
+      .select("id, username, streak, streak_freezes_remaining")
       .gt("streak", 0);
 
     if (fetchError) {
@@ -116,7 +116,7 @@ export async function GET(req: NextRequest) {
           user_id: user.id,
           type: "streak_warning",
           title: "Streak ending soon!",
-          message: `Your ${user.streak}-day streak will reset at 00:00 UTC. Log activity now to keep it alive!`,
+          message: `Your ${user.streak}-day streak will reset at 00:00 UTC. Log activity now to keep it alive! You have ${user.streak_freezes_remaining ?? 0} freeze(s) remaining.`,
           metadata: { streak: user.streak },
         });
 

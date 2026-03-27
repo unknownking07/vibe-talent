@@ -27,10 +27,10 @@ export default function AgentHubPage() {
         >
           <Bot size={32} className="text-[var(--accent)]" />
         </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold uppercase text-[#0F0F0F]">AI Agents</h1>
+        <h1 className="text-3xl sm:text-4xl font-extrabold uppercase text-[#0F0F0F]">VibeFinder Bot</h1>
         <p className="mt-3 text-[#52525B] font-medium max-w-2xl mx-auto">
-          Autonomous AI systems that analyze builder profiles, match talent to your project,
-          and draft personalized hire requests — all powered by on-chain shipping data.
+          A smart bot that reads platform data to analyze builder profiles, match talent to your project,
+          and draft personalized hire requests — powered by real shipping data.
         </p>
       </div>
 
@@ -56,7 +56,7 @@ export default function AgentHubPage() {
             </div>
             <h3 className="text-lg font-extrabold uppercase text-[#0F0F0F]">Find Talent</h3>
             <p className="mt-2 text-sm text-[#52525B] font-medium">
-              Describe your project and let our AI agent analyze every builder on the platform
+              Describe your project and let VibeFinder Bot analyze every builder on the platform
               to find your perfect match.
             </p>
             <div className="mt-4 text-sm font-bold uppercase text-[var(--accent)]">
@@ -86,7 +86,7 @@ export default function AgentHubPage() {
             </div>
             <h3 className="text-lg font-extrabold uppercase text-[#0F0F0F]">Evaluate Builder</h3>
             <p className="mt-2 text-sm text-[#52525B] font-medium">
-              Run a deep AI evaluation on any builder — analyzing git activity, streak consistency,
+              Run a deep evaluation on any builder — analyzing git activity, streak consistency,
               project quality, and reputation.
             </p>
             <div className="mt-4 text-sm font-bold uppercase text-[var(--accent)]">
@@ -115,9 +115,9 @@ export default function AgentHubPage() {
             >
               <Send size={22} className="text-[#0F0F0F]" />
             </div>
-            <h3 className="text-lg font-extrabold uppercase text-[#0F0F0F]">AI Contact</h3>
+            <h3 className="text-lg font-extrabold uppercase text-[#0F0F0F]">Quick Contact</h3>
             <p className="mt-2 text-sm text-[#52525B] font-medium">
-              Let the agent draft a personalized hire request based on the builder&apos;s profile,
+              Let VibeFinder Bot draft a personalized hire request based on the builder&apos;s profile,
               skills, and your project needs.
             </p>
             <div className="mt-4 text-sm font-bold uppercase text-[var(--accent)]">
@@ -144,9 +144,9 @@ export default function AgentHubPage() {
             >
               <MessageCircle size={22} className="text-white" />
             </div>
-            <h3 className="text-lg font-extrabold uppercase text-white">AI Chat</h3>
+            <h3 className="text-lg font-extrabold uppercase text-white">Bot Chat</h3>
             <p className="mt-2 text-sm text-zinc-400 font-medium">
-              Chat with our AI agent directly. Describe what you need and get instant
+              Chat with VibeFinder Bot directly. Describe what you need and get instant
               talent recommendations.
             </p>
             <div className="mt-4 text-sm font-bold uppercase text-[var(--accent)]">
@@ -165,13 +165,13 @@ export default function AgentHubPage() {
           boxShadow: "8px 8px 0 var(--accent)",
         }}
       >
-        <h2 className="text-2xl font-extrabold uppercase text-white mb-6">How AI Agents Work</h2>
+        <h2 className="text-2xl font-extrabold uppercase text-white mb-6">How VibeFinder Bot Works</h2>
         <div className="grid sm:grid-cols-4 gap-6">
           {[
-            { step: "01", title: "Describe", text: "Tell the agent what you're building and what skills you need" },
-            { step: "02", title: "Analyze", text: "Agent scans all builders — git activity, streaks, project quality, tech stack" },
+            { step: "01", title: "Describe", text: "Tell the bot what you're building and what skills you need" },
+            { step: "02", title: "Analyze", text: "Bot scans all builders — git activity, streaks, project quality, tech stack" },
             { step: "03", title: "Match", text: "Get ranked recommendations with match scores and reasoning" },
-            { step: "04", title: "Contact", text: "Agent drafts a personalized hire request and provides direct contact links" },
+            { step: "04", title: "Contact", text: "Bot drafts a personalized hire request and provides direct contact links" },
           ].map((item) => (
             <div key={item.step}>
               <div className="text-3xl font-extrabold font-mono text-[var(--accent)] mb-2">{item.step}</div>

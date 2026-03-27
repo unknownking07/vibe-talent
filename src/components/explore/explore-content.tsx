@@ -54,6 +54,8 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
           u.username.toLowerCase().includes(q) ||
           u.bio?.toLowerCase().includes(q) ||
           u.projects.some((p) =>
+            p.title?.toLowerCase().includes(q) ||
+            p.description?.toLowerCase().includes(q) ||
             (p.tech_stack ?? []).some((t) => t.toLowerCase().includes(q)) ||
             (p.tags ?? []).some((t) => t.toLowerCase().includes(q))
           )
@@ -124,7 +126,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
 
   return (
     <>
-      {/* AI Agent Banner */}
+      {/* VibeFinder Bot Banner */}
       <Link
         href="/agent/find"
         className="flex items-center gap-4 p-4 mb-10 transition-all hover:translate-x-[1px] hover:translate-y-[1px]"
@@ -142,10 +144,10 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
         </div>
         <div>
           <div className="text-sm font-extrabold uppercase text-white">
-            Let AI Find Your Perfect Match
+            Let VibeFinder Bot Match You
           </div>
           <div className="text-xs font-medium text-zinc-400">
-            Describe your project and our agent will rank the best vibe coders for you
+            Describe your project and our bot reads platform data to find the best vibe coders for you
           </div>
         </div>
       </Link>
@@ -157,7 +159,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#71717A]" />
             <input
               type="text"
-              placeholder="Search by name, tech stack, or tags..."
+              placeholder="Search by name, bio, projects, tech stack..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="input-brutal" style={{ paddingLeft: "2.5rem" }}

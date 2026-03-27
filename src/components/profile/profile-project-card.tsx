@@ -104,11 +104,11 @@ export function ProfileProjectCard({ project, verified = false }: ProfileProject
       }}
     >
       {project.image_url && (
-        <div className="relative w-full h-48 border-b-2 border-[#0F0F0F]">
+        <div className="relative w-full h-28 border-b-2 border-[#0F0F0F]">
           <Image src={project.image_url} alt={project.title} fill className="object-cover" />
         </div>
       )}
-      <div className="flex flex-col gap-3 p-5 flex-grow">
+      <div className="flex flex-col gap-2 p-4 flex-grow">
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-2">
           <span className="text-[1.1rem] font-extrabold uppercase text-[#0F0F0F]">{project.title}</span>

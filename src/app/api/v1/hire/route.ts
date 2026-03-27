@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
     }
 
     const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.xyz";
+      process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.work";
     const chatUrl = `${siteUrl}/hire/${data.id}/chat`;
 
     return NextResponse.json(

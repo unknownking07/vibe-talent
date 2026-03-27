@@ -44,7 +44,7 @@ export async function sendHireNotification({
     return;
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.dev";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.work";
   const dashboardUrl = `${siteUrl}/dashboard`;
   const chatUrl = `${siteUrl}/hire/chat/${requestId}`;
 
@@ -108,7 +108,7 @@ export async function sendStreakMilestoneEmail({
   const client = getResend();
   if (!client) return;
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.dev";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.work";
 
   try {
     await client.emails.send({
@@ -159,7 +159,7 @@ export async function sendBadgeEarnedEmail({
   const client = getResend();
   if (!client) return;
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.dev";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.work";
   const badgeEmoji: Record<string, string> = { bronze: "🥉", silver: "🥈", gold: "🥇", diamond: "💎" };
 
   try {
@@ -211,7 +211,7 @@ export async function sendProjectVerifiedEmail({
   const client = getResend();
   if (!client) return;
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.dev";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.work";
 
   try {
     await client.emails.send({
@@ -263,7 +263,7 @@ export async function sendStreakWarningEmail({
   const client = getResend();
   if (!client) return;
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.dev";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.work";
   const safeUsername = escapeHtml(username);
 
   try {
@@ -319,7 +319,7 @@ export async function sendReviewNotificationEmail({
   const client = getResend();
   if (!client) return;
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.dev";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.work";
   const safeReviewer = escapeHtml(reviewerName);
   const safeComment = comment ? escapeHtml(comment.slice(0, 200)) : null;
   const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
