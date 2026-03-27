@@ -31,8 +31,7 @@ async function _fetchAllUsers(): Promise<UserWithSocials[]> {
     sb
       .from("projects")
       .select(PROJECT_FIELDS)
-      .in("user_id", userIds)
-      .eq("flagged", false),
+      .in("user_id", userIds),
     sb
       .from("social_links")
       .select(SOCIAL_FIELDS)
@@ -77,8 +76,7 @@ async function _fetchUserByUsername(username: string): Promise<UserWithSocials |
       .from("projects")
       .select(PROJECT_FIELDS)
       .eq("user_id", user.id)
-      .eq("flagged", false)
-      .order("created_at", { ascending: false }),
+            .order("created_at", { ascending: false }),
     sb
       .from("social_links")
       .select(SOCIAL_FIELDS)
@@ -124,9 +122,9 @@ async function _fetchHomepageData() {
     { data: streakData },
   ] = await Promise.all([
     sb.from("users").select(USER_FIELDS).order("vibe_score", { ascending: false }).limit(20),
-    sb.from("projects").select(`${PROJECT_FIELDS}, users!projects_user_id_fkey(username)`).eq("flagged", false).order("created_at", { ascending: false }).limit(3),
+    sb.from("projects").select(`${PROJECT_FIELDS}, users!projects_user_id_fkey(username)`).order("created_at", { ascending: false }).limit(3),
     sb.from("users").select("id", { count: "exact", head: true }),
-    sb.from("projects").select("id", { count: "exact", head: true }).eq("flagged", false),
+    sb.from("projects").select("id", { count: "exact", head: true }),
     sb.from("users").select("streak"),
   ]);
 
@@ -144,7 +142,7 @@ async function _fetchHomepageData() {
   if (allUsers && allUsers.length > 0) {
     const allUserIds = allUsers.map((u: { id: string }) => u.id);
     const [{ data: allProjects }, { data: socials }] = await Promise.all([
-      sb.from("projects").select(PROJECT_FIELDS).in("user_id", allUserIds).eq("flagged", false),
+      sb.from("projects").select(PROJECT_FIELDS).in("user_id", allUserIds),
       sb.from("social_links").select(SOCIAL_FIELDS).in("user_id", allUserIds),
     ]);
 
