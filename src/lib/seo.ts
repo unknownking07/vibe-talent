@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.work";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.vibetalent.work";
 const siteName = "VibeTalent";
 
 export function createMetadata(options: {

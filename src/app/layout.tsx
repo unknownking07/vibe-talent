@@ -18,7 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.work";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.vibetalent.work";
 
 export const metadata: Metadata = {
   title: {
