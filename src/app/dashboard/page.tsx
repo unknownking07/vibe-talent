@@ -1155,7 +1155,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
           {user.projects.map((project) => (
             <div key={project.id}>
               <ProjectCard
