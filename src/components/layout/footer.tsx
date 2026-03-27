@@ -28,7 +28,7 @@ export function Footer() {
               </span>
             </div>
             <p className="text-sm text-[#52525B] max-w-md font-medium">
-              The AI-powered marketplace for vibe coders who actually ship. Build your reputation through consistency and proof of work.
+              The marketplace for vibe coders who actually ship. Build your reputation through consistency and proof of work.
             </p>
           </div>
           <div>

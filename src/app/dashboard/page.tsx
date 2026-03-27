@@ -32,6 +32,7 @@ import {
   Trash2,
   ShieldCheck,
   Zap,
+  Users,
 } from "lucide-react";
 
 /**
@@ -73,6 +74,7 @@ export default function DashboardPage() {
   const [heatmapData, setHeatmapData] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [hireRequests, setHireRequests] = useState<HireRequest[]>([]);
+  const [referralCopied, setReferralCopied] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,7 +89,7 @@ export default function DashboardPage() {
 
       // Fetch profile + projects + socials + streaks + inbox ALL in parallel (single round trip)
       const [{ data: profile }, { data: projects }, { data: socials }, streakData, { data: inboxData }] = await Promise.all([
-        sb.from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, created_at").eq("id", authUser.id).single(),
+        sb.from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, streak_freezes_remaining, streak_freezes_used, referral_count, created_at").eq("id", authUser.id).single(),
         sb.from("projects").select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at").eq("user_id", authUser.id).order("created_at", { ascending: false }),
         sb.from("social_links").select("id, user_id, twitter, telegram, github, website, farcaster").eq("user_id", authUser.id).single(),
         fetchStreakLogs(authUser.id),
@@ -279,6 +281,7 @@ export default function DashboardPage() {
   const [loadingChat, setLoadingChat] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatPollRef = useRef<NodeJS.Timeout | null>(null);
+  const [badgeCopied, setBadgeCopied] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [verifyingProjectId, setVerifyingProjectId] = useState<string | null>(null);
@@ -314,7 +317,7 @@ export default function DashboardPage() {
     if (!authUser) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
-    const { data: profile } = await sb.from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, created_at").eq("id", authUser.id).single();
+    const { data: profile } = await sb.from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, referral_count, created_at").eq("id", authUser.id).single();
     if (!profile) return;
     const [{ data: projects }, { data: socials }, streakData] = await Promise.all([
       sb.from("projects").select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at").eq("user_id", authUser.id).order("created_at", { ascending: false }),
@@ -1029,6 +1032,18 @@ export default function DashboardPage() {
         <div className="mt-2">
           <BadgeDisplay level={user.badge_level} />
         </div>
+        {/* Streak Freeze Status */}
+        <div className="mt-3 flex items-center gap-2">
+          <ShieldCheck size={16} className="text-cyan-600" />
+          <span className="text-sm font-bold text-[#52525B]">
+            {user.streak_freezes_remaining ?? 2} / 2 Freezes Available
+          </span>
+          {(user.streak_freezes_used ?? 0) > 0 && (
+            <span className="text-xs font-medium text-zinc-400">
+              ({user.streak_freezes_used} used this month)
+            </span>
+          )}
+        </div>
         {/* GitHub Sync */}
         {user.social_links?.github && (
           <div className="mt-4 pt-4 border-t-2 border-zinc-100">
@@ -1066,6 +1081,121 @@ export default function DashboardPage() {
       >
         <h2 className="text-lg font-extrabold uppercase text-[#0F0F0F] mb-4">Your Activity</h2>
         <ActivityHeatmap data={heatmapData} />
+      </div>
+
+      {/* Referral */}
+      <div
+        className="p-6 mb-8"
+        style={{
+          backgroundColor: "#FFFFFF",
+          border: "2px solid #0F0F0F",
+          boxShadow: "var(--shadow-brutal)",
+        }}
+      >
+        <h2 className="text-lg font-extrabold uppercase flex items-center gap-2 text-[#0F0F0F] mb-2">
+          <Users size={20} className="text-[var(--accent)]" />
+          Invite Builders
+        </h2>
+        <p className="text-sm text-[#52525B] font-medium mb-4">
+          Share your referral link. When someone signs up, you get a bonus streak day!
+        </p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            readOnly
+            value={`${typeof window !== "undefined" ? window.location.origin : "https://vibetalent.work"}/auth/signup?ref=${user.username}`}
+            className="input-brutal flex-1 text-sm font-mono"
+          />
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(`${window.location.origin}/auth/signup?ref=${user.username}`);
+              setReferralCopied(true);
+              setTimeout(() => setReferralCopied(false), 2000);
+            }}
+            className="btn-brutal text-sm px-4"
+            style={{
+              backgroundColor: referralCopied ? "#D1FAE5" : "var(--accent)",
+              color: referralCopied ? "#065F46" : "#FFFFFF",
+            }}
+          >
+            {referralCopied ? "Copied!" : "Copy"}
+          </button>
+        </div>
+        {(user.referral_count ?? 0) > 0 && (
+          <p className="text-sm font-bold text-[#0F0F0F] mt-3">
+            You&apos;ve referred {user.referral_count} builder{user.referral_count !== 1 ? "s" : ""}!
+          </p>
+        )}
+      </div>
+
+      {/* Embeddable Badge */}
+      <div
+        className="p-6 mb-8"
+        style={{
+          backgroundColor: "#FFFFFF",
+          border: "2px solid #0F0F0F",
+          boxShadow: "var(--shadow-brutal)",
+        }}
+      >
+        <h2 className="text-lg font-extrabold uppercase flex items-center gap-2 text-[#0F0F0F] mb-4">
+          <ExternalLink size={20} className="text-[var(--accent)]" />
+          Embeddable Badge
+        </h2>
+        <p className="text-sm text-[#52525B] font-medium mb-4">
+          Add your VibeTalent badge to your GitHub README or website
+        </p>
+
+        {/* Badge Preview */}
+        <div className="mb-4 p-4 bg-zinc-50 border-2 border-zinc-200 flex items-center justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`/api/badge/${user.username}`}
+            alt={`${user.username}'s VibeTalent badge`}
+            height={36}
+          />
+        </div>
+
+        {/* Copy Markdown */}
+        <div className="space-y-3">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A]">Markdown (GitHub README)</label>
+              <button
+                onClick={() => {
+                  const siteUrl = window.location.origin;
+                  navigator.clipboard.writeText(`[![VibeTalent](${siteUrl}/api/badge/${user.username})](${siteUrl}/profile/${user.username})`);
+                  setBadgeCopied("md");
+                  setTimeout(() => setBadgeCopied(null), 2000);
+                }}
+                className="text-xs font-bold text-[var(--accent)] hover:underline"
+              >
+                {badgeCopied === "md" ? "Copied!" : "Copy"}
+              </button>
+            </div>
+            <code className="block p-2 text-xs font-mono bg-zinc-100 border-2 border-zinc-200 break-all">
+              {`[![VibeTalent](${typeof window !== "undefined" ? window.location.origin : "https://vibetalent.work"}/api/badge/${user.username})](${typeof window !== "undefined" ? window.location.origin : "https://vibetalent.work"}/profile/${user.username})`}
+            </code>
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A]">HTML (Website)</label>
+              <button
+                onClick={() => {
+                  const siteUrl = window.location.origin;
+                  navigator.clipboard.writeText(`<a href="${siteUrl}/profile/${user.username}"><img src="${siteUrl}/api/badge/${user.username}" alt="VibeTalent Badge" /></a>`);
+                  setBadgeCopied("html");
+                  setTimeout(() => setBadgeCopied(null), 2000);
+                }}
+                className="text-xs font-bold text-[var(--accent)] hover:underline"
+              >
+                {badgeCopied === "html" ? "Copied!" : "Copy"}
+              </button>
+            </div>
+            <code className="block p-2 text-xs font-mono bg-zinc-100 border-2 border-zinc-200 break-all">
+              {`<a href="${typeof window !== "undefined" ? window.location.origin : "https://vibetalent.work"}/profile/${user.username}"><img src="${typeof window !== "undefined" ? window.location.origin : "https://vibetalent.work"}/api/badge/${user.username}" alt="VibeTalent Badge" /></a>`}
+            </code>
+          </div>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">

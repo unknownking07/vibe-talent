@@ -16,7 +16,7 @@ const evaluationSteps: AgentStep[] = [
   { label: "Analyzing project portfolio and deployments...", duration: 1000 },
   { label: "Evaluating tech stack diversity...", duration: 900 },
   { label: "Computing reputation and badge metrics...", duration: 700 },
-  { label: "Generating AI evaluation report...", duration: 1100 },
+  { label: "Generating evaluation report...", duration: 1100 },
 ];
 
 export default function EvaluatePage({
@@ -84,7 +84,7 @@ export default function EvaluatePage({
         </div>
         <div>
           <h1 className="text-2xl font-extrabold uppercase text-[#0F0F0F]">
-            AI Evaluation: @{username}
+            VibeFinder Evaluation: @{username}
           </h1>
           <p className="text-sm text-[#52525B] font-medium">
             Deep analysis of coding activity, project quality, and reputation
@@ -106,7 +106,7 @@ export default function EvaluatePage({
               className="btn-brutal btn-brutal-primary text-sm flex items-center gap-2"
             >
               <Bot size={14} />
-              Contact via Agent
+              Contact via VibeFinder
             </Link>
             <Link
               href={`/profile/${username}`}

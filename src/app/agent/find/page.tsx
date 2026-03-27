@@ -68,7 +68,7 @@ export default function FindTalentPage() {
           <div>
             <h1 className="text-2xl font-extrabold uppercase text-[#0F0F0F]">Find Talent</h1>
             <p className="text-sm text-[#52525B] font-medium">
-              Describe your project and let our AI agent find the best vibe coders
+              Describe your project and let VibeFinder Bot find the best vibe coders
             </p>
           </div>
         </div>
@@ -186,9 +186,9 @@ export default function FindTalentPage() {
           <Bot size={20} className="text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-extrabold uppercase text-[#0F0F0F]">Agent Results</h1>
+          <h1 className="text-2xl font-extrabold uppercase text-[#0F0F0F]">VibeFinder Results</h1>
           <p className="text-sm text-[#52525B] font-medium">
-            AI-ranked matches for your project
+            Ranked matches for your project
           </p>
         </div>
       </div>

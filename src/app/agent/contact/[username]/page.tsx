@@ -189,7 +189,7 @@ export default function ContactPage({
             Contact @{username}
           </h1>
           <p className="text-sm text-[#52525B] font-medium">
-            AI-drafted hire request
+            Bot-drafted hire request
           </p>
         </div>
       </div>
@@ -246,7 +246,7 @@ export default function ContactPage({
 
           <div>
             <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
-              AI-Drafted Message
+              Bot-Drafted Message
             </label>
             <textarea
               value={message}
@@ -256,7 +256,7 @@ export default function ContactPage({
             />
             <p className="text-xs text-[#A1A1AA] mt-1 font-medium">
               <Bot size={10} className="inline mr-1" />
-              Message drafted by AI agent. Feel free to edit before sending.
+              Message drafted by VibeFinder Bot. Feel free to edit before sending.
             </p>
           </div>
 

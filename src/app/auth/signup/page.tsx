@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Flame, Github, Mail, Lock, User, Check } from "lucide-react";
 import OAuthConsentModal from "@/components/auth/oauth-consent-modal";
 
 export default function SignUpPage() {
+  const searchParams = useSearchParams();
+  const ref = searchParams.get("ref");
+
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,6 +18,13 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [consentProvider, setConsentProvider] = useState<"github" | "google" | null>(null);
+
+  // Store referral code in localStorage so it persists through the auth flow
+  useEffect(() => {
+    if (ref) {
+      localStorage.setItem("referral_code", ref);
+    }
+  }, [ref]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,6 +115,17 @@ export default function SignUpPage() {
         <p className="mt-2 text-sm text-[#52525B] font-medium">
           Create your account and start shipping
         </p>
+        {ref && (
+          <div
+            className="mt-3 inline-block px-4 py-2 text-sm font-bold text-[#065F46]"
+            style={{
+              backgroundColor: "#D1FAE5",
+              border: "2px solid #0F0F0F",
+            }}
+          >
+            Referred by @{ref}
+          </div>
+        )}
       </div>
 
       <div

@@ -19,7 +19,7 @@ interface Message {
 
 type ConversationStage = "greeting" | "description" | "tech" | "timeline" | "results";
 
-const GREETING = "Hey! I'm the VibeTalent AI agent. I can help you find vibe coders, evaluate builders, or draft hire requests. What are you looking for?";
+const GREETING = "Hey! I'm VibeFinder Bot. I read platform data to help you find vibe coders, evaluate builders, or draft hire requests. What are you looking for?";
 
 export default function AgentChatPage() {
   const [allUsers, setAllUsers] = useState<UserWithSocials[]>([]);
@@ -131,7 +131,7 @@ export default function AgentChatPage() {
         simulateThinking(() => {
           addMessage(
             "agent",
-            "Sure! You can evaluate any builder on the platform. Head to their profile and click the \"AI Evaluate\" button, or visit /agent/evaluate/[username].\n\nWho would you like to evaluate? Here are some popular builders:\n\n• @indie_hacker (Diamond, 380-day streak)\n• @web3_builder (Gold, 210-day streak)\n• @vibemaster (Silver, 127-day streak)"
+            "Sure! You can evaluate any builder on the platform. Head to their profile and click the \"VibeFinder Evaluate\" button, or visit /agent/evaluate/[username].\n\nWho would you like to evaluate? Here are some popular builders:\n\n• @indie_hacker (Diamond, 380-day streak)\n• @web3_builder (Gold, 210-day streak)\n• @vibemaster (Silver, 127-day streak)"
           );
           setStage("results");
         });
@@ -163,7 +163,7 @@ export default function AgentChatPage() {
           <Bot size={20} className="text-[var(--accent)]" />
         </div>
         <div>
-          <h1 className="text-xl font-extrabold uppercase text-[#0F0F0F]">AI Agent Chat</h1>
+          <h1 className="text-xl font-extrabold uppercase text-[#0F0F0F]">VibeFinder Bot Chat</h1>
           <p className="text-xs text-[#71717A] font-bold uppercase">Powered by VibeTalent</p>
         </div>
       </div>

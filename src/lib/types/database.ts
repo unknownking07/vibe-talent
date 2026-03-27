@@ -9,6 +9,9 @@ export interface User {
   longest_streak: number;
   vibe_score: number;
   badge_level: BadgeLevel;
+  streak_freezes_remaining: number;
+  streak_freezes_used: number;
+  referral_count: number;
   created_at: string;
 }
 
@@ -81,6 +84,13 @@ export interface Review {
   created_at: string;
 }
 
+export interface Referral {
+  id: string;
+  referrer_id: string;
+  referred_id: string;
+  created_at: string;
+}
+
 export type NotificationType = "hire_request" | "streak_milestone" | "streak_warning" | "badge_earned" | "project_verified" | "project_flagged" | "new_review";
 
 export interface Notification {
@@ -107,6 +117,9 @@ export interface Database {
           longest_streak?: number;
           vibe_score?: number;
           badge_level?: BadgeLevel;
+          streak_freezes_remaining?: number;
+          streak_freezes_used?: number;
+          referral_count?: number;
         };
         Update: Partial<User>;
       };

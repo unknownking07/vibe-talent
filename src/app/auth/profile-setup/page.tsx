@@ -689,7 +689,46 @@ export default function ProfileSetupPage() {
 
           <button
             type="button"
-            onClick={() => router.push("/dashboard")}
+            onClick={async () => {
+              // Process referral if exists
+              const refCode = localStorage.getItem("referral_code");
+              if (refCode && refCode !== profile.username && userId) {
+                try {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const sb = supabase as any;
+                  // Find the referrer
+                  const { data: referrer } = await sb
+                    .from("users")
+                    .select("id, referral_count")
+                    .eq("username", refCode)
+                    .single();
+                  if (referrer) {
+                    // Create referral record
+                    await sb.from("referrals").insert({
+                      referrer_id: referrer.id,
+                      referred_id: userId,
+                    });
+                    // Give referrer a streak bonus day
+                    const today = new Date().toISOString().split("T")[0];
+                    await sb.from("streak_logs").upsert(
+                      { user_id: referrer.id, activity_date: today },
+                      { onConflict: "user_id,activity_date" }
+                    );
+                    // Increment referral count
+                    await sb
+                      .from("users")
+                      .update({
+                        referral_count: (referrer.referral_count || 0) + 1,
+                      })
+                      .eq("id", referrer.id);
+                  }
+                } catch {
+                  // Silently ignore referral errors — don't block onboarding
+                }
+                localStorage.removeItem("referral_code");
+              }
+              router.push("/dashboard");
+            }}
             className="btn-brutal btn-brutal-primary w-full justify-center text-sm"
             style={{ fontSize: "16px", padding: "14px 24px" }}
           >
