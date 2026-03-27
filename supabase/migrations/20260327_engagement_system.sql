@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS profile_views (
 
 -- Deduplicate: one view per viewer per profile per day
 CREATE UNIQUE INDEX IF NOT EXISTS idx_profile_views_dedup
-  ON profile_views (viewed_user_id, COALESCE(viewer_user_id::text, viewer_ip_hash), (viewed_at::date));
+  ON profile_views (viewed_user_id, COALESCE(viewer_user_id::text, viewer_ip_hash), ((viewed_at AT TIME ZONE 'UTC')::date));
 
 -- Query index: who viewed me recently
 CREATE INDEX IF NOT EXISTS idx_profile_views_by_user_date
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS email_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_email_log_user_type_date
-  ON email_log (user_id, email_type, (sent_at::date));
+  ON email_log (user_id, email_type, ((sent_at AT TIME ZONE 'UTC')::date));
 
 -- Expand notification types
 ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_type_check;
