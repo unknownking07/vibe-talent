@@ -164,8 +164,8 @@ export function Navbar() {
                 onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                 className="flex items-center justify-center overflow-hidden"
                 style={{
-                  width: 44,
-                  height: 44,
+                  width: 48,
+                  height: 48,
                   borderRadius: "50%",
                   border: "2px solid #0F0F0F",
                   backgroundColor: "#0F0F0F",
@@ -176,8 +176,8 @@ export function Navbar() {
                   <Image
                     src={userProfile.avatar_url}
                     alt={userProfile.username}
-                    width={44}
-                    height={44}
+                    width={48}
+                    height={48}
                     className="w-full h-full object-cover"
                     style={{ borderRadius: "50%" }}
                   />

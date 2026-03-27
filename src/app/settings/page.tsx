@@ -9,7 +9,6 @@ import {
   Save,
   Camera,
   Users,
-  ExternalLink,
 } from "lucide-react";
 
 /**
@@ -437,58 +436,6 @@ export default function SettingsPage() {
         )}
       </div>
 
-      {/* Embeddable Badge for GitHub */}
-      <div
-        className="p-5 mb-8"
-        style={{
-          backgroundColor: "#FFFFFF",
-          border: "2px solid #0F0F0F",
-          boxShadow: "var(--shadow-brutal)",
-        }}
-      >
-        <h2 className="text-base font-extrabold uppercase flex items-center gap-2 text-[#0F0F0F] mb-3">
-          <ExternalLink size={16} className="text-[var(--accent)]" />
-          Embeddable Badge for GitHub
-        </h2>
-
-        <div className="flex items-center gap-4 p-3 bg-zinc-50 border-2 border-zinc-200 mb-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`/api/badge/${user.username}`}
-            alt={`${user.username}'s VibeTalent badge`}
-            height={28}
-          />
-        </div>
-
-        <div className="flex gap-2">
-          {(() => {
-            const siteUrl = "https://vibetalent.work";
-            const encodedName = encodeURIComponent(user.username);
-            const badgeImgUrl = `${siteUrl}/api/badge/${encodedName}`;
-            const profileUrl = `${siteUrl}/profile/${encodedName}`;
-            return (
-              <>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(`[![VibeTalent](${badgeImgUrl})](${profileUrl})`);
-                  }}
-                  className="btn-brutal flex-1 flex items-center justify-center gap-1.5 text-xs py-2"
-                >
-                  Copy Markdown
-                </button>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(`<a href="${profileUrl}"><img src="${badgeImgUrl}" alt="VibeTalent Badge" /></a>`);
-                  }}
-                  className="btn-brutal flex-1 flex items-center justify-center gap-1.5 text-xs py-2"
-                >
-                  Copy HTML
-                </button>
-              </>
-            );
-          })()}
-        </div>
-      </div>
     </div>
   );
 }
