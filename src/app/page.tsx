@@ -37,20 +37,20 @@ export default async function HomePage() {
               {
                 "@type": "WebSite",
                 name: "VibeTalent",
-                url: "https://vibetalent.work",
+                url: "https://www.vibetalent.work",
                 description:
                   "The marketplace for vibe coders who ship consistently. Find developers based on streaks, shipped projects, and vibe scores.",
                 potentialAction: {
                   "@type": "SearchAction",
-                  target: "https://vibetalent.work/explore?q={search_term_string}",
+                  target: "https://www.vibetalent.work/explore?q={search_term_string}",
                   "query-input": "required name=search_term_string",
                 },
               },
               {
                 "@type": "Organization",
                 name: "VibeTalent",
-                url: "https://vibetalent.work",
-                logo: "https://vibetalent.work/opengraph-image",
+                url: "https://www.vibetalent.work",
+                logo: "https://www.vibetalent.work/opengraph-image",
                 sameAs: [],
               },
             ],
