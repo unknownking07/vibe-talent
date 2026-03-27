@@ -35,20 +35,11 @@ export const metadata: Metadata = {
     siteName: "VibeTalent",
     type: "website",
     locale: "en_US",
-    images: [
-      {
-        url: `${siteUrl}/og-image.png`,
-        width: 1200,
-        height: 630,
-        alt: "VibeTalent — Find Vibe Coders Who Actually Ship",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "VibeTalent — Find Vibe Coders Who Actually Ship",
     description: "The marketplace for vibe coders who ship consistently.",
-    images: [`${siteUrl}/og-image.png`],
   },
   robots: {
     index: true,

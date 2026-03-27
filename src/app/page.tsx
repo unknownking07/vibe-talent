@@ -50,7 +50,7 @@ export default async function HomePage() {
                 "@type": "Organization",
                 name: "VibeTalent",
                 url: "https://vibetalent.work",
-                logo: "https://vibetalent.work/og-image.png",
+                logo: "https://vibetalent.work/opengraph-image",
                 sameAs: [],
               },
             ],
