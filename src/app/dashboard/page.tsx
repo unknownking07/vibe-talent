@@ -1152,30 +1152,38 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex gap-2">
-          <button
-            onClick={() => {
-              const siteUrl = "https://vibetalent.work";
-              navigator.clipboard.writeText(`[![VibeTalent](${siteUrl}/api/badge/${user.username})](${siteUrl}/profile/${user.username})`);
-              setBadgeCopied("md");
-              setTimeout(() => setBadgeCopied(null), 2000);
-            }}
-            className="btn-brutal flex-1 flex items-center justify-center gap-1.5 text-xs py-2"
-            style={{ backgroundColor: badgeCopied === "md" ? "#D1FAE5" : "#FFFFFF" }}
-          >
-            {badgeCopied === "md" ? "Copied!" : "Copy Markdown"}
-          </button>
-          <button
-            onClick={() => {
-              const siteUrl = "https://vibetalent.work";
-              navigator.clipboard.writeText(`<a href="${siteUrl}/profile/${user.username}"><img src="${siteUrl}/api/badge/${user.username}" alt="VibeTalent Badge" /></a>`);
-              setBadgeCopied("html");
-              setTimeout(() => setBadgeCopied(null), 2000);
-            }}
-            className="btn-brutal flex-1 flex items-center justify-center gap-1.5 text-xs py-2"
-            style={{ backgroundColor: badgeCopied === "html" ? "#D1FAE5" : "#FFFFFF" }}
-          >
-            {badgeCopied === "html" ? "Copied!" : "Copy HTML"}
-          </button>
+          {(() => {
+            const siteUrl = "https://vibetalent.work";
+            const encodedName = encodeURIComponent(user.username);
+            const badgeImgUrl = `${siteUrl}/api/badge/${encodedName}`;
+            const profileUrl = `${siteUrl}/profile/${encodedName}`;
+            return (
+              <>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`[![VibeTalent](${badgeImgUrl})](${profileUrl})`);
+                    setBadgeCopied("md");
+                    setTimeout(() => setBadgeCopied(null), 2000);
+                  }}
+                  className="btn-brutal flex-1 flex items-center justify-center gap-1.5 text-xs py-2"
+                  style={{ backgroundColor: badgeCopied === "md" ? "#D1FAE5" : "#FFFFFF" }}
+                >
+                  {badgeCopied === "md" ? "Copied!" : "Copy Markdown"}
+                </button>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`<a href="${profileUrl}"><img src="${badgeImgUrl}" alt="VibeTalent Badge" /></a>`);
+                    setBadgeCopied("html");
+                    setTimeout(() => setBadgeCopied(null), 2000);
+                  }}
+                  className="btn-brutal flex-1 flex items-center justify-center gap-1.5 text-xs py-2"
+                  style={{ backgroundColor: badgeCopied === "html" ? "#D1FAE5" : "#FFFFFF" }}
+                >
+                  {badgeCopied === "html" ? "Copied!" : "Copy HTML"}
+                </button>
+              </>
+            );
+          })()}
         </div>
       </div>
 

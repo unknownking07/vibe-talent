@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
 const BADGE_COLORS: Record<string, { bg: string; accent: string }> = {
   diamond: { bg: "#0E7490", accent: "#67E8F9" },
   gold: { bg: "#A16207", accent: "#FDE68A" },
@@ -27,12 +36,17 @@ export async function GET(
     .eq("username", username)
     .single();
 
-  if (error || !user) {
+  if (error) {
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+
+  if (!user) {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="220" height="28" viewBox="0 0 220 28">
       <rect width="220" height="28" rx="4" fill="#0F0F0F"/>
       <text x="110" y="18" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#FFFFFF">VibeTalent — User not found</text>
     </svg>`;
     return new NextResponse(svg, {
+      status: 404,
       headers: { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=300" },
     });
   }
@@ -67,7 +81,7 @@ export async function GET(
 
       <!-- Username -->
       <rect x="${userX}" y="0" width="${userW}" height="${h}" fill="${colors.bg}"/>
-      <text x="${userX + userW / 2}" y="18" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#FFFFFF">@${user.username}</text>
+      <text x="${userX + userW / 2}" y="18" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#FFFFFF">@${escapeXml(user.username)}</text>
 
       <!-- Streak -->
       <rect x="${streakX}" y="0" width="${streakW}" height="${h}" fill="#1A1A1A"/>
