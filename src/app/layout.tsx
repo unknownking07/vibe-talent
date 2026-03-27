@@ -38,11 +38,11 @@ export const metadata: Metadata = {
     locale: "en_US",
     images: [
       {
-        url: `${siteUrl}/opengraph-image`,
+        url: `${siteUrl}/og-image.jpg`,
         width: 1200,
         height: 630,
         alt: "VibeTalent — Find Vibe Coders Who Actually Ship",
-        type: "image/png",
+        type: "image/jpeg",
       },
     ],
   },
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "VibeTalent — Find Vibe Coders Who Actually Ship",
     description: "The marketplace for vibe coders who ship consistently.",
-    images: [`${siteUrl}/opengraph-image`],
+    images: [`${siteUrl}/og-image.jpg`],
   },
   robots: {
     index: true,

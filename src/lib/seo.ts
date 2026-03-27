@@ -13,7 +13,7 @@ export function createMetadata(options: {
   const { title, description, path = "", image } = options;
   const fullTitle = `${title} | ${siteName}`;
   const url = `${siteUrl}${path}`;
-  const ogImage = image || `${siteUrl}/opengraph-image`;
+  const ogImage = image || `${siteUrl}/og-image.jpg`;
 
   return {
     title: fullTitle,
