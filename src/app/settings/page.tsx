@@ -106,6 +106,7 @@ export default function SettingsPage() {
   }, []);
 
   // Populate form when user loads
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (user) {
       setProfileForm({
@@ -119,6 +120,7 @@ export default function SettingsPage() {
       });
     }
   }, [user]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

@@ -230,7 +230,6 @@ export default function DashboardPage() {
   const [githubSyncResult, setGithubSyncResult] = useState<string | null>(null);
   const [lastSyncLabel, setLastSyncLabel] = useState<string | null>(null);
 
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const ts = localStorage.getItem("last_github_sync");
     if (ts) {
@@ -245,7 +244,6 @@ export default function DashboardPage() {
       }
     }
   }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const reloadUser = useCallback(async () => {
     const supabase = createClient();
