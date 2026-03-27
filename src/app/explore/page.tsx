@@ -19,7 +19,7 @@ export default async function ExplorePage() {
       {
         "@type": "BreadcrumbList",
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Home", item: "https://vibetalent.work" },
+          { "@type": "ListItem", position: 1, name: "Home", item: "https://www.vibetalent.work" },
           { "@type": "ListItem", position: 2, name: "Explore Talent", item: "https://vibetalent.work/explore" },
         ],
       },

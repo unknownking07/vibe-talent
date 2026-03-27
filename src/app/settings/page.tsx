@@ -411,7 +411,7 @@ export default function SettingsPage() {
           <input
             type="text"
             readOnly
-            value={`${typeof window !== "undefined" ? window.location.origin : "https://vibetalent.work"}/auth/signup?ref=${user.username}`}
+            value={`${typeof window !== "undefined" ? window.location.origin : "https://www.vibetalent.work"}/auth/signup?ref=${user.username}`}
             className="input-brutal flex-1 text-sm font-mono"
           />
           <button

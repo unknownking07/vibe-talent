@@ -965,7 +965,7 @@ export default function DashboardPage() {
 
         <div className="flex gap-2">
           {(() => {
-            const siteUrl = "https://vibetalent.work";
+            const siteUrl = "https://www.vibetalent.work";
             const encodedName = encodeURIComponent(user.username);
             const badgeImgUrl = `${siteUrl}/api/badge/${encodedName}`;
             const profileUrl = `${siteUrl}/profile/${encodedName}`;
