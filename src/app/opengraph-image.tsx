@@ -25,15 +25,30 @@ export default function Image() {
             display: "flex",
             alignItems: "center",
             gap: 12,
-            marginBottom: 12,
+            marginBottom: 16,
           }}
         >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 36,
+              height: 36,
+              backgroundColor: "#FF3A00",
+              border: "2px solid #0F0F0F",
+              color: "#FFFFFF",
+              fontSize: 18,
+            }}
+          >
+            V
+          </div>
           <span style={{ fontSize: 24, fontWeight: 800, color: "#FF3A00" }}>
             vibetalent.work
           </span>
         </div>
 
-        {/* Main Card */}
+        {/* Main Card — no boxShadow (unsupported by Satori), use border only */}
         <div
           style={{
             display: "flex",
@@ -42,7 +57,6 @@ export default function Image() {
             justifyContent: "center",
             backgroundColor: "#FFFFFF",
             border: "4px solid #0F0F0F",
-            boxShadow: "12px 12px 0 #0F0F0F",
             padding: 60,
           }}
         >
@@ -54,7 +68,6 @@ export default function Image() {
               marginBottom: 24,
             }}
           >
-            <span style={{ fontSize: 48 }}>⚡</span>
             <span
               style={{
                 fontSize: 56,
@@ -75,9 +88,10 @@ export default function Image() {
               color: "#0F0F0F",
               textTransform: "uppercase",
               lineHeight: 1.2,
+              display: "flex",
             }}
           >
-            Find Vibe Coders Who{" "}
+            Find Vibe Coders Who&nbsp;
             <span style={{ color: "#FF3A00" }}>Actually Ship.</span>
           </div>
 
@@ -89,8 +103,8 @@ export default function Image() {
               lineHeight: 1.5,
             }}
           >
-            A marketplace built on consistency and proof of work. No resumes.
-            Just streaks, shipped projects, and vibe scores.
+            The marketplace built on consistency and proof of work. Streaks,
+            shipped projects, and vibe scores.
           </p>
 
           {/* Stats Row */}
@@ -102,10 +116,10 @@ export default function Image() {
             }}
           >
             {[
-              { icon: "🔥", label: "Streaks" },
-              { icon: "📦", label: "Projects" },
-              { icon: "🏆", label: "Badges" },
-              { icon: "⚡", label: "Vibe Score" },
+              { label: "Streaks", color: "#FF3A00" },
+              { label: "Projects", color: "#0F0F0F" },
+              { label: "Badges", color: "#CA8A04" },
+              { label: "Vibe Score", color: "#FF3A00" },
             ].map((item) => (
               <div
                 key={item.label}
@@ -118,7 +132,14 @@ export default function Image() {
                   border: "3px solid #0F0F0F",
                 }}
               >
-                <span style={{ fontSize: 20 }}>{item.icon}</span>
+                <div
+                  style={{
+                    width: 10,
+                    height: 10,
+                    backgroundColor: item.color,
+                    borderRadius: "50%",
+                  }}
+                />
                 <span
                   style={{
                     fontSize: 16,
