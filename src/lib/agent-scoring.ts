@@ -50,13 +50,22 @@ function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
     ? clamp(0, 100, 60 + Math.min(40, user.streak * 0.4))
     : 20;
 
+  // Endorsements bonus: peer-validated projects boost quality
+  const totalEndorsements = user.projects.reduce((sum, p) => sum + (p.endorsement_count || 0), 0);
+  const endorsementBonus = Math.min(15, totalEndorsements * 3);
+  project_quality = clamp(0, 100, project_quality + endorsementBonus);
+
   // Reputation: based on vibe_score and badge
   const badgeBonus = { none: 0, bronze: 10, silver: 20, gold: 35, diamond: 50 };
   const reputation = clamp(0, 100,
     (user.vibe_score / 9) + (badgeBonus[user.badge_level] || 0)
   );
 
-  return { consistency, project_quality, tech_breadth, activity_recency, reputation };
+  // Client Outcomes: real hire completions, trusted reviews, repeat clients
+  const outcomes = user.client_outcomes;
+  const client_outcomes = outcomes ? outcomes.outcome_score : 0;
+
+  return { consistency, project_quality, tech_breadth, activity_recency, reputation, client_outcomes };
 }
 
 function generateSummary(user: UserWithSocials, dims: EvaluationDimensions, overall: number): string {
@@ -109,7 +118,15 @@ function extractStrengths(user: UserWithSocials, dims: EvaluationDimensions): st
   if (user.projects.some(p => p.live_url)) strengths.push("Has live deployed projects");
   if (user.projects.some(p => p.github_url)) strengths.push("Open source contributor");
   if (user.vibe_score > 500) strengths.push(`High vibe score: ${user.vibe_score}`);
-  return strengths.slice(0, 5);
+  if (user.client_outcomes) {
+    if (user.client_outcomes.completed_hires >= 3) strengths.push(`${user.client_outcomes.completed_hires} completed hires`);
+    if (user.client_outcomes.avg_rating >= 4.5 && user.client_outcomes.total_reviews >= 2) strengths.push(`${user.client_outcomes.avg_rating}/5 avg rating from trusted reviews`);
+    if (user.client_outcomes.repeat_clients > 0) strengths.push(`${user.client_outcomes.repeat_clients} repeat client${user.client_outcomes.repeat_clients > 1 ? "s" : ""}`);
+    if (user.client_outcomes.avg_response_hours !== null && user.client_outcomes.avg_response_hours <= 4) strengths.push("Fast responder (< 4h avg)");
+  }
+  const totalEndorsements = user.projects.reduce((sum, p) => sum + (p.endorsement_count || 0), 0);
+  if (totalEndorsements >= 5) strengths.push(`${totalEndorsements} peer endorsements across projects`);
+  return strengths.slice(0, 6);
 }
 
 function extractRisks(user: UserWithSocials, dims: EvaluationDimensions): string[] {
@@ -126,16 +143,28 @@ function extractRisks(user: UserWithSocials, dims: EvaluationDimensions): string
   if (!user.projects.some(p => p.live_url)) risks.push("No live deployed projects");
   if (dims.tech_breadth < 30) risks.push("Narrow tech stack");
   if (user.badge_level === "none") risks.push("No badge earned yet");
-  return risks.slice(0, 4);
+  if (user.client_outcomes) {
+    if (user.client_outcomes.total_hires > 0 && user.client_outcomes.completion_rate < 50) {
+      risks.push(`Low completion rate: ${user.client_outcomes.completion_rate}%`);
+    }
+    if (user.client_outcomes.avg_response_hours !== null && user.client_outcomes.avg_response_hours > 72) {
+      risks.push("Slow to respond (> 3 days avg)");
+    }
+  }
+  return risks.slice(0, 5);
 }
 
 export function evaluateUser(user: UserWithSocials): EvaluationResult {
   const dims = evaluateDimensions(user);
+
+  // Weights: quality and client outcomes are heaviest (hardest to fake)
+  // Consistency is lowest weight (easiest to fake with daily commits)
   const overall = Math.round(
-    dims.consistency * 0.30 +
     dims.project_quality * 0.25 +
+    dims.client_outcomes * 0.20 +
+    dims.consistency * 0.15 +
     dims.tech_breadth * 0.15 +
-    dims.activity_recency * 0.15 +
+    dims.activity_recency * 0.10 +
     dims.reputation * 0.15
   );
 
@@ -148,6 +177,7 @@ export function evaluateUser(user: UserWithSocials): EvaluationResult {
       tech_breadth: Math.round(dims.tech_breadth),
       activity_recency: Math.round(dims.activity_recency),
       reputation: Math.round(dims.reputation),
+      client_outcomes: Math.round(dims.client_outcomes),
     },
     summary: generateSummary(user, dims, overall),
     strengths: extractStrengths(user, dims),

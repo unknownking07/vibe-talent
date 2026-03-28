@@ -408,6 +408,40 @@ CREATE TRIGGER on_streak_milestone
   AFTER UPDATE OF streak ON users
   FOR EACH ROW EXECUTE FUNCTION notify_streak_milestone();
 
+-- ==========================================
+-- PROJECT ENDORSEMENTS (Peer Review)
+-- ==========================================
+-- Authenticated users can endorse other people's projects (not their own).
+-- Each user can endorse a project only once.
+
+CREATE TABLE IF NOT EXISTS project_endorsements (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(project_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_endorsements_project ON project_endorsements(project_id);
+CREATE INDEX IF NOT EXISTS idx_endorsements_user ON project_endorsements(user_id);
+
+ALTER TABLE project_endorsements ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Endorsements are publicly readable"
+  ON project_endorsements FOR SELECT USING (true);
+
+CREATE POLICY "Authenticated users can endorse"
+  ON project_endorsements FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can remove own endorsements"
+  ON project_endorsements FOR DELETE USING (auth.uid() = user_id);
+
+-- Add endorsement_count cache column on projects
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS endorsement_count INTEGER DEFAULT 0;
+
+-- Add trust_score to reviews (computed at insert time, detects fake/bot reviews)
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS trust_score INTEGER DEFAULT 100;
+
 -- Storage bucket for project images
 -- Create "project-images" bucket in Supabase dashboard with public access
 -- Path: project-images/{userId}/{projectId}/image.ext

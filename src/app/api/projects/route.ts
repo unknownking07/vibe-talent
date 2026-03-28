@@ -8,7 +8,7 @@ export async function GET() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from("projects")
-      .select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, live_url_ok, created_at")
+      .select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, live_url_ok, endorsement_count, created_at")
       .eq("flagged", false)
       .order("created_at", { ascending: false });
 

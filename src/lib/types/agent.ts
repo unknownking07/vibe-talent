@@ -6,6 +6,7 @@ export interface EvaluationDimensions {
   tech_breadth: number;
   activity_recency: number;
   reputation: number;
+  client_outcomes: number;
 }
 
 export interface EvaluationResult {

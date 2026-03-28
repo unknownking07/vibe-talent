@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ExternalLink, Github, Clock, Tag, Pencil, Flag, CheckCircle, ShieldCheck, Undo2, User, Activity } from "lucide-react";
+import { ExternalLink, Github, Clock, Tag, Pencil, Flag, CheckCircle, ShieldCheck, Undo2, User, Activity, ThumbsUp } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Project } from "@/lib/types/database";
@@ -248,6 +248,12 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
       </div>
 
       <div className="mt-3 flex items-center gap-4 text-xs font-bold text-[#71717A] uppercase">
+        {project.endorsement_count > 0 && (
+          <span className="flex items-center gap-1 text-emerald-600">
+            <ThumbsUp size={12} />
+            {project.endorsement_count}
+          </span>
+        )}
         {project.build_time && (
           <span className="flex items-center gap-1">
             <Clock size={12} />

@@ -27,6 +27,7 @@ export interface Project {
   quality_score: number;
   quality_metrics: RepoQualityData | null;
   live_url_ok: boolean | null;
+  endorsement_count: number;
   created_at: string;
 }
 
@@ -65,6 +66,7 @@ export interface UserWithSocials extends User {
   social_links: SocialLinks | null;
   projects: Project[];
   last_activity_date?: string | null;
+  client_outcomes?: ClientOutcomes | null;
 }
 
 export interface HireRequest {
@@ -96,7 +98,26 @@ export interface Review {
   hire_request_id: string | null;
   rating: number;
   comment: string | null;
+  trust_score: number;
   created_at: string;
+}
+
+export interface ProjectEndorsement {
+  id: string;
+  project_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+export interface ClientOutcomes {
+  total_hires: number;
+  completed_hires: number;
+  avg_rating: number;
+  total_reviews: number;
+  repeat_clients: number;
+  avg_response_hours: number | null;
+  completion_rate: number;
+  outcome_score: number;
 }
 
 export type NotificationType = "hire_request" | "streak_milestone" | "badge_earned" | "project_verified" | "project_flagged";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ExternalLink, Flag, CheckCircle, Undo2, Activity } from "lucide-react";
+import { ExternalLink, Flag, CheckCircle, Undo2, Activity, ThumbsUp } from "lucide-react";
 import Image from "next/image";
 import type { Project } from "@/lib/types/database";
 
@@ -185,6 +185,13 @@ export function ProfileProjectCard({ project, verified = false }: ProfileProject
       </div>
 
       <p className="text-[0.9rem] text-[#52525B] font-medium flex-grow">{project.description}</p>
+
+      {project.endorsement_count > 0 && (
+        <div className="flex items-center gap-1 text-xs font-bold text-emerald-600 mt-2">
+          <ThumbsUp size={12} />
+          {project.endorsement_count} endorsement{project.endorsement_count !== 1 ? "s" : ""}
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-1.5 mt-2">
         {project.tech_stack.map((tech) => (
