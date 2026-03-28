@@ -86,13 +86,13 @@ This means:
 | Data | TTL | Why |
 |---|---|---|
 | Leaderboard rankings | 60s | Frequently viewed, rarely changes |
-| Builder profiles | 60s | Balance freshness with performance |
+| VibeCoder profiles | 60s | Balance freshness with performance |
 | Project listings | 60s | New projects can wait a minute |
 
 ### What's NOT Cached
 
 - Streak logging (must be real-time)
-- Hire requests (builders need to see new requests immediately)
+- Hire requests (vibecoders need to see new requests immediately)
 - Auth operations (must be fresh)
 
 ## Image Handling
@@ -101,7 +101,7 @@ This means:
 
 - Stored in Supabase Storage (`project-images` bucket)
 - Public read access via CDN
-- Uploaded from the builder dashboard
+- Uploaded from the vibecoder dashboard
 
 ### Allowed Image Domains
 
@@ -137,7 +137,7 @@ Auto-generated at `/sitemap.xml` including:
 - Landing page
 - Explore page
 - Leaderboard
-- All public builder profiles
+- All public vibecoder profiles
 
 ### Robots.txt
 
@@ -147,7 +147,7 @@ Generated at `/robots.txt` to guide search engine crawlers.
 
 - Open Graph tags on all public pages
 - Twitter Card tags for social sharing
-- Dynamic share cards for builder profiles (`/api/share-card/{username}`)
+- Dynamic share cards for vibecoder profiles (`/api/share-card/{username}`)
 
 ## Scaling Considerations
 

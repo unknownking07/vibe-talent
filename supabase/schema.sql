@@ -167,15 +167,22 @@ BEGIN
     vibe_score = (v_current_streak * 2) + (
       -- Use sum of project quality scores instead of flat count
       -- Verified projects with quality_score contribute their score / 10 (0-10 pts each)
+      -- Falls back to detailed scoring for projects without quality_score
       -- Unverified projects contribute only 1 point each
       COALESCE((
         SELECT SUM(
           CASE
             WHEN verified = true AND quality_score > 0 THEN LEAST(quality_score / 10, 10)
-            WHEN verified = true THEN 5
+            WHEN verified = true THEN
+              5
+              + CASE WHEN live_url IS NOT NULL AND live_url != '' THEN 3 ELSE 0 END
+              + CASE WHEN github_url IS NOT NULL AND github_url != '' THEN 2 ELSE 0 END
+              + CASE WHEN length(description) > 50 THEN 2 ELSE 0 END
+              + CASE WHEN image_url IS NOT NULL AND image_url != '' THEN 1 ELSE 0 END
+              + CASE WHEN array_length(tech_stack, 1) >= 3 THEN 2 ELSE 0 END
             ELSE 1
           END
-        ) FROM projects WHERE projects.user_id = p_user_id AND flagged = false
+        ) FROM projects WHERE projects.user_id = p_user_id AND NOT COALESCE(flagged, false)
       ), 0)
     ) + CASE
       WHEN GREATEST(longest_streak, v_longest_streak) >= 365 THEN 40
@@ -217,7 +224,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER on_project_change
-  AFTER INSERT OR DELETE ON projects
+  AFTER INSERT OR UPDATE OR DELETE ON projects
   FOR EACH ROW
   EXECUTE FUNCTION trigger_update_vibe_score_on_project();
 
@@ -347,7 +354,7 @@ CREATE POLICY "Reviews are publicly readable"
 CREATE TABLE notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  type TEXT NOT NULL CHECK (type IN ('hire_request', 'streak_milestone', 'badge_earned', 'project_verified', 'project_flagged')),
+  type TEXT NOT NULL CHECK (type IN ('hire_request', 'streak_milestone', 'streak_warning', 'badge_earned', 'project_verified', 'project_flagged')),
   title TEXT NOT NULL,
   message TEXT NOT NULL,
   read BOOLEAN DEFAULT false,
@@ -431,7 +438,12 @@ CREATE POLICY "Endorsements are publicly readable"
   ON project_endorsements FOR SELECT USING (true);
 
 CREATE POLICY "Authenticated users can endorse"
-  ON project_endorsements FOR INSERT WITH CHECK (auth.uid() = user_id);
+  ON project_endorsements FOR INSERT WITH CHECK (
+    auth.uid() = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM projects WHERE projects.id = project_id AND projects.user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Users can remove own endorsements"
   ON project_endorsements FOR DELETE USING (auth.uid() = user_id);
@@ -440,7 +452,10 @@ CREATE POLICY "Users can remove own endorsements"
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS endorsement_count INTEGER DEFAULT 0;
 
 -- Add trust_score to reviews (computed at insert time, detects fake/bot reviews)
-ALTER TABLE reviews ADD COLUMN IF NOT EXISTS trust_score INTEGER DEFAULT 100;
+-- Default NULL so legacy rows without a computed score are distinguishable from scored ones
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS trust_score INTEGER;
+-- Constrain to valid range
+ALTER TABLE reviews ADD CONSTRAINT IF NOT EXISTS reviews_trust_score_range CHECK (trust_score IS NULL OR (trust_score >= 0 AND trust_score <= 100));
 
 -- Storage bucket for project images
 -- Create "project-images" bucket in Supabase dashboard with public access

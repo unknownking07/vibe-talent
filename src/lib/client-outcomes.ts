@@ -56,9 +56,11 @@ export function computeClientOutcomes(
       : 0;
 
   // Repeat clients: count emails that sent more than 1 hire request
+  // Normalize emails to prevent case/whitespace variants being treated as different clients
   const emailCounts = new Map<string, number>();
   for (const h of hireRequests) {
-    emailCounts.set(h.sender_email, (emailCounts.get(h.sender_email) || 0) + 1);
+    const normalizedEmail = h.sender_email.trim().toLowerCase();
+    emailCounts.set(normalizedEmail, (emailCounts.get(normalizedEmail) || 0) + 1);
   }
   const repeatClients = Array.from(emailCounts.values()).filter((c) => c > 1).length;
 

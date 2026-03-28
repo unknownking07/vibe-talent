@@ -1,8 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/reset-streaks",
-      "schedule": "0 0 * * *"
+      "path": "/api/cron/daily",
+      "schedule": "0 6 * * *"
     },
     {
       "path": "/api/cron/check-live-urls",

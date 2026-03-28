@@ -65,3 +65,4 @@ export async function checkRateLimit(
 export const messagesLimiter = createRateLimiter("messages", 60, "1 m");
 export const reportLimiter = createRateLimiter("report", 10, "1 h");
 export const reviewLimiter = createRateLimiter("review", 3, "1 d");
+export const endorsementsLimiter = createRateLimiter("endorsements", 30, "1 h");

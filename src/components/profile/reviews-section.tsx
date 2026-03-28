@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Star, MessageSquare, Send } from "lucide-react";
+import { Star, MessageSquare, Send, Trash2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import type { Review } from "@/lib/types/database";
 
 interface ReviewsSectionProps {
@@ -96,6 +97,33 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteEmail, setDeleteEmail] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Auto-fetch logged-in user's name and email
+  useEffect(() => {
+    async function loadUser() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setIsLoggedIn(true);
+        setFormEmail(user.email || "");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: profile } = await (supabase as any)
+          .from("users")
+          .select("username")
+          .eq("id", user.id)
+          .single();
+        if (profile) {
+          setFormName(profile.username || "");
+        }
+      }
+    }
+    loadUser();
+  }, []);
 
   useEffect(() => {
     async function loadReviews() {
@@ -120,7 +148,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
 
   const handleSubmitReview = async () => {
     if (!formName.trim() || !formEmail.trim() || formRating === 0) {
-      setSubmitError("Please fill in your name, email, and select a rating.");
+      setSubmitError(isLoggedIn ? "Please select a rating." : "Please fill in your name, email, and select a rating.");
       return;
     }
 
@@ -165,6 +193,47 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
       setSubmitError("Failed to submit review. Please try again.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteReview = async () => {
+    if (!deleteId || !deleteEmail.trim()) {
+      setDeleteError("Please enter your email to confirm deletion.");
+      return;
+    }
+
+    setDeleteError("");
+    setDeleting(true);
+
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          review_id: deleteId,
+          reviewer_email: deleteEmail.trim(),
+        }),
+      });
+
+      if (res.ok) {
+        setDeleteId(null);
+        setDeleteEmail("");
+
+        // Reload reviews
+        const reviewsRes = await fetch(`/api/reviews?builder_id=${builderId}`);
+        if (reviewsRes.ok) {
+          const data = await reviewsRes.json();
+          setReviews(data.reviews || []);
+          setAvgRating(data.average_rating || 0);
+        }
+      } else {
+        const data = await res.json();
+        setDeleteError(data.error || "Failed to delete review.");
+      }
+    } catch {
+      setDeleteError("Failed to delete review. Please try again.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -255,33 +324,44 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
             <ClickableStars rating={formRating} onRate={setFormRating} />
           </div>
 
-          {/* Name & Email */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Name (auto-filled if logged in) */}
+          {isLoggedIn ? (
             <div>
               <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
-                Your Name *
+                Reviewing as
               </label>
-              <input
-                type="text"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                placeholder="John Doe"
-                className="input-brutal w-full"
-              />
+              <div className="input-brutal w-full bg-zinc-100 text-zinc-700 cursor-default">
+                {formName}
+              </div>
             </div>
-            <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
-                Email *
-              </label>
-              <input
-                type="email"
-                value={formEmail}
-                onChange={(e) => setFormEmail(e.target.value)}
-                placeholder="john@example.com"
-                className="input-brutal w-full"
-              />
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+                  Your Name *
+                </label>
+                <input
+                  type="text"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="John Doe"
+                  className="input-brutal w-full"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  value={formEmail}
+                  onChange={(e) => setFormEmail(e.target.value)}
+                  placeholder="john@example.com"
+                  className="input-brutal w-full"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Comment */}
           <div>
@@ -337,14 +417,60 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
                   </span>
                   <StarRating rating={review.rating} size={14} />
                 </div>
-                <span className="text-zinc-400 text-xs font-mono">
-                  {timeAgo(review.created_at)}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-zinc-400 text-xs font-mono">
+                    {timeAgo(review.created_at)}
+                  </span>
+                  {!isOwner && (
+                    <button
+                      onClick={() => { setDeleteId(review.id); setDeleteEmail(""); setDeleteError(""); }}
+                      className="text-zinc-400 hover:text-red-500 transition-colors"
+                      title="Delete your review"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
               {review.comment && (
                 <p className="text-zinc-600 text-sm leading-relaxed">
                   {review.comment}
                 </p>
+              )}
+              {deleteId === review.id && (
+                <div
+                  className="mt-3 p-3 space-y-2"
+                  style={{ backgroundColor: "#FEF2F2", border: "2px solid #0F0F0F" }}
+                >
+                  <p className="text-xs font-bold text-zinc-700">
+                    Enter the email you used when writing this review to confirm deletion:
+                  </p>
+                  <input
+                    type="email"
+                    value={deleteEmail}
+                    onChange={(e) => setDeleteEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="input-brutal w-full text-sm"
+                  />
+                  {deleteError && (
+                    <p className="text-xs font-bold text-red-600">{deleteError}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleDeleteReview}
+                      disabled={deleting}
+                      className="btn-brutal text-xs py-1.5 px-3 bg-red-500 text-white hover:bg-red-600"
+                    >
+                      {deleting ? "Deleting..." : "Confirm Delete"}
+                    </button>
+                    <button
+                      onClick={() => { setDeleteId(null); setDeleteError(""); }}
+                      className="btn-brutal text-xs py-1.5 px-3"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           ))}

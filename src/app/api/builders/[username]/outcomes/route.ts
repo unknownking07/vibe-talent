@@ -3,9 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 import { computeClientOutcomes } from "@/lib/client-outcomes";
 
 function getSb() {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is required for outcomes API");
+  }
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    serviceRoleKey
   );
 }
 
@@ -33,16 +37,26 @@ export async function GET(
     }
 
     // Fetch hire requests for this builder
-    const { data: hireRequests } = await sb
+    const { data: hireRequests, error: hireErr } = await sb
       .from("hire_requests")
       .select("id, sender_email, status, created_at, replied_at")
       .eq("builder_id", user.id);
 
+    if (hireErr) {
+      console.error("Failed to fetch hire requests:", hireErr);
+      return NextResponse.json({ error: "Failed to fetch outcomes data" }, { status: 500 });
+    }
+
     // Fetch reviews for this builder
-    const { data: reviews } = await sb
+    const { data: reviews, error: reviewErr } = await sb
       .from("reviews")
       .select("rating, trust_score")
       .eq("builder_id", user.id);
+
+    if (reviewErr) {
+      console.error("Failed to fetch reviews:", reviewErr);
+      return NextResponse.json({ error: "Failed to fetch outcomes data" }, { status: 500 });
+    }
 
     const outcomes = computeClientOutcomes(
       hireRequests || [],

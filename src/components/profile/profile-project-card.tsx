@@ -104,11 +104,11 @@ export function ProfileProjectCard({ project, verified = false }: ProfileProject
       }}
     >
       {project.image_url && (
-        <div className="relative w-full h-48 border-b-2 border-[#0F0F0F]">
+        <div className="relative w-full h-28 border-b-2 border-[#0F0F0F]">
           <Image src={project.image_url} alt={project.title} fill className="object-cover" />
         </div>
       )}
-      <div className="flex flex-col gap-3 p-5 flex-grow">
+      <div className="flex flex-col gap-2 p-4 flex-grow">
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-2">
           <span className="text-[1.1rem] font-extrabold uppercase text-[#0F0F0F]">{project.title}</span>
@@ -126,6 +126,7 @@ export function ProfileProjectCard({ project, verified = false }: ProfileProject
                 "text-zinc-500"
               }`}
               title={`Quality Score: ${project.quality_score}/100`}
+              aria-label={`Quality score: ${project.quality_score} out of 100`}
             >
               <Activity size={14} />
               {project.quality_score}
@@ -187,14 +188,17 @@ export function ProfileProjectCard({ project, verified = false }: ProfileProject
       <p className="text-[0.9rem] text-[#52525B] font-medium flex-grow">{project.description}</p>
 
       {project.endorsement_count > 0 && (
-        <div className="flex items-center gap-1 text-xs font-bold text-emerald-600 mt-2">
+        <div
+          className="flex items-center gap-1 text-xs font-bold text-emerald-600 mt-2"
+          aria-label={`${project.endorsement_count} endorsement${project.endorsement_count !== 1 ? "s" : ""}`}
+        >
           <ThumbsUp size={12} />
           {project.endorsement_count} endorsement{project.endorsement_count !== 1 ? "s" : ""}
         </div>
       )}
 
       <div className="flex flex-wrap gap-1.5 mt-2">
-        {project.tech_stack.map((tech) => (
+        {(project.tech_stack ?? []).map((tech) => (
           <span
             key={tech}
             className="font-mono text-xs font-bold uppercase text-[#0F0F0F] px-2.5 py-1"

@@ -18,7 +18,8 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.dev";
+// Always use www — Vercel redirects non-www with 307 which breaks social media crawlers
+const siteUrl = "https://www.vibetalent.work";
 
 export const metadata: Metadata = {
   title: {
@@ -26,20 +27,30 @@ export const metadata: Metadata = {
     template: "%s | VibeTalent",
   },
   description:
-    "The AI-powered marketplace for vibe coders. Build your reputation through streaks, proof of work, and shipping projects consistently.",
+    "The marketplace for vibe coders. Build your reputation through streaks, proof of work, and shipping projects consistently.",
   metadataBase: new URL(siteUrl),
   openGraph: {
     title: "VibeTalent — Find Vibe Coders Who Actually Ship",
-    description: "The AI-powered marketplace for vibe coders who ship consistently.",
+    description: "The marketplace for vibe coders who ship consistently.",
     url: siteUrl,
     siteName: "VibeTalent",
     type: "website",
     locale: "en_US",
+    images: [
+      {
+        url: `${siteUrl}/og-image.jpg`,
+        width: 1200,
+        height: 630,
+        alt: "VibeTalent — Find Vibe Coders Who Actually Ship",
+        type: "image/jpeg",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "VibeTalent — Find Vibe Coders Who Actually Ship",
-    description: "The AI-powered marketplace for vibe coders who ship consistently.",
+    description: "The marketplace for vibe coders who ship consistently.",
+    images: [`${siteUrl}/og-image.jpg`],
   },
   robots: {
     index: true,

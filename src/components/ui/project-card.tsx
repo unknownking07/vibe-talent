@@ -106,7 +106,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
       className="card-brutal overflow-hidden transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#0F0F0F]"
     >
       {project.image_url && (
-        <div className="relative w-full h-40 border-b-2 border-[#0F0F0F]">
+        <div className="relative w-full h-28 border-b-2 border-[#0F0F0F]">
           <Image
             src={project.image_url}
             alt={project.title}
@@ -115,10 +115,10 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
           />
         </div>
       )}
-      <div className="p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <h3 className="font-extrabold uppercase text-[#0F0F0F]">{project.title}</h3>
+      <div className="px-4 py-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <h3 className="text-sm font-extrabold uppercase text-[#0F0F0F] truncate">{project.title}</h3>
           {verified && (
             <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600" title="Verified owner">
               <CheckCircle size={14} />
@@ -133,6 +133,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
                 "text-zinc-500"
               }`}
               title={`Quality Score: ${project.quality_score}/100 (Community: ${project.quality_metrics?.community_score ?? 0}, Substance: ${project.quality_metrics?.substance_score ?? 0}, Maintenance: ${project.quality_metrics?.maintenance_score ?? 0})`}
+              aria-label={`Quality score: ${project.quality_score} out of 100. Community: ${project.quality_metrics?.community_score ?? 0}, Substance: ${project.quality_metrics?.substance_score ?? 0}, Maintenance: ${project.quality_metrics?.maintenance_score ?? 0}`}
             >
               <Activity size={14} />
               {project.quality_score}
@@ -217,7 +218,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
         </div>
       </div>
 
-      <p className="mt-2 text-sm text-[#52525B] font-medium line-clamp-2">
+      <p className="mt-1.5 text-xs text-[#52525B] font-medium line-clamp-2">
         {project.description}
       </p>
 
@@ -232,11 +233,12 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
         </Link>
       )}
 
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {project.tech_stack.map((tech) => (
+      {(project.tech_stack ?? []).length > 0 && (
+      <div className="mt-2 flex flex-wrap gap-1">
+        {(project.tech_stack).map((tech) => (
           <span
             key={tech}
-            className="px-2 py-0.5 text-xs font-bold uppercase text-[#0F0F0F]"
+            className="px-1.5 py-0.5 text-[10px] font-bold uppercase text-[#0F0F0F]"
             style={{
               backgroundColor: "#F5F5F5",
               border: "1px solid #0F0F0F",
@@ -246,23 +248,24 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
           </span>
         ))}
       </div>
+      )}
 
-      <div className="mt-3 flex items-center gap-4 text-xs font-bold text-[#71717A] uppercase">
+      <div className="mt-2 flex items-center gap-3 text-[10px] font-bold text-[#71717A] uppercase">
         {project.endorsement_count > 0 && (
-          <span className="flex items-center gap-1 text-emerald-600">
+          <span className="flex items-center gap-1 text-emerald-600" aria-label={`${project.endorsement_count} endorsement${project.endorsement_count !== 1 ? "s" : ""}`}>
             <ThumbsUp size={12} />
             {project.endorsement_count}
           </span>
         )}
         {project.build_time && (
           <span className="flex items-center gap-1">
-            <Clock size={12} />
+            <Clock size={10} />
             {project.build_time}
           </span>
         )}
-        {project.tags.length > 0 && (
+        {(project.tags ?? []).length > 0 && (
           <span className="flex items-center gap-1">
-            <Tag size={12} />
+            <Tag size={10} />
             {project.tags.join(", ")}
           </span>
         )}
@@ -271,10 +274,10 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
       {!verified && onVerify && (
         <button
           onClick={(e) => { e.stopPropagation(); onVerify(project.id); }}
-          className="mt-3 inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold uppercase text-[#0F0F0F] border-2 border-[#0F0F0F] bg-white hover:bg-[#F5F5F5] transition-colors"
+          className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold uppercase text-[#0F0F0F] border-2 border-[#0F0F0F] bg-white hover:bg-[#F5F5F5] transition-colors"
           title="Verify GitHub ownership"
         >
-          <ShieldCheck size={14} />
+          <ShieldCheck size={12} />
           Verify
         </button>
       )}

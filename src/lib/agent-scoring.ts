@@ -17,8 +17,8 @@ function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
   const withLiveUrl = verifiedProjects.filter(p => p.live_url).length;
   const withGithub = verifiedProjects.filter(p => p.github_url).length;
 
-  // If projects have quality_score from GitHub analysis, use them directly
-  const scoredProjects = verifiedProjects.filter(p => p.quality_score > 0);
+  // Use quality_metrics presence as the indicator that analysis ran (quality_score === 0 can be a valid result)
+  const scoredProjects = verifiedProjects.filter(p => p.quality_metrics != null);
   let project_quality: number;
   if (scoredProjects.length > 0) {
     // Average quality score of analyzed projects (weighted heavily)
@@ -42,7 +42,7 @@ function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
   }
 
   // Tech Breadth: unique technologies
-  const allTech = new Set(user.projects.flatMap(p => p.tech_stack.map(t => t.toLowerCase())));
+  const allTech = new Set(user.projects.flatMap(p => (p.tech_stack ?? []).map(t => t.toLowerCase())));
   const tech_breadth = clamp(0, 100, allTech.size * 12);
 
   // Activity Recency: based on active streak
@@ -55,15 +55,21 @@ function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
   const endorsementBonus = Math.min(15, totalEndorsements * 3);
   project_quality = clamp(0, 100, project_quality + endorsementBonus);
 
-  // Reputation: based on vibe_score and badge
+  // Reputation: based on vibe_score, badge, and client reviews
   const badgeBonus = { none: 0, bronze: 10, silver: 20, gold: 35, diamond: 50 };
+  const reviews = (user as unknown as Record<string, unknown>).reviews as Array<{ rating: number }> | undefined;
+  const reviewBonus = reviews && reviews.length > 0
+    ? Math.min(25, Math.round((reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) * reviews.length * 1.5))
+    : 0;
   const reputation = clamp(0, 100,
-    (user.vibe_score / 9) + (badgeBonus[user.badge_level] || 0)
+    (user.vibe_score / 9) + (badgeBonus[user.badge_level] || 0) + reviewBonus
   );
 
   // Client Outcomes: real hire completions, trusted reviews, repeat clients
   const outcomes = user.client_outcomes;
-  const client_outcomes = outcomes ? outcomes.outcome_score : 0;
+  const client_outcomes = outcomes?.outcome_score != null
+    ? clamp(0, 100, outcomes.outcome_score)
+    : 0;
 
   return { consistency, project_quality, tech_breadth, activity_recency, reputation, client_outcomes };
 }
@@ -191,9 +197,9 @@ export function matchUsers(users: UserWithSocials[], task: TaskRequest): MatchRe
   const requestedTech = task.tech_stack.map(t => t.toLowerCase().trim()).filter(Boolean);
 
   const results = users.map(user => {
-    const userTech = user.projects.flatMap(p => p.tech_stack.map(t => t.toLowerCase()));
+    const userTech = user.projects.flatMap(p => (p.tech_stack ?? []).map(t => t.toLowerCase()));
     const userTechSet = new Set(userTech);
-    const userTags = user.projects.flatMap(p => p.tags.map(t => t.toLowerCase()));
+    const userTags = user.projects.flatMap(p => (p.tags ?? []).map(t => t.toLowerCase()));
 
     // Skill overlap (40%)
     const matchedSkills = requestedTech.filter(t => userTechSet.has(t));

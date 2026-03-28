@@ -13,6 +13,9 @@ function createMockUser(overrides: Partial<UserWithSocials> = {}): UserWithSocia
     longest_streak: 60,
     vibe_score: 100,
     badge_level: "bronze",
+    streak_freezes_remaining: 2,
+    streak_freezes_used: 0,
+    referral_count: 0,
     created_at: "2025-01-01T00:00:00Z",
     social_links: {
       id: "sl-1",

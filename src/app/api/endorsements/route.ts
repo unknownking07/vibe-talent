@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { messagesLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
+import { endorsementsLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
+import { createClient } from "@supabase/supabase-js";
 
 /**
  * Project Endorsements API
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
 
 // POST /api/endorsements — Endorse a project
 export async function POST(req: NextRequest) {
-  const { success } = await checkRateLimit(messagesLimiter, getIP(req));
+  const { success } = await checkRateLimit(endorsementsLimiter, getIP(req));
   if (!success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
@@ -109,18 +110,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Failed to endorse" }, { status: 500 });
     }
 
-    // Update cached count on project
-    const { count } = await sb
-      .from("project_endorsements")
-      .select("id", { count: "exact", head: true })
-      .eq("project_id", project_id);
+    // Update cached count on project using service role to bypass RLS
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (serviceRoleKey) {
+      const adminSb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey);
+      const { count } = await adminSb
+        .from("project_endorsements")
+        .select("id", { count: "exact", head: true })
+        .eq("project_id", project_id);
 
-    await sb
-      .from("projects")
-      .update({ endorsement_count: count || 0 })
-      .eq("id", project_id);
+      const { error: updateErr } = await adminSb
+        .from("projects")
+        .update({ endorsement_count: count || 0 })
+        .eq("id", project_id);
 
-    return NextResponse.json({ success: true, count: count || 0 });
+      if (updateErr) {
+        console.error("Failed to update endorsement cache:", updateErr);
+      }
+
+      return NextResponse.json({ success: true, count: count || 0 });
+    }
+
+    return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
@@ -150,18 +161,28 @@ export async function DELETE(req: NextRequest) {
       .eq("project_id", project_id)
       .eq("user_id", user.id);
 
-    // Update cached count
-    const { count } = await sb
-      .from("project_endorsements")
-      .select("id", { count: "exact", head: true })
-      .eq("project_id", project_id);
+    // Update cached count using service role to bypass RLS
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (serviceRoleKey) {
+      const adminSb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey);
+      const { count } = await adminSb
+        .from("project_endorsements")
+        .select("id", { count: "exact", head: true })
+        .eq("project_id", project_id);
 
-    await sb
-      .from("projects")
-      .update({ endorsement_count: count || 0 })
-      .eq("id", project_id);
+      const { error: updateErr } = await adminSb
+        .from("projects")
+        .update({ endorsement_count: count || 0 })
+        .eq("id", project_id);
 
-    return NextResponse.json({ success: true, count: count || 0 });
+      if (updateErr) {
+        console.error("Failed to update endorsement cache:", updateErr);
+      }
+
+      return NextResponse.json({ success: true, count: count || 0 });
+    }
+
+    return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }

@@ -100,8 +100,8 @@ export async function POST(request: Request) {
     if (repoOwner.toLowerCase() === githubUsername.toLowerCase()) {
       // Run quality analysis on the repo
       const qualityResult = await analyzeRepository(repoOwner, repoName);
-      const qualityScore = qualityResult.metrics?.quality_score ?? 0;
-      const qualityMetrics = qualityResult.metrics
+      const qualityScore = qualityResult.success ? (qualityResult.metrics?.quality_score ?? 0) : 0;
+      const qualityMetrics = (qualityResult.success && qualityResult.metrics)
         ? {
             stars: qualityResult.metrics.stars,
             forks: qualityResult.metrics.forks,
@@ -188,8 +188,8 @@ export async function POST(request: Request) {
         ) {
           // Run quality analysis on the repo
           const qualityResult = await analyzeRepository(repoOwner, repoName);
-          const qualityScore = qualityResult.metrics?.quality_score ?? 0;
-          const qualityMetrics = qualityResult.metrics
+          const qualityScore = qualityResult.success ? (qualityResult.metrics?.quality_score ?? 0) : 0;
+          const qualityMetrics = (qualityResult.success && qualityResult.metrics)
             ? {
                 stars: qualityResult.metrics.stars,
                 forks: qualityResult.metrics.forks,

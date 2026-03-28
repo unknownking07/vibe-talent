@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.dev";
+const siteUrl = "https://www.vibetalent.work";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages = [

@@ -1,24 +1,34 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Bell, Flame, Trophy, CheckCircle, AlertTriangle, Mail } from "lucide-react";
+import { Bell, Flame, Trophy, CheckCircle, AlertTriangle, Mail, Star, Eye, BarChart3, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Notification } from "@/lib/types/database";
 
 const typeIcons: Record<string, typeof Bell> = {
   hire_request: Mail,
   streak_milestone: Flame,
+  streak_warning: AlertTriangle,
   badge_earned: Trophy,
   project_verified: CheckCircle,
   project_flagged: AlertTriangle,
+  new_review: Star,
+  profile_view_summary: Eye,
+  weekly_digest: BarChart3,
+  vibe_score_milestone: Zap,
 };
 
 const typeColors: Record<string, string> = {
   hire_request: "#FF3A00",
   streak_milestone: "#F59E0B",
+  streak_warning: "#EF4444",
   badge_earned: "#8B5CF6",
   project_verified: "#10B981",
   project_flagged: "#EF4444",
+  new_review: "#F59E0B",
+  profile_view_summary: "#3B82F6",
+  weekly_digest: "#6366F1",
+  vibe_score_milestone: "#FF3A00",
 };
 
 function timeAgo(dateStr: string): string {
@@ -73,13 +83,15 @@ export function NotificationBell() {
   const handleMarkAllRead = async () => {
     setLoading(true);
     try {
-      await fetch("/api/notifications", {
+      const res = await fetch("/api/notifications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mark_all: true }),
       });
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      setUnreadCount(0);
+      if (res.ok) {
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        setUnreadCount(0);
+      }
     } catch {
       // Silently fail
     }

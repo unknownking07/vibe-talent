@@ -50,7 +50,13 @@ async function githubFetch(url: string, token?: string): Promise<Response> {
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
-  return fetch(url, { headers });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  try {
+    return await fetch(url, { headers, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 /**
@@ -95,6 +101,9 @@ export async function analyzeRepository(
         const contribData = await contribRes.json();
         contributors = Array.isArray(contribData) ? contribData.length : 1;
       }
+    } else if (contribRes.status === 204) {
+      // Empty repo — no contributors
+      contributors = 0;
     }
 
     // Analyze file tree for tests, CI, README
@@ -261,21 +270,78 @@ export async function analyzeRepository(
 }
 
 /**
+ * Validate that a URL is safe to fetch (prevent SSRF).
+ * Blocks private/reserved IP ranges, non-http(s) schemes, and internal hostnames.
+ */
+function isSafeUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+    const hostname = parsed.hostname.toLowerCase();
+    // Block localhost, internal, and common private hostnames
+    if (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "[::1]" ||
+      hostname === "0.0.0.0" ||
+      hostname.endsWith(".local") ||
+      hostname.endsWith(".internal") ||
+      hostname === "metadata.google.internal" ||
+      hostname === "169.254.169.254"
+    ) {
+      return false;
+    }
+    // Block private IP ranges (10.x, 172.16-31.x, 192.168.x)
+    const ipMatch = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (ipMatch) {
+      const [, a, b] = ipMatch.map(Number);
+      if (a === 10) return false;
+      if (a === 172 && b >= 16 && b <= 31) return false;
+      if (a === 192 && b === 168) return false;
+      if (a === 127) return false;
+      if (a === 0) return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Check if a live URL is actually responding.
  * Returns true if the URL returns a 2xx or 3xx status.
  */
 export async function checkLiveUrl(url: string): Promise<boolean> {
+  if (!isSafeUrl(url)) return false;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(url, {
       method: "HEAD",
       signal: controller.signal,
       redirect: "follow",
     });
     clearTimeout(timeout);
+    // Some servers reject HEAD — retry with GET
+    if (res.status === 405 || res.status === 403 || res.status === 501) {
+      const controller2 = new AbortController();
+      const timeout2 = setTimeout(() => controller2.abort(), 8000);
+      try {
+        const getRes = await fetch(url, {
+          method: "GET",
+          signal: controller2.signal,
+          redirect: "follow",
+        });
+        clearTimeout(timeout2);
+        return getRes.ok;
+      } catch {
+        clearTimeout(timeout2);
+        return false;
+      }
+    }
     return res.ok || (res.status >= 300 && res.status < 400);
   } catch {
+    clearTimeout(timeout);
     return false;
   }
 }

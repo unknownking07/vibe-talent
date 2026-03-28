@@ -1,5 +1,15 @@
 import type { BadgeLevel } from "@/lib/types/database";
 
+/** Minimal project shape needed for quality scoring. */
+export interface ProjectScoreInput {
+  verified: boolean;
+  live_url: string | null;
+  github_url: string | null;
+  description: string;
+  image_url: string | null;
+  tech_stack: string[];
+}
+
 /**
  * Calculate current streak from a sorted list of activity dates.
  * Dates must be in "YYYY-MM-DD" format, sorted ascending.
@@ -62,20 +72,56 @@ export function calculateStreak(activityDates: string[]): {
 }
 
 /**
- * Calculate vibe score based on streak and project quality.
+ * Score a single project based on quality signals.
+ * Verified projects earn bonus points for completeness;
+ * unverified projects get a flat 1 point.
+ *
+ * Breakdown (verified only):
+ *   Base:              5 pts
+ *   Live URL:         +3 pts
+ *   GitHub URL:       +2 pts
+ *   Description >50c: +2 pts
+ *   Screenshot/image: +1 pt
+ *   Tech stack >=3:    +2 pts
+ *   Max per project:  15 pts
+ */
+export function calculateProjectScore(project: ProjectScoreInput): number {
+  if (!project.verified) return 1;
+
+  let score = 5;
+  if (project.live_url) score += 3;
+  if (project.github_url) score += 2;
+  if (project.description && project.description.length > 50) score += 2;
+  if (project.image_url) score += 1;
+  if (project.tech_stack && project.tech_stack.length >= 3) score += 2;
+  return score;
+}
+
+/**
+ * Calculate review bonus from client ratings.
+ * Formula: avg_rating × review_count × 2, capped at 50.
+ * This ensures quality builders with real client feedback get a meaningful boost.
+ */
+export function calculateReviewBonus(avgRating: number, reviewCount: number): number {
+  if (reviewCount === 0) return 0;
+  return Math.min(50, Math.round(avgRating * reviewCount * 2));
+}
+
+/**
+ * Calculate vibe score based on streak, projects, badges, reviews, and quality scores.
  *
  * New formula uses actual GitHub quality scores instead of flat project count:
- *   (Current Streak × 2)
+ *   (Current Streak x 2)
  * + (sum of per-project contribution based on quality_score)
  * + Badge Bonus
+ * + Review Bonus
  *
- * Per-project contribution:
+ * Per-project contribution (when ProjectForScoring[] is provided):
  *   - Verified with quality_score > 0: min(quality_score / 10, 10) points
  *   - Verified without quality_score: 5 points
  *   - Unverified: 1 point
  *
- * This means a single high-quality repo (score 80+) contributes 8-10 pts,
- * while 10 empty repos only contribute 10 pts total.
+ * Accepts either detailed project list (preferred) or legacy count-based params.
  */
 export interface ProjectForScoring {
   verified: boolean;
@@ -85,16 +131,17 @@ export interface ProjectForScoring {
 
 export function calculateVibeScore(
   currentStreak: number,
-  projectCount: number,
+  projectCountOrProjects: number | ProjectScoreInput[],
   badgeLevel: BadgeLevel,
   verifiedCount?: number,
-  projects?: ProjectForScoring[]
+  projects?: ProjectForScoring[],
+  reviewBonus: number = 0
 ): number {
   const streakPoints = currentStreak * 2;
 
   let projectPoints: number;
   if (projects && projects.length > 0) {
-    // New quality-based scoring
+    // New quality-based scoring using GitHub quality scores
     projectPoints = projects
       .filter((p) => !p.flagged)
       .reduce((sum, p) => {
@@ -105,10 +152,16 @@ export function calculateVibeScore(
         }
         return sum + 1;
       }, 0);
+  } else if (Array.isArray(projectCountOrProjects)) {
+    // Score each project individually using ProjectScoreInput
+    projectPoints = projectCountOrProjects.reduce(
+      (sum, p) => sum + calculateProjectScore(p),
+      0
+    );
   } else {
-    // Fallback for callers without full project data
-    const verified = verifiedCount ?? projectCount;
-    const unverified = projectCount - verified;
+    // Legacy path: flat scoring for backward compatibility
+    const verified = verifiedCount ?? projectCountOrProjects;
+    const unverified = projectCountOrProjects - verified;
     projectPoints = verified * 5 + unverified * 1;
   }
 
@@ -120,7 +173,7 @@ export function calculateVibeScore(
     diamond: 40,
   };
 
-  return streakPoints + projectPoints + badgeBonusMap[badgeLevel];
+  return streakPoints + projectPoints + badgeBonusMap[badgeLevel] + reviewBonus;
 }
 
 /**

@@ -18,9 +18,14 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) {
+    return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY is required" }, { status: 500 });
+  }
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    serviceRoleKey
   );
 
   try {
@@ -52,10 +57,15 @@ export async function GET(req: NextRequest) {
       );
 
       for (const result of results) {
-        await supabase
+        const { error: updateErr } = await supabase
           .from("projects")
           .update({ live_url_ok: result.live_url_ok })
           .eq("id", result.id);
+
+        if (updateErr) {
+          console.error(`Failed to update project ${result.id}:`, updateErr);
+          continue;
+        }
 
         checked++;
         if (result.live_url_ok) alive++;
