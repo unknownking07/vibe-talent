@@ -108,23 +108,52 @@ export function calculateReviewBonus(avgRating: number, reviewCount: number): nu
 }
 
 /**
- * Calculate vibe score based on streak, projects, badges, and reviews.
- * Formula: (Current Streak x 2) + Sum of Project Quality Scores + Badge Bonus + Review Bonus
+ * Calculate vibe score based on streak, projects, badges, reviews, and quality scores.
+ *
+ * New formula uses actual GitHub quality scores instead of flat project count:
+ *   (Current Streak x 2)
+ * + (sum of per-project contribution based on quality_score)
+ * + Badge Bonus
+ * + Review Bonus
+ *
+ * Per-project contribution (when ProjectForScoring[] is provided):
+ *   - Verified with quality_score > 0: min(quality_score / 10, 10) points
+ *   - Verified without quality_score: 5 points
+ *   - Unverified: 1 point
  *
  * Accepts either detailed project list (preferred) or legacy count-based params.
  */
+export interface ProjectForScoring {
+  verified: boolean;
+  quality_score?: number;
+  flagged?: boolean;
+}
+
 export function calculateVibeScore(
   currentStreak: number,
   projectCountOrProjects: number | ProjectScoreInput[],
   badgeLevel: BadgeLevel,
   verifiedCount?: number,
+  projects?: ProjectForScoring[],
   reviewBonus: number = 0
 ): number {
   const streakPoints = currentStreak * 2;
 
   let projectPoints: number;
-  if (Array.isArray(projectCountOrProjects)) {
-    // New path: score each project individually
+  if (projects && projects.length > 0) {
+    // New quality-based scoring using GitHub quality scores
+    projectPoints = projects
+      .filter((p) => !p.flagged)
+      .reduce((sum, p) => {
+        if (p.verified && p.quality_score && p.quality_score > 0) {
+          return sum + Math.min(Math.floor(p.quality_score / 10), 10);
+        } else if (p.verified) {
+          return sum + 5;
+        }
+        return sum + 1;
+      }, 0);
+  } else if (Array.isArray(projectCountOrProjects)) {
+    // Score each project individually using ProjectScoreInput
     projectPoints = projectCountOrProjects.reduce(
       (sum, p) => sum + calculateProjectScore(p),
       0

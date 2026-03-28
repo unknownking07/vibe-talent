@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { reviewLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
+import { calculateReviewTrust } from "@/lib/review-trust";
 import { createNotification } from "@/lib/notifications";
 import { sendReviewNotificationEmail } from "@/lib/email";
 
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
     const sb = getSb();
     const { data, error } = await sb
       .from("reviews")
-      .select("id, builder_id, reviewer_name, rating, comment, created_at")
+      .select("id, builder_id, reviewer_name, rating, comment, trust_score, created_at")
       .eq("builder_id", builderId)
       .order("created_at", { ascending: false });
 
@@ -51,16 +52,22 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 });
     }
 
-    // Calculate average rating
     const reviews = data || [];
-    const avgRating = reviews.length > 0
-      ? Math.round((reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) * 10) / 10
+
+    // Only count trusted reviews (trust_score >= 30) for the average rating
+    const trustedReviews = reviews.filter((r: { trust_score?: number }) => (r.trust_score ?? 100) >= 30);
+    const avgRating = trustedReviews.length > 0
+      ? Math.round((trustedReviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / trustedReviews.length) * 10) / 10
       : 0;
 
+    // Strip trust_score from public response to avoid exposing anti-abuse thresholds
+    const publicReviews = reviews.map(({ trust_score: _ts, ...rest }: { trust_score?: number; [key: string]: unknown }) => rest);
+
     return NextResponse.json({
-      reviews,
+      reviews: publicReviews,
       average_rating: avgRating,
       total_reviews: reviews.length,
+      trusted_reviews: trustedReviews.length,
     });
   } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
@@ -209,12 +216,17 @@ export async function POST(req: NextRequest) {
 
       const { data: hireRequest, error: hrError } = await sb
         .from("hire_requests")
-        .select("id, status")
+        .select("id, builder_id, status")
         .eq("id", hire_request_id)
         .single();
 
       if (hrError || !hireRequest) {
         return NextResponse.json({ error: "Hire request not found" }, { status: 404 });
+      }
+
+      // Ensure the hire request belongs to the builder being reviewed
+      if (hireRequest.builder_id !== builder_id) {
+        return NextResponse.json({ error: "Hire request does not belong to this builder" }, { status: 400 });
       }
 
       if (hireRequest.status !== "replied") {
@@ -239,6 +251,54 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // --- Compute trust score ---
+    // Count existing reviews by this email
+    const { count: emailReviewCount } = await sb
+      .from("reviews")
+      .select("id", { count: "exact", head: true })
+      .eq("reviewer_email", emailClean);
+
+    // Count reviews with similar name for this builder
+    const { count: sameNameCount } = await sb
+      .from("reviews")
+      .select("id", { count: "exact", head: true })
+      .eq("builder_id", builder_id)
+      .ilike("reviewer_name", `%${nameClean.split(" ")[0]}%`);
+
+    // Count reviews by this email in last 24h
+    const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
+    const { count: recentCount } = await sb
+      .from("reviews")
+      .select("id", { count: "exact", head: true })
+      .eq("reviewer_email", emailClean)
+      .gte("created_at", oneDayAgo);
+
+    // Calculate hours since hire request if linked
+    let hoursSinceHire: number | null = null;
+    if (hire_request_id) {
+      const { data: hr } = await sb
+        .from("hire_requests")
+        .select("created_at")
+        .eq("id", hire_request_id)
+        .single();
+      if (hr) {
+        hoursSinceHire = (Date.now() - new Date(hr.created_at).getTime()) / (1000 * 60 * 60);
+      }
+    }
+
+    const { trust_score } = calculateReviewTrust({
+      has_hire_request: !!hire_request_id,
+      hire_status: hire_request_id ? "replied" : null,
+      reviewer_email: emailClean,
+      reviewer_name: nameClean,
+      comment: commentClean,
+      builder_id,
+      existing_reviews_by_email: emailReviewCount || 0,
+      same_name_reviews_for_builder: sameNameCount || 0,
+      hours_since_hire: hoursSinceHire,
+      reviews_last_24h: recentCount || 0,
+    });
+
     const { data, error } = await sb
       .from("reviews")
       .insert({
@@ -248,6 +308,7 @@ export async function POST(req: NextRequest) {
         rating: ratingNum,
         comment: commentClean,
         hire_request_id: hire_request_id || null,
+        trust_score,
       })
       .select("id")
       .single();

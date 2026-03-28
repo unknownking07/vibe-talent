@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ExternalLink, Flag, CheckCircle, Undo2 } from "lucide-react";
+import { ExternalLink, Flag, CheckCircle, Undo2, Activity, ThumbsUp } from "lucide-react";
 import Image from "next/image";
 import type { Project } from "@/lib/types/database";
 
@@ -118,6 +118,20 @@ export function ProfileProjectCard({ project, verified = false }: ProfileProject
               Verified
             </span>
           )}
+          {project.quality_score > 0 && (
+            <span
+              className={`inline-flex items-center gap-1 text-xs font-bold ${
+                project.quality_score >= 70 ? "text-emerald-600" :
+                project.quality_score >= 40 ? "text-amber-600" :
+                "text-zinc-500"
+              }`}
+              title={`Quality Score: ${project.quality_score}/100`}
+              aria-label={`Quality score: ${project.quality_score} out of 100`}
+            >
+              <Activity size={14} />
+              {project.quality_score}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {(project.live_url || project.github_url) && (
@@ -172,6 +186,16 @@ export function ProfileProjectCard({ project, verified = false }: ProfileProject
       </div>
 
       <p className="text-[0.9rem] text-[#52525B] font-medium flex-grow">{project.description}</p>
+
+      {project.endorsement_count > 0 && (
+        <div
+          className="flex items-center gap-1 text-xs font-bold text-emerald-600 mt-2"
+          aria-label={`${project.endorsement_count} endorsement${project.endorsement_count !== 1 ? "s" : ""}`}
+        >
+          <ThumbsUp size={12} />
+          {project.endorsement_count} endorsement{project.endorsement_count !== 1 ? "s" : ""}
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-1.5 mt-2">
         {(project.tech_stack ?? []).map((tech) => (

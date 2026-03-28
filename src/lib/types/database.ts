@@ -27,7 +27,26 @@ export interface Project {
   build_time: string | null;
   tags: string[];
   verified: boolean;
+  quality_score: number;
+  quality_metrics: RepoQualityData | null;
+  live_url_ok: boolean | null;
+  endorsement_count: number;
   created_at: string;
+}
+
+export interface RepoQualityData {
+  stars: number;
+  forks: number;
+  contributors: number;
+  total_commits: number;
+  has_tests: boolean;
+  has_ci: boolean;
+  has_readme: boolean;
+  community_score: number;
+  substance_score: number;
+  maintenance_score: number;
+  quality_score: number;
+  analyzed_at: string;
 }
 
 export interface StreakLog {
@@ -50,6 +69,7 @@ export interface UserWithSocials extends User {
   social_links: SocialLinks | null;
   projects: Project[];
   last_activity_date?: string | null;
+  client_outcomes?: ClientOutcomes | null;
 }
 
 export interface HireRequest {
@@ -81,7 +101,26 @@ export interface Review {
   hire_request_id: string | null;
   rating: number;
   comment: string | null;
+  trust_score: number;
   created_at: string;
+}
+
+export interface ProjectEndorsement {
+  id: string;
+  project_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+export interface ClientOutcomes {
+  total_hires: number;
+  completed_hires: number;
+  avg_rating: number;
+  total_reviews: number;
+  repeat_clients: number;
+  avg_response_hours: number | null;
+  completion_rate: number;
+  outcome_score: number;
 }
 
 export interface Referral {
@@ -143,10 +182,14 @@ export interface Database {
       };
       projects: {
         Row: Project;
-        Insert: Omit<Project, "id" | "created_at" | "verified"> & {
+        Insert: Omit<Project, "id" | "created_at" | "verified" | "quality_score" | "quality_metrics" | "live_url_ok" | "endorsement_count"> & {
           id?: string;
           created_at?: string;
           verified?: boolean;
+          quality_score?: number;
+          quality_metrics?: RepoQualityData | null;
+          live_url_ok?: boolean | null;
+          endorsement_count?: number;
         };
         Update: Partial<Project>;
       };
@@ -177,6 +220,14 @@ export interface Database {
           read?: boolean;
         };
         Update: Partial<Notification>;
+      };
+      project_endorsements: {
+        Row: ProjectEndorsement;
+        Insert: Omit<ProjectEndorsement, "id" | "created_at"> & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<ProjectEndorsement>;
       };
     };
     Views: Record<string, never>;
