@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/reset-streaks",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/check-live-urls",
+      "schedule": "0 3 * * 0"
     }
   ]
 }
