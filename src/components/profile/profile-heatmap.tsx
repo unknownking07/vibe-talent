@@ -1,10 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 interface ProfileHeatmapProps {
   data: Record<string, number>;
+  githubUsername?: string | null;
 }
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
 
 const getLevelColor = (level: number) => {
   switch (level) {
@@ -12,48 +16,141 @@ const getLevelColor = (level: number) => {
     case 1: return "var(--hm-1)";
     case 2: return "var(--hm-2)";
     case 3: return "var(--hm-3)";
-    case 4: return "var(--hm-4)";
-    default: return "var(--hm-0)";
+    default: return "var(--hm-4)";
   }
 };
 
-export function ProfileHeatmap({ data }: ProfileHeatmapProps) {
-  const days = useMemo(() => {
-    const result: { date: string; level: number }[] = [];
-    const today = new Date();
+export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
+  const [ghData, setGhData] = useState<Record<string, number>>({});
+  const [ghTotal, setGhTotal] = useState<number>(0);
 
-    for (let i = 52 * 7 - 1; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const key = date.toISOString().split("T")[0];
-      const level = data[key] || 0;
-      result.push({ date: key, level });
+  useEffect(() => {
+    if (!githubUsername) return;
+    const cleanName = githubUsername
+      .replace(/^@/, "")
+      .replace(/^https?:\/\/(www\.)?github\.com\//, "")
+      .replace(/\/+$/, "")
+      .trim();
+    if (!cleanName) return;
+
+    fetch(`/api/github/contributions?github=${encodeURIComponent(cleanName)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (!json?.contributions) return;
+        if (Object.keys(json.contributions).length > 0) {
+          setGhData(json.contributions);
+        }
+        if (json.total) {
+          setGhTotal(json.total);
+        }
+      })
+      .catch(() => {});
+  }, [githubUsername]);
+
+  // Merge: GitHub data as base, streak_logs overlay (higher value wins)
+  const mergedData = useMemo(() => {
+    const merged = { ...ghData };
+    for (const [date, level] of Object.entries(data)) {
+      if (!merged[date] || level > merged[date]) {
+        merged[date] = level;
+      }
     }
+    return merged;
+  }, [data, ghData]);
 
-    return result;
-  }, [data]);
+  const { weeks, monthLabels } = useMemo(() => {
+    const result: { date: string; level: number }[][] = [];
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(start.getDate() - 363);
+    while (start.getDay() !== 0) start.setDate(start.getDate() - 1);
+
+    let currentWeek: { date: string; level: number }[] = [];
+    const current = new Date(start);
+    while (current <= today) {
+      const key = current.toISOString().split("T")[0];
+      currentWeek.push({ date: key, level: mergedData[key] || 0 });
+      if (currentWeek.length === 7) {
+        result.push(currentWeek);
+        currentWeek = [];
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    if (currentWeek.length > 0) result.push(currentWeek);
+
+    const labels: { label: string; col: number }[] = [];
+    let lastMonth = -1;
+    for (let wi = 0; wi < result.length; wi++) {
+      const month = new Date(result[wi][0].date).getMonth();
+      if (month !== lastMonth) {
+        labels.push({ label: MONTHS[month], col: wi });
+        lastMonth = month;
+      }
+    }
+    return { weeks: result, monthLabels: labels };
+  }, [mergedData]);
+
+  // Use GitHub's actual total when available; fall back to counting active days from streak_logs
+  const streakTotal = Object.values(data).reduce((sum, v) => sum + (v > 0 ? v : 0), 0);
+  const total = ghTotal > 0 ? ghTotal + streakTotal : streakTotal;
 
   return (
-    <div
-      className="grid gap-[3px] overflow-x-auto p-4"
-      style={{
-        gridTemplateColumns: "repeat(52, 1fr)",
-        backgroundColor: "#F5F5F5",
-        border: "2px solid #0F0F0F",
-      }}
-    >
-      {days.map((day) => (
-        <div
-          key={day.date}
-          title={`${day.date}: ${day.level} contributions`}
-          style={{
-            width: 12,
-            height: 12,
-            backgroundColor: getLevelColor(day.level),
-            border: "1px solid #0F0F0F",
-          }}
-        />
-      ))}
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wide">
+          {total} contributions in the last year
+        </span>
+        <div className="flex items-center gap-1 text-xs font-bold text-[var(--text-muted)] uppercase">
+          <span>Less</span>
+          {[0, 1, 2, 3, 4].map((level) => (
+            <div
+              key={level}
+              className="w-3 h-3"
+              style={{ backgroundColor: getLevelColor(level), border: "1px solid var(--border-subtle)" }}
+            />
+          ))}
+          <span>More</span>
+        </div>
+      </div>
+      <div className="overflow-x-auto pb-2">
+        <div className="flex" style={{ paddingLeft: 32, marginBottom: 4 }}>
+          {monthLabels.map((m, i) => {
+            const nextCol = i < monthLabels.length - 1 ? monthLabels[i + 1].col : weeks.length;
+            return (
+              <div
+                key={`${m.label}-${m.col}`}
+                className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)]"
+                style={{ width: (nextCol - m.col) * 15, flexShrink: 0 }}
+              >
+                {m.label}
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex">
+          <div className="flex flex-col gap-[3px] mr-1" style={{ width: 28 }}>
+            {DAY_LABELS.map((label, i) => (
+              <div key={i} className="h-3 flex items-center text-[10px] font-bold text-[var(--text-muted)]">
+                {label}
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-[3px]">
+            {weeks.map((week, wi) => (
+              <div key={wi} className="flex flex-col gap-[3px]">
+                {week.map((day) => (
+                  <div
+                    key={day.date}
+                    className="w-3 h-3"
+                    style={{ backgroundColor: getLevelColor(day.level), border: "1px solid var(--border-subtle)" }}
+                    title={`${day.date}: ${day.level > 0 ? day.level : "No"} contributions`}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

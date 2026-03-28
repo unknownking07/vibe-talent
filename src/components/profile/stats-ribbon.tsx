@@ -17,7 +17,7 @@ export function StatsRibbon({ streak, vibeScore, projectCount, avgRating, comple
     <div
       className={`grid ${hasOutcomes ? "grid-cols-3 sm:grid-cols-5" : "grid-cols-3"} overflow-x-auto`}
       style={{
-        border: "2px solid #0F0F0F",
+        border: "2px solid var(--border-hard)",
         boxShadow: "var(--shadow-brutal)",
       }}
     >
@@ -25,8 +25,8 @@ export function StatsRibbon({ streak, vibeScore, projectCount, avgRating, comple
       <div
         className="flex items-center gap-3 px-5 py-4"
         style={{
-          backgroundColor: "#FFFFFF",
-          borderRight: "2px solid #0F0F0F",
+          backgroundColor: "var(--bg-surface)",
+          borderRight: "2px solid var(--border-hard)",
         }}
       >
         <Flame size={20} style={{ color: "var(--accent)" }} />
@@ -37,7 +37,7 @@ export function StatsRibbon({ streak, vibeScore, projectCount, avgRating, comple
           >
             {streak}
           </span>
-          <span className="text-xs font-bold text-[#71717A] uppercase tracking-wider">Day Streak</span>
+          <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Day Streak</span>
         </div>
       </div>
 
@@ -45,8 +45,8 @@ export function StatsRibbon({ streak, vibeScore, projectCount, avgRating, comple
       <div
         className="flex items-center gap-3 px-5 py-4"
         style={{
-          backgroundColor: "#FFFFFF",
-          borderRight: "2px solid #0F0F0F",
+          backgroundColor: "var(--bg-surface)",
+          borderRight: "2px solid var(--border-hard)",
         }}
       >
         <Zap size={20} style={{ color: "var(--accent)" }} />
@@ -57,7 +57,7 @@ export function StatsRibbon({ streak, vibeScore, projectCount, avgRating, comple
           >
             {vibeScore.toLocaleString()}
           </span>
-          <span className="text-xs font-bold text-[#71717A] uppercase tracking-wider">Vibe Score</span>
+          <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Vibe Score</span>
         </div>
       </div>
 
@@ -65,16 +65,16 @@ export function StatsRibbon({ streak, vibeScore, projectCount, avgRating, comple
       <div
         className="flex items-center gap-3 px-5 py-4"
         style={{
-          backgroundColor: "#FFFFFF",
-          borderRight: hasOutcomes ? "2px solid #0F0F0F" : undefined,
+          backgroundColor: "var(--bg-surface)",
+          borderRight: hasOutcomes ? "2px solid var(--border-hard)" : undefined,
         }}
       >
-        <Code2 size={20} className="text-[#0F0F0F]" />
+        <Code2 size={20} className="text-[var(--foreground)]" />
         <div className="flex flex-col">
-          <span className="font-mono font-extrabold text-[1.2rem] leading-tight text-[#0F0F0F]">
+          <span className="font-mono font-extrabold text-[1.2rem] leading-tight text-[var(--foreground)]">
             {projectCount}
           </span>
-          <span className="text-xs font-bold text-[#71717A] uppercase tracking-wider">Projects</span>
+          <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Projects</span>
         </div>
       </div>
 
@@ -83,8 +83,8 @@ export function StatsRibbon({ streak, vibeScore, projectCount, avgRating, comple
         <div
           className="flex items-center gap-3 px-5 py-4"
           style={{
-            backgroundColor: "#FFFFFF",
-            borderRight: "2px solid #0F0F0F",
+            backgroundColor: "var(--bg-surface)",
+            borderRight: "2px solid var(--border-hard)",
           }}
         >
           <Star size={20} className="text-amber-500" />
@@ -92,7 +92,7 @@ export function StatsRibbon({ streak, vibeScore, projectCount, avgRating, comple
             <span className="font-mono font-extrabold text-[1.2rem] leading-tight text-amber-600">
               {avgRating}
             </span>
-            <span className="text-xs font-bold text-[#71717A] uppercase tracking-wider">Avg Rating</span>
+            <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Avg Rating</span>
           </div>
         </div>
       )}
@@ -101,14 +101,14 @@ export function StatsRibbon({ streak, vibeScore, projectCount, avgRating, comple
       {completedHires !== undefined && completedHires > 0 && (
         <div
           className="flex items-center gap-3 px-5 py-4"
-          style={{ backgroundColor: "#FFFFFF" }}
+          style={{ backgroundColor: "var(--bg-surface)" }}
         >
           <Briefcase size={20} className="text-emerald-600" />
           <div className="flex flex-col">
             <span className="font-mono font-extrabold text-[1.2rem] leading-tight text-emerald-600">
               {completedHires}
             </span>
-            <span className="text-xs font-bold text-[#71717A] uppercase tracking-wider">Hires Done</span>
+            <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Hires Done</span>
           </div>
         </div>
       )}

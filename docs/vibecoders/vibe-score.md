@@ -14,12 +14,29 @@ Vibe Score = Project Quality Score + Streak Points + Badge Bonus + Review Bonus
 
 ### 1. Project Quality Score (Primary Driver)
 
-**Project quality is the most important factor in your Vibe Score.** Each project you add earns points based on how complete and polished it is:
+**Project quality is the most important factor in your Vibe Score.** How your project scores depends on whether it has a GitHub quality analysis:
+
+#### Verified projects with GitHub quality score
+
+When you verify a project that has a GitHub URL, VibeTalent analyzes the repo and computes a **Quality Score (0-100)** based on three dimensions:
+
+| Dimension | Weight | What it measures |
+|---|---|---|
+| **Community** | 35% | Stars, forks, contributors, issues |
+| **Substance** | 35% | Code size, languages, tests, CI/CD, README quality |
+| **Maintenance** | 30% | Commit frequency, recency, sustained activity |
+
+The quality score is displayed on your project card with an info button showing the full breakdown. Your Vibe Score contribution is `quality_score / 10` (max 10 points per project).
+
+A hello-world repo scores near 0. A real project with tests, CI, and community engagement scores 70+.
+
+#### Verified projects without GitHub quality score
+
+If a verified project doesn't have a GitHub URL (or hasn't been analyzed yet), it uses the completeness scoring:
 
 | Quality Signal | Points | How to Earn |
 |---|---|---|
 | **Base (verified project)** | 5 pts | Verify your GitHub ownership |
-| **Base (unverified project)** | 1 pt | Add any project |
 | **Live URL** | +3 pts | Deploy your project and add the link |
 | **GitHub URL** | +2 pts | Link your source code |
 | **Detailed description** | +2 pts | Write 50+ characters describing what it does |
@@ -28,9 +45,11 @@ Vibe Score = Project Quality Score + Streak Points + Badge Bonus + Review Bonus
 
 **Max per verified project: 15 points**
 
-This means a single well-documented, verified project with a live demo earns **15 points** — more than a week of streak points. Five quality projects earn 75 points, which would take a 37-day streak to match.
+#### Unverified projects
 
-**The takeaway: verified projects with live URLs, detailed descriptions, and screenshots earn significantly more than raw streak points.** If you want a high Vibe Score, focus on shipping quality projects first.
+Unverified projects earn just **1 point** each. Verify to unlock full scoring.
+
+**The takeaway: verified projects with real GitHub repos, live URLs, and quality code earn significantly more than raw streak points.** If you want a high Vibe Score, focus on shipping quality projects first.
 
 ### 2. Streak Points
 
@@ -64,6 +83,8 @@ Review Bonus = avg_rating × number_of_reviews × 2 (capped at 50)
 
 Three 5-star reviews = `5 × 3 × 2 = 30` bonus points. This rewards vibecoders who actually deliver quality work.
 
+Reviews are also scored for **trust** (0-100) to detect fake/bot reviews. Reviews from disposable emails, burst submissions, or accounts with no hire history get lower trust scores. Reviews with trust_score < 30 are excluded from your average rating.
+
 ## Quality vs Consistency
 
 **Quality makes you hireable. Consistency keeps you visible.**
@@ -77,23 +98,34 @@ VibeTalent rewards both — but project quality is the primary driver of a stron
 
 The streak-only vibecoder is ahead — but as soon as their streak breaks, they drop to just **2 points** from projects. The quality-focused vibecoder's score is **resilient**: even if their streak resets, they still have **105 points** from projects, badges, and reviews. That's the power of building on quality.
 
-And when a client is choosing who to hire? They're looking at live demos, verified projects, and reviews — not just a streak number. **A vibecoder with 5 polished projects and a 30-day streak will get hired over someone with a 100-day streak and no real projects to show.**
-
 ## How to Increase Your Vibe Score
 
 ### High-impact (project quality)
-1. **Verify your projects** — 5x the points vs unverified
-2. **Add live URLs** — +3 points per project, and clients love seeing live demos
-3. **Write detailed descriptions** — 50+ characters earns +2 per project
-4. **Add screenshots** — +1 point and makes your profile look professional
-5. **List your full tech stack** — 3+ technologies earns +2 per project
-6. **Ship more projects** — each verified project is worth up to 15 points
+1. **Verify your projects** — unlocks full quality scoring
+2. **Write tests and set up CI** — directly boosts your substance score
+3. **Add live URLs** — shows your project is deployed and working
+4. **Maintain your repos** — recent commits and sustained activity boost maintenance score
+5. **Build community** — stars, forks, and contributors boost community score
+6. **Ship more projects** — each verified project contributes up to 10 points
 
 ### Steady growth (consistency + reputation)
 7. **Maintain your streak** — log activity daily for steady point growth
 8. **Earn badges** — permanent bonus that never goes away
 9. **Get client reviews** — deliver great work and ask clients to review you
 10. **Connect GitHub** — auto-log activity so you never miss a day
+11. **Endorse others** — build community trust (must have an active account)
+
+## Peer Endorsements
+
+Other vibecoders can **endorse** your projects to signal quality. Endorsement counts are visible on project cards and factor into the AI agent's evaluation.
+
+Anti-gaming rules for endorsements:
+- You can't endorse your own projects
+- One endorsement per user per project
+- Must be signed in
+- Account must be at least 7 days old
+- Must have at least one project or streak activity
+- Maximum 10 endorsements per day
 
 ## Where Your Score Appears
 

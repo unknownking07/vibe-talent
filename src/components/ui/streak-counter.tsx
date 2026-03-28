@@ -20,7 +20,7 @@ export function StreakCounter({ streak, size = "md" }: StreakCounterProps) {
   return (
     <div
       className={`inline-flex items-center gap-1.5 ${
-        isActive ? "text-[var(--accent)]" : "text-[#A1A1AA]"
+        isActive ? "text-[var(--accent)]" : "text-[var(--text-muted-soft)]"
       }`}
     >
       <Flame

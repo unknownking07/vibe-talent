@@ -28,9 +28,37 @@ Not all project listings are created equal. Here's what earns maximum points and
 
 **A fully filled-out, verified project earns up to 15 Vibe Score points.** An empty, unverified one earns just 1.
 
+## Quality Score
+
+Every project card displays a **Quality Score** (0-100) with a clickable info button showing the full breakdown.
+
+### How it's computed
+
+For verified projects with a GitHub URL, VibeTalent analyzes the repo at verification time:
+
+- **Community (35%)** — Stars, forks, contributors, open issues
+- **Substance (35%)** — Code size, language diversity, tests, CI/CD, README quality
+- **Maintenance (30%)** — Commit frequency, recency, sustained development pace
+
+The score appears as a colored badge on your project card:
+- **Green (70+)** — Excellent quality
+- **Amber (40-69)** — Good quality
+- **Gray (<40)** — Needs improvement
+
+Click the **info icon** next to the score to see the detailed breakdown with progress bars for each dimension, or a checklist of what you can improve.
+
+### How to improve your quality score
+
+1. **Write tests** — test suites significantly boost the substance score
+2. **Set up CI/CD** — automated pipelines show professional practices
+3. **Write a good README** — helps both substance and community scores
+4. **Keep committing** — recent activity and sustained work rate boost maintenance
+5. **Build community** — stars, forks, and contributors improve community score
+6. **Deploy it** — a live URL shows the project is real and working
+
 ## Verifying Your Projects
 
-Verified projects get a checkmark and earn **5x the base points**. There are two ways to verify:
+Verified projects get a checkmark and unlock full quality scoring. There are two ways to verify:
 
 ### Method 1: Owner Match (Automatic)
 
@@ -43,6 +71,29 @@ If you signed up with GitHub and the project's GitHub URL points to a repo you o
 3. Click **Verify** on the project in your Dashboard
 4. VibeTalent checks the file and verifies ownership
 
+When you verify, VibeTalent also:
+- Runs GitHub quality analysis on the repo
+- Checks if the live URL is accessible
+- Creates a notification confirming verification
+
+## Peer Endorsements
+
+Other vibecoders can **endorse** your projects by clicking the thumbs-up button on your project card. Endorsements signal peer validation and are visible to clients and the AI agent.
+
+**Rules:**
+- You can't endorse your own projects
+- One endorsement per person per project
+- Account must be 7+ days old with some activity
+- Max 10 endorsements per day per user
+
+Endorsement counts appear on every project card. They also factor into the AI agent's evaluation of your work.
+
+## Live URL Health Checks
+
+VibeTalent runs **weekly health checks** on all verified project URLs. If your live URL returns an error or is unreachable, it gets marked as down. Dead links are visible on your profile and factor into quality scoring.
+
+Keep your deployments alive — or remove the URL if the project is no longer hosted.
+
 ## Tips for Standout Projects
 
 ### For Clients
@@ -51,12 +102,12 @@ If you signed up with GitHub and the project's GitHub URL points to a repo you o
 - **Show screenshots** — Especially for UI-heavy projects
 
 ### For Your Score
-- **Verify every project** — The scoring difference is massive (1 pt vs up to 15 pts)
-- **Fill every field** — Each piece of detail adds points
-- **Use 3+ technologies** — Shows breadth and earns +2 bonus
+- **Verify every project** — Unlocks full quality scoring (1 pt unverified vs up to 10 pts verified)
+- **Write tests and set up CI** — Directly boosts substance score
+- **Keep repos active** — Recent commits boost maintenance score
 
 ### Quality Over Quantity
-Five verified projects with live demos, detailed descriptions, and GitHub links will always outrank twenty bare-bones entries. Focus on showcasing your best work.
+Five verified projects with high quality scores, live demos, and endorsements will always outrank twenty bare-bones entries. Focus on showcasing your best work.
 
 ## Spam Protection
 

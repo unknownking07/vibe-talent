@@ -35,12 +35,12 @@ export function ProfileViewsWidget() {
     <div
       className="p-5"
       style={{
-        backgroundColor: "#FFFFFF",
-        border: "2px solid #0F0F0F",
+        backgroundColor: "var(--bg-surface)",
+        border: "2px solid var(--border-hard)",
         boxShadow: "var(--shadow-brutal)",
       }}
     >
-      <h2 className="text-base font-extrabold uppercase flex items-center gap-2 text-[#0F0F0F] mb-4">
+      <h2 className="text-base font-extrabold uppercase flex items-center gap-2 text-[var(--foreground)] mb-4">
         <Eye size={16} className="text-[var(--accent)]" />
         Who Viewed Your Profile
       </h2>
@@ -48,19 +48,19 @@ export function ProfileViewsWidget() {
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div
           className="p-3 text-center"
-          style={{ backgroundColor: "#FFF7ED", border: "2px solid #0F0F0F" }}
+          style={{ backgroundColor: "var(--status-warning-bg)", border: "2px solid var(--border-hard)" }}
         >
           <TrendingUp size={16} className="mx-auto text-[var(--accent)] mb-1" />
-          <div className="text-xl font-extrabold text-[#0F0F0F] font-mono">{data.views_today}</div>
-          <div className="text-[10px] font-bold uppercase tracking-wide text-[#71717A]">Today</div>
+          <div className="text-xl font-extrabold text-[var(--foreground)] font-mono">{data.views_today}</div>
+          <div className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)]">Today</div>
         </div>
         <div
           className="p-3 text-center"
-          style={{ backgroundColor: "#F5F3FF", border: "2px solid #0F0F0F" }}
+          style={{ backgroundColor: "var(--bg-surface-light)", border: "2px solid var(--border-hard)" }}
         >
-          <Users size={16} className="mx-auto text-[#8B5CF6] mb-1" />
-          <div className="text-xl font-extrabold text-[#0F0F0F] font-mono">{data.views_this_week}</div>
-          <div className="text-[10px] font-bold uppercase tracking-wide text-[#71717A]">This Week</div>
+          <Users size={16} className="mx-auto text-[var(--accent)] mb-1" />
+          <div className="text-xl font-extrabold text-[var(--foreground)] font-mono">{data.views_this_week}</div>
+          <div className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)]">This Week</div>
         </div>
       </div>
 
@@ -70,12 +70,12 @@ export function ProfileViewsWidget() {
             <a
               key={viewer.username}
               href={`/profile/${viewer.username}`}
-              className="flex items-center gap-3 p-2 transition-colors hover:bg-[#F4F4F5]"
-              style={{ border: "1px solid #E4E4E7" }}
+              className="flex items-center gap-3 p-2 transition-colors hover:bg-[var(--bg-surface-light)]"
+              style={{ border: "1px solid var(--border-subtle)" }}
             >
               <div
                 className="w-8 h-8 flex items-center justify-center text-xs font-extrabold text-white shrink-0"
-                style={{ backgroundColor: "#0F0F0F" }}
+                style={{ backgroundColor: "var(--bg-inverted)" }}
               >
                 {viewer.avatar_url ? (
                   <Image
@@ -90,32 +90,19 @@ export function ProfileViewsWidget() {
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <span className="text-sm font-bold text-[#0F0F0F]">@{viewer.username}</span>
+                <span className="text-sm font-bold text-[var(--foreground)]">@{viewer.username}</span>
               </div>
-              <span className="text-[10px] font-medium text-[#A1A1AA]">
+              <span className="text-[10px] font-medium text-[var(--text-muted-soft)]">
                 {new Date(viewer.viewed_at).toLocaleDateString()}
               </span>
             </a>
           ))}
-          {data.anonymous_count > 0 && (
-            <div className="flex items-center gap-3 p-2" style={{ border: "1px solid #E4E4E7" }}>
-              <div
-                className="w-8 h-8 flex items-center justify-center text-xs font-extrabold text-white shrink-0"
-                style={{ backgroundColor: "#71717A" }}
-              >
-                ?
-              </div>
-              <span className="text-sm font-medium text-[#71717A]">
-                +{data.anonymous_count} anonymous visitor{data.anonymous_count !== 1 ? "s" : ""}
-              </span>
-            </div>
-          )}
         </div>
       ) : (
         <div className="text-center py-4">
-          <Eye size={24} className="mx-auto mb-2 text-[#A1A1AA]" />
-          <p className="text-sm font-medium text-[#A1A1AA]">No profile views yet this week</p>
-          <p className="text-xs text-[#A1A1AA] mt-1">Share your profile to get noticed!</p>
+          <Eye size={24} className="mx-auto mb-2 text-[var(--text-muted-soft)]" />
+          <p className="text-sm font-medium text-[var(--text-muted-soft)]">No profile views yet this week</p>
+          <p className="text-xs text-[var(--text-muted-soft)] mt-1">Share your profile to get noticed!</p>
         </div>
       )}
     </div>

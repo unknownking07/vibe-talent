@@ -33,20 +33,20 @@ export class ErrorBoundary extends React.Component<Props, State> {
           <div
             className="max-w-md w-full p-8 text-center"
             style={{
-              backgroundColor: "#FFFFFF",
-              border: "2px solid #0F0F0F",
-              boxShadow: "6px 6px 0 #0F0F0F",
+              backgroundColor: "var(--bg-surface)",
+              border: "2px solid var(--border-hard)",
+              boxShadow: "var(--shadow-brutal)",
             }}
           >
             <AlertTriangle size={48} className="mx-auto mb-4 text-[var(--accent)]" />
-            <h2 className="text-xl font-extrabold uppercase text-[#0F0F0F] mb-2">
+            <h2 className="text-xl font-extrabold uppercase text-[var(--foreground)] mb-2">
               Something went wrong
             </h2>
-            <p className="text-sm text-[#52525B] font-medium mb-6">
+            <p className="text-sm text-[var(--text-secondary)] font-medium mb-6">
               An unexpected error occurred. Please try refreshing the page.
             </p>
             {this.state.error && (
-              <p className="text-xs font-mono text-[#A1A1AA] mb-6 break-all">
+              <p className="text-xs font-mono text-[var(--text-muted-soft)] mb-6 break-all">
                 {this.state.error.message}
               </p>
             )}

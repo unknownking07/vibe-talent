@@ -98,6 +98,57 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "You cannot endorse your own project" }, { status: 403 });
     }
 
+    // Anti-gaming: check account age (must be at least 7 days old)
+    const { data: endorserProfile } = await sb
+      .from("users")
+      .select("created_at, streak, vibe_score")
+      .eq("id", user.id)
+      .single();
+
+    if (endorserProfile) {
+      const accountAge = Date.now() - new Date(endorserProfile.created_at).getTime();
+      const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+      if (accountAge < SEVEN_DAYS) {
+        return NextResponse.json(
+          { error: "Your account must be at least 7 days old to endorse projects" },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Anti-gaming: check endorser has at least some activity (1+ projects or streak > 0)
+    const { count: endorserProjectCount } = await sb
+      .from("projects")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id);
+
+    if (
+      endorserProfile &&
+      (endorserProjectCount ?? 0) === 0 &&
+      endorserProfile.streak === 0 &&
+      endorserProfile.vibe_score === 0
+    ) {
+      return NextResponse.json(
+        { error: "Add a project or log activity before endorsing others" },
+        { status: 403 }
+      );
+    }
+
+    // Anti-gaming: limit total endorsements per user per day (max 10)
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count: recentEndorsements } = await sb
+      .from("project_endorsements")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("created_at", oneDayAgo);
+
+    if ((recentEndorsements ?? 0) >= 10) {
+      return NextResponse.json(
+        { error: "You can endorse up to 10 projects per day" },
+        { status: 429 }
+      );
+    }
+
     // Insert endorsement (unique constraint prevents duplicates)
     const { error } = await sb
       .from("project_endorsements")

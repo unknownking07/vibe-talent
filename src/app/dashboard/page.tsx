@@ -10,6 +10,7 @@ import { StreakCounter } from "@/components/ui/streak-counter";
 import { ActivityHeatmap } from "@/components/ui/activity-heatmap";
 import { ProjectCard } from "@/components/ui/project-card";
 import { ProfileViewsWidget } from "@/components/dashboard/profile-views-widget";
+import { StreakMilestone } from "@/components/dashboard/streak-milestone";
 import type { HireRequest, HireMessage } from "@/lib/types/database";
 import {
   Plus,
@@ -125,7 +126,8 @@ export default function DashboardPage() {
               if (data.synced && data.dates_logged > 0) {
                 // Re-fetch streak data and update UI after successful sync
                 fetchStreakLogs(authUser.id).then(newStreakData => {
-                  setHeatmapData(newStreakData);
+                  // Merge with existing heatmap (GitHub contributions take priority)
+                  setHeatmapData(prev => ({ ...newStreakData, ...prev }));
                   // Re-check if today was logged
                   const nowLocal = new Date();
                   const todayStr = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, "0")}-${String(nowLocal.getDate()).padStart(2, "0")}`;
@@ -159,6 +161,26 @@ export default function DashboardPage() {
             })
             .catch(console.error);
         }
+
+        // Fetch full GitHub contribution graph (runs in background)
+        fetch("/api/github/contributions")
+          .then(res => res.json())
+          .then(ghData => {
+            if (ghData.contributions && Object.keys(ghData.contributions).length > 0) {
+              setHeatmapData(prev => {
+                // Merge: GitHub contributions as base, streak_logs overlay
+                const merged = { ...ghData.contributions };
+                for (const [date, level] of Object.entries(prev)) {
+                  // Keep the higher value between GitHub data and streak logs
+                  if (!merged[date] || (level as number) > merged[date]) {
+                    merged[date] = level;
+                  }
+                }
+                return merged;
+              });
+            }
+          })
+          .catch(console.error);
       }
 
       // Sync DB in background if streak was wrong (non-blocking)
@@ -713,7 +735,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
-        <h1 className="text-3xl font-extrabold uppercase text-[#0F0F0F] mb-8">Dashboard</h1>
+        <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-8">Dashboard</h1>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           {[1, 2, 3, 4].map((i) => <div key={i} className="skeleton h-24" />)}
         </div>
@@ -724,15 +746,15 @@ export default function DashboardPage() {
   if (!user) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12 text-center">
-        <h1 className="text-3xl font-extrabold uppercase text-[#0F0F0F] mb-4">Dashboard</h1>
-        <p className="text-[#52525B] font-medium">Please sign in to view your dashboard.</p>
+        <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-4">Dashboard</h1>
+        <p className="text-[var(--text-secondary)] font-medium">Please sign in to view your dashboard.</p>
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
-      <h1 className="text-3xl font-extrabold uppercase text-[#0F0F0F] mb-6">Dashboard</h1>
+      <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-6">Dashboard</h1>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-8">
@@ -740,9 +762,9 @@ export default function DashboardPage() {
           onClick={() => setActiveTab("overview")}
           className="px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide transition-all"
           style={{
-            backgroundColor: activeTab === "overview" ? "#0F0F0F" : "#FFFFFF",
-            color: activeTab === "overview" ? "#FFFFFF" : "#0F0F0F",
-            border: "2px solid #0F0F0F",
+            backgroundColor: activeTab === "overview" ? "var(--bg-inverted)" : "var(--bg-surface)",
+            color: activeTab === "overview" ? "var(--background)" : "var(--foreground)",
+            border: "2px solid var(--border-hard)",
             boxShadow: activeTab === "overview" ? "none" : "4px 4px 0 #000",
           }}
         >
@@ -752,9 +774,9 @@ export default function DashboardPage() {
           onClick={() => { setActiveTab("inbox"); if (user) loadInbox(); }}
           className="px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide transition-all flex items-center gap-2"
           style={{
-            backgroundColor: activeTab === "inbox" ? "#0F0F0F" : "#FFFFFF",
-            color: activeTab === "inbox" ? "#FFFFFF" : "#0F0F0F",
-            border: "2px solid #0F0F0F",
+            backgroundColor: activeTab === "inbox" ? "var(--bg-inverted)" : "var(--bg-surface)",
+            color: activeTab === "inbox" ? "var(--background)" : "var(--foreground)",
+            border: "2px solid var(--border-hard)",
             boxShadow: activeTab === "inbox" ? "none" : "4px 4px 0 #000",
           }}
         >
@@ -765,8 +787,8 @@ export default function DashboardPage() {
               className="ml-1 px-2 py-0.5 text-xs font-extrabold"
               style={{
                 backgroundColor: "var(--accent)",
-                color: "#FFFFFF",
-                border: "2px solid #0F0F0F",
+                color: "var(--text-on-inverted)",
+                border: "2px solid var(--border-hard)",
               }}
             >
               {hireRequests.filter((r) => r.status === "new").length}
@@ -782,50 +804,50 @@ export default function DashboardPage() {
         <div
           className="p-5"
           style={{
-            backgroundColor: "#FFFFFF",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--bg-surface)",
+            border: "2px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
           <Flame size={20} className="text-[var(--accent)] mb-2" />
-          <div className="text-2xl font-extrabold font-mono text-[#0F0F0F]">{user.streak}</div>
-          <div className="text-xs font-bold uppercase tracking-wide text-[#71717A] mt-1">Current Streak</div>
+          <div className="text-2xl font-extrabold font-mono text-[var(--foreground)]">{user.streak}</div>
+          <div className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mt-1">Current Streak</div>
         </div>
         <div
           className="p-5"
           style={{
-            backgroundColor: "#FFFFFF",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--bg-surface)",
+            border: "2px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
           <Trophy size={20} className="text-[#CA8A04] mb-2" />
-          <div className="text-2xl font-extrabold font-mono text-[#0F0F0F]">{user.longest_streak}</div>
-          <div className="text-xs font-bold uppercase tracking-wide text-[#71717A] mt-1">Longest Streak</div>
+          <div className="text-2xl font-extrabold font-mono text-[var(--foreground)]">{user.longest_streak}</div>
+          <div className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mt-1">Longest Streak</div>
         </div>
         <div
           className="p-5"
           style={{
-            backgroundColor: "#FFFFFF",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--bg-surface)",
+            border: "2px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
           <Zap size={20} className="text-[var(--accent)] fill-[var(--accent)] mb-2" />
           <div className="text-2xl font-extrabold font-mono text-[var(--accent)]">{user.vibe_score}</div>
-          <div className="text-xs font-bold uppercase tracking-wide text-[#71717A] mt-1">Vibe Score</div>
+          <div className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mt-1">Vibe Score</div>
         </div>
         <div
           className="p-5"
           style={{
-            backgroundColor: "#FFFFFF",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--bg-surface)",
+            border: "2px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
           <Code2 size={20} className="text-[var(--accent)] mb-2" />
-          <div className="text-2xl font-extrabold font-mono text-[#0F0F0F]">{user.projects.length}</div>
-          <div className="text-xs font-bold uppercase tracking-wide text-[#71717A] mt-1">Projects</div>
+          <div className="text-2xl font-extrabold font-mono text-[var(--foreground)]">{user.projects.length}</div>
+          <div className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mt-1">Projects</div>
         </div>
       </div>
 
@@ -833,18 +855,18 @@ export default function DashboardPage() {
       <div
         className="p-6 mb-8"
         style={{
-          backgroundColor: "#FFFFFF",
-          border: "2px solid #0F0F0F",
+          backgroundColor: "var(--bg-surface)",
+          border: "2px solid var(--border-hard)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-extrabold uppercase flex items-center gap-2 text-[#0F0F0F]">
+            <h2 className="text-lg font-extrabold uppercase flex items-center gap-2 text-[var(--foreground)]">
               <Flame size={20} className="text-[var(--accent)]" />
               {todayLogged ? "Activity Logged Today" : "Log Today\u0027s Activity"}
             </h2>
-            <p className="text-sm text-[#52525B] font-medium mt-1">
+            <p className="text-sm text-[var(--text-secondary)] font-medium mt-1">
               {todayLogged
                 ? "You\u0027ve already logged your activity today. Come back tomorrow!"
                 : "Log your coding activity to keep your streak alive"}
@@ -855,7 +877,7 @@ export default function DashboardPage() {
               className="text-center px-4 py-2"
               style={{
                 backgroundColor: "#D1FAE5",
-                border: "2px solid #0F0F0F",
+                border: "2px solid var(--border-hard)",
                 boxShadow: "var(--shadow-brutal-sm)",
               }}
             >
@@ -875,7 +897,7 @@ export default function DashboardPage() {
               className="btn-brutal text-sm"
               style={{
                 backgroundColor: "var(--accent)",
-                color: "#FFFFFF",
+                color: "var(--text-on-inverted)",
               }}
             >
               {logging ? "Logging..." : "Log Activity"}
@@ -884,7 +906,7 @@ export default function DashboardPage() {
         </div>
         <div className="mt-4 flex items-center gap-3">
           <StreakCounter streak={user.streak} size="lg" />
-          <span className="text-sm font-bold text-[#52525B] uppercase">day streak</span>
+          <span className="text-sm font-bold text-[var(--text-secondary)] uppercase">day streak</span>
         </div>
         <div className="mt-2">
           <BadgeDisplay level={user.badge_level} />
@@ -892,7 +914,7 @@ export default function DashboardPage() {
         {/* Streak Freeze Status */}
         <div className="mt-3 flex items-center gap-2">
           <ShieldCheck size={16} className="text-cyan-600" />
-          <span className="text-sm font-bold text-[#52525B]">
+          <span className="text-sm font-bold text-[var(--text-secondary)]">
             {user.streak_freezes_remaining ?? 2} / 2 Freezes Available
           </span>
           {(user.streak_freezes_used ?? 0) > 0 && (
@@ -906,8 +928,8 @@ export default function DashboardPage() {
           <div className="mt-4 pt-4 border-t-2 border-zinc-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Code2 size={16} className="text-[#52525B]" />
-                <span className="text-sm font-bold text-[#52525B]">GitHub Auto-Sync</span>
+                <Code2 size={16} className="text-[var(--text-secondary)]" />
+                <span className="text-sm font-bold text-[var(--text-secondary)]">GitHub Auto-Sync</span>
               </div>
               <button onClick={handleGithubSync} disabled={syncingGithub} className="btn-brutal btn-brutal-secondary text-xs py-1.5 px-3">
                 {syncingGithub ? "Syncing..." : "Sync Now"}
@@ -927,16 +949,19 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* Streak Milestone & Motivation */}
+      <StreakMilestone streak={user.streak} />
+
       {/* Activity Heatmap */}
       <div
         className="p-6 mb-8"
         style={{
-          backgroundColor: "#FFFFFF",
-          border: "2px solid #0F0F0F",
+          backgroundColor: "var(--bg-surface)",
+          border: "2px solid var(--border-hard)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        <h2 className="text-lg font-extrabold uppercase text-[#0F0F0F] mb-4">Your Activity</h2>
+        <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">Your Activity</h2>
         <ActivityHeatmap data={heatmapData} />
       </div>
 
@@ -944,12 +969,12 @@ export default function DashboardPage() {
       <div
         className="p-5 mb-8"
         style={{
-          backgroundColor: "#FFFFFF",
-          border: "2px solid #0F0F0F",
+          backgroundColor: "var(--bg-surface)",
+          border: "2px solid var(--border-hard)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        <h2 className="text-base font-extrabold uppercase flex items-center gap-2 text-[#0F0F0F] mb-3">
+        <h2 className="text-base font-extrabold uppercase flex items-center gap-2 text-[var(--foreground)] mb-3">
           <ExternalLink size={16} className="text-[var(--accent)]" />
           Embeddable Badge for GitHub
         </h2>
@@ -978,7 +1003,7 @@ export default function DashboardPage() {
                     setTimeout(() => setBadgeCopied(null), 2000);
                   }}
                   className="btn-brutal flex-1 flex items-center justify-center gap-1.5 text-xs py-2"
-                  style={{ backgroundColor: badgeCopied === "md" ? "#D1FAE5" : "#FFFFFF" }}
+                  style={{ backgroundColor: badgeCopied === "md" ? "#D1FAE5" : "var(--bg-surface)" }}
                 >
                   {badgeCopied === "md" ? "Copied!" : "Copy Markdown"}
                 </button>
@@ -989,7 +1014,7 @@ export default function DashboardPage() {
                     setTimeout(() => setBadgeCopied(null), 2000);
                   }}
                   className="btn-brutal flex-1 flex items-center justify-center gap-1.5 text-xs py-2"
-                  style={{ backgroundColor: badgeCopied === "html" ? "#D1FAE5" : "#FFFFFF" }}
+                  style={{ backgroundColor: badgeCopied === "html" ? "#D1FAE5" : "var(--bg-surface)" }}
                 >
                   {badgeCopied === "html" ? "Copied!" : "Copy HTML"}
                 </button>
@@ -1007,7 +1032,7 @@ export default function DashboardPage() {
       {/* Your Projects */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-extrabold uppercase text-[#0F0F0F]">Your Projects</h2>
+          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)]">Your Projects</h2>
           <button
             onClick={() => {
               if (showProjectForm) {
@@ -1029,28 +1054,28 @@ export default function DashboardPage() {
         {showVerifyGuide && (
           <div
             className="mb-4 p-4 relative"
-            style={{ backgroundColor: "#FFFBEB", border: "2px solid #0F0F0F" }}
+            style={{ backgroundColor: "#FFFBEB", border: "2px solid var(--border-hard)" }}
           >
             <button
               onClick={() => setShowVerifyGuide(false)}
-              className="absolute top-3 right-3 text-[#A1A1AA] hover:text-[#0F0F0F] transition-colors"
+              className="absolute top-3 right-3 text-[var(--text-muted-soft)] hover:text-[var(--foreground)] transition-colors"
               title="Dismiss"
             >
               <X size={14} />
             </button>
-            <h3 className="text-sm font-extrabold uppercase text-[#0F0F0F] flex items-center gap-2 mb-2">
+            <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)] flex items-center gap-2 mb-2">
               <ShieldCheck size={16} className="text-green-600" />
               How to Verify Your Projects
             </h3>
-            <p className="text-xs text-[#52525B] font-medium leading-relaxed">
+            <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed">
               Verified projects show a green badge, proving you own the code. There are two ways to verify:
             </p>
-            <ol className="text-xs text-[#52525B] font-medium mt-2 space-y-1.5 list-decimal list-inside leading-relaxed">
+            <ol className="text-xs text-[var(--text-secondary)] font-medium mt-2 space-y-1.5 list-decimal list-inside leading-relaxed">
               <li>
-                <strong className="text-[#0F0F0F]">Owner Match (automatic):</strong> If the GitHub repo URL belongs to your GitHub account (the one you signed in with), it verifies instantly.
+                <strong className="text-[var(--foreground)]">Owner Match (automatic):</strong> If the GitHub repo URL belongs to your GitHub account (the one you signed in with), it verifies instantly.
               </li>
               <li>
-                <strong className="text-[#0F0F0F]">Verification File (for collaborators):</strong> Add a file named <code className="bg-white px-1.5 py-0.5 border border-[#E4E4E7] font-mono text-[10px]">.vibetalent</code> to the root of the repo containing your GitHub username. Then click the <strong>Verify</strong> button on the project card below.
+                <strong className="text-[var(--foreground)]">Verification File (for collaborators):</strong> Add a file named <code className="bg-[var(--bg-surface)] px-1.5 py-0.5 border border-[var(--border-subtle)] font-mono text-[10px]">.vibetalent</code> to the root of the repo containing your GitHub username. Then click the <strong>Verify</strong> button on the project card below.
               </li>
             </ol>
           </div>
@@ -1060,14 +1085,14 @@ export default function DashboardPage() {
           <div
             className="p-5 mb-4"
             style={{
-              backgroundColor: "#FFFFFF",
-              border: "2px solid #0F0F0F",
+              backgroundColor: "var(--bg-surface)",
+              border: "2px solid var(--border-hard)",
               boxShadow: "var(--shadow-brutal-sm)",
             }}
           >
-            <h3 className="text-sm font-extrabold uppercase text-[#0F0F0F] mb-3">{editingProjectId ? "Edit Project" : "New Project"}</h3>
+            <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)] mb-3">{editingProjectId ? "Edit Project" : "New Project"}</h3>
             {projectError && (
-              <div className="p-3 mb-3 text-sm font-bold text-[#991B1B]" style={{ backgroundColor: "#FEE2E2", border: "2px solid #0F0F0F" }}>
+              <div className="p-3 mb-3 text-sm font-bold text-[var(--status-error-text)]" style={{ backgroundColor: "var(--status-error-border)", border: "2px solid var(--border-hard)" }}>
                 {projectError}
               </div>
             )}
@@ -1126,12 +1151,12 @@ export default function DashboardPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Project Screenshot</label>
+                <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Project Screenshot</label>
                 <div className="flex items-center gap-4">
                   {projectImagePreview && (
-                    <div className="relative w-24 h-16 border-2 border-[#0F0F0F]">
+                    <div className="relative w-24 h-16 border-2 border-[var(--border-hard)]">
                       <Image src={projectImagePreview} alt="Preview" fill className="object-cover" />
-                      <button onClick={() => { setProjectImageFile(null); setProjectImagePreview(null); }} className="absolute -top-2 -right-2 w-5 h-5 bg-[#0F0F0F] text-white rounded-full flex items-center justify-center text-xs">&times;</button>
+                      <button onClick={() => { setProjectImageFile(null); setProjectImagePreview(null); }} className="absolute -top-2 -right-2 w-5 h-5 bg-[var(--bg-inverted)] text-white rounded-full flex items-center justify-center text-xs">&times;</button>
                     </div>
                   )}
                   <button type="button" onClick={() => projectImageInputRef.current?.click()} className="btn-brutal btn-brutal-secondary text-xs py-1.5 px-3">
@@ -1139,7 +1164,7 @@ export default function DashboardPage() {
                   </button>
                   <input ref={projectImageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleProjectImageSelect} className="hidden" />
                 </div>
-                <p className="text-xs text-[#71717A] mt-1">Recommended: 1280×720px (16:9). Max 5MB. JPG, PNG, WebP, GIF.</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">Recommended: 1280×720px (16:9). Max 5MB. JPG, PNG, WebP, GIF.</p>
               </div>
               <button
                 onClick={editingProjectId ? handleSaveEdit : handleAddProject}
@@ -1165,7 +1190,7 @@ export default function DashboardPage() {
                 onVerify={verifyProject}
               />
               {verifyingProjectId === project.id && (
-                <div className="mt-1 px-4 py-1.5 text-[10px] font-bold text-[#71717A] uppercase">
+                <div className="mt-1 px-4 py-1.5 text-[10px] font-bold text-[var(--text-muted)] uppercase">
                   Verifying...
                 </div>
               )}
@@ -1183,7 +1208,7 @@ export default function DashboardPage() {
 
       {activeTab === "inbox" && (
         <div>
-          <h2 className="text-lg font-extrabold uppercase text-[#0F0F0F] mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4 flex items-center gap-2">
             <Mail size={20} className="text-[var(--accent)]" />
             Hire Requests
           </h2>
@@ -1198,14 +1223,14 @@ export default function DashboardPage() {
             <div
               className="p-12 text-center"
               style={{
-                backgroundColor: "#FFFFFF",
-                border: "2px solid #0F0F0F",
+                backgroundColor: "var(--bg-surface)",
+                border: "2px solid var(--border-hard)",
                 boxShadow: "var(--shadow-brutal)",
               }}
             >
-              <Inbox size={48} className="mx-auto text-[#D4D4D8] mb-4" />
-              <h3 className="text-lg font-extrabold uppercase text-[#0F0F0F]">No hire requests yet</h3>
-              <p className="text-sm text-[#52525B] font-medium mt-2">
+              <Inbox size={48} className="mx-auto text-[var(--text-muted-soft)] mb-4" />
+              <h3 className="text-lg font-extrabold uppercase text-[var(--foreground)]">No hire requests yet</h3>
+              <p className="text-sm text-[var(--text-secondary)] font-medium mt-2">
                 When someone wants to hire you, their requests will appear here.
               </p>
             </div>
@@ -1216,15 +1241,15 @@ export default function DashboardPage() {
                   key={request.id}
                   className="p-5"
                   style={{
-                    backgroundColor: request.status === "new" ? "#FFFBEB" : "#FFFFFF",
-                    border: "2px solid #0F0F0F",
+                    backgroundColor: request.status === "new" ? "#FFFBEB" : "var(--bg-surface)",
+                    border: "2px solid var(--border-hard)",
                     boxShadow: "var(--shadow-brutal-sm)",
                   }}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 flex-wrap">
-                        <h3 className="text-base font-extrabold text-[#0F0F0F]">
+                        <h3 className="text-base font-extrabold text-[var(--foreground)]">
                           {request.sender_name}
                         </h3>
                         <span
@@ -1234,36 +1259,36 @@ export default function DashboardPage() {
                               request.status === "new"
                                 ? "var(--accent)"
                                 : request.status === "read"
-                                ? "#E4E4E7"
+                                ? "var(--border-subtle)"
                                 : "#D1FAE5",
                             color:
                               request.status === "new"
-                                ? "#FFFFFF"
+                                ? "var(--bg-surface)"
                                 : request.status === "read"
-                                ? "#52525B"
+                                ? "var(--text-secondary)"
                                 : "#065F46",
-                            border: "2px solid #0F0F0F",
+                            border: "2px solid var(--border-hard)",
                           }}
                         >
                           {request.status}
                         </span>
                       </div>
-                      <p className="text-sm text-[#52525B] font-medium mt-0.5">
+                      <p className="text-sm text-[var(--text-secondary)] font-medium mt-0.5">
                         {request.sender_email}
                       </p>
 
                       {request.budget && (
                         <div className="flex items-center gap-1.5 mt-2">
                           <DollarSign size={14} className="text-[var(--accent)]" />
-                          <span className="text-sm font-bold text-[#0F0F0F]">{request.budget}</span>
+                          <span className="text-sm font-bold text-[var(--foreground)]">{request.budget}</span>
                         </div>
                       )}
 
-                      <p className="text-sm text-[#3F3F46] mt-3 whitespace-pre-wrap">
+                      <p className="text-sm text-[var(--text-tertiary)] mt-3 whitespace-pre-wrap">
                         {request.message}
                       </p>
 
-                      <p className="text-xs text-[#A1A1AA] font-bold uppercase mt-3">
+                      <p className="text-xs text-[var(--text-muted-soft)] font-bold uppercase mt-3">
                         {new Date(request.created_at).toLocaleDateString("en-US", {
                           year: "numeric",
                           month: "short",
@@ -1291,8 +1316,8 @@ export default function DashboardPage() {
                         }}
                         className="btn-brutal text-xs py-2 px-3 flex items-center gap-1.5"
                         style={{
-                          backgroundColor: replyingTo === request.id ? "#0F0F0F" : "var(--accent)",
-                          color: "#FFFFFF",
+                          backgroundColor: replyingTo === request.id ? "var(--bg-inverted)" : "var(--accent)",
+                          color: "var(--text-on-inverted)",
                         }}
                       >
                         <MessageCircle size={14} />
@@ -1312,7 +1337,7 @@ export default function DashboardPage() {
                           <button
                             onClick={() => { handleDeleteRequest(request.id); setConfirmingDelete(null); }}
                             className="btn-brutal text-xs py-2 px-3"
-                            style={{ backgroundColor: "#DC2626", color: "#FFFFFF" }}
+                            style={{ backgroundColor: "#DC2626", color: "var(--text-on-inverted)" }}
                           >
                             Yes, Delete
                           </button>
@@ -1327,7 +1352,7 @@ export default function DashboardPage() {
                         <button
                           onClick={() => setConfirmingDelete(request.id)}
                           className="btn-brutal text-xs py-2 px-3 flex items-center gap-1.5"
-                          style={{ backgroundColor: "#FEE2E2", color: "#991B1B" }}
+                          style={{ backgroundColor: "var(--status-error-border)", color: "var(--status-error-text)" }}
                           title="Delete request"
                         >
                           <Trash2 size={14} />
@@ -1341,13 +1366,13 @@ export default function DashboardPage() {
                     <div
                       className="mt-4"
                       style={{
-                        border: "2px solid #0F0F0F",
+                        border: "2px solid var(--border-hard)",
                       }}
                     >
                       {/* Messages area */}
                       <div
                         style={{
-                          backgroundColor: "#FAFAFA",
+                          backgroundColor: "var(--bg-surface-light)",
                           maxHeight: "400px",
                           overflowY: "auto",
                         }}
@@ -1355,7 +1380,7 @@ export default function DashboardPage() {
                         <div className="p-4 space-y-3">
                           {loadingChat === request.id ? (
                             <div className="text-center py-8">
-                              <p className="text-sm text-[#71717A] font-medium">Loading messages...</p>
+                              <p className="text-sm text-[var(--text-muted)] font-medium">Loading messages...</p>
                             </div>
                           ) : (
                             <>
@@ -1363,24 +1388,24 @@ export default function DashboardPage() {
                               <div className="flex justify-start">
                                 <div className="max-w-[80%]">
                                   <div className="flex items-center gap-2 mb-1">
-                                    <User size={12} className="text-[#71717A]" />
-                                    <span className="text-xs font-bold uppercase text-[#71717A]">
+                                    <User size={12} className="text-[var(--text-muted)]" />
+                                    <span className="text-xs font-bold uppercase text-[var(--text-muted)]">
                                       {request.sender_name}
                                     </span>
                                   </div>
                                   <div
                                     className="p-3"
                                     style={{
-                                      backgroundColor: "#FFFFFF",
-                                      border: "2px solid #0F0F0F",
+                                      backgroundColor: "var(--bg-surface)",
+                                      border: "2px solid var(--border-hard)",
                                       boxShadow: "2px 2px 0 #000",
                                     }}
                                   >
-                                    <p className="text-sm text-[#3F3F46] whitespace-pre-wrap">
+                                    <p className="text-sm text-[var(--text-tertiary)] whitespace-pre-wrap">
                                       {request.message}
                                     </p>
                                   </div>
-                                  <p className="text-xs text-[#A1A1AA] mt-1">
+                                  <p className="text-xs text-[var(--text-muted-soft)] mt-1">
                                     {new Date(request.created_at).toLocaleTimeString("en-US", {
                                       hour: "2-digit",
                                       minute: "2-digit",
@@ -1411,25 +1436,25 @@ export default function DashboardPage() {
                                         {isBuilder ? (
                                           <Wrench size={12} className="text-[var(--accent)]" />
                                         ) : (
-                                          <User size={12} className="text-[#71717A]" />
+                                          <User size={12} className="text-[var(--text-muted)]" />
                                         )}
-                                        <span className="text-xs font-bold uppercase text-[#71717A]">
+                                        <span className="text-xs font-bold uppercase text-[var(--text-muted)]">
                                           {isBuilder ? "You" : request.sender_name}
                                         </span>
                                       </div>
                                       <div
                                         className="p-3"
                                         style={{
-                                          backgroundColor: isBuilder ? "var(--accent)" : "#FFFFFF",
-                                          color: isBuilder ? "#FFFFFF" : "#3F3F46",
-                                          border: "2px solid #0F0F0F",
+                                          backgroundColor: isBuilder ? "var(--accent)" : "var(--bg-surface)",
+                                          color: isBuilder ? "var(--bg-surface)" : "var(--text-tertiary)",
+                                          border: "2px solid var(--border-hard)",
                                           boxShadow: "2px 2px 0 #000",
                                         }}
                                       >
                                         <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
                                       </div>
                                       <p
-                                        className={`text-xs text-[#A1A1AA] mt-1 ${
+                                        className={`text-xs text-[var(--text-muted-soft)] mt-1 ${
                                           isBuilder ? "text-right" : ""
                                         }`}
                                       >
@@ -1450,7 +1475,7 @@ export default function DashboardPage() {
 
                               {(chatMessages[request.id] || []).length === 0 && (
                                 <div className="text-center py-4">
-                                  <p className="text-xs text-[#A1A1AA] font-medium">
+                                  <p className="text-xs text-[var(--text-muted-soft)] font-medium">
                                     No replies yet. Send a message to start the conversation.
                                   </p>
                                 </div>
@@ -1465,8 +1490,8 @@ export default function DashboardPage() {
                       <div
                         className="p-3 flex gap-2"
                         style={{
-                          backgroundColor: "#FFFFFF",
-                          borderTop: "2px solid #0F0F0F",
+                          backgroundColor: "var(--bg-surface)",
+                          borderTop: "2px solid var(--border-hard)",
                         }}
                       >
                         <textarea
@@ -1488,7 +1513,7 @@ export default function DashboardPage() {
                           className="btn-brutal self-end text-xs py-2.5 px-4 flex items-center gap-1.5 disabled:opacity-50"
                           style={{
                             backgroundColor: "var(--accent)",
-                            color: "#FFFFFF",
+                            color: "var(--text-on-inverted)",
                           }}
                         >
                           <Send size={14} />

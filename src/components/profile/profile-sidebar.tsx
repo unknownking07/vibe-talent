@@ -101,8 +101,8 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
     <aside
       className="flex flex-col gap-6 p-6"
       style={{
-        backgroundColor: "#FFFFFF",
-        border: "2px solid #0F0F0F",
+        backgroundColor: "var(--bg-surface)",
+        border: "2px solid var(--border-hard)",
         boxShadow: "var(--shadow-brutal)",
       }}
     >
@@ -112,8 +112,8 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
           <div
             className="w-[120px] h-[120px] flex items-center justify-center text-3xl font-extrabold text-white"
             style={{
-              backgroundColor: "#0F0F0F",
-              border: "2px solid #0F0F0F",
+              backgroundColor: "var(--bg-inverted)",
+              border: "2px solid var(--border-hard)",
             }}
           >
             {user.avatar_url ? (
@@ -134,8 +134,8 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
               className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 text-xs font-extrabold uppercase tracking-wider whitespace-nowrap"
               style={{
                 backgroundColor: getBadgeBg(user.badge_level),
-                border: "2px solid #0F0F0F",
-                color: "#0F0F0F",
+                border: "2px solid var(--border-hard)",
+                color: "var(--foreground)",
               }}
             >
               {badgeLabel}
@@ -145,13 +145,13 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
 
         {/* Name + role */}
         <div className="mt-2">
-          <h2 className="text-xl font-extrabold uppercase tracking-tight text-[#0F0F0F]">@{user.username}</h2>
-          <p className="text-sm font-bold text-[#71717A] uppercase mt-0.5">{deriveRole(user.projects)}</p>
+          <h2 className="text-xl font-extrabold uppercase tracking-tight text-[var(--foreground)]">@{user.username}</h2>
+          <p className="text-sm font-bold text-[var(--text-muted)] uppercase mt-0.5">{deriveRole(user.projects)}</p>
         </div>
 
         {/* Bio */}
         {user.bio && (
-          <p className="text-[0.95rem] text-[#52525B] font-medium mt-1">{user.bio}</p>
+          <p className="text-[0.95rem] text-[var(--text-secondary)] font-medium mt-1">{user.bio}</p>
         )}
       </div>
 
@@ -163,11 +163,11 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${user.username} on GitHub`}
-            className="w-10 h-10 flex items-center justify-center text-[#0F0F0F] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_#0F0F0F]"
+            className="w-10 h-10 flex items-center justify-center text-[var(--foreground)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_var(--border-hard)]"
             style={{
-              backgroundColor: "#FFFFFF",
-              border: "2px solid #0F0F0F",
-              boxShadow: "3px 3px 0 #0F0F0F",
+              backgroundColor: "var(--bg-surface)",
+              border: "2px solid var(--border-hard)",
+              boxShadow: "var(--shadow-brutal-sm)",
             }}
           >
             <Github size={16} />
@@ -179,11 +179,11 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${user.username} on X (Twitter)`}
-            className="w-10 h-10 flex items-center justify-center text-[#0F0F0F] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_#0F0F0F]"
+            className="w-10 h-10 flex items-center justify-center text-[var(--foreground)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_var(--border-hard)]"
             style={{
-              backgroundColor: "#FFFFFF",
-              border: "2px solid #0F0F0F",
-              boxShadow: "3px 3px 0 #0F0F0F",
+              backgroundColor: "var(--bg-surface)",
+              border: "2px solid var(--border-hard)",
+              boxShadow: "var(--shadow-brutal-sm)",
             }}
           >
             <svg aria-hidden="true" width={16} height={16} viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
@@ -195,11 +195,11 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${user.username} on Telegram`}
-            className="w-10 h-10 flex items-center justify-center text-[#0F0F0F] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_#0F0F0F]"
+            className="w-10 h-10 flex items-center justify-center text-[var(--foreground)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_var(--border-hard)]"
             style={{
-              backgroundColor: "#FFFFFF",
-              border: "2px solid #0F0F0F",
-              boxShadow: "3px 3px 0 #0F0F0F",
+              backgroundColor: "var(--bg-surface)",
+              border: "2px solid var(--border-hard)",
+              boxShadow: "var(--shadow-brutal-sm)",
             }}
           >
             <Send size={16} />
@@ -211,11 +211,11 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${user.username}'s website`}
-            className="w-10 h-10 flex items-center justify-center text-[#0F0F0F] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_#0F0F0F]"
+            className="w-10 h-10 flex items-center justify-center text-[var(--foreground)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_var(--border-hard)]"
             style={{
-              backgroundColor: "#FFFFFF",
-              border: "2px solid #0F0F0F",
-              boxShadow: "3px 3px 0 #0F0F0F",
+              backgroundColor: "var(--bg-surface)",
+              border: "2px solid var(--border-hard)",
+              boxShadow: "var(--shadow-brutal-sm)",
             }}
           >
             <Globe size={16} />
@@ -228,13 +228,13 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
         <div
           className="flex items-center gap-2 px-3 py-2 text-xs font-extrabold uppercase"
           style={{
-            backgroundColor: "#FFF7ED",
-            border: "2px solid #0F0F0F",
-            boxShadow: "3px 3px 0 #0F0F0F",
+            backgroundColor: "var(--status-warning-bg)",
+            border: "2px solid var(--border-hard)",
+            boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
           <Code2 size={14} className="text-[var(--accent)]" />
-          <span className="text-[#0F0F0F]">{socials.farcaster}</span>
+          <span className="text-[var(--foreground)]">{socials.farcaster}</span>
         </div>
       )}
 
@@ -267,7 +267,7 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
           <button
             onClick={() => handleShareTwitter()}
             className="flex items-center justify-center gap-1 text-[10px] font-bold uppercase py-1.5 cursor-pointer hover:opacity-80"
-            style={{ backgroundColor: "#FFFFFF", border: "2px solid #0F0F0F" }}
+            style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}
           >
             <svg width={10} height={10} viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             Post
@@ -275,7 +275,7 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
           <button
             onClick={() => handleShareLinkedIn()}
             className="flex items-center justify-center gap-1 text-[10px] font-bold uppercase py-1.5 cursor-pointer hover:opacity-80"
-            style={{ backgroundColor: "#FFFFFF", border: "2px solid #0F0F0F" }}
+            style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}
           >
             <svg width={10} height={10} viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
             Share
@@ -283,7 +283,7 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
           <button
             onClick={() => handleCopyLink()}
             className="flex items-center justify-center gap-1 text-[10px] font-bold uppercase py-1.5 cursor-pointer hover:opacity-80"
-            style={{ backgroundColor: linkCopied ? "#D1FAE5" : "#FFFFFF", border: "2px solid #0F0F0F" }}
+            style={{ backgroundColor: linkCopied ? "#D1FAE5" : "var(--bg-surface)", border: "2px solid var(--border-hard)" }}
           >
             {linkCopied ? <Check size={10} className="text-emerald-600" /> : <LinkIcon size={10} />}
             {linkCopied ? "Copied!" : "Link"}

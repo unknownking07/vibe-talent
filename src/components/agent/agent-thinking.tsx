@@ -31,8 +31,8 @@ export function AgentThinking({ steps, onComplete }: AgentThinkingProps) {
     <div
       className="p-6 font-mono text-sm"
       style={{
-        backgroundColor: "#0F0F0F",
-        border: "2px solid #0F0F0F",
+        backgroundColor: "var(--bg-inverted)",
+        border: "2px solid var(--border-hard)",
         boxShadow: "var(--shadow-brutal)",
       }}
     >

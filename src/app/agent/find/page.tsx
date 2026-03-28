@@ -59,15 +59,15 @@ export default function FindTalentPage() {
             className="w-10 h-10 flex items-center justify-center"
             style={{
               backgroundColor: "var(--accent)",
-              border: "2px solid #0F0F0F",
-              boxShadow: "3px 3px 0 #0F0F0F",
+              border: "2px solid var(--border-hard)",
+              boxShadow: "var(--shadow-brutal-sm)",
             }}
           >
             <Search size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold uppercase text-[#0F0F0F]">Find Talent</h1>
-            <p className="text-sm text-[#52525B] font-medium">
+            <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Find Talent</h1>
+            <p className="text-sm text-[var(--text-secondary)] font-medium">
               Describe your project and let VibeFinder Bot find the best vibe coders
             </p>
           </div>
@@ -77,13 +77,13 @@ export default function FindTalentPage() {
           <div
             className="p-6 space-y-5"
             style={{
-              backgroundColor: "#FFFFFF",
-              border: "2px solid #0F0F0F",
+              backgroundColor: "var(--bg-surface)",
+              border: "2px solid var(--border-hard)",
               boxShadow: "var(--shadow-brutal)",
             }}
           >
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
                 Project Description
               </label>
               <textarea
@@ -97,7 +97,7 @@ export default function FindTalentPage() {
             </div>
 
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
                 Required Tech Stack
               </label>
               <input
@@ -107,12 +107,12 @@ export default function FindTalentPage() {
                 placeholder="Next.js, TypeScript, Supabase, TailwindCSS..."
                 className="input-brutal"
               />
-              <p className="text-xs text-[#A1A1AA] mt-1 font-medium">Comma-separated</p>
+              <p className="text-xs text-[var(--text-muted-soft)] mt-1 font-medium">Comma-separated</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+                <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
                   Project Type
                 </label>
                 <select
@@ -127,7 +127,7 @@ export default function FindTalentPage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+                <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
                   Timeline
                 </label>
                 <select
@@ -144,7 +144,7 @@ export default function FindTalentPage() {
             </div>
 
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
                 Budget Range
               </label>
               <select
@@ -179,15 +179,15 @@ export default function FindTalentPage() {
           className="w-10 h-10 flex items-center justify-center"
           style={{
             backgroundColor: "var(--accent)",
-            border: "2px solid #0F0F0F",
-            boxShadow: "3px 3px 0 #0F0F0F",
+            border: "2px solid var(--border-hard)",
+            boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
           <Bot size={20} className="text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-extrabold uppercase text-[#0F0F0F]">VibeFinder Results</h1>
-          <p className="text-sm text-[#52525B] font-medium">
+          <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">VibeFinder Results</h1>
+          <p className="text-sm text-[var(--text-secondary)] font-medium">
             Ranked matches for your project
           </p>
         </div>
@@ -200,10 +200,10 @@ export default function FindTalentPage() {
       {!thinking && matches.length > 0 && (
         <div className="space-y-4 mt-6">
           <div
-            className="p-4 text-sm font-bold text-[#0F0F0F]"
+            className="p-4 text-sm font-bold text-[var(--foreground)]"
             style={{
-              backgroundColor: "#FFF7ED",
-              border: "2px solid #0F0F0F",
+              backgroundColor: "var(--status-warning-bg)",
+              border: "2px solid var(--border-hard)",
             }}
           >
             <Bot size={14} className="inline mr-2 text-[var(--accent)]" />

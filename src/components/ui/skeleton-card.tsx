@@ -3,8 +3,8 @@ export function SkeletonCard() {
     <div
       className="p-5"
       style={{
-        backgroundColor: "#FFFFFF",
-        border: "2px solid #0F0F0F",
+        backgroundColor: "var(--bg-surface)",
+        border: "2px solid var(--border-hard)",
         boxShadow: "var(--shadow-brutal)",
       }}
     >
