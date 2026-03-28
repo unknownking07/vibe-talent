@@ -24,7 +24,25 @@ export interface Project {
   build_time: string | null;
   tags: string[];
   verified: boolean;
+  quality_score: number;
+  quality_metrics: RepoQualityData | null;
+  live_url_ok: boolean | null;
   created_at: string;
+}
+
+export interface RepoQualityData {
+  stars: number;
+  forks: number;
+  contributors: number;
+  total_commits: number;
+  has_tests: boolean;
+  has_ci: boolean;
+  has_readme: boolean;
+  community_score: number;
+  substance_score: number;
+  maintenance_score: number;
+  quality_score: number;
+  analyzed_at: string;
 }
 
 export interface StreakLog {
@@ -112,10 +130,13 @@ export interface Database {
       };
       projects: {
         Row: Project;
-        Insert: Omit<Project, "id" | "created_at" | "verified"> & {
+        Insert: Omit<Project, "id" | "created_at" | "verified" | "quality_score" | "quality_metrics" | "live_url_ok"> & {
           id?: string;
           created_at?: string;
           verified?: boolean;
+          quality_score?: number;
+          quality_metrics?: RepoQualityData | null;
+          live_url_ok?: boolean | null;
         };
         Update: Partial<Project>;
       };

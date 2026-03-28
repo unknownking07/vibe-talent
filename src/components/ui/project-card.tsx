@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ExternalLink, Github, Clock, Tag, Pencil, Flag, CheckCircle, ShieldCheck, Undo2, User } from "lucide-react";
+import { ExternalLink, Github, Clock, Tag, Pencil, Flag, CheckCircle, ShieldCheck, Undo2, User, Activity } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Project } from "@/lib/types/database";
@@ -123,6 +123,19 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
             <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600" title="Verified owner">
               <CheckCircle size={14} />
               Verified
+            </span>
+          )}
+          {project.quality_score > 0 && (
+            <span
+              className={`inline-flex items-center gap-1 text-xs font-bold ${
+                project.quality_score >= 70 ? "text-emerald-600" :
+                project.quality_score >= 40 ? "text-amber-600" :
+                "text-zinc-500"
+              }`}
+              title={`Quality Score: ${project.quality_score}/100 (Community: ${project.quality_metrics?.community_score ?? 0}, Substance: ${project.quality_metrics?.substance_score ?? 0}, Maintenance: ${project.quality_metrics?.maintenance_score ?? 0})`}
+            >
+              <Activity size={14} />
+              {project.quality_score}
             </span>
           )}
         </div>

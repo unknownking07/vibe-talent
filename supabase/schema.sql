@@ -165,7 +165,18 @@ BEGIN
       ELSE 'none'::badge_level
     END,
     vibe_score = (v_current_streak * 2) + (
-      (SELECT COUNT(*) FROM projects WHERE projects.user_id = p_user_id) * 5
+      -- Use sum of project quality scores instead of flat count
+      -- Verified projects with quality_score contribute their score / 10 (0-10 pts each)
+      -- Unverified projects contribute only 1 point each
+      COALESCE((
+        SELECT SUM(
+          CASE
+            WHEN verified = true AND quality_score > 0 THEN LEAST(quality_score / 10, 10)
+            WHEN verified = true THEN 5
+            ELSE 1
+          END
+        ) FROM projects WHERE projects.user_id = p_user_id AND flagged = false
+      ), 0)
     ) + CASE
       WHEN GREATEST(longest_streak, v_longest_streak) >= 365 THEN 40
       WHEN GREATEST(longest_streak, v_longest_streak) >= 180 THEN 30
@@ -271,6 +282,11 @@ CREATE INDEX IF NOT EXISTS idx_projects_flagged ON projects(flagged);
 
 -- Add verified column to projects (GitHub repo ownership verification)
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS verified BOOLEAN DEFAULT false;
+
+-- GitHub quality scoring columns on projects
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS quality_score INTEGER DEFAULT 0;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS quality_metrics JSONB;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS live_url_ok BOOLEAN;
 
 -- Add github_username column to users (populated from GitHub OAuth on login)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS github_username TEXT;

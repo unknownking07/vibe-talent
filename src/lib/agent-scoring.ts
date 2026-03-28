@@ -11,18 +11,35 @@ function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
     (user.streak * 0.6 + user.longest_streak * 0.4) / 3.65 * 10
   );
 
-  // Project Quality: verified projects weighted heavily, unverified penalized
+  // Project Quality: use GitHub quality scores when available, fallback to heuristics
   const verifiedProjects = user.projects.filter(p => p.verified);
   const unverifiedProjects = user.projects.filter(p => !p.verified);
   const withLiveUrl = verifiedProjects.filter(p => p.live_url).length;
   const withGithub = verifiedProjects.filter(p => p.github_url).length;
-  const avgDescLen = verifiedProjects.length > 0
-    ? verifiedProjects.reduce((sum, p) => sum + p.description.length, 0) / verifiedProjects.length
-    : 0;
-  const project_quality = clamp(0, 100,
-    verifiedProjects.length * 15 + unverifiedProjects.length * 2 +
-    withLiveUrl * 10 + withGithub * 5 + (avgDescLen > 50 ? 10 : 0)
-  );
+
+  // If projects have quality_score from GitHub analysis, use them directly
+  const scoredProjects = verifiedProjects.filter(p => p.quality_score > 0);
+  let project_quality: number;
+  if (scoredProjects.length > 0) {
+    // Average quality score of analyzed projects (weighted heavily)
+    const avgQuality = scoredProjects.reduce((sum, p) => sum + p.quality_score, 0) / scoredProjects.length;
+    // Bonus for quantity of quality projects + live URLs
+    const quantityBonus = Math.min(20, scoredProjects.length * 5);
+    const liveBonus = Math.min(15, withLiveUrl * 5);
+    const liveSiteOkBonus = verifiedProjects.filter(p => p.live_url_ok === true).length * 5;
+    project_quality = clamp(0, 100,
+      avgQuality * 0.6 + quantityBonus + liveBonus + liveSiteOkBonus + unverifiedProjects.length * 1
+    );
+  } else {
+    // Fallback: original heuristic scoring
+    const avgDescLen = verifiedProjects.length > 0
+      ? verifiedProjects.reduce((sum, p) => sum + p.description.length, 0) / verifiedProjects.length
+      : 0;
+    project_quality = clamp(0, 100,
+      verifiedProjects.length * 15 + unverifiedProjects.length * 2 +
+      withLiveUrl * 10 + withGithub * 5 + (avgDescLen > 50 ? 10 : 0)
+    );
+  }
 
   // Tech Breadth: unique technologies
   const allTech = new Set(user.projects.flatMap(p => p.tech_stack.map(t => t.toLowerCase())));
@@ -80,8 +97,14 @@ function extractStrengths(user: UserWithSocials, dims: EvaluationDimensions): st
   if (user.badge_level === "diamond") strengths.push("Diamond badge holder — top tier");
   else if (user.badge_level === "gold") strengths.push("Gold badge — proven consistency");
   const verifiedProjCount = user.projects.filter(p => p.verified).length;
-  if (verifiedProjCount >= 3) strengths.push(`${verifiedProjCount} verified shipped projects`);
+  const highQualityCount = user.projects.filter(p => p.quality_score >= 50).length;
+  if (highQualityCount >= 2) strengths.push(`${highQualityCount} high-quality verified projects`);
+  else if (verifiedProjCount >= 3) strengths.push(`${verifiedProjCount} verified shipped projects`);
   else if (user.projects.length >= 3) strengths.push(`${user.projects.length} shipped projects`);
+  const hasTests = user.projects.some(p => p.quality_metrics?.has_tests);
+  if (hasTests) strengths.push("Projects include test suites");
+  const hasCi = user.projects.some(p => p.quality_metrics?.has_ci);
+  if (hasCi) strengths.push("Uses CI/CD pipelines");
   if (dims.tech_breadth > 60) strengths.push("Diverse tech stack");
   if (user.projects.some(p => p.live_url)) strengths.push("Has live deployed projects");
   if (user.projects.some(p => p.github_url)) strengths.push("Open source contributor");
@@ -95,6 +118,8 @@ function extractRisks(user: UserWithSocials, dims: EvaluationDimensions): string
   const verifiedCount = user.projects.filter(p => p.verified).length;
   if (unverifiedCount > 0 && verifiedCount === 0) risks.push("No verified projects — ownership unconfirmed");
   else if (unverifiedCount > verifiedCount) risks.push(`${unverifiedCount} of ${user.projects.length} projects are unverified`);
+  const lowQualityCount = user.projects.filter(p => p.verified && p.quality_score > 0 && p.quality_score < 20).length;
+  if (lowQualityCount > 0) risks.push(`${lowQualityCount} project${lowQualityCount > 1 ? "s" : ""} scored low on quality analysis`);
   if (user.streak === 0) risks.push("Currently inactive — no active streak");
   if (user.projects.length < 2) risks.push("Limited project portfolio");
   if (!user.social_links?.telegram) risks.push("No Telegram for quick communication");

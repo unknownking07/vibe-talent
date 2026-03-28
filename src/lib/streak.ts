@@ -62,22 +62,55 @@ export function calculateStreak(activityDates: string[]): {
 }
 
 /**
- * Calculate vibe score based on streak and projects.
- * Formula: (Current Streak × 2) + (Verified Projects × 5) + (Unverified × 1) + (Badge Bonus)
- * Only verified projects get full points to prevent gaming with fake repos.
+ * Calculate vibe score based on streak and project quality.
+ *
+ * New formula uses actual GitHub quality scores instead of flat project count:
+ *   (Current Streak × 2)
+ * + (sum of per-project contribution based on quality_score)
+ * + Badge Bonus
+ *
+ * Per-project contribution:
+ *   - Verified with quality_score > 0: min(quality_score / 10, 10) points
+ *   - Verified without quality_score: 5 points
+ *   - Unverified: 1 point
+ *
+ * This means a single high-quality repo (score 80+) contributes 8-10 pts,
+ * while 10 empty repos only contribute 10 pts total.
  */
+export interface ProjectForScoring {
+  verified: boolean;
+  quality_score?: number;
+  flagged?: boolean;
+}
+
 export function calculateVibeScore(
   currentStreak: number,
   projectCount: number,
   badgeLevel: BadgeLevel,
-  verifiedCount?: number
+  verifiedCount?: number,
+  projects?: ProjectForScoring[]
 ): number {
   const streakPoints = currentStreak * 2;
 
-  // Verified projects get full 5 points, unverified only get 1 point
-  const verified = verifiedCount ?? projectCount;
-  const unverified = projectCount - verified;
-  const projectPoints = verified * 5 + unverified * 1;
+  let projectPoints: number;
+  if (projects && projects.length > 0) {
+    // New quality-based scoring
+    projectPoints = projects
+      .filter((p) => !p.flagged)
+      .reduce((sum, p) => {
+        if (p.verified && p.quality_score && p.quality_score > 0) {
+          return sum + Math.min(Math.floor(p.quality_score / 10), 10);
+        } else if (p.verified) {
+          return sum + 5;
+        }
+        return sum + 1;
+      }, 0);
+  } else {
+    // Fallback for callers without full project data
+    const verified = verifiedCount ?? projectCount;
+    const unverified = projectCount - verified;
+    projectPoints = verified * 5 + unverified * 1;
+  }
 
   const badgeBonusMap: Record<BadgeLevel, number> = {
     none: 0,

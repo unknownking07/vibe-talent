@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ExternalLink, Flag, CheckCircle, Undo2 } from "lucide-react";
+import { ExternalLink, Flag, CheckCircle, Undo2, Activity } from "lucide-react";
 import Image from "next/image";
 import type { Project } from "@/lib/types/database";
 
@@ -116,6 +116,19 @@ export function ProfileProjectCard({ project, verified = false }: ProfileProject
             <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600" title="Verified owner">
               <CheckCircle size={14} />
               Verified
+            </span>
+          )}
+          {project.quality_score > 0 && (
+            <span
+              className={`inline-flex items-center gap-1 text-xs font-bold ${
+                project.quality_score >= 70 ? "text-emerald-600" :
+                project.quality_score >= 40 ? "text-amber-600" :
+                "text-zinc-500"
+              }`}
+              title={`Quality Score: ${project.quality_score}/100`}
+            >
+              <Activity size={14} />
+              {project.quality_score}
             </span>
           )}
         </div>
