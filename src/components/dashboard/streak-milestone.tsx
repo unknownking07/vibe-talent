@@ -62,7 +62,6 @@ export function StreakMilestone({ streak }: StreakMilestoneProps) {
           className="text-2xl font-extrabold uppercase tracking-tight"
           style={{
             color: "var(--accent)",
-            WebkitTextStroke: "1px var(--border-hard)",
           }}
         >
           <Flame className="inline-block mr-2 -mt-1" size={24} />
