@@ -4,12 +4,13 @@ import { useMemo } from "react";
 
 interface ActivityHeatmapProps {
   data: Record<string, number>;
+  totalOverride?: number;
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
 
-export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
+export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
   const { weeks, monthLabels } = useMemo(() => {
     const result: { date: string; level: number; dayOfWeek: number }[][] = [];
     const today = new Date();
@@ -66,7 +67,7 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
     }
   };
 
-  const totalContributions = Object.values(data).reduce((sum, v) => sum + (v > 0 ? v : 0), 0);
+  const totalContributions = totalOverride ?? Object.values(data).reduce((sum, v) => sum + (v > 0 ? v : 0), 0);
 
   return (
     <div>

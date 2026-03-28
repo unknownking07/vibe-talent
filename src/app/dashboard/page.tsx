@@ -39,6 +39,7 @@ import {
 export default function DashboardPage() {
   const [user, setUser] = useState<UserWithSocials | null>(null);
   const [heatmapData, setHeatmapData] = useState<Record<string, number>>({});
+  const [ghTotal, setGhTotal] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [hireRequests, setHireRequests] = useState<HireRequest[]>([]);
 
@@ -166,6 +167,9 @@ export default function DashboardPage() {
         fetch("/api/github/contributions")
           .then(res => res.json())
           .then(ghData => {
+            if (ghData.total) {
+              setGhTotal(ghData.total);
+            }
             if (ghData.contributions && Object.keys(ghData.contributions).length > 0) {
               setHeatmapData(prev => {
                 // Merge: GitHub contributions as base, streak_logs overlay
@@ -762,8 +766,8 @@ export default function DashboardPage() {
           onClick={() => setActiveTab("overview")}
           className="px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide transition-all"
           style={{
-            backgroundColor: activeTab === "overview" ? "var(--bg-inverted)" : "var(--bg-surface)",
-            color: activeTab === "overview" ? "var(--background)" : "var(--foreground)",
+            backgroundColor: activeTab === "overview" ? "var(--accent)" : "var(--bg-surface)",
+            color: activeTab === "overview" ? "#FFFFFF" : "var(--foreground)",
             border: "2px solid var(--border-hard)",
             boxShadow: activeTab === "overview" ? "none" : "4px 4px 0 #000",
           }}
@@ -774,8 +778,8 @@ export default function DashboardPage() {
           onClick={() => { setActiveTab("inbox"); if (user) loadInbox(); }}
           className="px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide transition-all flex items-center gap-2"
           style={{
-            backgroundColor: activeTab === "inbox" ? "var(--bg-inverted)" : "var(--bg-surface)",
-            color: activeTab === "inbox" ? "var(--background)" : "var(--foreground)",
+            backgroundColor: activeTab === "inbox" ? "var(--accent)" : "var(--bg-surface)",
+            color: activeTab === "inbox" ? "#FFFFFF" : "var(--foreground)",
             border: "2px solid var(--border-hard)",
             boxShadow: activeTab === "inbox" ? "none" : "4px 4px 0 #000",
           }}
@@ -962,7 +966,7 @@ export default function DashboardPage() {
         }}
       >
         <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">Your Activity</h2>
-        <ActivityHeatmap data={heatmapData} />
+        <ActivityHeatmap data={heatmapData} totalOverride={ghTotal > 0 ? ghTotal : undefined} />
       </div>
 
       {/* Embeddable Badge for GitHub */}
@@ -1054,7 +1058,7 @@ export default function DashboardPage() {
         {showVerifyGuide && (
           <div
             className="mb-4 p-4 relative"
-            style={{ backgroundColor: "#FFFBEB", border: "2px solid var(--border-hard)" }}
+            style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}
           >
             <button
               onClick={() => setShowVerifyGuide(false)}
