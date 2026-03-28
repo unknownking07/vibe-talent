@@ -32,9 +32,9 @@ export function TestimonialScroll() {
             rel="noopener noreferrer"
             className="flex-shrink-0 w-[420px] p-7 flex flex-col gap-4 transition-all hover:translate-y-[-2px]"
             style={{
-              backgroundColor: "#FFFFFF",
-              border: "2px solid #0F0F0F",
-              boxShadow: "4px 4px 0 #0F0F0F",
+              backgroundColor: "var(--bg-surface)",
+              border: "2px solid var(--border-hard)",
+              boxShadow: "var(--shadow-brutal-sm)",
             }}
           >
             <div className="flex items-center gap-3">
@@ -45,7 +45,7 @@ export function TestimonialScroll() {
                 width={48}
                 height={48}
                 className="w-[48px] h-[48px] shrink-0 object-cover rounded-sm"
-                style={{ border: "2px solid #0F0F0F" }}
+                style={{ border: "2px solid var(--border-hard)" }}
                 onError={(e) => {
                   const el = e.currentTarget;
                   el.style.display = "none";
@@ -55,17 +55,17 @@ export function TestimonialScroll() {
               />
               <div
                 className="w-[48px] h-[48px] items-center justify-center text-sm font-extrabold text-white shrink-0 hidden"
-                style={{ backgroundColor: "#0F0F0F" }}
+                style={{ backgroundColor: "var(--bg-inverted)" }}
               >
                 {t.name.slice(0, 2).toUpperCase()}
               </div>
               <div className="min-w-0">
-                <div className="text-sm font-extrabold text-[#0F0F0F] truncate">{t.name}</div>
-                <div className="text-xs font-medium text-[#71717A] truncate">{t.handle}</div>
+                <div className="text-sm font-extrabold text-[var(--foreground)] truncate">{t.name}</div>
+                <div className="text-xs font-medium text-[var(--text-muted)] truncate">{t.handle}</div>
               </div>
-              <svg aria-hidden="true" className="ml-auto shrink-0 text-[#71717A]" width={14} height={14} viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              <svg aria-hidden="true" className="ml-auto shrink-0 text-[var(--text-muted)]" width={14} height={14} viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             </div>
-            <p className="text-base text-[#3F3F46] font-medium leading-relaxed line-clamp-3">
+            <p className="text-base text-[var(--text-tertiary)] font-medium leading-relaxed line-clamp-3">
               &ldquo;{t.text}&rdquo;
             </p>
           </a>

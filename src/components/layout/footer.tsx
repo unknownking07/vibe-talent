@@ -5,8 +5,8 @@ export function Footer() {
   return (
     <footer
       style={{
-        backgroundColor: "#FFFFFF",
-        borderTop: "2px solid #0F0F0F",
+        backgroundColor: "var(--bg-surface)",
+        borderTop: "2px solid var(--border-hard)",
       }}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
@@ -17,33 +17,33 @@ export function Footer() {
                 className="flex h-9 w-9 items-center justify-center"
                 style={{
                   backgroundColor: "var(--accent)",
-                  border: "2px solid #0F0F0F",
-                  boxShadow: "3px 3px 0 #0F0F0F",
+                  border: "2px solid var(--border-hard)",
+                  boxShadow: "var(--shadow-brutal-sm)",
                 }}
               >
                 <Flame size={18} className="text-white" />
               </div>
-              <span className="text-lg font-extrabold uppercase tracking-tight text-[#0F0F0F]">
+              <span className="text-lg font-extrabold uppercase tracking-tight" style={{ color: "var(--foreground)" }}>
                 VibeTalent
               </span>
             </div>
-            <p className="text-sm text-[#52525B] max-w-md font-medium">
+            <p className="text-sm max-w-md font-medium" style={{ color: "var(--text-muted)" }}>
               The marketplace for vibe coders who actually ship. Build your reputation through consistency and proof of work.
             </p>
           </div>
           <div>
-            <h4 className="text-sm font-extrabold uppercase tracking-wide text-[#0F0F0F] mb-3">Platform</h4>
+            <h4 className="text-sm font-extrabold uppercase tracking-wide mb-3" style={{ color: "var(--foreground)" }}>Platform</h4>
             <div className="flex flex-col gap-2">
-              <Link href="/explore" className="text-sm font-semibold text-[#52525B] hover:text-[var(--accent)] transition-colors">Explore</Link>
-              <Link href="/leaderboard" className="text-sm font-semibold text-[#52525B] hover:text-[var(--accent)] transition-colors">Leaderboard</Link>
-              <Link href="/dashboard" className="text-sm font-semibold text-[#52525B] hover:text-[var(--accent)] transition-colors">Dashboard</Link>
-              <a href="https://vibe-talent.gitbook.io/untitled" target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-[#52525B] hover:text-[var(--accent)] transition-colors">Docs</a>
+              <Link href="/explore" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Explore</Link>
+              <Link href="/leaderboard" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Leaderboard</Link>
+              <Link href="/dashboard" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Dashboard</Link>
+              <a href="https://vibe-talent.gitbook.io/untitled" target="_blank" rel="noopener noreferrer" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Docs</a>
             </div>
           </div>
         </div>
         <div
-          className="mt-10 pt-6 text-center text-xs font-bold uppercase tracking-wider text-[#71717A]"
-          style={{ borderTop: "2px solid #0F0F0F" }}
+          className="mt-10 pt-6 text-center text-xs font-bold uppercase tracking-wider"
+          style={{ borderTop: "2px solid var(--border-hard)", color: "var(--text-muted)" }}
         >
           &copy; {new Date().getFullYear()} VibeTalent. Ship or miss.
           <span className="block mt-1">

@@ -33,7 +33,9 @@ Clients can use the AI agent to describe their project, and the agent recommends
 | **Active streak** | You're currently coding — not dormant |
 | **Badge level** | You've sustained effort over months |
 | **Verified projects** | You actually built what you claim |
+| **High quality scores** | Your repos have tests, CI, community engagement |
 | **Live demos** | Clients can see your work right now |
+| **Peer endorsements** | Other developers vouch for your work |
 | **5-star reviews** | Other clients trust you |
 | **Complete profile** | You're professional and serious |
 

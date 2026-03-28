@@ -62,10 +62,10 @@ export default async function HomePage() {
       <section className="relative">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-24 pb-20 text-center">
           <div
-            className="inline-flex items-center gap-2 px-4 py-1.5 text-sm font-bold uppercase tracking-wide text-[#0F0F0F] mb-8"
+            className="inline-flex items-center gap-2 px-4 py-1.5 text-sm font-bold uppercase tracking-wide text-[var(--foreground)] mb-8"
             style={{
-              backgroundColor: "#FFFFFF",
-              border: "2px solid #0F0F0F",
+              backgroundColor: "var(--bg-surface)",
+              border: "2px solid var(--border-hard)",
               boxShadow: "var(--shadow-brutal-sm)",
             }}
           >
@@ -73,7 +73,7 @@ export default async function HomePage() {
             <span>The vibecoders marketplace</span>
           </div>
 
-          <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight uppercase text-[#0F0F0F]">
+          <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight uppercase text-[var(--foreground)]">
             Find Vibe Coders Who
             <br />
             <span className="text-accent-brutal">
@@ -81,7 +81,7 @@ export default async function HomePage() {
             </span>
           </h1>
 
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-[#52525B] font-medium">
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-[var(--text-secondary)] font-medium">
             A marketplace built on consistency and proof of work. No resumes. No portfolios.
             Just streaks, shipped projects, and vibe scores.
           </p>
@@ -108,14 +108,14 @@ export default async function HomePage() {
                 key={stat.label}
                 className="text-center p-4"
                 style={{
-                  backgroundColor: "#FFFFFF",
-                  border: "2px solid #0F0F0F",
+                  backgroundColor: "var(--bg-surface)",
+                  border: "2px solid var(--border-hard)",
                   boxShadow: "var(--shadow-brutal-sm)",
                 }}
               >
                 <stat.icon size={20} className="mx-auto text-[var(--accent)] mb-2" />
-                <div className="text-2xl font-extrabold text-[#0F0F0F] font-mono">{stat.value}</div>
-                <div className="text-xs font-bold uppercase tracking-wide text-[#71717A] mt-1">{stat.label}</div>
+                <div className="text-2xl font-extrabold text-[var(--foreground)] font-mono">{stat.value}</div>
+                <div className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mt-1">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -125,8 +125,8 @@ export default async function HomePage() {
       {/* What is Vibe Coding */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-extrabold uppercase text-[#0F0F0F]">What is Vibe Coding?</h2>
-          <p className="mt-3 text-[#52525B] font-medium max-w-2xl mx-auto">
+          <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">What is Vibe Coding?</h2>
+          <p className="mt-3 text-[var(--text-secondary)] font-medium max-w-2xl mx-auto">
             Vibe coding is the art of building software in flow state — shipping fast,
             staying consistent, and letting the code speak for itself.
           </p>
@@ -152,11 +152,11 @@ export default async function HomePage() {
           ].map((item) => (
             <div
               key={item.title}
-              className="card-brutal p-6 transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#0F0F0F]"
+              className="card-brutal p-6 transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
             >
               <item.icon size={28} className="text-[var(--accent)]" />
-              <h3 className="mt-4 text-lg font-extrabold uppercase text-[#0F0F0F]">{item.title}</h3>
-              <p className="mt-2 text-sm text-[#52525B] font-medium">{item.description}</p>
+              <h3 className="mt-4 text-lg font-extrabold uppercase text-[var(--foreground)]">{item.title}</h3>
+              <p className="mt-2 text-sm text-[var(--text-secondary)] font-medium">{item.description}</p>
             </div>
           ))}
         </div>
@@ -165,16 +165,16 @@ export default async function HomePage() {
       {/* Why Streaks Matter */}
       <section
         style={{
-          borderTop: "2px solid #0F0F0F",
-          borderBottom: "2px solid #0F0F0F",
-          backgroundColor: "#FFFFFF",
+          borderTop: "2px solid var(--border-hard)",
+          borderBottom: "2px solid var(--border-hard)",
+          backgroundColor: "var(--bg-surface)",
         }}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
           <div className="grid sm:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl font-extrabold uppercase text-[#0F0F0F]">Why Streaks Matter</h2>
-              <p className="mt-4 text-[#52525B] font-medium leading-relaxed">
+              <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">Why Streaks Matter</h2>
+              <p className="mt-4 text-[var(--text-secondary)] font-medium leading-relaxed">
                 Anyone can build a portfolio in a weekend. But maintaining a 90-day coding streak?
                 That takes real dedication. Streaks prove you are not just talented — you are consistent.
               </p>
@@ -188,9 +188,9 @@ export default async function HomePage() {
                   <div key={point} className="flex items-center gap-3">
                     <div
                       className="h-3 w-3 shrink-0"
-                      style={{ backgroundColor: "var(--accent)", border: "1px solid #0F0F0F" }}
+                      style={{ backgroundColor: "var(--accent)", border: "1px solid var(--border-hard)" }}
                     />
-                    <span className="text-sm font-semibold text-[#0F0F0F]">{point}</span>
+                    <span className="text-sm font-semibold text-[var(--foreground)]">{point}</span>
                   </div>
                 ))}
               </div>
@@ -198,18 +198,18 @@ export default async function HomePage() {
             <div className="space-y-4">
               {[
                 { label: "Bronze Badge", days: 30, color: "#D97706", width: "8%" },
-                { label: "Silver Badge", days: 90, color: "#71717A", width: "25%" },
+                { label: "Silver Badge", days: 90, color: "var(--text-muted)", width: "25%" },
                 { label: "Gold Badge", days: 180, color: "#CA8A04", width: "50%" },
                 { label: "Diamond Badge", days: 365, color: "#0891B2", width: "100%" },
               ].map((badge) => (
                 <div key={badge.label}>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="font-bold text-[#0F0F0F] uppercase">{badge.label}</span>
-                    <span className="font-bold text-[#71717A]">{badge.days} days</span>
+                    <span className="font-bold text-[var(--foreground)] uppercase">{badge.label}</span>
+                    <span className="font-bold text-[var(--text-muted)]">{badge.days} days</span>
                   </div>
                   <div
                     className="h-4"
-                    style={{ backgroundColor: "#E5E5E5", border: "2px solid #0F0F0F" }}
+                    style={{ backgroundColor: "var(--border-subtle)", border: "2px solid var(--border-hard)" }}
                   >
                     <div
                       className="h-full"
@@ -227,8 +227,8 @@ export default async function HomePage() {
       <section className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-3xl font-extrabold uppercase text-[#0F0F0F]">Top Talent</h2>
-            <p className="mt-2 text-[#52525B] font-medium">The most consistent builders on the platform</p>
+            <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">Top Talent</h2>
+            <p className="mt-2 text-[var(--text-secondary)] font-medium">The most consistent builders on the platform</p>
           </div>
           <Link
             href="/leaderboard"
@@ -246,7 +246,7 @@ export default async function HomePage() {
           </div>
         ) : (
           <div className="card-brutal p-8 text-center">
-            <p className="text-[#52525B] font-bold uppercase">No builders yet. Be the first to join!</p>
+            <p className="text-[var(--text-secondary)] font-bold uppercase">No builders yet. Be the first to join!</p>
           </div>
         )}
       </section>
@@ -254,15 +254,15 @@ export default async function HomePage() {
       {/* Featured Projects */}
       <section
         style={{
-          borderTop: "2px solid #0F0F0F",
-          backgroundColor: "#FFFFFF",
+          borderTop: "2px solid var(--border-hard)",
+          backgroundColor: "var(--bg-surface)",
         }}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-3xl font-extrabold uppercase text-[#0F0F0F]">Featured Projects</h2>
-              <p className="mt-2 text-[#52525B] font-medium">Built by vibe coders, shipped fast</p>
+              <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">Featured Projects</h2>
+              <p className="mt-2 text-[var(--text-secondary)] font-medium">Built by vibe coders, shipped fast</p>
             </div>
             <Link
               href="/explore"
@@ -281,7 +281,7 @@ export default async function HomePage() {
             </div>
           ) : (
             <div className="card-brutal p-8 text-center">
-              <p className="text-[#52525B] font-bold uppercase">No projects shipped yet. Start building!</p>
+              <p className="text-[var(--text-secondary)] font-bold uppercase">No projects shipped yet. Start building!</p>
             </div>
           )}
         </div>
@@ -290,14 +290,14 @@ export default async function HomePage() {
       {/* Testimonials */}
       <section
         style={{
-          borderTop: "2px solid #0F0F0F",
-          backgroundColor: "#F5F5F5",
+          borderTop: "2px solid var(--border-hard)",
+          backgroundColor: "var(--bg-surface-light)",
         }}
       >
         <div className="py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 mb-8">
-            <h2 className="text-3xl font-extrabold uppercase text-[#0F0F0F]">What People Say</h2>
-            <p className="mt-2 text-[#52525B] font-medium">Real feedback from the community on X</p>
+            <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">What People Say</h2>
+            <p className="mt-2 text-[var(--text-secondary)] font-medium">Real feedback from the community on X</p>
           </div>
           <TestimonialScroll />
         </div>
@@ -308,8 +308,8 @@ export default async function HomePage() {
         <div
           className="p-12 text-center"
           style={{
-            backgroundColor: "#0F0F0F",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--bg-inverted)",
+            border: "2px solid var(--border-hard)",
             boxShadow: "8px 8px 0 var(--accent)",
           }}
         >
@@ -321,7 +321,7 @@ export default async function HomePage() {
           </p>
           <HeroCTA
             className="mt-8 inline-flex"
-            style={{ boxShadow: "6px 6px 0 #FFFFFF" }}
+            style={{ boxShadow: "6px 6px 0 var(--background)" }}
           />
         </div>
       </section>

@@ -34,7 +34,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-md">
         <Link
           href="/auth/login"
-          className="inline-flex items-center gap-2 text-sm font-bold uppercase text-[#71717A] hover:text-[var(--accent)] mb-6"
+          className="inline-flex items-center gap-2 text-sm font-bold uppercase text-[var(--text-muted)] hover:text-[var(--accent)] mb-6"
         >
           <ArrowLeft size={14} />
           Back to Login
@@ -43,8 +43,8 @@ export default function ForgotPasswordPage() {
         <div
           className="p-8"
           style={{
-            backgroundColor: "#FFFFFF",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--bg-surface)",
+            border: "2px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
@@ -54,13 +54,13 @@ export default function ForgotPasswordPage() {
                 className="inline-flex items-center justify-center w-16 h-16 mb-4"
                 style={{
                   backgroundColor: "#D1FAE5",
-                  border: "2px solid #0F0F0F",
+                  border: "2px solid var(--border-hard)",
                 }}
               >
                 <Check size={32} className="text-emerald-700" />
               </div>
-              <h1 className="text-2xl font-extrabold uppercase text-[#0F0F0F]">Check Your Email</h1>
-              <p className="mt-3 text-sm text-[#52525B] font-medium">
+              <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Check Your Email</h1>
+              <p className="mt-3 text-sm text-[var(--text-secondary)] font-medium">
                 We sent a password reset link to <strong>{email}</strong>. Click the link to set a new password.
               </p>
               <Link href="/auth/login" className="btn-brutal btn-brutal-secondary text-sm mt-6 inline-flex">
@@ -73,14 +73,14 @@ export default function ForgotPasswordPage() {
                 <div
                   className="inline-flex items-center justify-center w-16 h-16 mb-4"
                   style={{
-                    backgroundColor: "#FFF7ED",
-                    border: "2px solid #0F0F0F",
+                    backgroundColor: "var(--status-warning-bg)",
+                    border: "2px solid var(--border-hard)",
                   }}
                 >
                   <Mail size={32} className="text-[var(--accent)]" />
                 </div>
-                <h1 className="text-2xl font-extrabold uppercase text-[#0F0F0F]">Forgot Password</h1>
-                <p className="mt-2 text-sm text-[#52525B] font-medium">
+                <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Forgot Password</h1>
+                <p className="mt-2 text-sm text-[var(--text-secondary)] font-medium">
                   Enter your email and we&apos;ll send you a reset link
                 </p>
               </div>
@@ -88,7 +88,7 @@ export default function ForgotPasswordPage() {
               {error && (
                 <div
                   className="p-3 mb-4 text-sm font-bold text-red-800"
-                  style={{ backgroundColor: "#FEE2E2", border: "2px solid #0F0F0F" }}
+                  style={{ backgroundColor: "var(--status-error-border)", border: "2px solid var(--border-hard)" }}
                 >
                   {error}
                 </div>
@@ -96,7 +96,7 @@ export default function ForgotPasswordPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+                  <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
                     Email Address
                   </label>
                   <input

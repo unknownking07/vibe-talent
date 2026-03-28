@@ -280,7 +280,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
             <button
               onClick={() => setShowForm(true)}
               className="btn-brutal text-xs py-1.5 px-3"
-              style={{ backgroundColor: "var(--accent)", color: "#FFFFFF" }}
+              style={{ backgroundColor: "var(--accent)", color: "var(--text-on-inverted)" }}
             >
               Write a Review
             </button>
@@ -292,7 +292,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
       {submitSuccess && (
         <div
           className="p-3 mb-4 text-sm font-bold text-emerald-800"
-          style={{ backgroundColor: "#D1FAE5", border: "2px solid #0F0F0F" }}
+          style={{ backgroundColor: "#D1FAE5", border: "2px solid var(--border-hard)" }}
         >
           Thanks for your review!
         </div>
@@ -302,10 +302,10 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
       {showForm && (
         <div
           className="mb-6 p-5 space-y-4"
-          style={{ backgroundColor: "#FAFAFA", border: "2px solid #0F0F0F" }}
+          style={{ backgroundColor: "var(--bg-surface-light)", border: "2px solid var(--border-hard)" }}
         >
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-extrabold uppercase text-[#0F0F0F]">
+            <h4 className="text-sm font-extrabold uppercase text-[var(--foreground)]">
               Write a Review
             </h4>
             <button
@@ -318,7 +318,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
 
           {/* Star selection */}
           <div>
-            <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-2 block">
+            <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-2 block">
               Rating *
             </label>
             <ClickableStars rating={formRating} onRate={setFormRating} />
@@ -327,7 +327,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
           {/* Name (auto-filled if logged in) */}
           {isLoggedIn ? (
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
                 Reviewing as
               </label>
               <div className="input-brutal w-full bg-zinc-100 text-zinc-700 cursor-default">
@@ -337,7 +337,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
           ) : (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+                <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
                   Your Name *
                 </label>
                 <input
@@ -349,7 +349,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
                 />
               </div>
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+                <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
                   Email *
                 </label>
                 <input
@@ -365,7 +365,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
 
           {/* Comment */}
           <div>
-            <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+            <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
               Comment (optional)
             </label>
             <textarea
@@ -381,8 +381,8 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
           {/* Error */}
           {submitError && (
             <div
-              className="p-3 text-sm font-bold text-[#991B1B]"
-              style={{ backgroundColor: "#FEF2F2", border: "2px solid #0F0F0F" }}
+              className="p-3 text-sm font-bold text-[var(--status-error-text)]"
+              style={{ backgroundColor: "var(--status-error-bg)", border: "2px solid var(--border-hard)" }}
             >
               {submitError}
             </div>
@@ -440,7 +440,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
               {deleteId === review.id && (
                 <div
                   className="mt-3 p-3 space-y-2"
-                  style={{ backgroundColor: "#FEF2F2", border: "2px solid #0F0F0F" }}
+                  style={{ backgroundColor: "var(--status-error-bg)", border: "2px solid var(--border-hard)" }}
                 >
                   <p className="text-xs font-bold text-zinc-700">
                     Enter the email you used when writing this review to confirm deletion:

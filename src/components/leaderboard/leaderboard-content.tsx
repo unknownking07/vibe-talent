@@ -64,7 +64,7 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
       <div className="flex justify-center mb-10">
         <div
           className="inline-flex gap-0"
-          style={{ border: "2px solid #0F0F0F" }}
+          style={{ border: "2px solid var(--border-hard)" }}
         >
           {tabs.map((tab) => (
             <button
@@ -72,9 +72,9 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
               onClick={() => setActiveTab(tab.id)}
               className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold uppercase tracking-wide transition-colors"
               style={{
-                backgroundColor: activeTab === tab.id ? "var(--accent)" : "#FFFFFF",
-                color: activeTab === tab.id ? "#FFFFFF" : "#0F0F0F",
-                borderRight: "2px solid #0F0F0F",
+                backgroundColor: activeTab === tab.id ? "var(--accent)" : "var(--bg-surface)",
+                color: activeTab === tab.id ? "var(--background)" : "var(--foreground)",
+                borderRight: "2px solid var(--border-hard)",
               }}
             >
               <tab.icon size={16} />
@@ -101,8 +101,8 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                 isFirst ? "order-2" : rank === 2 ? "order-1" : "order-3"
               }`}
               style={{
-                backgroundColor: "#FFFFFF",
-                border: "2px solid #0F0F0F",
+                backgroundColor: "var(--bg-surface)",
+                border: "2px solid var(--border-hard)",
                 boxShadow: isFirst ? "var(--shadow-brutal-accent)" : "var(--shadow-brutal)",
                 transform: isFirst ? "translateY(-16px)" : undefined,
               }}
@@ -112,8 +112,8 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                   isFirst ? "h-16 w-16 text-lg" : "h-12 w-12 text-sm"
                 }`}
                 style={{
-                  backgroundColor: isFirst ? "var(--accent)" : "#0F0F0F",
-                  border: "2px solid #0F0F0F",
+                  backgroundColor: isFirst ? "var(--accent)" : "var(--bg-inverted)",
+                  border: "2px solid var(--border-hard)",
                 }}
               >
                 {user.avatar_url ? (
@@ -122,8 +122,8 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                   initials
                 )}
               </div>
-              <div className="text-xs font-extrabold text-[#71717A] mb-1 uppercase">#{rank}</div>
-              <div className="font-extrabold text-[#0F0F0F] text-sm uppercase">@{user.username}</div>
+              <div className="text-xs font-extrabold text-[var(--text-muted)] mb-1 uppercase">#{rank}</div>
+              <div className="font-extrabold text-[var(--foreground)] text-sm uppercase">@{user.username}</div>
               <div className="mt-2">
                 <BadgeDisplay level={user.badge_level} size="sm" />
               </div>
@@ -140,13 +140,13 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
       <div
         className="overflow-x-auto"
         style={{
-          border: "2px solid #0F0F0F",
+          border: "2px solid var(--border-hard)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
         <table className="w-full min-w-[500px]">
           <thead>
-            <tr style={{ backgroundColor: "#0F0F0F" }}>
+            <tr style={{ backgroundColor: "var(--bg-inverted)" }}>
               <th className="px-3 sm:px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-white">Rank</th>
               <th className="px-3 sm:px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-white">Builder</th>
               <th className="px-3 sm:px-4 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-white">Vibe Score</th>
@@ -162,18 +162,18 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
               return (
                 <tr
                   key={user.id}
-                  className="transition-colors hover:bg-[#F5F5F5]"
+                  className="transition-colors hover:bg-[var(--bg-surface-light)]"
                   style={{
-                    backgroundColor: "#FFFFFF",
-                    borderBottom: "2px solid #0F0F0F",
+                    backgroundColor: "var(--bg-surface)",
+                    borderBottom: "2px solid var(--border-hard)",
                   }}
                 >
-                  <td className="px-3 sm:px-4 py-3 text-sm font-extrabold font-mono text-[#71717A]">#{rank}</td>
+                  <td className="px-3 sm:px-4 py-3 text-sm font-extrabold font-mono text-[var(--text-muted)]">#{rank}</td>
                   <td className="px-3 sm:px-4 py-3">
                     <Link href={`/profile/${user.username}`} className="flex items-center gap-3 hover:text-[var(--accent)] transition-colors">
                       <div
                         className="flex h-8 w-8 items-center justify-center text-xs font-extrabold text-white shrink-0 overflow-hidden"
-                        style={{ backgroundColor: "#0F0F0F", border: "2px solid #0F0F0F" }}
+                        style={{ backgroundColor: "var(--bg-inverted)", border: "2px solid var(--border-hard)" }}
                       >
                         {user.avatar_url ? (
                           <Image src={user.avatar_url} alt={user.username} width={64} height={64} className="w-full h-full object-cover" />
@@ -190,7 +190,7 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                   <td className="px-3 sm:px-4 py-3 text-right hidden sm:table-cell">
                     <StreakCounter streak={user.streak} size="sm" />
                   </td>
-                  <td className="px-3 sm:px-4 py-3 text-right text-sm font-bold text-[#52525B] hidden sm:table-cell">
+                  <td className="px-3 sm:px-4 py-3 text-right text-sm font-bold text-[var(--text-secondary)] hidden sm:table-cell">
                     {user.projects.length}
                   </td>
                   <td className="px-3 sm:px-4 py-3 text-right">
@@ -206,7 +206,7 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
       {/* Results count + Pagination */}
       {sortedUsers.length > PAGE_SIZE && (
         <>
-          <p className="mt-4 text-sm font-bold uppercase tracking-wide text-[#71717A] text-center">
+          <p className="mt-4 text-sm font-bold uppercase tracking-wide text-[var(--text-muted)] text-center">
             Showing {(activePage - 1) * PAGE_SIZE + 1}–{Math.min(activePage * PAGE_SIZE, sortedUsers.length)} of {sortedUsers.length} builders
           </p>
           {totalPages > 1 && (
@@ -216,8 +216,8 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                 disabled={activePage === 1}
                 className="flex items-center justify-center w-10 h-10 font-extrabold uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 style={{
-                  backgroundColor: "#FFFFFF",
-                  border: "2px solid #0F0F0F",
+                  backgroundColor: "var(--bg-surface)",
+                  border: "2px solid var(--border-hard)",
                   boxShadow: "var(--shadow-brutal-sm)",
                 }}
               >
@@ -229,9 +229,9 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                   onClick={() => goToPage(page)}
                   className="flex items-center justify-center w-10 h-10 text-sm font-extrabold uppercase transition-all"
                   style={{
-                    backgroundColor: activePage === page ? "#0F0F0F" : "#FFFFFF",
-                    color: activePage === page ? "#FFFFFF" : "#0F0F0F",
-                    border: "2px solid #0F0F0F",
+                    backgroundColor: activePage === page ? "var(--accent)" : "var(--bg-surface)",
+                    color: activePage === page ? "#FFFFFF" : "var(--foreground)",
+                    border: "2px solid var(--border-hard)",
                     boxShadow: activePage === page ? "none" : "var(--shadow-brutal-sm)",
                   }}
                 >
@@ -243,8 +243,8 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                 disabled={activePage === totalPages}
                 className="flex items-center justify-center w-10 h-10 font-extrabold uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 style={{
-                  backgroundColor: "#FFFFFF",
-                  border: "2px solid #0F0F0F",
+                  backgroundColor: "var(--bg-surface)",
+                  border: "2px solid var(--border-hard)",
                   boxShadow: "var(--shadow-brutal-sm)",
                 }}
               >

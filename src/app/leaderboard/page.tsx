@@ -33,15 +33,15 @@ export default async function LeaderboardPage() {
         <div
           className="inline-flex items-center justify-center w-16 h-16 mb-4"
           style={{
-            backgroundColor: "#FEF9C3",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--status-warning-bg)",
+            border: "2px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
           <Trophy size={32} className="text-[#CA8A04]" />
         </div>
-        <h1 className="text-3xl font-extrabold uppercase text-[#0F0F0F]">Leaderboard</h1>
-        <p className="mt-2 text-[#52525B] font-medium">The most consistent builders on the platform</p>
+        <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">Leaderboard</h1>
+        <p className="mt-2 text-[var(--text-secondary)] font-medium">The most consistent builders on the platform</p>
       </div>
 
       <LeaderboardContent users={users} />

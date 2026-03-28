@@ -214,7 +214,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
-        <h1 className="text-3xl font-extrabold uppercase text-[#0F0F0F] mb-8">Settings</h1>
+        <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-8">Settings</h1>
         <div className="space-y-6">
           {[1, 2, 3].map((i) => <div key={i} className="skeleton h-32" />)}
         </div>
@@ -225,32 +225,32 @@ export default function SettingsPage() {
   if (!user) {
     return (
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12 text-center">
-        <h1 className="text-3xl font-extrabold uppercase text-[#0F0F0F] mb-4">Settings</h1>
-        <p className="text-[#52525B] font-medium">Please sign in to view your settings.</p>
+        <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-4">Settings</h1>
+        <p className="text-[var(--text-secondary)] font-medium">Please sign in to view your settings.</p>
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
-      <h1 className="text-3xl font-extrabold uppercase text-[#0F0F0F] mb-8">Settings</h1>
+      <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-8">Settings</h1>
 
       {/* Edit Profile */}
       <div
         className="p-6 mb-8"
         style={{
-          backgroundColor: "#FFFFFF",
-          border: "2px solid #0F0F0F",
+          backgroundColor: "var(--bg-surface)",
+          border: "2px solid var(--border-hard)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        <h2 className="text-lg font-extrabold uppercase text-[#0F0F0F] mb-4">Edit Profile</h2>
+        <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">Edit Profile</h2>
         <div className="space-y-4">
           {/* Avatar Upload */}
           <div className="flex items-center gap-4">
             <div
               className="relative w-20 h-20 flex items-center justify-center text-2xl font-extrabold text-white cursor-pointer group"
-              style={{ backgroundColor: "#0F0F0F", border: "2px solid #0F0F0F" }}
+              style={{ backgroundColor: "var(--bg-inverted)", border: "2px solid var(--border-hard)" }}
               onClick={() => avatarInputRef.current?.click()}
             >
               {user.avatar_url ? (
@@ -270,7 +270,7 @@ export default function SettingsPage() {
               >
                 {uploadingAvatar ? "Uploading..." : "Change Avatar"}
               </button>
-              <p className="text-xs text-[#71717A] mt-1">JPG, PNG. Max 2MB.</p>
+              <p className="text-xs text-[var(--text-muted)] mt-1">JPG, PNG. Max 2MB.</p>
             </div>
             <input
               ref={avatarInputRef}
@@ -281,7 +281,7 @@ export default function SettingsPage() {
             />
           </div>
           <div>
-            <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Username</label>
+            <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Username</label>
             <input
               type="text"
               value={profileForm.username}
@@ -290,7 +290,7 @@ export default function SettingsPage() {
             />
           </div>
           <div>
-            <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Bio</label>
+            <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Bio</label>
             <textarea
               value={profileForm.bio}
               onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
@@ -300,9 +300,9 @@ export default function SettingsPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">X (Twitter)</label>
+              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">X (Twitter)</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] font-bold text-sm select-none">@</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted-soft)] font-bold text-sm select-none">@</span>
                 <input
                   type="text"
                   value={profileForm.twitter}
@@ -314,9 +314,9 @@ export default function SettingsPage() {
               </div>
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">GitHub</label>
+              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">GitHub</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] font-bold text-sm select-none">@</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted-soft)] font-bold text-sm select-none">@</span>
                 <input
                   type="text"
                   value={profileForm.github}
@@ -328,9 +328,9 @@ export default function SettingsPage() {
               </div>
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Telegram</label>
+              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Telegram</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA] font-bold text-sm select-none">@</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted-soft)] font-bold text-sm select-none">@</span>
                 <input
                   type="text"
                   value={profileForm.telegram}
@@ -342,7 +342,7 @@ export default function SettingsPage() {
               </div>
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Portfolio</label>
+              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Portfolio</label>
               <input
                 type="text"
                 value={profileForm.website}
@@ -353,7 +353,7 @@ export default function SettingsPage() {
             </div>
           </div>
           <div>
-            <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Vibe Coding IDE</label>
+            <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Vibe Coding IDE</label>
             <select
               value={profileForm.ide}
               onChange={(e) => setProfileForm({ ...profileForm, ide: e.target.value })}
@@ -395,16 +395,16 @@ export default function SettingsPage() {
         id="referral"
         className="p-6 mb-8"
         style={{
-          backgroundColor: "#FFFFFF",
-          border: "2px solid #0F0F0F",
+          backgroundColor: "var(--bg-surface)",
+          border: "2px solid var(--border-hard)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        <h2 className="text-lg font-extrabold uppercase flex items-center gap-2 text-[#0F0F0F] mb-2">
+        <h2 className="text-lg font-extrabold uppercase flex items-center gap-2 text-[var(--foreground)] mb-2">
           <Users size={20} className="text-[var(--accent)]" />
           Invite Builders
         </h2>
-        <p className="text-sm text-[#52525B] font-medium mb-4">
+        <p className="text-sm text-[var(--text-secondary)] font-medium mb-4">
           Share your referral link. When someone signs up, you get a bonus streak day!
         </p>
         <div className="flex gap-2">
@@ -423,14 +423,14 @@ export default function SettingsPage() {
             className="btn-brutal text-sm px-4"
             style={{
               backgroundColor: referralCopied ? "#D1FAE5" : "var(--accent)",
-              color: referralCopied ? "#065F46" : "#FFFFFF",
+              color: referralCopied ? "#065F46" : "var(--bg-surface)",
             }}
           >
             {referralCopied ? "Copied!" : "Copy"}
           </button>
         </div>
         {(user.referral_count ?? 0) > 0 && (
-          <p className="text-sm font-bold text-[#0F0F0F] mt-3">
+          <p className="text-sm font-bold text-[var(--foreground)] mt-3">
             You&apos;ve referred {user.referral_count} builder{user.referral_count !== 1 ? "s" : ""}!
           </p>
         )}

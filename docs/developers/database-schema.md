@@ -20,20 +20,34 @@ VibeTalent uses **Supabase PostgreSQL** with Row Level Security (RLS) enabled on
 │ created_at   │   │ │ build_time   │     │ user_id (FK) │──→ users
 └──────────────┘   │ │ verified     │     │ twitter      │
                    │ │ flagged      │     │ telegram     │
-                   │ └──────────────┘     │ github       │
-                   │                      │ website      │
-                   │ ┌──────────────┐     │ farcaster    │
-                   │ │hire_requests │     └──────────────┘
-                   ├─│──────────────│
-                   │ │ id (PK)      │     ┌──────────────┐
-                   │ │ builder_id   │←────│hire_messages │
-                   │ │ sender_name  │     │──────────────│
-                   │ │ sender_email │     │ id (PK)      │
-                   │ │ message      │     │hire_request_id│
-                   │ │ budget       │     │ sender_type  │
-                   │ │ status       │     │ message      │
-                   │ │ reply        │     │ created_at   │
-                   │ └──────────────┘     └──────────────┘
+                   │ │ quality_score│     │ github       │
+                   │ │ quality_met. │     │ website      │
+                   │ │ live_url_ok  │     │ farcaster    │
+                   │ │ endorse_count│     └──────────────┘
+                   │ └──────────────┘
+                   │        ↑
+                   │ ┌──────────────┐
+                   │ │  project_    │
+                   │ │ endorsements │
+                   │ │──────────────│
+                   │ │ id (PK)      │
+                   │ │ project_id   │──→ projects
+                   │ │ user_id      │──→ users
+                   │ │ (UNIQUE pair)│
+                   │ └──────────────┘
+                   │
+                   │ ┌──────────────┐     ┌──────────────┐
+                   │ │hire_requests │     │hire_messages │
+                   ├─│──────────────│     │──────────────│
+                   │ │ id (PK)      │←────│ id (PK)      │
+                   │ │ builder_id   │     │hire_request_id│
+                   │ │ sender_name  │     │ sender_type  │
+                   │ │ sender_email │     │ message      │
+                   │ │ message      │     │ created_at   │
+                   │ │ budget       │     └──────────────┘
+                   │ │ status       │
+                   │ │ reply        │
+                   │ └──────────────┘
                    │
                    │ ┌──────────────┐     ┌────────────────┐
                    │ │   reviews    │     │project_reports │
@@ -44,6 +58,7 @@ VibeTalent uses **Supabase PostgreSQL** with Row Level Security (RLS) enabled on
                      │ reviewer_name│     │ reporter_token │
                      │ rating (1-5) │     │ created_at     │
                      │ comment      │     └────────────────┘
+                     │ trust_score  │
                      └──────────────┘
 ```
 
@@ -84,6 +99,10 @@ Shipped work that proves a vibecoder's capability.
 | `build_time` | TEXT | How long it took to build |
 | `verified` | BOOLEAN | GitHub ownership verified |
 | `flagged` | BOOLEAN | Auto-flagged after 3 reports |
+| `quality_score` | INTEGER | GitHub repo quality score (0-100), computed at verification |
+| `quality_metrics` | JSONB | Detailed breakdown: community_score, substance_score, maintenance_score |
+| `live_url_ok` | BOOLEAN | Whether the live URL passed the last weekly health check |
+| `endorsement_count` | INTEGER | Cached count of peer endorsements |
 | `created_at` | TIMESTAMPTZ | When the project was added |
 
 ### streak_logs
@@ -153,7 +172,23 @@ Public feedback from clients about vibecoders.
 | `reviewer_email` | TEXT | Client email |
 | `rating` | INTEGER | 1 to 5 stars |
 | `comment` | TEXT | Written feedback |
+| `trust_score` | INTEGER | 0-100, computed at insert time (fake/bot detection) |
 | `created_at` | TIMESTAMPTZ | When the review was posted |
+
+Reviews with `trust_score < 30` are excluded from the builder's average rating calculation.
+
+### project_endorsements
+
+Peer validation of projects by other vibecoders.
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | UUID (PK) | Auto-generated |
+| `project_id` | UUID (FK → projects) | Endorsed project |
+| `user_id` | UUID (FK → users) | Endorsing user |
+| `created_at` | TIMESTAMPTZ | When the endorsement was made |
+
+Constraints: `UNIQUE(project_id, user_id)`. RLS prevents endorsing own projects.
 
 ### project_reports
 

@@ -95,22 +95,22 @@ export function ShareCardModal({ username, isOpen, onClose }: ShareCardModalProp
         ref={modalRef}
         className="w-full max-w-[720px] animate-in"
         style={{
-          backgroundColor: "#FFFFFF",
-          border: "2px solid #0F0F0F",
-          boxShadow: "8px 8px 0 #0F0F0F",
+          backgroundColor: "var(--bg-surface)",
+          border: "2px solid var(--border-hard)",
+          boxShadow: "var(--shadow-brutal)",
         }}
       >
         {/* Header */}
         <div
           className="flex items-center justify-between px-6 py-4"
-          style={{ borderBottom: "2px solid #0F0F0F" }}
+          style={{ borderBottom: "2px solid var(--border-hard)" }}
         >
-          <h3 className="text-lg font-extrabold uppercase text-[#0F0F0F]">
+          <h3 className="text-lg font-extrabold uppercase text-[var(--foreground)]">
             Share Card
           </h3>
           <button
             onClick={onClose}
-            className="text-[#71717A] hover:text-[#0F0F0F] transition-colors"
+            className="text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors"
           >
             <X size={20} />
           </button>
@@ -122,12 +122,12 @@ export function ShareCardModal({ username, isOpen, onClose }: ShareCardModalProp
             className="relative w-full overflow-hidden"
             style={{
               aspectRatio: "1200 / 630",
-              border: "2px solid #0F0F0F",
-              backgroundColor: "#0F0F0F",
+              border: "2px solid var(--border-hard)",
+              backgroundColor: "var(--bg-inverted)",
             }}
           >
             {loading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-[#0F0F0F]">
+              <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-inverted)]">
                 <Loader2 size={32} className="text-[var(--accent)] animate-spin" />
               </div>
             )}
@@ -152,7 +152,7 @@ export function ShareCardModal({ username, isOpen, onClose }: ShareCardModalProp
             className="btn-brutal flex-1 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
             style={{
               backgroundColor: "var(--accent)",
-              color: "#FFFFFF",
+              color: "var(--text-on-inverted)",
             }}
           >
             <Download size={16} />
@@ -163,8 +163,8 @@ export function ShareCardModal({ username, isOpen, onClose }: ShareCardModalProp
             disabled={loading}
             className="btn-brutal flex-1 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
             style={{
-              backgroundColor: copied ? "#D1FAE5" : "#FFFFFF",
-              color: "#0F0F0F",
+              backgroundColor: copied ? "#D1FAE5" : "var(--bg-surface)",
+              color: "var(--foreground)",
             }}
           >
             {copied ? <Check size={16} className="text-emerald-600" /> : <Copy size={16} />}

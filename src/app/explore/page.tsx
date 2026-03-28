@@ -45,8 +45,8 @@ export default async function ExplorePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="mb-8">
-        <h1 className="text-3xl font-extrabold uppercase text-[#0F0F0F]">Explore Talent</h1>
-        <p className="mt-2 text-[#52525B] font-medium">
+        <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">Explore Talent</h1>
+        <p className="mt-2 text-[var(--text-secondary)] font-medium">
           Discover talented vibe coders and find the perfect builder for your project
         </p>
       </div>

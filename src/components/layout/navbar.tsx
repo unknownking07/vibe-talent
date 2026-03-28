@@ -7,6 +7,7 @@ import { Flame, Menu, X, LogOut, Settings, User, Users } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { NotificationBell } from "@/components/ui/notification-bell";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const navLinks = [
   { href: "/explore", label: "Explore" },
@@ -103,8 +104,8 @@ export function Navbar() {
     <nav
       className="sticky top-0 z-50"
       style={{
-        backgroundColor: "#FFFFFF",
-        borderBottom: "2px solid #0F0F0F",
+        backgroundColor: "var(--bg-surface)",
+        borderBottom: "2px solid var(--border-hard)",
       }}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
@@ -113,13 +114,13 @@ export function Navbar() {
             className="flex h-9 w-9 items-center justify-center"
             style={{
               backgroundColor: "var(--accent)",
-              border: "2px solid #0F0F0F",
-              boxShadow: "3px 3px 0 #0F0F0F",
+              border: "2px solid var(--border-hard)",
+              boxShadow: "3px 3px 0 var(--shadow-brutal-sm)",
             }}
           >
             <Flame size={18} className="text-white" />
           </div>
-          <span className="text-lg font-extrabold uppercase tracking-tight text-[#0F0F0F]">
+          <span className="text-lg font-extrabold uppercase tracking-tight" style={{ color: "var(--foreground)" }}>
             VibeTalent
           </span>
         </Link>
@@ -132,7 +133,7 @@ export function Navbar() {
               href={link.href}
               className="relative px-4 py-2 text-sm font-bold uppercase tracking-wide transition-colors"
               style={{
-                color: pathname === link.href ? "var(--accent)" : "#0F0F0F",
+                color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
                 borderBottom: pathname === link.href ? "2px solid var(--accent)" : "2px solid transparent",
               }}
             >
@@ -146,13 +147,16 @@ export function Navbar() {
             className="btn-brutal ml-2 text-xs py-1.5 px-3 font-bold uppercase tracking-wide whitespace-nowrap"
             style={{
               backgroundColor: "var(--accent)",
-              color: "#FFFFFF",
-              border: "2px solid #0F0F0F",
+              color: "var(--text-on-inverted)",
+              border: "2px solid var(--border-hard)",
               boxShadow: "var(--shadow-brutal-sm)",
             }}
           >
             Docs
           </a>
+          <div className="ml-2">
+            <ThemeToggle />
+          </div>
           {isLoggedIn ? (
             <>
             <div className="ml-3">
@@ -167,8 +171,8 @@ export function Navbar() {
                   width: 48,
                   height: 48,
                   borderRadius: "50%",
-                  border: "2px solid #0F0F0F",
-                  backgroundColor: "#0F0F0F",
+                  border: "2px solid var(--border-hard)",
+                  backgroundColor: "var(--bg-inverted)",
                   cursor: "pointer",
                 }}
               >
@@ -189,15 +193,16 @@ export function Navbar() {
                 <div
                   className="absolute right-0 top-12 z-50 w-48"
                   style={{
-                    backgroundColor: "#FFFFFF",
-                    border: "2px solid #0F0F0F",
+                    backgroundColor: "var(--bg-surface)",
+                    border: "2px solid var(--border-hard)",
                     boxShadow: "var(--shadow-brutal-sm)",
                   }}
                 >
                   <Link
                     href={`/profile/${userProfile?.username || ""}`}
                     onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide text-[#0F0F0F] hover:bg-[#F4F4F5] transition-colors"
+                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors"
+                    style={{ color: "var(--foreground)" }}
                   >
                     <User size={16} />
                     My Profile
@@ -205,7 +210,8 @@ export function Navbar() {
                   <Link
                     href="/settings"
                     onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide text-[#0F0F0F] hover:bg-[#F4F4F5] transition-colors"
+                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors"
+                    style={{ color: "var(--foreground)" }}
                   >
                     <Settings size={16} />
                     Settings
@@ -213,15 +219,17 @@ export function Navbar() {
                   <Link
                     href="/settings#referral"
                     onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide text-[#0F0F0F] hover:bg-[#F4F4F5] transition-colors"
+                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors"
+                    style={{ color: "var(--foreground)" }}
                   >
                     <Users size={16} />
                     Referral
                   </Link>
-                  <div style={{ borderTop: "2px solid #0F0F0F" }} />
+                  <div style={{ borderTop: "2px solid var(--border-hard)" }} />
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide text-[#0F0F0F] hover:bg-[#F4F4F5] transition-colors w-full text-left"
+                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors w-full text-left"
+                    style={{ color: "var(--foreground)" }}
                   >
                     <LogOut size={16} />
                     Log out
@@ -241,12 +249,15 @@ export function Navbar() {
         </div>
 
         {/* Mobile toggle */}
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="sm:hidden text-[#0F0F0F]"
-        >
-          {mobileOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        <div className="flex items-center gap-2 sm:hidden">
+          <ThemeToggle />
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            style={{ color: "var(--foreground)" }}
+          >
+            {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile nav */}
@@ -254,21 +265,21 @@ export function Navbar() {
         <div
           className="sm:hidden px-4 pb-4"
           style={{
-            borderTop: "2px solid #0F0F0F",
-            backgroundColor: "#FFFFFF",
+            borderTop: "2px solid var(--border-hard)",
+            backgroundColor: "var(--bg-surface)",
           }}
         >
           {/* Mobile: Show avatar + username at top if logged in */}
           {isLoggedIn && userProfile && (
-            <div className="flex items-center gap-3 py-3 mb-1" style={{ borderBottom: "1px solid #E4E4E7" }}>
+            <div className="flex items-center gap-3 py-3 mb-1" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
               <div
                 className="flex items-center justify-center overflow-hidden"
                 style={{
                   width: 36,
                   height: 36,
                   borderRadius: "50%",
-                  border: "2px solid #0F0F0F",
-                  backgroundColor: "#0F0F0F",
+                  border: "2px solid var(--border-hard)",
+                  backgroundColor: "var(--bg-inverted)",
                 }}
               >
                 {userProfile.avatar_url ? (
@@ -284,7 +295,7 @@ export function Navbar() {
                   <span className="text-xs font-extrabold text-white">{initials}</span>
                 )}
               </div>
-              <span className="text-sm font-extrabold text-[#0F0F0F]">{userProfile.username}</span>
+              <span className="text-sm font-extrabold text-[var(--foreground)]">{userProfile.username}</span>
             </div>
           )}
 
@@ -295,7 +306,7 @@ export function Navbar() {
               onClick={() => setMobileOpen(false)}
               className="block px-4 py-3 text-sm font-bold uppercase tracking-wide"
               style={{
-                color: pathname === link.href ? "var(--accent)" : "#0F0F0F",
+                color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
               }}
             >
               {link.label}
@@ -315,28 +326,28 @@ export function Navbar() {
             <>
             <div className="mt-2 flex items-center gap-3">
               <NotificationBell />
-              <span className="text-sm font-bold uppercase tracking-wide text-[#0F0F0F]">Notifications</span>
+              <span className="text-sm font-bold uppercase tracking-wide text-[var(--foreground)]">Notifications</span>
             </div>
             {userProfile && (
               <>
                 <Link
                   href={`/profile/${userProfile.username}`}
                   onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-3 mt-1 text-sm font-bold uppercase tracking-wide text-[#0F0F0F]"
+                  className="block px-4 py-3 mt-1 text-sm font-bold uppercase tracking-wide text-[var(--foreground)]"
                 >
                   My Profile
                 </Link>
                 <Link
                   href="/settings"
                   onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-3 text-sm font-bold uppercase tracking-wide text-[#0F0F0F]"
+                  className="block px-4 py-3 text-sm font-bold uppercase tracking-wide text-[var(--foreground)]"
                 >
                   Settings
                 </Link>
                 <Link
                   href="/settings#referral"
                   onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-3 text-sm font-bold uppercase tracking-wide text-[#0F0F0F]"
+                  className="block px-4 py-3 text-sm font-bold uppercase tracking-wide text-[var(--foreground)]"
                 >
                   Referral
                 </Link>
@@ -346,9 +357,9 @@ export function Navbar() {
               onClick={() => { handleLogout(); setMobileOpen(false); }}
               className="btn-brutal mt-2 w-full justify-center text-sm py-2.5 flex items-center gap-2"
               style={{
-                backgroundColor: "#0F0F0F",
-                color: "#FFFFFF",
-                border: "2px solid #0F0F0F",
+                backgroundColor: "var(--bg-inverted)",
+                color: "var(--text-on-inverted)",
+                border: "2px solid var(--border-hard)",
               }}
             >
               <LogOut size={14} />

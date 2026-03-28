@@ -11,6 +11,11 @@
   --border-hard: #0F0F0F;
   --border-subtle: #D4D4D4;
 
+  --text-muted: #71717A;
+  --text-muted-soft: #A1A1AA;
+  --text-secondary: #52525B;
+  --text-tertiary: #3F3F46;
+
   --accent: #FF3A00;
   --accent-hover: #E03300;
   --accent-streak: #FF3A00;
@@ -30,7 +35,68 @@
   --shadow-brutal: 6px 6px 0 #0F0F0F;
   --shadow-brutal-sm: 4px 4px 0 #0F0F0F;
   --shadow-brutal-hover: 2px 2px 0 #0F0F0F;
+  --shadow-brutal-xs: 2px 2px 0 #0F0F0F;
   --shadow-brutal-accent: 6px 6px 0 #FF3A00;
+
+  --bg-inverted: #0F0F0F;
+  --text-on-inverted: #FFFFFF;
+
+  --status-error-bg: #FEF2F2;
+  --status-error-text: #991B1B;
+  --status-error-border: #FEE2E2;
+  --status-success-bg: #F0FDF4;
+  --status-success-text: #166534;
+  --status-warning-bg: #FFF7ED;
+  --status-warning-text: #92400E;
+
+  --dot-pattern: radial-gradient(rgba(0, 0, 0, 0.06) 1.5px, transparent 1.5px);
+}
+
+[data-theme="dark"] {
+  --background: #0F0F0F;
+  --foreground: #FFFFFF;
+
+  --bg-inverted: #262626;
+  --text-on-inverted: #FFFFFF;
+
+  --bg-surface: #1a1a1a;
+  --bg-surface-light: #262626;
+  --bg-pill: #262626;
+  --bg-pill-hover: #3a3a3a;
+  --border-hard: #FFFFFF;
+  --border-subtle: #3a3a3a;
+
+  --text-muted: #A1A1AA;
+  --text-muted-soft: #71717A;
+  --text-secondary: #A1A1AA;
+  --text-tertiary: #D4D4D4;
+
+  --badge-bronze: #A0522D;
+  --badge-silver: #A9A9A9;
+  --badge-gold: #FFD700;
+  --badge-diamond: #FF3A00;
+
+  --hm-0: #3a3a3a;
+  --hm-1: #6b3a1a;
+  --hm-2: #b5501e;
+  --hm-3: #FF6A40;
+  --hm-4: #FF3A00;
+
+  --shadow-brutal: 6px 6px 0 #000000;
+  --shadow-brutal-sm: 4px 4px 0 #000000;
+  --shadow-brutal-hover: 2px 2px 0 #000000;
+  --shadow-brutal-xs: 2px 2px 0 #000000;
+  --shadow-brutal-accent: 6px 6px 0 #FF3A00;
+
+  --status-error-bg: #3B1111;
+  --status-error-text: #FCA5A5;
+  --status-error-border: #7F1D1D;
+  --status-success-bg: #052E16;
+  --status-success-text: #86EFAC;
+  --status-warning-bg: #431407;
+  --status-warning-text: #FED7AA;
+
+  --dot-pattern: radial-gradient(rgba(255, 255, 255, 0.06) 1.5px, transparent 1.5px);
 }
 
 @theme inline {
@@ -42,7 +108,7 @@
 
 body {
   background-color: var(--background);
-  background-image: radial-gradient(rgba(0, 0, 0, 0.06) 1.5px, transparent 1.5px);
+  background-image: var(--dot-pattern);
   background-size: 24px 24px;
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
@@ -60,12 +126,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #0F0F0F;
+  background: var(--foreground);
   border: 2px solid var(--background);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #333;
+  background: var(--bg-pill-hover);
 }
 
 html {
@@ -81,7 +147,7 @@ html {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border: 2px solid #0F0F0F;
+  border: 2px solid var(--border-hard);
   box-shadow: var(--shadow-brutal);
   transition: transform 0.15s, box-shadow 0.15s;
   cursor: pointer;
@@ -98,13 +164,13 @@ html {
 }
 
 .btn-brutal-secondary {
-  background-color: #FFFFFF;
-  color: #0F0F0F;
+  background-color: var(--bg-surface);
+  color: var(--foreground);
 }
 
 .btn-brutal-dark {
-  background-color: #0F0F0F;
-  color: #FFFFFF;
+  background-color: var(--bg-inverted);
+  color: var(--text-on-inverted);
 }
 
 /* Flat button variant — no shadow, for use inside cards */
@@ -119,8 +185,8 @@ html {
 
 /* Brutalist card */
 .card-brutal {
-  background: #FFFFFF;
-  border: 2px solid #0F0F0F;
+  background: var(--bg-surface);
+  border: 2px solid var(--border-hard);
   box-shadow: var(--shadow-brutal);
 }
 
@@ -131,15 +197,15 @@ html {
   padding-bottom: 0.75rem;
   padding-left: 1rem;
   padding-right: 1rem;
-  border: 2px solid #0F0F0F;
-  background: #FFFFFF;
-  color: #0F0F0F;
+  border: 2px solid var(--border-hard);
+  background: var(--bg-surface);
+  color: var(--foreground);
   font-weight: 600;
   font-size: 0.875rem;
 }
 
 .input-brutal::placeholder {
-  color: #A1A1AA;
+  color: var(--text-muted);
   font-weight: 500;
 }
 
@@ -151,7 +217,7 @@ html {
 /* Large accent numbers */
 .text-accent-brutal {
   color: var(--accent);
-  -webkit-text-stroke: 1px #0F0F0F;
+  -webkit-text-stroke: 1px var(--border-hard);
   text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
 }
 
@@ -225,10 +291,10 @@ html {
 
 /* Skeleton loading */
 .skeleton {
-  background: linear-gradient(90deg, #E5E5E5 25%, #F0F0F0 50%, #E5E5E5 75%);
+  background: linear-gradient(90deg, var(--bg-surface-light) 25%, var(--bg-surface) 50%, var(--bg-surface-light) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
-  border: 2px solid #0F0F0F;
+  border: 2px solid var(--border-hard);
 }
 
 /* Tooltip */
@@ -242,13 +308,13 @@ html {
   left: 50%;
   transform: translateX(-50%) scale(0.9);
   padding: 4px 10px;
-  background: #0F0F0F;
-  color: #FFFFFF;
+  background: var(--foreground);
+  color: var(--background);
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
   white-space: nowrap;
-  border: 2px solid #0F0F0F;
+  border: 2px solid var(--border-hard);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s, transform 0.15s;

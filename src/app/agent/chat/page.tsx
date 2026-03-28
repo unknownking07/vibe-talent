@@ -155,16 +155,16 @@ export default function AgentChatPage() {
         <div
           className="w-10 h-10 flex items-center justify-center"
           style={{
-            backgroundColor: "#0F0F0F",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--bg-inverted)",
+            border: "2px solid var(--border-hard)",
             boxShadow: "3px 3px 0 var(--accent)",
           }}
         >
           <Bot size={20} className="text-[var(--accent)]" />
         </div>
         <div>
-          <h1 className="text-xl font-extrabold uppercase text-[#0F0F0F]">VibeFinder Bot Chat</h1>
-          <p className="text-xs text-[#71717A] font-bold uppercase">Powered by VibeTalent</p>
+          <h1 className="text-xl font-extrabold uppercase text-[var(--foreground)]">VibeFinder Bot Chat</h1>
+          <p className="text-xs text-[var(--text-muted)] font-bold uppercase">Powered by VibeTalent</p>
         </div>
       </div>
 
@@ -202,7 +202,7 @@ export default function AgentChatPage() {
                 onClick={() => handleQuickAction(action.key)}
                 className="btn-brutal text-xs py-2 px-4"
                 style={{
-                  backgroundColor: "#FFFFFF",
+                  backgroundColor: "var(--bg-surface)",
                   boxShadow: "var(--shadow-brutal-sm)",
                 }}
               >
@@ -214,7 +214,7 @@ export default function AgentChatPage() {
       </div>
 
       {/* Input */}
-      <div className="shrink-0 pt-4" style={{ borderTop: "2px solid #0F0F0F" }}>
+      <div className="shrink-0 pt-4" style={{ borderTop: "2px solid var(--border-hard)" }}>
         <ChatInput
           onSend={handleSend}
           disabled={isThinking}

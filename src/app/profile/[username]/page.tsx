@@ -71,8 +71,8 @@ export default async function ProfilePage({
   if (!username || username.length > 50 || !/^[a-zA-Z0-9_-]+$/.test(username)) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-        <h1 className="text-2xl font-extrabold uppercase text-[#0F0F0F]">Invalid username</h1>
-        <p className="mt-2 text-[#52525B] font-medium">This is not a valid username.</p>
+        <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Invalid username</h1>
+        <p className="mt-2 text-[var(--text-secondary)] font-medium">This is not a valid username.</p>
       </div>
     );
   }
@@ -82,8 +82,8 @@ export default async function ProfilePage({
   if (!user) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-        <h1 className="text-2xl font-extrabold uppercase text-[#0F0F0F]">Builder not found</h1>
-        <p className="mt-2 text-[#52525B] font-medium">@{username} does not exist on VibeTalent.</p>
+        <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Builder not found</h1>
+        <p className="mt-2 text-[var(--text-secondary)] font-medium">@{username} does not exist on VibeTalent.</p>
       </div>
     );
   }
@@ -139,13 +139,13 @@ export default async function ProfilePage({
           <section
             className="p-6"
             style={{
-              backgroundColor: "#FFFFFF",
-              border: "2px solid #0F0F0F",
+              backgroundColor: "var(--bg-surface)",
+              border: "2px solid var(--border-hard)",
               boxShadow: "var(--shadow-brutal)",
             }}
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-extrabold uppercase text-[#0F0F0F]">Contribution Heatmap</h3>
+              <h3 className="text-base font-extrabold uppercase text-[var(--foreground)]">Contribution Heatmap</h3>
               <Link
                 href="/dashboard"
                 className="btn-brutal btn-brutal-dark text-xs py-1.5 px-4"
@@ -153,13 +153,13 @@ export default async function ProfilePage({
                 Log Activity
               </Link>
             </div>
-            <ProfileHeatmap data={heatmapData} />
+            <ProfileHeatmap data={heatmapData} githubUsername={user.social_links?.github} />
           </section>
 
           {/* Projects Section */}
           <section>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-extrabold uppercase text-[#0F0F0F]">Featured Projects</h3>
+              <h3 className="text-base font-extrabold uppercase text-[var(--foreground)]">Featured Projects</h3>
               <span
                 className="btn-brutal btn-brutal-dark text-xs py-1.5 px-4 cursor-pointer"
               >
@@ -169,15 +169,15 @@ export default async function ProfilePage({
             {user.projects.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
                 {user.projects.map((project) => (
-                  <ProfileProjectCard key={project.id} project={project} verified={!!project.verified} />
+                  <ProfileProjectCard key={project.id} project={project} verified={!!project.verified} isOwner={isOwner} />
                 ))}
               </div>
             ) : (
               <div
-                className="p-8 text-center font-bold uppercase text-[#71717A]"
+                className="p-8 text-center font-bold uppercase text-[var(--text-muted)]"
                 style={{
-                  backgroundColor: "#FFFFFF",
-                  border: "2px solid #0F0F0F",
+                  backgroundColor: "var(--bg-surface)",
+                  border: "2px solid var(--border-hard)",
                 }}
               >
                 No projects yet.

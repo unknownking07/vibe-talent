@@ -15,8 +15,8 @@ export function ChatMessage({ role, content, isThinking }: ChatMessageProps) {
         <div
           className="w-8 h-8 shrink-0 flex items-center justify-center"
           style={{
-            backgroundColor: "#0F0F0F",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--bg-inverted)",
+            border: "2px solid var(--border-hard)",
           }}
         >
           <Bot size={16} className="text-[var(--accent)]" />
@@ -24,10 +24,10 @@ export function ChatMessage({ role, content, isThinking }: ChatMessageProps) {
         <div
           className="max-w-[80%] p-4 font-mono text-sm"
           style={{
-            backgroundColor: "#0F0F0F",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--bg-inverted)",
+            border: "2px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal-sm)",
-            color: "#E5E5E5",
+            color: "var(--border-subtle)",
           }}
         >
           {isThinking ? (
@@ -49,8 +49,8 @@ export function ChatMessage({ role, content, isThinking }: ChatMessageProps) {
       <div
         className="max-w-[80%] p-4 text-sm font-medium"
         style={{
-          backgroundColor: "#FFFFFF",
-          border: "2px solid #0F0F0F",
+          backgroundColor: "var(--bg-surface)",
+          border: "2px solid var(--border-hard)",
           boxShadow: "var(--shadow-brutal-sm)",
         }}
       >
@@ -60,7 +60,7 @@ export function ChatMessage({ role, content, isThinking }: ChatMessageProps) {
         className="w-8 h-8 shrink-0 flex items-center justify-center"
         style={{
           backgroundColor: "var(--accent)",
-          border: "2px solid #0F0F0F",
+          border: "2px solid var(--border-hard)",
         }}
       >
         <User size={16} className="text-white" />

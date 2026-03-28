@@ -64,13 +64,13 @@ export function EmailPreferences() {
     <div
       className="p-5"
       style={{
-        backgroundColor: "#FFFFFF",
-        border: "2px solid #0F0F0F",
+        backgroundColor: "var(--bg-surface)",
+        border: "2px solid var(--border-hard)",
         boxShadow: "var(--shadow-brutal)",
       }}
     >
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-extrabold uppercase flex items-center gap-2 text-[#0F0F0F]">
+        <h2 className="text-base font-extrabold uppercase flex items-center gap-2 text-[var(--foreground)]">
           <Mail size={16} className="text-[var(--accent)]" />
           Email Notifications
         </h2>
@@ -86,11 +86,11 @@ export function EmailPreferences() {
           <div
             key={key}
             className="flex items-center justify-between p-3"
-            style={{ border: "1px solid #E4E4E7" }}
+            style={{ border: "1px solid var(--border-subtle)" }}
           >
             <div className="min-w-0 flex-1 mr-3">
-              <div className="text-sm font-bold text-[#0F0F0F]">{label}</div>
-              <div className="text-xs text-[#71717A] mt-0.5">{description}</div>
+              <div className="text-sm font-bold text-[var(--foreground)]">{label}</div>
+              <div className="text-xs text-[var(--text-muted)] mt-0.5">{description}</div>
             </div>
             <button
               onClick={() => handleToggle(key)}
@@ -98,15 +98,15 @@ export function EmailPreferences() {
               className="w-10 h-6 rounded-full relative cursor-pointer transition-colors shrink-0"
               style={{
                 backgroundColor: prefs[key] ? "var(--accent)" : "#D4D4D8",
-                border: "2px solid #0F0F0F",
+                border: "2px solid var(--border-hard)",
               }}
               aria-label={`Toggle ${label}`}
             >
               <span
-                className="absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white transition-all"
+                className="absolute top-0.5 w-3.5 h-3.5 rounded-full bg-[var(--bg-surface)] transition-all"
                 style={{
                   left: prefs[key] ? "calc(100% - 18px)" : "2px",
-                  border: "1px solid #0F0F0F",
+                  border: "1px solid var(--border-hard)",
                 }}
               />
             </button>
