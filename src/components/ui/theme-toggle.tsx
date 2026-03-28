@@ -1,24 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { Sun, Moon } from "lucide-react";
 
-export function ThemeToggle() {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [mounted, setMounted] = useState(false);
+function getThemeSnapshot(): "light" | "dark" {
+  return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+}
 
-  useEffect(() => {
-    setMounted(true);
-    const stored = localStorage.getItem("theme");
-    if (stored === "dark") {
-      setTheme("dark");
-      document.documentElement.setAttribute("data-theme", "dark");
-    }
-  }, []);
+function getServerSnapshot(): "light" | "dark" {
+  return "light";
+}
+
+function subscribeToTheme(callback: () => void) {
+  const observer = new MutationObserver(callback);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  return () => observer.disconnect();
+}
+
+export function ThemeToggle() {
+  const theme = useSyncExternalStore(subscribeToTheme, getThemeSnapshot, getServerSnapshot);
+  const [mounted] = useState(() => typeof window !== "undefined");
 
   function toggle() {
     const next = theme === "light" ? "dark" : "light";
-    setTheme(next);
     localStorage.setItem("theme", next);
     if (next === "dark") {
       document.documentElement.setAttribute("data-theme", "dark");
@@ -27,7 +31,7 @@ export function ThemeToggle() {
     }
   }
 
-  // Avoid hydration mismatch
+  // Avoid hydration mismatch — show placeholder on server
   if (!mounted) {
     return (
       <button
