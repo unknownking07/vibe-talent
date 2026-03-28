@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import { Sun, Moon } from "lucide-react";
 
 function getThemeSnapshot(): "light" | "dark" {
@@ -17,38 +17,19 @@ function subscribeToTheme(callback: () => void) {
   return () => observer.disconnect();
 }
 
+function toggle() {
+  const current = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+  const next = current === "light" ? "dark" : "light";
+  localStorage.setItem("theme", next);
+  if (next === "dark") {
+    document.documentElement.setAttribute("data-theme", "dark");
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+  }
+}
+
 export function ThemeToggle() {
   const theme = useSyncExternalStore(subscribeToTheme, getThemeSnapshot, getServerSnapshot);
-  const [mounted] = useState(() => typeof window !== "undefined");
-
-  function toggle() {
-    const next = theme === "light" ? "dark" : "light";
-    localStorage.setItem("theme", next);
-    if (next === "dark") {
-      document.documentElement.setAttribute("data-theme", "dark");
-    } else {
-      document.documentElement.removeAttribute("data-theme");
-    }
-  }
-
-  // Avoid hydration mismatch — show placeholder on server
-  if (!mounted) {
-    return (
-      <button
-        className="flex items-center justify-center w-9 h-9"
-        style={{
-          border: "2px solid var(--border-hard)",
-          backgroundColor: "var(--bg-surface)",
-          boxShadow: "var(--shadow-brutal-sm)",
-          cursor: "pointer",
-          transition: "transform 0.1s, box-shadow 0.1s",
-        }}
-        aria-label="Toggle theme"
-      >
-        <Sun size={16} />
-      </button>
-    );
-  }
 
   return (
     <button
