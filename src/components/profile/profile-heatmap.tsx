@@ -90,9 +90,8 @@ export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
     return { weeks: result, monthLabels: labels };
   }, [mergedData]);
 
-  // Use GitHub's actual total when available; fall back to counting active days from streak_logs
-  const streakTotal = Object.values(data).reduce((sum, v) => sum + (v > 0 ? v : 0), 0);
-  const total = ghTotal > 0 ? ghTotal + streakTotal : streakTotal;
+  // Use GitHub's actual total when available; fall back to counting active days
+  const total = ghTotal > 0 ? ghTotal : Object.values(mergedData).reduce((sum, v) => sum + (v > 0 ? v : 0), 0);
 
   return (
     <div>
