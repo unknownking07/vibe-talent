@@ -175,6 +175,12 @@ export default function SettingsPage() {
 
   const handleSaveProfile = async () => {
     if (!user || saving) return;
+    const twitter = profileForm.twitter.trim();
+    const telegram = profileForm.telegram.trim();
+    if (!twitter && !telegram) {
+      alert("Please add your X (Twitter) or Telegram so clients can contact you.");
+      return;
+    }
     setSaving(true);
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -182,15 +188,15 @@ export default function SettingsPage() {
 
     await sb
       .from("users")
-      .update({ username: profileForm.username, bio: profileForm.bio })
+      .update({ username: profileForm.username.trim(), bio: profileForm.bio.trim() })
       .eq("id", user.id);
 
     await sb.from("social_links").upsert({
       user_id: user.id,
-      twitter: profileForm.twitter || null,
-      github: profileForm.github || null,
-      telegram: profileForm.telegram || null,
-      website: profileForm.website || null,
+      twitter: twitter || null,
+      github: profileForm.github.trim() || null,
+      telegram: telegram || null,
+      website: profileForm.website.trim() || null,
       farcaster: profileForm.ide || null,
     }, { onConflict: "user_id" });
 

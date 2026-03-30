@@ -26,8 +26,8 @@ export async function generateMetadata({
 
   const title = `@${user.username} — VibeTalent`;
   const description = user.bio
-    ? `${user.bio.slice(0, 150)} | ${user.streak}-day streak, ${user.projects.length} projects`
-    : `${user.streak}-day streak, ${user.projects.length} projects on VibeTalent`;
+    ? `${user.bio.slice(0, 150)} | ${user.streak}-day streak, ${(user.projects ?? []).length} projects`
+    : `${user.streak}-day streak, ${(user.projects ?? []).length} projects on VibeTalent`;
 
   return {
     title,
@@ -102,7 +102,7 @@ export default async function ProfilePage({
       user.social_links?.twitter ? `https://x.com/${user.social_links.twitter}` : null,
       user.social_links?.website || null,
     ].filter(Boolean),
-    knowsAbout: user.projects.flatMap((p: { tech_stack: string[] }) => p.tech_stack).filter((v: string, i: number, a: string[]) => a.indexOf(v) === i),
+    knowsAbout: (user.projects ?? []).flatMap((p: { tech_stack: string[] }) => p.tech_stack ?? []).filter((v: string, i: number, a: string[]) => a.indexOf(v) === i),
   };
 
   // Check if the logged-in user is viewing their own profile
@@ -132,7 +132,7 @@ export default async function ProfilePage({
           <StatsRibbon
             streak={user.streak}
             vibeScore={user.vibe_score}
-            projectCount={user.projects.length}
+            projectCount={(user.projects ?? []).length}
           />
 
           {/* Heatmap Section */}
@@ -166,9 +166,9 @@ export default async function ProfilePage({
                 View All
               </span>
             </div>
-            {user.projects.length > 0 ? (
+            {(user.projects ?? []).length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-                {user.projects.map((project) => (
+                {(user.projects ?? []).map((project) => (
                   <ProfileProjectCard key={project.id} project={project} verified={!!project.verified} isOwner={isOwner} />
                 ))}
               </div>

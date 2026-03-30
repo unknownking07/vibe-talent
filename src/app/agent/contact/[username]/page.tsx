@@ -38,7 +38,7 @@ export default function ContactPage({
 
   const handleThinkingComplete = useCallback(() => {
     if (user) {
-      const allTech = [...new Set(user.projects.flatMap(p => p.tech_stack))];
+      const allTech = [...new Set((user.projects ?? []).flatMap(p => p.tech_stack ?? []))];
       const draft = generateHireMessage(
         "Your Name",
         user.username,
@@ -212,7 +212,7 @@ export default function ContactPage({
         <div>
           <div className="font-extrabold uppercase text-[var(--foreground)]">@{username}</div>
           <div className="text-xs font-bold text-[var(--text-muted)]">
-            {user.streak} day streak · {user.projects.length} projects · Vibe {user.vibe_score}
+            {user.streak} day streak · {(user.projects ?? []).length} projects · Vibe {user.vibe_score}
           </div>
         </div>
       </div>

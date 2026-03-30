@@ -122,7 +122,7 @@ async function _fetchHomepageData() {
     { data: streakData },
   ] = await Promise.all([
     sb.from("users").select(USER_FIELDS).order("vibe_score", { ascending: false }).limit(20),
-    sb.from("projects").select(`${PROJECT_FIELDS}, users!projects_user_id_fkey(username)`).order("created_at", { ascending: false }).limit(3),
+    sb.from("projects").select(`${PROJECT_FIELDS}, users!projects_user_id_fkey(username)`).not("live_url", "is", null).order("created_at", { ascending: false }).limit(3),
     sb.from("users").select("id", { count: "exact", head: true }),
     sb.from("projects").select("id", { count: "exact", head: true }),
     sb.from("users").select("streak"),

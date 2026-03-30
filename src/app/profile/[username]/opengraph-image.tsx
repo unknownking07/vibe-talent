@@ -243,7 +243,7 @@ export default async function Image({
                 <span
                   style={{ fontSize: 36, fontWeight: 800, color: "#0F0F0F" }}
                 >
-                  {user.projects.length}
+                  {(user.projects ?? []).length}
                 </span>
                 <span
                   style={{

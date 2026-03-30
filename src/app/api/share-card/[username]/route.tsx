@@ -12,7 +12,7 @@ export async function GET(
     return new Response("User not found", { status: 404 });
   }
 
-  const allTech = user.projects.flatMap((p) => p.tech_stack);
+  const allTech = (user.projects ?? []).flatMap((p) => p.tech_stack ?? []);
   const techCounts = allTech.reduce((acc, t) => {
     acc[t] = (acc[t] || 0) + 1;
     return acc;
@@ -29,7 +29,7 @@ export async function GET(
     : "vibecoder";
   const streakStr = String(user.streak).padStart(2, "0");
   const longestStr = String(user.longest_streak).padStart(2, "0");
-  const projectsStr = String(user.projects.length).padStart(2, "0");
+  const projectsStr = String((user.projects ?? []).length).padStart(2, "0");
   const terminalId = username.toUpperCase().slice(0, 10);
 
   const BG = "#646cff";

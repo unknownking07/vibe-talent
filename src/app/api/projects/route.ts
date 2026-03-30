@@ -49,9 +49,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "description must be 2000 characters or less" }, { status: 400 });
     }
 
-    // Validate URLs if provided
-    if (live_url && typeof live_url === "string" && !live_url.match(/^https?:\/\/.+/)) {
-      return NextResponse.json({ error: "live_url must be a valid HTTP URL" }, { status: 400 });
+    // live_url is required and must be HTTPS
+    if (!live_url || typeof live_url !== "string" || !live_url.trim()) {
+      return NextResponse.json({ error: "live_url is required — every project must have a deployed link" }, { status: 400 });
+    }
+    if (!live_url.match(/^https:\/\/.+/)) {
+      return NextResponse.json({ error: "live_url must be a valid HTTPS URL" }, { status: 400 });
     }
     if (github_url && typeof github_url === "string" && !github_url.match(/^https?:\/\/github\.com\/.+/)) {
       return NextResponse.json({ error: "github_url must be a valid GitHub URL" }, { status: 400 });
