@@ -87,24 +87,38 @@ Streak logs are private — no one else can see your raw activity data. Only the
 
 | Operation | Policy |
 |---|---|
-| **INSERT** | Public — anyone can submit (no auth required) |
+| **INSERT** | Service role or authenticated users only — `auth.role() = 'service_role' OR auth.uid() IS NOT NULL` |
 | **SELECT** | VibeCoder only — `auth.uid() = builder_id` |
 | **UPDATE** | VibeCoder only — status changes, replies |
-| **DELETE** | VibeCoder only |
+| **DELETE** | VibeCoder only — `auth.uid() = builder_id` |
+
+**Database constraints:**
+- `message` must be at least 20 characters
+- `sender_email` must match a valid email regex
+- `sender_name` must be at least 2 characters
+
+All public-facing hire request submissions go through the API (`/api/hire`), which uses the service role client (`createAdminClient()`) to insert. Direct PostgREST inserts via the anon key are blocked.
 
 ### Hire Messages
 
 | Operation | Policy |
 |---|---|
-| **INSERT** | Public — clients use request ID as access token |
+| **INSERT** | Service role or authenticated users only — `auth.role() = 'service_role' OR auth.uid() IS NOT NULL` |
 | **SELECT** | Public — scoped by hire_request_id |
 
 ### Reviews
 
 | Operation | Policy |
 |---|---|
-| **INSERT** | Public — anyone can leave a review |
+| **INSERT** | Service role or authenticated users only — `auth.role() = 'service_role' OR auth.uid() IS NOT NULL` |
 | **SELECT** | Public — reviews are visible to everyone |
+
+### Project Reports
+
+| Operation | Policy |
+|---|---|
+| **INSERT** | Service role or authenticated users only — `auth.role() = 'service_role' OR auth.uid() IS NOT NULL` |
+| **DELETE** | Service role only — undo via API with reporter token |
 
 ## Rate Limiting
 
@@ -115,6 +129,8 @@ Rate limiting uses **Upstash Redis** with a sliding window algorithm:
 | `POST /api/streak` | 60 requests | per minute |
 | `POST /api/report` | 10 reports | per hour |
 | `POST /api/reviews` | 3 reviews | per day |
+| `POST /api/hire` | 5 requests | per hour |
+| `POST /api/endorsements` | 30 requests | per hour |
 
 ### How It Works
 
@@ -155,8 +171,8 @@ All text inputs are:
 2. Disposable email blocklist check
 ```
 
-**Blocked disposable email providers:**
-`mailinator.com`, `guerrillamail.com`, `tempmail.com`, `throwaway.email`, `10minutemail.com`, `trashmail.com`, `fakeinbox.com`, `sharklasers.com`, `guerrillamailblock.com`, `grr.la`, `yopmail.com`, `maildrop.cc`, `dispostable.com`, `temp-mail.org`, `getnada.com`
+**Blocked email domains** (defined in `src/lib/validation.ts`):
+`mailinator.com`, `guerrillamail.com`, `tempmail.com`, `throwaway.email`, `10minutemail.com`, `trashmail.com`, `fakeinbox.com`, `sharklasers.com`, `guerrillamailblock.com`, `grr.la`, `yopmail.com`, `maildrop.cc`, `dispostable.com`, `temp-mail.org`, `getnada.com`, `test.com`, `example.com`
 
 ### URL Validation
 
@@ -197,7 +213,7 @@ These endpoints serve read-only vibecoder data and accept hire requests — no a
 
 - `NEXT_PUBLIC_*` variables are limited to Supabase URL and anon key (both are designed to be public)
 - All sensitive keys (`RESEND_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `UPSTASH_*`) are server-only
-- Service role key is used only for fire-and-forget operations (email sends)
+- Service role key is used by `createAdminClient()` (in `src/lib/supabase/admin.ts`) for all API mutations — the function throws if the key is missing, preventing silent fallback to the anon key
 
 ## Threat Model
 
@@ -207,7 +223,8 @@ These endpoints serve read-only vibecoder data and accept hire requests — no a
 | **Session hijacking** | HTTP-only cookies, token rotation |
 | **Brute force** | Rate limiting on sensitive endpoints |
 | **Spam/abuse** | Disposable email blocking, report system, auto-flagging |
-| **XSS** | React's built-in escaping, no `dangerouslySetInnerHTML` |
+| **XSS** | React's built-in escaping, database-level input constraints |
+| **Direct PostgREST abuse** | RLS blocks anonymous inserts; all mutations use service role via API |
 | **CSRF** | Supabase Auth uses SameSite cookies |
 | **API abuse** | Rate limiting, input validation |
 | **Data leakage** | Server-only secrets, no sensitive data in client bundle |

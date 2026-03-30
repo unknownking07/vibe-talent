@@ -126,13 +126,26 @@ POST /api/streak (with auth cookie)
 Client submits hire form (no auth required)
   → POST /api/hire
     → Validate inputs (name, email, message, budget)
-    → Block disposable emails
+    → Block disposable emails (shared validation from src/lib/validation.ts)
     → Rate limit check
-    → Insert hire_request
+    → Insert hire_request via createAdminClient() (service role)
     → Send email notification via Resend
   → VibeCoder sees request in /dashboard
   → VibeCoder replies → Chat thread via hire_messages
 ```
+
+### Admin Client Pattern
+
+All API mutations use `createAdminClient()` from `src/lib/supabase/admin.ts`:
+
+```typescript
+import { createAdminClient } from "@/lib/supabase/admin";
+
+const sb = createAdminClient(); // Uses SUPABASE_SERVICE_ROLE_KEY
+// Throws if key is missing — never silently falls back to anon key
+```
+
+This ensures all inserts go through the service role, which is required by the tightened RLS policies. Direct PostgREST inserts via the anon key are blocked on sensitive tables.
 
 ## Key Design Decisions
 

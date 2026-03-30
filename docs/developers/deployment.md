@@ -25,7 +25,7 @@ Set these in the Vercel dashboard under **Settings > Environment Variables**:
 | `UPSTASH_REDIS_REST_URL` | No | Server |
 | `UPSTASH_REDIS_REST_TOKEN` | No | Server |
 | `CRON_SECRET` | Yes | Server |
-| `SUPABASE_SERVICE_ROLE_KEY` | No | Server |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server |
 | `NEXT_PUBLIC_GA_ID` | No | All |
 
 ### Supabase Setup
@@ -40,27 +40,15 @@ Set these in the Vercel dashboard under **Settings > Environment Variables**:
 
 ### Daily Streak Reset
 
-Configured in `vercel.json`:
+Configured in `vercel.json`. All cron endpoints require `CRON_SECRET` — Vercel automatically includes this for cron-triggered requests.
 
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/reset-streaks",
-      "schedule": "0 0 * * *"
-    }
-  ]
-}
-```
-
-**What it does:**
-- Runs at 00:00 UTC every day
-- Finds users with active streaks
-- Checks if they logged activity yesterday
-- Resets stale streaks to 0
-- Recalculates vibe scores
-
-**Protection:** Requires `CRON_SECRET` header — Vercel automatically includes this for cron-triggered requests.
+| Job | Path | Schedule | Description |
+|---|---|---|---|
+| **Reset Streaks** | `/api/cron/reset-streaks` | Daily 00:00 UTC | Reset expired streaks, recalculate vibe scores |
+| **Streak Warning** | `/api/cron/streak-warning` | Daily 18:00 UTC | Email + in-app notification for at-risk streaks |
+| **GitHub Sync** | `/api/cron/github-sync` | Daily | Sync GitHub contribution data for all users |
+| **Check Live URLs** | `/api/cron/check-live-urls` | Weekly | Verify project live URLs are still reachable |
+| **Reset Freezes** | `/api/cron/reset-freezes` | Monthly 1st | Reset streak freeze allowance to 3 |
 
 ## Caching Strategy
 
