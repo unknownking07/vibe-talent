@@ -3,11 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Flame, Rocket, Zap, ArrowRight, GitPullRequest, GitBranch } from "lucide-react";
 
 type FeedItem = {
   id: string;
-  type: "push" | "pr" | "create" | "issue" | "project";
+  type: "push" | "pr" | "create" | "issue" | "project" | "streak";
   username: string;
   avatar_url: string | null;
   streak: number;
@@ -20,25 +19,37 @@ type FeedItem = {
 function relativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
+  if (mins < 2) return "Just now";
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function EventIcon({ type }: { type: string }) {
-  if (type === "pr") return <GitPullRequest size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />;
-  if (type === "create") return <GitBranch size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />;
-  if (type === "project") return <Rocket size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />;
-  return <Flame size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />;
+function actionText(item: FeedItem): string {
+  if (item.type === "project") return "shipped";
+  if (item.type === "pr") return "opened PR in";
+  if (item.type === "create") return "created branch in";
+  if (item.type === "issue") return "opened issue in";
+  if (item.type === "streak") return "logged coding activity";
+  return "pushed to";
 }
+
+function projectName(item: FeedItem): string | null {
+  if (item.type === "project") return item.project_title || null;
+  if (item.repo_name) return item.repo_name;
+  if (item.message && item.message !== "logged a coding day") return item.message;
+  return null;
+}
+
+const AVATAR_COLORS = ["#ff4400", "#4a4a4a", "#ffffff", "#ff4400", "#4a4a4a", "#ffffff"];
 
 export function LiveActivityFeed() {
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    fetch("/api/feed?limit=5")
+    fetch("/api/feed?limit=6")
       .then((r) => r.json())
       .then((d) => { setFeed(d.feed || []); setLoaded(true); })
       .catch(() => setLoaded(true));
@@ -48,53 +59,143 @@ export function LiveActivityFeed() {
 
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
-      <div style={{ border: "2px solid var(--border-hard)", borderRadius: 12, boxShadow: "var(--shadow-brutal-sm)", background: "var(--bg-surface)", overflow: "hidden" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderBottom: "2px solid var(--border-hard)", background: "var(--bg-inverted)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Zap size={16} style={{ color: "var(--accent)" }} />
-            <span style={{ fontSize: "0.75rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-on-inverted)", fontFamily: "var(--font-space-grotesk)" }}>Live Activity</span>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4ade80", display: "inline-block", animation: "pulse 2s ease-in-out infinite" }} />
+      <article style={{
+        width: "100%",
+        maxWidth: 480,
+        margin: "0 auto",
+        backgroundColor: "var(--bg-surface, #0a0a0a)",
+        border: "2px solid var(--border-hard, #fff)",
+        boxShadow: "6px 6px 0px #000",
+        display: "flex",
+        flexDirection: "column",
+      }}>
+        {/* Orange header */}
+        <header style={{
+          backgroundColor: "var(--accent, #ff4400)",
+          color: "#000",
+          padding: "1rem 1.25rem",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderBottom: "2px solid var(--border-hard, #fff)",
+        }}>
+          <div style={{
+            fontSize: "1rem",
+            fontWeight: 800,
+            textTransform: "uppercase",
+            letterSpacing: "-0.5px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontFamily: "var(--font-space-grotesk, 'Space Grotesk', sans-serif)",
+          }}>
+            <div style={{
+              width: 8, height: 8,
+              backgroundColor: "#000",
+              borderRadius: "50%",
+              animation: "pulse 2s infinite",
+            }} />
+            Live Activity
           </div>
-          <Link href="/feed" style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "0.72rem", fontWeight: 700, color: "var(--accent)", textDecoration: "none", fontFamily: "var(--font-jetbrains-mono)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-            View Full Feed <ArrowRight size={12} />
+          <Link href="/feed" style={{
+            backgroundColor: "#fff",
+            color: "#000",
+            textDecoration: "none",
+            fontSize: "0.75rem",
+            fontWeight: 700,
+            textTransform: "uppercase",
+            padding: "6px 12px",
+            borderRadius: 999,
+            border: "1.5px solid #000",
+            transition: "all 0.2s ease",
+            whiteSpace: "nowrap",
+          }}>
+            View Full Feed
           </Link>
-        </div>
-        <div>
-          {feed.map((item, idx) => (
-            <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 20px", borderBottom: idx < feed.length - 1 ? "1px solid var(--border-subtle, var(--border-hard))" : "none" }}>
-              <Link href={`/profile/${item.username}`} style={{ flexShrink: 0, textDecoration: "none" }}>
-                <div style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid var(--border-hard)", overflow: "hidden", backgroundColor: "var(--bg-inverted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        </header>
+
+        {/* Feed items */}
+        <div style={{ display: "flex", flexDirection: "column", maxHeight: 500, overflowY: "auto" }}>
+          {feed.map((item, idx) => {
+            const initials = item.username.slice(0, 2).toUpperCase();
+            const bgColor = AVATAR_COLORS[idx % AVATAR_COLORS.length];
+            const textColor = bgColor === "#ffffff" ? "#000" : bgColor === "#4a4a4a" ? "#fff" : "#000";
+            const name = projectName(item);
+
+            return (
+              <Link
+                key={item.id}
+                href={item.type === "project" ? `/profile/${item.username}` : (item.type !== "streak" && item.repo_name ? `https://github.com/${item.username}/${item.repo_name}` : `/profile/${item.username}`)}
+                style={{
+                  padding: "1rem 1.25rem",
+                  display: "grid",
+                  gridTemplateColumns: "auto 1fr",
+                  gap: "1rem",
+                  borderBottom: idx < feed.length - 1 ? "1px solid #2a2a2a" : "none",
+                  transition: "background-color 0.15s ease",
+                  textDecoration: "none",
+                  color: "inherit",
+                }}
+                target={item.type !== "project" && item.type !== "streak" ? "_blank" : undefined}
+              >
+                {/* Avatar */}
+                <div style={{
+                  width: 40, height: 40,
+                  backgroundColor: bgColor,
+                  border: "2px solid var(--border-hard, #fff)",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  fontWeight: 800,
+                  color: textColor,
+                  fontSize: "1rem",
+                  textTransform: "uppercase",
+                  boxShadow: "2px 2px 0px #000",
+                  overflow: "hidden",
+                  fontFamily: "var(--font-space-grotesk, 'Space Grotesk', sans-serif)",
+                }}>
                   {item.avatar_url ? (
-                    <Image src={item.avatar_url} alt={item.username} width={28} height={28} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
-                  ) : (
-                    <span style={{ color: "var(--text-on-inverted)", fontWeight: 800, fontSize: "0.6rem" }}>{item.username.slice(0, 2).toUpperCase()}</span>
+                    <Image src={item.avatar_url} alt={item.username} width={40} height={40} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : initials}
+                </div>
+
+                {/* Content */}
+                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                    <div style={{ fontSize: "0.875rem", lineHeight: 1.2 }}>
+                      <span style={{ fontWeight: 700, color: "var(--foreground, #fff)" }}>@{item.username}</span>{" "}
+                      <span style={{ color: "var(--text-muted, #8a8a8a)" }}>{actionText(item)}</span>
+                    </div>
+                    <span style={{
+                      fontSize: "0.75rem",
+                      color: "var(--text-muted, #8a8a8a)",
+                      fontVariantNumeric: "tabular-nums",
+                      flexShrink: 0,
+                    }}>
+                      {relativeTime(item.date)}
+                    </span>
+                  </div>
+                  {name && (
+                    <div style={{
+                      fontSize: "1rem",
+                      fontWeight: 800,
+                      fontStyle: "italic",
+                      color: "var(--accent, #ff4400)",
+                      textTransform: "uppercase",
+                      letterSpacing: "-0.5px",
+                      lineHeight: 1.1,
+                      fontFamily: "var(--font-space-grotesk, 'Space Grotesk', sans-serif)",
+                    }}>
+                      {name}
+                    </div>
                   )}
                 </div>
               </Link>
-              <EventIcon type={item.type} />
-              <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 5, overflow: "hidden" }}>
-                <Link href={`/profile/${item.username}`} style={{ fontWeight: 800, fontSize: "0.8rem", color: "var(--foreground)", textDecoration: "none", fontFamily: "var(--font-space-grotesk)", flexShrink: 0 }}>{item.username}</Link>
-                {item.type === "project" ? (
-                  <span style={{ color: "var(--text-muted)", fontSize: "0.76rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>shipped <strong style={{ color: "var(--foreground)" }}>{item.project_title}</strong></span>
-                ) : (
-                  <>
-                    <span style={{ color: "var(--text-muted)", fontSize: "0.76rem", flexShrink: 0 }}>{item.type === "pr" ? "PR" : "pushed"}</span>
-                    {item.repo_name && <span style={{ fontWeight: 700, fontSize: "0.76rem", fontFamily: "var(--font-jetbrains-mono)", color: "var(--foreground)", flexShrink: 0 }}>{item.repo_name}</span>}
-                    {item.message && item.message !== "logged a coding day" && (
-                      <span style={{ color: "var(--text-muted)", fontSize: "0.72rem", fontFamily: "var(--font-jetbrains-mono)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.message}</span>
-                    )}
-                  </>
-                )}
-                {item.streak > 1 && item.type === "push" && (
-                  <span style={{ fontSize: "0.65rem", fontWeight: 700, fontFamily: "var(--font-jetbrains-mono)", color: "var(--accent)", background: "rgba(255,58,0,0.08)", padding: "1px 6px", borderRadius: 4, border: "1px solid rgba(255,58,0,0.2)", whiteSpace: "nowrap", flexShrink: 0 }}>{item.streak}d</span>
-                )}
-              </div>
-              <span style={{ color: "var(--text-muted)", fontSize: "0.65rem", fontWeight: 600, fontFamily: "var(--font-jetbrains-mono)", whiteSpace: "nowrap", flexShrink: 0 }}>{relativeTime(item.date)}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
-      </div>
-      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
+      </article>
+      <style>{`@keyframes pulse { 0% { transform: scale(0.95); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.5; } 100% { transform: scale(0.95); opacity: 1; } }`}</style>
     </section>
   );
 }
