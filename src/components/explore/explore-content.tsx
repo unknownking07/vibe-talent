@@ -45,7 +45,8 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
   }, [users]);
 
   const filteredUsers = useMemo(() => {
-    let filtered = [...users];
+    // Default: only show builders who have at least one project AND a bio
+    let filtered = users.filter(u => (u.projects ?? []).length > 0 && u.bio);
 
     if (search) {
       const q = search.toLowerCase();
@@ -87,27 +88,34 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
       filtered = filtered.filter(u => (u.projects ?? []).some(p => p.verified));
     }
 
-    // Profile tier: complete profiles always first, then partial, then empty
-    const profileTier = (u: typeof filtered[0]) => {
-      const hasProj = (u.projects ?? []).length > 0;
-      const hasBio = !!u.bio;
-      const hasScore = u.vibe_score > 0;
-      const hasStreak = u.streak > 0;
-      if (hasProj && hasBio && hasScore && hasStreak) return 3; // complete — shown first
-      if (hasProj && hasBio) return 2; // has projects + bio
-      if (hasProj || hasBio || hasStreak) return 1; // has one of them
-      return 0; // empty shell
+    // Quality ranking: weighted score combining projects, activity, and reputation
+    const qualityScore = (u: typeof filtered[0]) => {
+      const projects = u.projects ?? [];
+      const projectCount = Math.min(projects.length, 5); // cap at 5
+      const verifiedCount = projects.filter(p => p.verified).length;
+      const withLiveUrl = projects.filter(p => p.live_url).length;
+
+      // Projects shipped (40% weight) — count + verified + live urls
+      const projectScore = (projectCount * 8) + (verifiedCount * 10) + (withLiveUrl * 5);
+
+      // Activity (30% weight) — streak strength
+      const streakScore = Math.min(50, u.streak * 0.5);
+
+      // Vibe score / reputation (30% weight)
+      const vibeScoreNorm = Math.min(50, u.vibe_score / 10);
+
+      return projectScore * 0.4 + streakScore * 0.3 + vibeScoreNorm * 0.3;
     };
 
     switch (sortBy) {
       case "vibe_score":
-        filtered.sort((a, b) => profileTier(b) - profileTier(a) || b.vibe_score - a.vibe_score);
+        filtered.sort((a, b) => qualityScore(b) - qualityScore(a) || b.vibe_score - a.vibe_score);
         break;
       case "streak":
-        filtered.sort((a, b) => profileTier(b) - profileTier(a) || b.streak - a.streak);
+        filtered.sort((a, b) => qualityScore(b) - qualityScore(a) || b.streak - a.streak);
         break;
       case "projects":
-        filtered.sort((a, b) => profileTier(b) - profileTier(a) || b.projects.length - a.projects.length);
+        filtered.sort((a, b) => qualityScore(b) - qualityScore(a) || (b.projects ?? []).length - (a.projects ?? []).length);
         break;
       case "newest":
         filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
