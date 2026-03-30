@@ -2,7 +2,12 @@
   "redirects": [
     {
       "source": "/(.*)",
-      "has": [{ "type": "host", "value": "vibetalent.work" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "vibetalent.work"
+        }
+      ],
       "destination": "https://www.vibetalent.work/$1",
       "permanent": true
     }
@@ -15,6 +20,10 @@
     {
       "path": "/api/cron/check-live-urls",
       "schedule": "0 3 * * 0"
+    },
+    {
+      "path": "/api/cron/github-sync",
+      "schedule": "0 * * * *"
     }
   ]
 }
