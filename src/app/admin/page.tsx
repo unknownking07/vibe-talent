@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Shield, Plus, Trash2, Rocket, Target, BarChart3, Calendar, TrendingUp, Users, Code2, Flame, Award, RefreshCw } from "lucide-react";
+import { Shield, Plus, Trash2, Rocket, Target, BarChart3, Calendar, TrendingUp, Users, Code2, Flame, RefreshCw } from "lucide-react";
 
 const ADMIN_USERS = ["unknownking07", "stuart5915"];
 
@@ -35,6 +35,7 @@ export default function AdminPage() {
   const dataLoaded = useRef(false);
   const [liveStats, setLiveStats] = useState<LiveStats>(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  const statsFetched = useRef(false);
 
   const stored = loadStoredData();
   const [initiatives, setInitiatives] = useState<Initiative[]>(stored?.initiatives ?? SEED_INITIATIVES);
@@ -51,18 +52,23 @@ export default function AdminPage() {
     });
   }, []);
 
-  const fetchLiveStats = async () => {
+  const fetchLiveStats = useCallback(async () => {
     setStatsLoading(true);
     try {
       const res = await fetch("/api/admin-stats");
       if (res.ok) { const data = await res.json(); setLiveStats(data); }
     } catch { /* ignore */ }
     setStatsLoading(false);
-  };
+  }, []);
 
-  useEffect(() => {
-    if (authorized && tab === "metrics") fetchLiveStats();
-  }, [authorized, tab]);
+  // Fetch stats when switching to metrics tab (via onClick, not useEffect)
+  const handleTabClick = useCallback((t: "initiatives" | "roadmap" | "metrics") => {
+    setTab(t);
+    if (t === "metrics" && authorized && !statsFetched.current) {
+      statsFetched.current = true;
+      fetchLiveStats();
+    }
+  }, [authorized, fetchLiveStats]);
 
   useEffect(() => {
     if (!authorized || !dataLoaded.current) { dataLoaded.current = true; return; }
@@ -98,7 +104,7 @@ export default function AdminPage() {
         </div>
         <div style={{ display: "flex", gap: 4, background: "var(--bg-surface)", border: "2px solid var(--border-hard)", borderRadius: 10, padding: 4, boxShadow: "var(--shadow-brutal-sm)" }}>
           {(["initiatives", "roadmap", "metrics"] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)} style={{ padding: "8px 16px", borderRadius: 6, border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.82rem", textTransform: "capitalize", background: tab === t ? "var(--accent)" : "transparent", color: tab === t ? "white" : "var(--text-muted)" }}>{t}</button>
+            <button key={t} onClick={() => handleTabClick(t)} style={{ padding: "8px 16px", borderRadius: 6, border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.82rem", textTransform: "capitalize", background: tab === t ? "var(--accent)" : "transparent", color: tab === t ? "white" : "var(--text-muted)" }}>{t}</button>
           ))}
         </div>
       </div>
@@ -147,67 +153,38 @@ export default function AdminPage() {
       {tab === "metrics" && <div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <h2 style={{ fontSize: "1.1rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}><BarChart3 size={18} /> Live Platform Stats</h2>
-          <button onClick={fetchLiveStats} style={{ ...btn, background: statsLoading ? "var(--text-muted)" : "var(--accent)" }} disabled={statsLoading}>
+          <button onClick={() => fetchLiveStats()} style={{ ...btn, background: statsLoading ? "var(--text-muted)" : "var(--accent)" }} disabled={statsLoading}>
             <RefreshCw size={14} style={{ animation: statsLoading ? "spin 1s linear infinite" : "none" }} /> Refresh
           </button>
         </div>
 
         {liveStats ? <>
-          {/* Top stats grid */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginBottom: 16 }}>
-            <div style={statCard}>
-              <Users size={18} style={{ color: "var(--accent)", margin: "0 auto 6px" }} />
-              <div style={statNum}>{liveStats.builders}</div>
-              <div style={statLabel}>Total Builders</div>
-            </div>
-            <div style={statCard}>
-              <Code2 size={18} style={{ color: "var(--accent)", margin: "0 auto 6px" }} />
-              <div style={statNum}>{liveStats.projects}</div>
-              <div style={statLabel}>Projects Shipped</div>
-            </div>
-            <div style={statCard}>
-              <Flame size={18} style={{ color: "var(--accent)", margin: "0 auto 6px" }} />
-              <div style={statNum}>{liveStats.activeStreaks}</div>
-              <div style={statLabel}>Active Streaks</div>
-            </div>
-            <div style={statCard}>
-              <TrendingUp size={18} style={{ color: liveStats.growth.pct >= 0 ? "#16a34a" : "#EF4444", margin: "0 auto 6px" }} />
-              <div style={{ ...statNum, color: liveStats.growth.pct >= 0 ? "#16a34a" : "#EF4444" }}>
-                {liveStats.growth.pct >= 0 ? "+" : ""}{liveStats.growth.pct}%
-              </div>
-              <div style={statLabel}>Growth (7d)</div>
-            </div>
+            <div style={statCard}><Users size={18} style={{ color: "var(--accent)", margin: "0 auto 6px" }} /><div style={statNum}>{liveStats.builders}</div><div style={statLabel}>Total Builders</div></div>
+            <div style={statCard}><Code2 size={18} style={{ color: "var(--accent)", margin: "0 auto 6px" }} /><div style={statNum}>{liveStats.projects}</div><div style={statLabel}>Projects Shipped</div></div>
+            <div style={statCard}><Flame size={18} style={{ color: "var(--accent)", margin: "0 auto 6px" }} /><div style={statNum}>{liveStats.activeStreaks}</div><div style={statLabel}>Active Streaks</div></div>
+            <div style={statCard}><TrendingUp size={18} style={{ color: liveStats.growth.pct >= 0 ? "#16a34a" : "#EF4444", margin: "0 auto 6px" }} /><div style={{ ...statNum, color: liveStats.growth.pct >= 0 ? "#16a34a" : "#EF4444" }}>{liveStats.growth.pct >= 0 ? "+" : ""}{liveStats.growth.pct}%</div><div style={statLabel}>Growth (7d)</div></div>
           </div>
-
-          {/* Detail stats */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
             <div style={card}>
               <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Streak Stats</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>Avg Streak</span><span style={{ fontWeight: 700, fontFamily: "var(--font-jetbrains-mono)" }}>{liveStats.avgStreak} days</span></div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>Longest Streak</span><span style={{ fontWeight: 700, fontFamily: "var(--font-jetbrains-mono)" }}>{liveStats.maxStreak} days</span></div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>Avg Vibe Score</span><span style={{ fontWeight: 700, fontFamily: "var(--font-jetbrains-mono)" }}>{liveStats.avgVibeScore}</span></div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>Hire Requests</span><span style={{ fontWeight: 700, fontFamily: "var(--font-jetbrains-mono)" }}>{liveStats.hires}</span></div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>Endorsements</span><span style={{ fontWeight: 700, fontFamily: "var(--font-jetbrains-mono)" }}>{liveStats.endorsements}</span></div>
-              </div>
+              {[["Avg Streak", `${liveStats.avgStreak} days`], ["Longest Streak", `${liveStats.maxStreak} days`], ["Avg Vibe Score", `${liveStats.avgVibeScore}`], ["Hire Requests", `${liveStats.hires}`], ["Endorsements", `${liveStats.endorsements}`]].map(([l, v]) => (
+                <div key={l} style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}><span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>{l}</span><span style={{ fontWeight: 700, fontFamily: "var(--font-jetbrains-mono)" }}>{v}</span></div>
+              ))}
             </div>
             <div style={card}>
               <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Badge Distribution</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {Object.entries(liveStats.badges).map(([level, count]) => (
-                  <div key={level} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "0.82rem", color: "var(--text-muted)", textTransform: "capitalize" }}>{level === "none" ? "No badge" : level}</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ width: Math.max(4, (count / liveStats.builders) * 120), height: 8, borderRadius: 4, background: level === "diamond" ? "#0891B2" : level === "gold" ? "#CA8A04" : level === "silver" ? "#71717A" : level === "bronze" ? "#D97706" : "var(--border-subtle)" }} />
-                      <span style={{ fontWeight: 700, fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.82rem", minWidth: 24, textAlign: "right" }}>{count}</span>
-                    </div>
+              {Object.entries(liveStats.badges).map(([level, count]) => (
+                <div key={level} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <span style={{ fontSize: "0.82rem", color: "var(--text-muted)", textTransform: "capitalize" }}>{level === "none" ? "No badge" : level}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ width: Math.max(4, (count / Math.max(liveStats.builders, 1)) * 120), height: 8, borderRadius: 4, background: level === "diamond" ? "#0891B2" : level === "gold" ? "#CA8A04" : level === "silver" ? "#71717A" : level === "bronze" ? "#D97706" : "var(--border-subtle)" }} />
+                    <span style={{ fontWeight: 700, fontFamily: "var(--font-jetbrains-mono)", fontSize: "0.82rem", minWidth: 24, textAlign: "right" }}>{count}</span>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
-
-          {/* Growth detail */}
           <div style={card}>
             <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>Weekly Signups</div>
             <div style={{ display: "flex", gap: 24 }}>
@@ -216,9 +193,8 @@ export default function AdminPage() {
             </div>
             <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: 6 }}>Updated: {new Date(liveStats.timestamp).toLocaleString()}</div>
           </div>
-        </> : <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>{statsLoading ? "Loading stats..." : "Failed to load stats. Click Refresh."}</div>}
+        </> : <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>{statsLoading ? "Loading stats..." : "Click Refresh to load live stats."}</div>}
 
-        {/* Manual log section */}
         <div style={{ marginTop: 24 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <h3 style={{ fontSize: "0.95rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}><Calendar size={16} /> Manual Notes</h3>
