@@ -176,7 +176,7 @@ export function NotificationBell() {
                     className="w-full text-left px-4 py-3 flex gap-3 items-start transition-colors hover:bg-[var(--bg-surface-light)] cursor-pointer"
                     style={{
                       borderLeft: `3px solid ${color}`,
-                      backgroundColor: n.read ? "transparent" : "#FFFBEB",
+                      backgroundColor: n.read ? "transparent" : "var(--bg-surface-light, #FFFBEB)",
                     }}
                   >
                     <Icon size={16} style={{ color, marginTop: 2, flexShrink: 0 }} />
@@ -184,8 +184,8 @@ export function NotificationBell() {
                       <p className={`text-sm leading-tight ${n.read ? "font-medium text-[var(--text-secondary)]" : "font-bold text-[var(--foreground)]"}`}>
                         {n.title}
                       </p>
-                      <p className="text-xs text-[var(--text-muted)] mt-0.5 truncate">{n.message}</p>
-                      <p className="text-[10px] text-[var(--text-muted-soft)] mt-1 font-medium">{timeAgo(n.created_at)}</p>
+                      <p className="text-xs mt-0.5 truncate" style={{ color: n.read ? "var(--text-muted)" : "var(--text-secondary)" }}>{n.message}</p>
+                      <p className="text-[10px] mt-1 font-medium" style={{ color: "var(--text-muted)" }}>{timeAgo(n.created_at)}</p>
                     </div>
                     {!n.read && (
                       <span
