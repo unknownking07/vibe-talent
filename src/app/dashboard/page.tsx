@@ -229,6 +229,7 @@ export default function DashboardPage() {
 
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [projectError, setProjectError] = useState("");
+  const [githubSkipped, setGithubSkipped] = useState(false);
   const [projectForm, setProjectForm] = useState({
     title: "",
     description: "",
@@ -590,6 +591,10 @@ export default function DashboardPage() {
         setProjectError("GitHub URL must be in the format: https://github.com/username/repo");
         return;
       }
+    } else if (!githubSkipped) {
+      setProjectError("Adding a GitHub URL helps verify your project and boosts your quality score. Click submit again to skip.");
+      setGithubSkipped(true);
+      return;
     }
 
     setAddingProject(true);
@@ -637,6 +642,7 @@ export default function DashboardPage() {
     setProjectImagePreview(null);
     setShowProjectForm(false);
     setAddingProject(false);
+    setGithubSkipped(false);
 
     // Auto-verify if project has a GitHub URL
     if (projectForm.github_url && insertedProject?.id) {
@@ -687,6 +693,10 @@ export default function DashboardPage() {
         setProjectError("GitHub URL must be in the format: https://github.com/username/repo");
         return;
       }
+    } else if (!githubSkipped) {
+      setProjectError("Adding a GitHub URL helps verify your project and boosts your quality score. Click save again to skip.");
+      setGithubSkipped(true);
+      return;
     }
 
     setSavingEdit(true);
@@ -734,6 +744,7 @@ export default function DashboardPage() {
     setEditingProjectId(null);
     setEditingOriginalGithubUrl("");
     setSavingEdit(false);
+    setGithubSkipped(false);
 
     if (githubUrlChanged && projectForm.github_url && savedEditingId) {
       verifyProject(savedEditingId);
@@ -1095,6 +1106,7 @@ export default function DashboardPage() {
                 setShowProjectForm(false);
                 setEditingProjectId(null);
                 setProjectForm({ title: "", description: "", tech_stack: "", live_url: "", github_url: "", build_time: "", tags: "" });
+                setGithubSkipped(false);
               } else {
                 setShowProjectForm(true);
               }
@@ -1185,7 +1197,7 @@ export default function DashboardPage() {
                 />
                 <input
                   type="text"
-                  placeholder="GitHub URL"
+                  placeholder="GitHub URL (recommended)"
                   value={projectForm.github_url}
                   onChange={(e) => setProjectForm({ ...projectForm, github_url: e.target.value })}
                   className="input-brutal"
