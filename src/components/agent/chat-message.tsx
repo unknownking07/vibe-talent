@@ -27,7 +27,7 @@ export function ChatMessage({ role, content, isThinking }: ChatMessageProps) {
             backgroundColor: "var(--bg-inverted)",
             border: "2px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal-sm)",
-            color: "var(--border-subtle)",
+            color: "#F5F5F5",
           }}
         >
           {isThinking ? (
