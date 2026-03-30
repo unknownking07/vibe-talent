@@ -57,7 +57,7 @@ export function QualityScoreBadge({ project, size = "sm" }: QualityScoreBadgePro
       {showInfo && (
         <div
           className="absolute left-0 top-full mt-2 z-50 w-72"
-          style={{ border: "2px solid var(--border-hard)", boxShadow: "var(--shadow-brutal-sm)", backgroundColor: "#fff" }}
+          style={{ border: "2px solid var(--border-hard)", boxShadow: "var(--shadow-brutal-sm)", backgroundColor: "var(--bg-surface)" }}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between px-3 py-2 border-b-2 border-[var(--border-hard)] bg-[var(--bg-surface-light)]">
