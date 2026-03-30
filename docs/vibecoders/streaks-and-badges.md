@@ -8,7 +8,7 @@ A streak counts the number of **consecutive days** you've logged coding activity
 
 1. **Log activity** — Click "Log Activity" on your Dashboard, or let [GitHub sync](github-sync.md) do it for you
 2. **One log per day** — Multiple clicks on the same day still count as 1 day
-3. **Don't miss a day** — If you skip a day, your streak resets to 0
+3. **Don't miss a day** — If you skip a day, your streak resets to 0 (unless you have a streak freeze)
 4. **Timezone** — Streaks are based on UTC. The day resets at midnight UTC.
 
 ### Example
@@ -21,11 +21,21 @@ Thu: Missed ✗  → Streak: 0  (reset!)
 Fri: Logged ✓  → Streak: 1  (start over)
 ```
 
+### Streak Freezes
+
+Streak freezes protect your streak when you need a day off:
+
+- You get **2 streak freezes per month** (reset on the 1st)
+- If you miss a day and have freezes remaining, one is automatically used instead of resetting your streak
+- Freezes are applied during the daily streak reset cron (midnight UTC)
+- Check your remaining freezes on the Dashboard
+
 ### Tips for Maintaining Your Streak
 
 - **Connect GitHub** — If you're already pushing code daily, your streak logs automatically
 - **Set a reminder** — Log your activity before midnight UTC
-- **Streak warnings** — VibeTalent sends you a notification at 6 PM UTC if you haven't logged that day
+- **Streak warnings** — VibeTalent sends you an email and in-app notification at 6 PM UTC if you haven't logged that day
+- **Save your freezes** — Don't waste freezes on days you can log activity
 - **It's okay to restart** — Everyone breaks a streak eventually. Your longest streak is saved forever.
 
 ## Badge System
