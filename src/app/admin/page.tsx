@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Shield, Plus, Trash2, Rocket, Target, BarChart3, Calendar } from "lucide-react";
 
@@ -12,14 +12,34 @@ type MetricEntry = { id: string; date: string; builders: number; projects: numbe
 
 const SC: Record<string, string> = { active: "#16a34a", planned: "#FF3A00", done: "#71717A", paused: "#d97706", todo: "#71717A", "in-progress": "#FF3A00", high: "#EF4444", medium: "#FF3A00", low: "#71717A" };
 
+const SEED_INITIATIVES: Initiative[] = [
+  { id: "1", title: "Bags Hackathon", status: "active", owner: "Abhinav", notes: "Top 10 on leaderboard", deadline: "" },
+  { id: "2", title: "Product Hunt Launch", status: "active", owner: "Abhinav", notes: "Gaining traction", deadline: "" },
+  { id: "3", title: "SEO / Google Search Console", status: "active", owner: "Abhinav", notes: "Indexing pending 3-7 days", deadline: "" },
+  { id: "4", title: "Telegram Community", status: "planned", owner: "", notes: "Discussed but not created yet", deadline: "" },
+  { id: "5", title: "User Growth (51 builders)", status: "active", owner: "Abhinav", notes: "Talking to users daily", deadline: "" },
+];
+
+function loadStoredData() {
+  if (typeof window === "undefined") return null;
+  try {
+    const stored = localStorage.getItem("vt-admin-data");
+    if (stored) return JSON.parse(stored);
+  } catch { /* ignore */ }
+  return null;
+}
+
 export default function AdminPage() {
   const [user, setUser] = useState<{ username: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [tab, setTab] = useState<"initiatives" | "roadmap" | "metrics">("initiatives");
-  const [initiatives, setInitiatives] = useState<Initiative[]>([]);
-  const [roadmap, setRoadmap] = useState<RoadmapItem[]>([]);
-  const [metrics, setMetrics] = useState<MetricEntry[]>([]);
+  const dataLoaded = useRef(false);
+
+  const stored = loadStoredData();
+  const [initiatives, setInitiatives] = useState<Initiative[]>(stored?.initiatives ?? SEED_INITIATIVES);
+  const [roadmap, setRoadmap] = useState<RoadmapItem[]>(stored?.roadmap ?? []);
+  const [metrics, setMetrics] = useState<MetricEntry[]>(stored?.metrics ?? []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -32,21 +52,9 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (!authorized) return;
-    const stored = localStorage.getItem("vt-admin-data");
-    if (stored) { try { const d = JSON.parse(stored); setInitiatives(d.initiatives || []); setRoadmap(d.roadmap || []); setMetrics(d.metrics || []); } catch {} }
-    else {
-      setInitiatives([
-        { id: "1", title: "Bags Hackathon", status: "active", owner: "Abhinav", notes: "Top 10 on leaderboard", deadline: "" },
-        { id: "2", title: "Product Hunt Launch", status: "active", owner: "Abhinav", notes: "Gaining traction", deadline: "" },
-        { id: "3", title: "SEO / Google Search Console", status: "active", owner: "Abhinav", notes: "Indexing pending 3-7 days", deadline: "" },
-        { id: "4", title: "Telegram Community", status: "planned", owner: "", notes: "Discussed but not created yet", deadline: "" },
-        { id: "5", title: "User Growth (51 builders)", status: "active", owner: "Abhinav", notes: "Talking to users daily", deadline: "" },
-      ]);
-    }
-  }, [authorized]);
-
-  useEffect(() => { if (authorized) localStorage.setItem("vt-admin-data", JSON.stringify({ initiatives, roadmap, metrics })); }, [initiatives, roadmap, metrics, authorized]);
+    if (!authorized || !dataLoaded.current) { dataLoaded.current = true; return; }
+    localStorage.setItem("vt-admin-data", JSON.stringify({ initiatives, roadmap, metrics }));
+  }, [initiatives, roadmap, metrics, authorized]);
 
   if (loading) return <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>Loading...</div>;
   if (!authorized) return (
