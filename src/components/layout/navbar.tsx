@@ -11,6 +11,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const navLinks = [
   { href: "/explore", label: "Explore" },
+  { href: "/feed", label: "Feed" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/agent", label: "AI Agents" },
   { href: "/dashboard", label: "Dashboard" },
