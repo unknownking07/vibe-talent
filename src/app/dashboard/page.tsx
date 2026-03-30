@@ -803,6 +803,54 @@ export default function DashboardPage() {
 
       {activeTab === "overview" && (
       <>
+      {/* First Streak Nudge — shown to new users who haven't logged any activity yet */}
+      {user.streak === 0 && user.longest_streak === 0 && !todayLogged && (
+        <div
+          className="mb-8 p-6 relative overflow-hidden"
+          style={{
+            backgroundColor: "var(--accent)",
+            border: "2px solid var(--border-hard)",
+            boxShadow: "var(--shadow-brutal)",
+          }}
+        >
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-4">
+              <div
+                className="w-14 h-14 flex items-center justify-center shrink-0"
+                style={{
+                  backgroundColor: "var(--background)",
+                  border: "2px solid var(--border-hard)",
+                }}
+              >
+                <Flame size={28} className="text-[var(--accent)]" />
+              </div>
+              <div>
+                <h2 className="text-lg font-extrabold uppercase text-white">
+                  Start Your Streak Today!
+                </h2>
+                <p className="text-sm font-medium text-white/80 mt-0.5">
+                  Log your first day of coding to begin building your reputation. Streaks are the #1 signal clients look for.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleLogActivity}
+              disabled={logging}
+              className="btn-brutal text-sm shrink-0"
+              style={{
+                backgroundColor: "var(--background)",
+                color: "var(--foreground)",
+                fontSize: "16px",
+                padding: "12px 24px",
+              }}
+            >
+              {logging ? "Logging..." : "Log Day 1"}
+              {!logging && <Flame size={18} className="ml-2 text-[var(--accent)]" />}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Stats Overview */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         <div
