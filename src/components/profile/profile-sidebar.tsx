@@ -145,7 +145,7 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
 
         {/* Name + role */}
         <div className="mt-2">
-          <h2 className="text-xl font-extrabold uppercase tracking-tight text-[var(--foreground)]">@{user.username}</h2>
+          <h1 className="text-xl font-extrabold uppercase tracking-tight text-[var(--foreground)]">@{user.username}</h1>
           <p className="text-sm font-bold text-[var(--text-muted)] uppercase mt-0.5">{deriveRole(user.projects)}</p>
         </div>
 

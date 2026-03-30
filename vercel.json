@@ -1,4 +1,12 @@
 {
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "vibetalent.work" }],
+      "destination": "https://www.vibetalent.work/$1",
+      "permanent": true
+    }
+  ],
   "crons": [
     {
       "path": "/api/cron/daily",

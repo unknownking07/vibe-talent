@@ -3,7 +3,7 @@ import { ExploreContent } from "@/components/explore/explore-content";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Explore Talent | VibeTalent",
+  title: "Explore Talent",
   description:
     "Discover talented vibe coders. Filter by badge level, streak, tech stack, and more to find the perfect builder for your project.",
   alternates: {
