@@ -210,6 +210,50 @@ export async function GET(req: NextRequest) {
               return { userInfo, status: "skipped", reason: "No recent qualifying events" };
             }
 
+            // Save events to feed_events table for the activity feed
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const feedRows = recentEvents.slice(0, 10).map((event: any) => {
+              const repoName = (event.repo?.name || 'unknown').replace(/^[^/]+\//, '');
+              let message = '';
+              let eventType = 'push';
+              let githubUrl = '';
+
+              if (event.type === 'PushEvent') {
+                eventType = 'push';
+                message = event.payload?.commits?.[0]?.message?.split('
+')[0] || 'pushed code';
+                const sha = event.payload?.commits?.[0]?.sha || '';
+                githubUrl = sha ? 'https://github.com/' + event.repo?.name + '/commit/' + sha : '';
+              } else if (event.type === 'PullRequestEvent') {
+                eventType = 'pr';
+                message = event.payload?.pull_request?.title || 'opened a pull request';
+                githubUrl = event.payload?.pull_request?.html_url || '';
+              } else if (event.type === 'CreateEvent') {
+                eventType = 'create';
+                const refType = event.payload?.ref_type || 'repository';
+                message = 'created ' + refType + (event.payload?.ref ? ' ' + event.payload.ref : '');
+                githubUrl = 'https://github.com/' + event.repo?.name;
+              } else if (event.type === 'IssuesEvent') {
+                eventType = 'issue';
+                message = event.payload?.issue?.title || 'opened an issue';
+                githubUrl = event.payload?.issue?.html_url || '';
+              }
+
+              return {
+                user_id: userInfo.userId,
+                event_type: eventType,
+                repo_name: repoName,
+                message: message.slice(0, 500),
+                github_url: githubUrl,
+                created_at: event.created_at,
+              };
+            });
+
+            if (feedRows.length > 0) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await (supabase as any).from('feed_events').insert(feedRows);
+            }
+
             // Extract unique activity dates
             const activityDates = [
               ...new Set(
