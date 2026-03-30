@@ -1,0 +1,49 @@
+import type { Metadata } from "next";
+
+const siteUrl = "https://www.vibetalent.work";
+
+export const metadata: Metadata = {
+  title: "Live Feed — See What Builders Are Shipping",
+  description: "Real-time GitHub activity from vibe coders on VibeTalent. Watch developers push code, ship projects, merge PRs, and maintain their coding streaks.",
+  openGraph: {
+    title: "Live Feed — VibeTalent",
+    description: "Real-time GitHub activity from vibe coders. Watch developers push code, ship projects, and maintain coding streaks.",
+    url: `${siteUrl}/feed`,
+    siteName: "VibeTalent",
+    type: "website",
+    images: [
+      {
+        url: `${siteUrl}/og-image.jpg`,
+        width: 1200,
+        height: 630,
+        alt: "VibeTalent Live Feed",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Live Feed — VibeTalent",
+    description: "Real-time GitHub activity from vibe coders. Watch developers push code, ship projects, and maintain coding streaks.",
+  },
+  alternates: {
+    canonical: `${siteUrl}/feed`,
+  },
+  keywords: [
+    "developer activity feed",
+    "github activity",
+    "vibe coding",
+    "coding streaks",
+    "developer marketplace",
+    "shipped projects",
+    "open source contributions",
+    "proof of work developers",
+  ],
+};
+
+export default function FeedLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return children;
+}
