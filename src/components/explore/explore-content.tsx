@@ -45,8 +45,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
   }, [users]);
 
   const filteredUsers = useMemo(() => {
-    // Default: only show builders who have at least one project AND a bio
-    let filtered = users.filter(u => (u.projects ?? []).length > 0 && u.bio);
+    let filtered = [...users];
 
     if (search) {
       const q = search.toLowerCase();
@@ -88,9 +87,13 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
       filtered = filtered.filter(u => (u.projects ?? []).some(p => p.verified));
     }
 
-    // Quality ranking: weighted score combining projects, activity, and reputation
+    // Quality ranking: profiles with projects always above those without
     const qualityScore = (u: typeof filtered[0]) => {
       const projects = u.projects ?? [];
+
+      // No projects = always last, regardless of streak/score
+      if (projects.length === 0) return -1000 + Math.min(50, u.streak * 0.5);
+
       const projectCount = Math.min(projects.length, 5); // cap at 5
       const verifiedCount = projects.filter(p => p.verified).length;
       const withLiveUrl = projects.filter(p => p.live_url).length;
