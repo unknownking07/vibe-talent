@@ -52,9 +52,19 @@ export const metadata: Metadata = {
     description: "The marketplace for vibe coders who ship consistently.",
     images: [`${siteUrl}/og-image.jpg`],
   },
+  alternates: {
+    canonical: siteUrl,
+  },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 
