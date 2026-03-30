@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { Flame, Rocket, Zap, ArrowRight, GitPullRequest, GitBranch } from "lucide-react";
 
 type FeedItem = {
   id: string;
@@ -16,6 +17,24 @@ type FeedItem = {
   project_title?: string;
 };
 
+type GroupedItem = FeedItem & { count: number };
+
+const GROUP_WINDOW = 4 * 60 * 60 * 1000;
+
+function groupFeedItems(items: FeedItem[]): GroupedItem[] {
+  const grouped: GroupedItem[] = [];
+  for (const item of items) {
+    if (item.type === "project") { grouped.push({ ...item, count: 1 }); continue; }
+    const existing = grouped.find(g =>
+      g.type === item.type && g.username === item.username && g.repo_name === item.repo_name &&
+      g.type !== "project" && Math.abs(new Date(g.date).getTime() - new Date(item.date).getTime()) < GROUP_WINDOW
+    );
+    if (existing) { existing.count++; }
+    else { grouped.push({ ...item, count: 1 }); }
+  }
+  return grouped;
+}
+
 function relativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -26,20 +45,19 @@ function relativeTime(dateStr: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function actionText(item: FeedItem): string {
-  if (item.type === "project") return "shipped";
-  if (item.type === "pr") return "opened PR in";
-  if (item.type === "create") return "created branch in";
-  if (item.type === "issue") return "opened issue in";
-  if (item.type === "streak") return "logged coding activity";
-  return "pushed to";
+function EventIcon({ type }: { type: string }) {
+  if (type === "pr") return <GitPullRequest size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />;
+  if (type === "create") return <GitBranch size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />;
+  if (type === "project") return <Rocket size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />;
+  return <Flame size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />;
 }
 
-function projectName(item: FeedItem): string | null {
-  if (item.type === "project") return item.project_title || null;
-  if (item.repo_name) return item.repo_name;
-  if (item.message && item.message !== "logged a coding day") return item.message;
-  return null;
+function actionText(item: GroupedItem): string {
+  if (item.type === "project") return "shipped";
+  if (item.type === "pr") return item.count > 1 ? `${item.count} PRs` : "PR";
+  if (item.type === "create") return "created";
+  if (item.type === "streak") return "coded";
+  return item.count > 1 ? `${item.count} commits` : "pushed";
 }
 
 const AVATAR_COLORS = ["#ff4400", "#4a4a4a", "#ffffff", "#ff4400", "#4a4a4a", "#ffffff"];
@@ -49,21 +67,20 @@ export function LiveActivityFeed() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    fetch("/api/feed?limit=6")
-      .then((r) => {
-        if (!r.ok) throw new Error("Feed API error: " + r.status);
-        return r.json();
-      })
+    fetch("/api/feed?limit=20")
+      .then((r) => r.json())
       .then((d) => { setFeed(d.feed || []); setLoaded(true); })
-      .catch((err) => { console.error("Live feed fetch error:", err); setLoaded(true); });
+      .catch(() => setLoaded(true));
   }, []);
+
+  const grouped = useMemo(() => groupFeedItems(feed).slice(0, 6), [feed]);
 
   if (!loaded) return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
       <div style={{ textAlign: "center", padding: "20px", color: "var(--text-muted, #8a8a8a)", fontSize: "0.85rem" }}>Loading activity...</div>
     </section>
   );
-  if (feed.length === 0) return null;
+  if (grouped.length === 0) return null;
 
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
@@ -77,7 +94,6 @@ export function LiveActivityFeed() {
         display: "flex",
         flexDirection: "column",
       }}>
-        {/* Orange header */}
         <header style={{
           backgroundColor: "var(--accent, #ff4400)",
           color: "#000",
@@ -97,68 +113,47 @@ export function LiveActivityFeed() {
             gap: 8,
             fontFamily: "var(--font-space-grotesk, 'Space Grotesk', sans-serif)",
           }}>
-            <div style={{
-              width: 8, height: 8,
-              backgroundColor: "#000",
-              borderRadius: "50%",
-              animation: "pulse 2s infinite",
-            }} />
+            <div style={{ width: 8, height: 8, backgroundColor: "#000", borderRadius: "50%", animation: "pulse 2s infinite" }} />
             Live Activity
           </div>
           <Link href="/feed" style={{
-            backgroundColor: "#fff",
-            color: "#000",
-            textDecoration: "none",
-            fontSize: "0.75rem",
-            fontWeight: 700,
-            textTransform: "uppercase",
-            padding: "6px 12px",
-            borderRadius: 999,
-            border: "1.5px solid #000",
-            transition: "all 0.2s ease",
+            backgroundColor: "#fff", color: "#000", textDecoration: "none",
+            fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase",
+            padding: "6px 12px", borderRadius: 999, border: "1.5px solid #000",
             whiteSpace: "nowrap",
           }}>
             View Full Feed
           </Link>
         </header>
 
-        {/* Feed items */}
         <div style={{ display: "flex", flexDirection: "column", maxHeight: 500, overflowY: "auto" }}>
-          {feed.map((item, idx) => {
+          {grouped.map((item, idx) => {
             const initials = item.username.slice(0, 2).toUpperCase();
             const bgColor = AVATAR_COLORS[idx % AVATAR_COLORS.length];
             const textColor = bgColor === "#ffffff" ? "#000" : bgColor === "#4a4a4a" ? "#fff" : "#000";
-            const name = projectName(item);
+            const name = item.type === "project" ? item.project_title : item.repo_name;
 
             return (
               <Link
                 key={item.id}
-                href={item.type === "project" ? `/profile/${item.username}` : (item.type !== "streak" && item.repo_name ? `https://github.com/${item.username}/${item.repo_name}` : `/profile/${item.username}`)}
+                href={`/profile/${item.username}`}
                 style={{
                   padding: "1rem 1.25rem",
                   display: "grid",
                   gridTemplateColumns: "auto 1fr",
                   gap: "1rem",
-                  borderBottom: idx < feed.length - 1 ? "1px solid #2a2a2a" : "none",
+                  borderBottom: idx < grouped.length - 1 ? "1px solid #2a2a2a" : "none",
                   transition: "background-color 0.15s ease",
                   textDecoration: "none",
                   color: "inherit",
                 }}
-                target={item.type !== "project" && item.type !== "streak" ? "_blank" : undefined}
               >
-                {/* Avatar */}
                 <div style={{
-                  width: 40, height: 40,
-                  backgroundColor: bgColor,
+                  width: 40, height: 40, backgroundColor: bgColor,
                   border: "2px solid var(--border-hard, #fff)",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  fontWeight: 800,
-                  color: textColor,
-                  fontSize: "1rem",
-                  textTransform: "uppercase",
-                  boxShadow: "2px 2px 0px #000",
+                  display: "flex", justifyContent: "center", alignItems: "center",
+                  fontWeight: 800, color: textColor, fontSize: "1rem",
+                  textTransform: "uppercase", boxShadow: "2px 2px 0px #000",
                   overflow: "hidden",
                   fontFamily: "var(--font-space-grotesk, 'Space Grotesk', sans-serif)",
                 }}>
@@ -167,31 +162,21 @@ export function LiveActivityFeed() {
                   ) : initials}
                 </div>
 
-                {/* Content */}
                 <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
                     <div style={{ fontSize: "0.875rem", lineHeight: 1.2 }}>
                       <span style={{ fontWeight: 700, color: "var(--foreground, #fff)" }}>@{item.username}</span>{" "}
                       <span style={{ color: "var(--text-muted, #8a8a8a)" }}>{actionText(item)}</span>
                     </div>
-                    <span style={{
-                      fontSize: "0.75rem",
-                      color: "var(--text-muted, #8a8a8a)",
-                      fontVariantNumeric: "tabular-nums",
-                      flexShrink: 0,
-                    }}>
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #8a8a8a)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
                       {relativeTime(item.date)}
                     </span>
                   </div>
                   {name && (
                     <div style={{
-                      fontSize: "1rem",
-                      fontWeight: 800,
-                      fontStyle: "italic",
-                      color: "var(--accent, #ff4400)",
-                      textTransform: "uppercase",
-                      letterSpacing: "-0.5px",
-                      lineHeight: 1.1,
+                      fontSize: "1rem", fontWeight: 800, fontStyle: "italic",
+                      color: "var(--accent, #ff4400)", textTransform: "uppercase",
+                      letterSpacing: "-0.5px", lineHeight: 1.1,
                       fontFamily: "var(--font-space-grotesk, 'Space Grotesk', sans-serif)",
                     }}>
                       {name}
