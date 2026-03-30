@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   title: "Leaderboard | VibeTalent",
   description:
     "See the top vibe coders ranked by vibe score, streak, and projects shipped. The most consistent builders on the platform.",
+  alternates: {
+    canonical: "https://www.vibetalent.work/leaderboard",
+  },
 };
 
 export const dynamic = "force-dynamic";
@@ -19,7 +22,7 @@ export default async function LeaderboardPage() {
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: "https://www.vibetalent.work" },
-      { "@type": "ListItem", position: 2, name: "Leaderboard", item: "https://vibetalent.work/leaderboard" },
+      { "@type": "ListItem", position: 2, name: "Leaderboard", item: "https://www.vibetalent.work/leaderboard" },
     ],
   };
 

@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: "Explore Talent | VibeTalent",
   description:
     "Discover talented vibe coders. Filter by badge level, streak, tech stack, and more to find the perfect builder for your project.",
+  alternates: {
+    canonical: "https://www.vibetalent.work/explore",
+  },
 };
 
 export const dynamic = "force-dynamic";
@@ -20,7 +23,7 @@ export default async function ExplorePage() {
         "@type": "BreadcrumbList",
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Home", item: "https://www.vibetalent.work" },
-          { "@type": "ListItem", position: 2, name: "Explore Talent", item: "https://vibetalent.work/explore" },
+          { "@type": "ListItem", position: 2, name: "Explore Talent", item: "https://www.vibetalent.work/explore" },
         ],
       },
       {
@@ -32,7 +35,7 @@ export default async function ExplorePage() {
           "@type": "ListItem",
           position: i + 1,
           name: user.username,
-          url: `https://vibetalent.work/profile/${user.username}`,
+          url: `https://www.vibetalent.work/profile/${user.username}`,
         })),
       },
     ],

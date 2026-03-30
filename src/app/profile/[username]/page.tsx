@@ -94,7 +94,7 @@ export default async function ProfilePage({
     "@context": "https://schema.org",
     "@type": "Person",
     name: user.username,
-    url: `https://vibetalent.work/profile/${user.username}`,
+    url: `https://www.vibetalent.work/profile/${user.username}`,
     image: user.avatar_url || undefined,
     description: user.bio || `Builder on VibeTalent with a ${user.streak}-day streak`,
     sameAs: [

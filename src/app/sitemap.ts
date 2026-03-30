@@ -11,7 +11,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/agent`, lastModified: new Date(), changeFrequency: "weekly" as const, priority: 0.8 },
     { url: `${siteUrl}/agent/find`, lastModified: new Date(), changeFrequency: "weekly" as const, priority: 0.7 },
     { url: `${siteUrl}/agent/chat`, lastModified: new Date(), changeFrequency: "weekly" as const, priority: 0.7 },
-    { url: `${siteUrl}/dashboard`, lastModified: new Date(), changeFrequency: "weekly" as const, priority: 0.6 },
   ];
 
   try {
