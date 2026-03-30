@@ -92,28 +92,32 @@ export async function GET(request: NextRequest) {
       // feed_events table may not exist yet
     }
 
-    // Fallback: if no feed_events, use streak_logs
-    if (!hasFeedEvents) {
-      const { data: streakLogs } = await supabase
-        .from("streak_logs")
-        .select("id, activity_date, user_id")
-        .order("activity_date", { ascending: false })
-        .limit(100);
+    // Always include streak_logs for historical depth (feed_events only has recent data)
+    const { data: streakLogs } = await supabase
+      .from("streak_logs")
+      .select("id, activity_date, user_id")
+      .order("activity_date", { ascending: false })
+      .limit(200);
 
-      for (const log of (streakLogs || [])) {
-        const user = userMap.get(log.user_id);
-        if (!user) continue;
-        feed.push({
-          id: `streak-${log.id}`,
-          type: "streak",
-          username: user.username,
-          avatar_url: user.avatar_url,
-          badge_level: user.badge_level,
-          streak: user.streak,
-          date: log.activity_date,
-          message: "logged a coding day",
-        });
-      }
+    // Build a set of user+date combos already in feed_events to avoid duplicates
+    const eventDates = new Set(feed.map(f => f.username + '|' + f.date.slice(0, 10)));
+
+    for (const log of (streakLogs || [])) {
+      const user = userMap.get(log.user_id);
+      if (!user) continue;
+      // Skip if we already have a feed_event for this user on this date
+      const key = user.username + '|' + log.activity_date;
+      if (eventDates.has(key)) continue;
+      feed.push({
+        id: `streak-${log.id}`,
+        type: "streak",
+        username: user.username,
+        avatar_url: user.avatar_url,
+        badge_level: user.badge_level,
+        streak: user.streak,
+        date: log.activity_date,
+        message: "logged a coding day",
+      });
     }
 
     // Always include recent projects
