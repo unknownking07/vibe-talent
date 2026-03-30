@@ -35,6 +35,7 @@ export function Footer() {
             <h4 className="text-sm font-extrabold uppercase tracking-wide mb-3" style={{ color: "var(--foreground)" }}>Platform</h4>
             <div className="flex flex-col gap-2">
               <Link href="/explore" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Explore</Link>
+              <Link href="/feed" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Feed</Link>
               <Link href="/leaderboard" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Leaderboard</Link>
               <Link href="/dashboard" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Dashboard</Link>
               <a href="https://vibe-talent.gitbook.io/untitled" target="_blank" rel="noopener noreferrer" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Docs</a>
