@@ -47,6 +47,7 @@ VibeTalent is a developer talent marketplace that ranks software engineers by co
 - GET /api/v1/builders/:username — Full builder profile with projects and stats
 - POST /api/v1/hire — Send a hire request to any builder
 
+
 ## Contact
 
 - Built by @abhiontwt
