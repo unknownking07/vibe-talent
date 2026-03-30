@@ -128,7 +128,7 @@ Client submits hire form (no auth required)
     → Validate inputs (name, email, message, budget)
     → Block disposable emails (shared validation from src/lib/validation.ts)
     → Rate limit check
-    → Insert hire_request via createAdminClient() (service role)
+    → Insert into hire_requests via createAdminClient() (service role)
     → Send email notification via Resend
   → VibeCoder sees request in /dashboard
   → VibeCoder replies → Chat thread via hire_messages
@@ -136,7 +136,7 @@ Client submits hire form (no auth required)
 
 ### Admin Client Pattern
 
-All API mutations use `createAdminClient()` from `src/lib/supabase/admin.ts`:
+Privileged API mutations (public-write paths like hire requests, reviews, and reports) use `createAdminClient()` from `src/lib/supabase/admin.ts`:
 
 ```typescript
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -145,7 +145,7 @@ const sb = createAdminClient(); // Uses SUPABASE_SERVICE_ROLE_KEY
 // Throws if key is missing — never silently falls back to anon key
 ```
 
-This ensures all inserts go through the service role, which is required by the tightened RLS policies. Direct PostgREST inserts via the anon key are blocked on sensitive tables.
+This is used for endpoints where unauthenticated users submit data (e.g., `POST /api/hire`). Authenticated user mutations (e.g., updating profile, managing projects) use session-scoped clients via `createServerSupabaseClient()` so RLS ownership checks are enforced. Direct anonymous PostgREST inserts via the anon key are blocked on sensitive tables.
 
 ## Key Design Decisions
 

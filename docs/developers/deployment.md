@@ -38,17 +38,23 @@ Set these in the Vercel dashboard under **Settings > Environment Variables**:
 
 ## Cron Jobs
 
-### Daily Streak Reset
+### Cron Jobs
 
-Configured in `vercel.json`. All cron endpoints require `CRON_SECRET` — Vercel automatically includes this for cron-triggered requests.
+Configured in `vercel.json`. Vercel schedules two cron paths directly, and `/api/cron/daily` fans out to internal job handlers. All cron endpoints require `CRON_SECRET`.
 
-| Job | Path | Schedule | Description |
-|---|---|---|---|
-| **Reset Streaks** | `/api/cron/reset-streaks` | Daily 00:00 UTC | Reset expired streaks, recalculate vibe scores |
-| **Streak Warning** | `/api/cron/streak-warning` | Daily 18:00 UTC | Email + in-app notification for at-risk streaks |
-| **GitHub Sync** | `/api/cron/github-sync` | Daily | Sync GitHub contribution data for all users |
-| **Check Live URLs** | `/api/cron/check-live-urls` | Weekly | Verify project live URLs are still reachable |
-| **Reset Freezes** | `/api/cron/reset-freezes` | Monthly 1st | Reset streak freeze allowance to 3 |
+| Scheduled Path | Schedule | Description |
+|---|---|---|
+| `/api/cron/daily` | Daily 06:00 UTC | Orchestrator — fans out to reset-streaks, streak-warning, github-sync, reset-freezes, and digest jobs |
+| `/api/cron/check-live-urls` | Weekly Sun 03:00 UTC | Verify project live URLs are still reachable |
+
+**Internal handlers** (called by the daily orchestrator):
+
+| Handler | Description |
+|---|---|
+| `/api/cron/reset-streaks` | Reset expired streaks, recalculate vibe scores |
+| `/api/cron/streak-warning` | Email + in-app notification for at-risk streaks |
+| `/api/cron/github-sync` | Sync GitHub contribution data for all users |
+| `/api/cron/reset-freezes` | Reset streak freeze allowance to 2 (monthly 1st) |
 
 ## Caching Strategy
 

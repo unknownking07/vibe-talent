@@ -97,7 +97,7 @@ Streak logs are private — no one else can see your raw activity data. Only the
 - `sender_email` must match a valid email regex
 - `sender_name` must be at least 2 characters
 
-All public-facing hire request submissions go through the API (`/api/hire`), which uses the service role client (`createAdminClient()`) to insert. Direct PostgREST inserts via the anon key are blocked.
+All public-facing hire request submissions go through the API (`/api/hire`), which uses the service role client (`createAdminClient()`) to insert. Authenticated operations (GET, PATCH, DELETE) use `createServerSupabaseClient()` with session-based auth so RLS ownership checks (`builder_id == user.id`) are enforced. Direct anonymous (unauthenticated) PostgREST inserts via the anon key are blocked.
 
 ### Hire Messages
 
@@ -171,8 +171,8 @@ All text inputs are:
 2. Disposable email blocklist check
 ```
 
-**Blocked email domains** (defined in `src/lib/validation.ts`):
-`mailinator.com`, `guerrillamail.com`, `tempmail.com`, `throwaway.email`, `10minutemail.com`, `trashmail.com`, `fakeinbox.com`, `sharklasers.com`, `guerrillamailblock.com`, `grr.la`, `yopmail.com`, `maildrop.cc`, `dispostable.com`, `temp-mail.org`, `getnada.com`, `test.com`, `example.com`
+**Blocked email domains** (defined in `src/lib/validation.ts` — refer to the `BLOCKED_DOMAINS` constant as the source of truth):
+`mailinator.com`, `tempmail.com`, `throwaway.email`, `guerrillamail.com`, `sharklasers.com`, `grr.la`, `guerrillamailblock.com`, `yopmail.com`, `fakeinbox.com`, `trashmail.com`, `dispostable.com`, `maildrop.cc`, `10minutemail.com`, `temp-mail.org`, `tempail.com`, `test.com`, `example.com`, `foo.com`, `bar.com`, `asdf.com`, `noreply.com`, `nowhere.com`
 
 ### URL Validation
 
@@ -213,7 +213,7 @@ These endpoints serve read-only vibecoder data and accept hire requests — no a
 
 - `NEXT_PUBLIC_*` variables are limited to Supabase URL and anon key (both are designed to be public)
 - All sensitive keys (`RESEND_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `UPSTASH_*`) are server-only
-- Service role key is used by `createAdminClient()` (in `src/lib/supabase/admin.ts`) for all API mutations — the function throws if the key is missing, preventing silent fallback to the anon key
+- Service role key is used by `createAdminClient()` (in `src/lib/supabase/admin.ts`) for privileged server-side operations (public-write endpoints, cron jobs) — the function throws if the key is missing, preventing silent fallback to the anon key. Authenticated user mutations use session-scoped clients with RLS.
 
 ## Threat Model
 
@@ -224,7 +224,7 @@ These endpoints serve read-only vibecoder data and accept hire requests — no a
 | **Brute force** | Rate limiting on sensitive endpoints |
 | **Spam/abuse** | Disposable email blocking, report system, auto-flagging |
 | **XSS** | React's built-in escaping, database-level input constraints |
-| **Direct PostgREST abuse** | RLS blocks anonymous inserts; all mutations use service role via API |
+| **Direct PostgREST abuse** | RLS blocks anonymous inserts on sensitive tables; public-write endpoints use service role via API, authenticated mutations use session-scoped clients |
 | **CSRF** | Supabase Auth uses SameSite cookies |
 | **API abuse** | Rate limiting, input validation |
 | **Data leakage** | Server-only secrets, no sensitive data in client bundle |
