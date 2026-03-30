@@ -10,7 +10,7 @@ function getPublicClient() {
 
 type FeedItem = {
   id: string;
-  type: "push" | "pr" | "create" | "issue" | "project";
+  type: "push" | "pr" | "create" | "issue" | "project" | "streak";
   username: string;
   avatar_url: string | null;
   badge_level: string;
@@ -30,101 +30,100 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(Math.max(isNaN(rawLimit) ? 50 : rawLimit, 1), 100);
 
   try {
-    const supabase = getPublicClient();
-
-    // Fetch GitHub events from feed_events table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: events, error: eventsError } = await (supabase as any)
-      .from("feed_events")
-      .select("id, event_type, repo_name, message, github_url, created_at, user_id, users!inner(username, avatar_url, badge_level, streak)")
-      .order("created_at", { ascending: false })
-      .limit(100);
+    const supabase = getPublicClient() as any;
+    const feed: FeedItem[] = [];
 
-    if (eventsError) console.error("Feed: feed_events fetch error:", eventsError);
+    // Build user lookup map
+    const { data: allUsers } = await supabase
+      .from("users")
+      .select("id, username, avatar_url, badge_level, streak");
+    const userMap = new Map<string, { username: string; avatar_url: string | null; badge_level: string; streak: number }>();
+    for (const u of (allUsers || [])) {
+      userMap.set(u.id, { username: u.username, avatar_url: u.avatar_url, badge_level: u.badge_level || "none", streak: u.streak || 0 });
+    }
 
-    // Fetch recent projects with user info
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: projects, error: projectError } = await (supabase as any)
+    // Try feed_events first (may not exist yet or be empty)
+    let hasFeedEvents = false;
+    try {
+      const { data: events, error: eventsError } = await supabase
+        .from("feed_events")
+        .select("id, event_type, repo_name, message, github_url, created_at, user_id")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (!eventsError && events && events.length > 0) {
+        hasFeedEvents = true;
+        for (const event of events) {
+          const user = userMap.get(event.user_id);
+          if (!user) continue;
+          feed.push({
+            id: `event-${event.id}`,
+            type: event.event_type || "push",
+            username: user.username,
+            avatar_url: user.avatar_url,
+            badge_level: user.badge_level,
+            streak: user.streak,
+            date: event.created_at,
+            repo_name: event.repo_name,
+            message: event.message,
+            github_url: event.github_url,
+          });
+        }
+      }
+    } catch {
+      // feed_events table may not exist yet — fall through to streak_logs
+    }
+
+    // Fallback: if no feed_events, use streak_logs
+    if (!hasFeedEvents) {
+      const { data: streakLogs } = await supabase
+        .from("streak_logs")
+        .select("id, activity_date, user_id")
+        .order("activity_date", { ascending: false })
+        .limit(100);
+
+      for (const log of (streakLogs || [])) {
+        const user = userMap.get(log.user_id);
+        if (!user) continue;
+        feed.push({
+          id: `streak-${log.id}`,
+          type: "streak",
+          username: user.username,
+          avatar_url: user.avatar_url,
+          badge_level: user.badge_level,
+          streak: user.streak,
+          date: log.activity_date,
+          message: "logged a coding day",
+        });
+      }
+    }
+
+    // Always include recent projects
+    const { data: projects } = await supabase
       .from("projects")
-      .select("id, title, description, tech_stack, live_url, github_url, created_at, user_id, users!inner(username, avatar_url, badge_level, streak)")
+      .select("id, title, description, tech_stack, live_url, github_url, created_at, user_id")
       .eq("flagged", false)
       .order("created_at", { ascending: false })
       .limit(20);
 
-    if (projectError) console.error("Feed: projects fetch error:", projectError);
-
-    const feed: FeedItem[] = [];
-
-    // Map GitHub events to feed items
-    if (events) {
-      for (const event of events) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const user = event.users as any;
-        if (!user?.username) continue;
-        feed.push({
-          id: `event-${event.id}`,
-          type: event.event_type || "push",
-          username: user.username,
-          avatar_url: user.avatar_url || null,
-          badge_level: user.badge_level || "none",
-          streak: user.streak || 0,
-          date: event.created_at,
-          repo_name: event.repo_name,
-          message: event.message,
-          github_url: event.github_url,
-        });
-      }
-    }
-
-    // Map projects to feed items
-    if (projects) {
-      for (const project of projects) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const user = project.users as any;
-        if (!user?.username) continue;
-        feed.push({
-          id: `project-${project.id}`,
-          type: "project",
-          username: user.username,
-          avatar_url: user.avatar_url || null,
-          badge_level: user.badge_level || "none",
-          streak: user.streak || 0,
-          date: project.created_at,
-          project_title: project.title,
-          project_description: project.description,
-          tech_stack: project.tech_stack || [],
-          live_url: project.live_url || undefined,
-          github_url: project.github_url || undefined,
-        });
-      }
-    }
-
-    // Fallback: if no feed_events yet, use streak_logs
-    if (!events || events.length === 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: streakLogs } = await (supabase as any)
-        .from("streak_logs")
-        .select("id, activity_date, user_id, users!inner(username, avatar_url, badge_level, streak)")
-        .order("activity_date", { ascending: false })
-        .limit(50);
-
-      if (streakLogs) {
-        for (const log of streakLogs) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const user = log.users as any;
-          if (!user?.username) continue;
-          feed.push({
-            id: `streak-${log.id}`,
-            type: "push",
-            username: user.username,
-            avatar_url: user.avatar_url || null,
-            badge_level: user.badge_level || "none",
-            streak: user.streak || 0,
-            date: log.activity_date,
-            message: "logged a coding day",
-          });
-        }
-      }
+    for (const project of (projects || [])) {
+      const user = userMap.get(project.user_id);
+      if (!user) continue;
+      feed.push({
+        id: `project-${project.id}`,
+        type: "project",
+        username: user.username,
+        avatar_url: user.avatar_url,
+        badge_level: user.badge_level,
+        streak: user.streak,
+        date: project.created_at,
+        project_title: project.title,
+        project_description: project.description,
+        tech_stack: project.tech_stack || [],
+        live_url: project.live_url || undefined,
+        github_url: project.github_url || undefined,
+      });
     }
 
     feed.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -135,6 +134,6 @@ export async function GET(request: NextRequest) {
     );
   } catch (err) {
     console.error("Feed API error:", err);
-    return NextResponse.json({ feed: [] });
+    return NextResponse.json({ feed: [], error: "Failed to load feed" });
   }
 }
