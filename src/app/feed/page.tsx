@@ -197,7 +197,7 @@ export default function FeedPage() {
                   <Link href={`/profile/${item.username}`} style={{ textDecoration: "none", flexShrink: 0 }}>
                     <div className={`fl-avatar ${isMilestone ? "orange" : ""}`}>
                       {item.avatar_url ? (
-                        <Image src={item.avatar_url} alt={item.username} width={48} height={48} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%", filter: "grayscale(100%) contrast(1.2)", opacity: 0.8 }} />
+                        <Image src={item.avatar_url} alt={item.username} width={48} height={48} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%", opacity: 1 }} />
                       ) : (
                         <span style={{ fontWeight: 600, fontSize: 14, color: isMilestone ? "#0A0A0E" : "var(--text-muted, #8A8B94)" }}>{initials}</span>
                       )}
