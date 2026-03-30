@@ -50,12 +50,20 @@ export function LiveActivityFeed() {
 
   useEffect(() => {
     fetch("/api/feed?limit=6")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("Feed API error: " + r.status);
+        return r.json();
+      })
       .then((d) => { setFeed(d.feed || []); setLoaded(true); })
-      .catch(() => setLoaded(true));
+      .catch((err) => { console.error("Live feed fetch error:", err); setLoaded(true); });
   }, []);
 
-  if (!loaded || feed.length === 0) return null;
+  if (!loaded) return (
+    <section className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+      <div style={{ textAlign: "center", padding: "20px", color: "var(--text-muted, #8a8a8a)", fontSize: "0.85rem" }}>Loading activity...</div>
+    </section>
+  );
+  if (feed.length === 0) return null;
 
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
