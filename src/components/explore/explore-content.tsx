@@ -87,30 +87,41 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
       filtered = filtered.filter(u => (u.projects ?? []).some(p => p.verified));
     }
 
-    // Profile tier: complete profiles always first, then partial, then empty
-    const profileTier = (u: typeof filtered[0]) => {
-      const hasProj = (u.projects ?? []).length > 0;
-      const hasBio = !!u.bio;
-      const hasScore = u.vibe_score > 0;
-      const hasStreak = u.streak > 0;
-      if (hasProj && hasBio && hasScore && hasStreak) return 3; // complete — shown first
-      if (hasProj && hasBio) return 2; // has projects + bio
-      if (hasProj || hasBio || hasStreak) return 1; // has one of them
-      return 0; // empty shell
+    // Quality ranking: normalized 0-1 scores, profiles with projects always above those without
+    const qualityScore = (u: typeof filtered[0]) => {
+      const projects = u.projects ?? [];
+
+      // No projects = always last, regardless of streak/score
+      if (projects.length === 0) return -1;
+
+      const projectCount = Math.min(projects.length, 5);
+      const verifiedCount = Math.min(projects.filter(p => p.verified).length, 5);
+      const withLiveUrl = Math.min(projects.filter(p => p.live_url).length, 5);
+
+      // All axes normalized to 0-1
+      // Max project raw = (5*8)+(5*10)+(5*5) = 115
+      const projectNorm = ((projectCount * 8) + (verifiedCount * 10) + (withLiveUrl * 5)) / 115;
+      const streakNorm = Math.min(u.streak, 100) / 100;
+      const vibeNorm = Math.min(u.vibe_score, 500) / 500;
+
+      return projectNorm * 0.4 + streakNorm * 0.3 + vibeNorm * 0.3;
     };
+
+    // Has-projects first, then sort by selected field, quality score as tiebreaker
+    const hasProj = (u: typeof filtered[0]) => (u.projects ?? []).length > 0 ? 1 : 0;
 
     switch (sortBy) {
       case "vibe_score":
-        filtered.sort((a, b) => profileTier(b) - profileTier(a) || b.vibe_score - a.vibe_score);
+        filtered.sort((a, b) => hasProj(b) - hasProj(a) || b.vibe_score - a.vibe_score || qualityScore(b) - qualityScore(a));
         break;
       case "streak":
-        filtered.sort((a, b) => profileTier(b) - profileTier(a) || b.streak - a.streak);
+        filtered.sort((a, b) => hasProj(b) - hasProj(a) || b.streak - a.streak || qualityScore(b) - qualityScore(a));
         break;
       case "projects":
-        filtered.sort((a, b) => profileTier(b) - profileTier(a) || b.projects.length - a.projects.length);
+        filtered.sort((a, b) => hasProj(b) - hasProj(a) || (b.projects ?? []).length - (a.projects ?? []).length || qualityScore(b) - qualityScore(a));
         break;
       case "newest":
-        filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        filtered.sort((a, b) => hasProj(b) - hasProj(a) || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
     }
 
