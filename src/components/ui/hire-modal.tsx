@@ -19,13 +19,7 @@ const BUDGET_OPTIONS = [
   "Let's discuss",
 ];
 
-// Block disposable/fake email domains
-const BLOCKED_DOMAINS = [
-  "mailinator.com", "tempmail.com", "throwaway.email", "guerrillamail.com",
-  "sharklasers.com", "grr.la", "guerrillamailblock.com", "yopmail.com",
-  "fakeinbox.com", "trashmail.com", "dispostable.com", "maildrop.cc",
-  "10minutemail.com", "temp-mail.org", "tempail.com",
-];
+import { BLOCKED_DOMAINS, EMAIL_REGEX, NAME_REGEX } from "@/lib/validation";
 
 export function HireModal({ builderId, builderName, isOpen, onClose }: HireModalProps) {
   const [form, setForm] = useState({
@@ -81,14 +75,13 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
     }
     // Name validation: min 2 chars, letters and spaces only
     const nameClean = form.sender_name.trim();
-    if (nameClean.length < 2 || !/^[a-zA-Z\s'-]+$/.test(nameClean)) {
+    if (nameClean.length < 2 || !NAME_REGEX.test(nameClean)) {
       setError("Please enter a valid name (letters only, at least 2 characters).");
       return;
     }
     // Email validation - strict
     const emailClean = form.sender_email.trim().toLowerCase();
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(emailClean)) {
+    if (!EMAIL_REGEX.test(emailClean)) {
       setError("Please enter a valid email address.");
       return;
     }
@@ -163,7 +156,7 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
         style={{
           backgroundColor: "var(--bg-surface)",
           border: "2px solid var(--border-hard)",
-          boxShadow: "4px 4px 0 #000",
+          boxShadow: "var(--shadow-brutal-sm)",
         }}
       >
         {/* Header */}
@@ -194,12 +187,12 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
               <div
                 className="w-16 h-16 flex items-center justify-center"
                 style={{
-                  backgroundColor: "#D1FAE5",
+                  backgroundColor: "var(--status-success-bg)",
                   border: "2px solid var(--border-hard)",
-                  boxShadow: "4px 4px 0 #000",
+                  boxShadow: "var(--shadow-brutal-sm)",
                 }}
               >
-                <CheckCircle size={32} className="text-[#065F46]" />
+                <CheckCircle size={32} className="text-[var(--status-success-text)]" />
               </div>
               <h3 className="text-xl font-extrabold uppercase text-[var(--foreground)]">Request Sent!</h3>
               <p className="text-sm text-[var(--text-secondary)] font-medium">

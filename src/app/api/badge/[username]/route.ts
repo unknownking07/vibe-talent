@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 function escapeXml(str: string): string {
   return str
@@ -24,10 +24,7 @@ export async function GET(
 ) {
   const { username } = await params;
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabase = createAdminClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: user, error } = await (supabase as any)

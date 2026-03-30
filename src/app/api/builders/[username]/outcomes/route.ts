@@ -1,17 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { computeClientOutcomes } from "@/lib/client-outcomes";
-
-function getSb() {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceRoleKey) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY is required for outcomes API");
-  }
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    serviceRoleKey
-  );
-}
 
 /**
  * GET /api/builders/[username]/outcomes
@@ -23,7 +12,7 @@ export async function GET(
 ) {
   try {
     const { username } = await params;
-    const sb = getSb();
+    const sb = createAdminClient();
 
     // Look up builder by username
     const { data: user, error: userErr } = await sb

@@ -1,17 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createHash } from "crypto";
 
 function hashIp(ip: string): string {
   return createHash("sha256").update(ip).digest("hex").slice(0, 16);
-}
-
-function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 }
 
 /**
@@ -24,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing viewed_user_id" }, { status: 400 });
     }
 
-    const sb = getServiceClient();
+    const sb = createAdminClient();
 
     // Get current user if logged in
     let viewerUserId: string | null = null;
@@ -76,7 +69,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const sb = getServiceClient();
+    const sb = createAdminClient();
     const now = new Date();
     const todayStr = now.toISOString().split("T")[0];
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();

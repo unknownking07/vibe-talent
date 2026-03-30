@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { messagesLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
-
-// Use a direct client for reading hire requests (RLS blocks anon reads now)
-function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
 
 export async function GET(req: NextRequest) {
   const { success } = await checkRateLimit(messagesLimiter, getIP(req));
@@ -41,7 +33,7 @@ export async function GET(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
 
     // Use service client to read hire request (since RLS now blocks anon reads)
-    const sb = getServiceClient();
+    const sb = createAdminClient();
 
     // Fetch the hire request
     const { data: hireRequest, error: hrError } = await sb
@@ -127,7 +119,7 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = await createServerSupabaseClient();
-    const sb = getServiceClient();
+    const sb = createAdminClient();
 
     // Fetch the hire request
     const { data: hireRequest, error: hrError } = await sb

@@ -145,7 +145,7 @@ export default function AgentHubPage() {
               <MessageCircle size={22} className="text-white" />
             </div>
             <h3 className="text-lg font-extrabold uppercase text-white">Bot Chat</h3>
-            <p className="mt-2 text-sm text-zinc-400 font-medium">
+            <p className="mt-2 text-sm text-[var(--text-muted-soft)] font-medium">
               Chat with VibeFinder Bot directly. Describe what you need and get instant
               talent recommendations.
             </p>
@@ -176,7 +176,7 @@ export default function AgentHubPage() {
             <div key={item.step}>
               <div className="text-3xl font-extrabold font-mono text-[var(--accent)] mb-2">{item.step}</div>
               <h4 className="text-sm font-extrabold uppercase text-white mb-1">{item.title}</h4>
-              <p className="text-xs text-zinc-400 font-medium">{item.text}</p>
+              <p className="text-xs text-[var(--text-muted-soft)] font-medium">{item.text}</p>
             </div>
           ))}
         </div>

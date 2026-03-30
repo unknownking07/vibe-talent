@@ -1,13 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET() {
   try {
@@ -15,7 +8,7 @@ export async function GET() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const sb = getServiceClient();
+    const sb = createAdminClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (sb as any)
       .from("email_preferences")
@@ -43,7 +36,7 @@ export async function PATCH(req: Request) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const sb = getServiceClient();
+    const sb = createAdminClient();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (sb as any)

@@ -166,6 +166,9 @@ export function Navbar() {
             <div className="relative ml-3" ref={dropdownRef}>
               <button
                 onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                aria-label="Profile menu"
+                aria-expanded={profileDropdownOpen}
+                aria-haspopup="true"
                 className="flex items-center justify-center overflow-hidden"
                 style={{
                   width: 48,
@@ -191,6 +194,7 @@ export function Navbar() {
               </button>
               {profileDropdownOpen && (
                 <div
+                  role="menu"
                   className="absolute right-0 top-12 z-50 w-48"
                   style={{
                     backgroundColor: "var(--bg-surface)",
@@ -254,6 +258,8 @@ export function Navbar() {
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             style={{ color: "var(--foreground)" }}
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileOpen}
           >
             {mobileOpen ? <X size={24} /> : <Menu size={24} />}
           </button>

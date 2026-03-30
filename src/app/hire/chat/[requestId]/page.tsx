@@ -132,7 +132,7 @@ export default function HireChatPage() {
           style={{
             backgroundColor: "var(--bg-surface)",
             border: "2px solid var(--border-hard)",
-            boxShadow: "4px 4px 0 #000",
+            boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
           <MessageCircle size={48} className="mx-auto text-[var(--text-muted-soft)] mb-4" />
@@ -160,7 +160,7 @@ export default function HireChatPage() {
         style={{
           backgroundColor: "var(--bg-surface)",
           border: "2px solid var(--border-hard)",
-          boxShadow: "4px 4px 0 #000",
+          boxShadow: "var(--shadow-brutal-sm)",
         }}
       >
         <div className="flex items-center gap-3 mb-3">
@@ -215,7 +215,7 @@ export default function HireChatPage() {
         style={{
           backgroundColor: "var(--bg-surface-light)",
           border: "2px solid var(--border-hard)",
-          boxShadow: "4px 4px 0 #000",
+          boxShadow: "var(--shadow-brutal-sm)",
           minHeight: "400px",
           maxHeight: "60vh",
           overflowY: "auto",
@@ -237,7 +237,7 @@ export default function HireChatPage() {
                   style={{
                     backgroundColor: "var(--bg-surface)",
                     border: "2px solid var(--border-hard)",
-                    boxShadow: "2px 2px 0 #000",
+                    boxShadow: "var(--shadow-brutal-xs)",
                   }}
                 >
                   <p className="text-sm text-[var(--text-tertiary)] whitespace-pre-wrap">
@@ -281,9 +281,9 @@ export default function HireChatPage() {
                     className="p-3"
                     style={{
                       backgroundColor: isClient ? "var(--bg-surface)" : "var(--accent)",
-                      color: isClient ? "#3F3F46" : "var(--bg-surface)",
+                      color: isClient ? "var(--text-tertiary)" : "var(--text-on-inverted)",
                       border: "2px solid var(--border-hard)",
-                      boxShadow: "2px 2px 0 #000",
+                      boxShadow: "var(--shadow-brutal-xs)",
                     }}
                   >
                     <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
@@ -325,7 +325,7 @@ export default function HireChatPage() {
         style={{
           backgroundColor: "var(--bg-surface)",
           border: "2px solid var(--border-hard)",
-          boxShadow: "4px 4px 0 #000",
+          boxShadow: "var(--shadow-brutal-sm)",
         }}
       >
         <div className="flex gap-3">

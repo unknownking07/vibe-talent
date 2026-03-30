@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "AI Agent | VibeTalent",
+  title: "AI Agent",
+  alternates: {
+    canonical: "https://www.vibetalent.work/agent",
+  },
   description:
     "Use AI to find the perfect vibe coder for your project. Describe what you need and get matched with builders who have the right skills and track record.",
 };

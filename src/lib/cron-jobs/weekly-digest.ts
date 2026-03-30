@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createNotification } from "@/lib/notifications";
 import { sendWeeklyDigestEmail } from "@/lib/email";
 
@@ -12,10 +12,7 @@ export async function runWeeklyDigest(): Promise<{ notified: number; skipped?: s
     return { notified: 0, skipped: "Not Monday" };
   }
 
-  const sb = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const sb = createAdminClient();
 
   const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
