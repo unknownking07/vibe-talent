@@ -25,7 +25,7 @@ Fri: Logged ✓  → Streak: 1  (start over)
 
 Streak freezes protect your streak when you need a day off:
 
-- You get **3 streak freezes per month** (reset on the 1st)
+- You get **2 streak freezes per month** (reset on the 1st)
 - If you miss a day and have freezes remaining, one is automatically used instead of resetting your streak
 - Freezes are applied during the daily streak reset cron (midnight UTC)
 - Check your remaining freezes on the Dashboard
