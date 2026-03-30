@@ -158,7 +158,9 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
                     setReportOpen(!reportOpen);
                   }}
                   className="text-[var(--text-muted-soft)] hover:text-red-500 transition-colors"
-                  title="Report project"
+                  aria-label="Report project"
+                  aria-expanded={reportOpen}
+                  aria-haspopup="true"
                 >
                   <Flag size={14} />
                 </button>

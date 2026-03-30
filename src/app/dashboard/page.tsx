@@ -1402,7 +1402,7 @@ export default function DashboardPage() {
                                     style={{
                                       backgroundColor: "var(--bg-surface)",
                                       border: "2px solid var(--border-hard)",
-                                      boxShadow: "2px 2px 0 #000",
+                                      boxShadow: "var(--shadow-brutal-xs)",
                                     }}
                                   >
                                     <p className="text-sm text-[var(--text-tertiary)] whitespace-pre-wrap">
@@ -1452,7 +1452,7 @@ export default function DashboardPage() {
                                           backgroundColor: isBuilder ? "var(--accent)" : "var(--bg-surface)",
                                           color: isBuilder ? "var(--bg-surface)" : "var(--text-tertiary)",
                                           border: "2px solid var(--border-hard)",
-                                          boxShadow: "2px 2px 0 #000",
+                                          boxShadow: "var(--shadow-brutal-xs)",
                                         }}
                                       >
                                         <p className="text-sm whitespace-pre-wrap">{msg.message}</p>

@@ -163,7 +163,7 @@ export function ShareCardModal({ username, isOpen, onClose }: ShareCardModalProp
             disabled={loading}
             className="btn-brutal flex-1 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
             style={{
-              backgroundColor: copied ? "#D1FAE5" : "var(--bg-surface)",
+              backgroundColor: copied ? "var(--status-success-bg)" : "var(--bg-surface)",
               color: "var(--foreground)",
             }}
           >

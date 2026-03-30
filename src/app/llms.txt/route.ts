@@ -34,6 +34,19 @@ VibeTalent is a developer talent marketplace that ranks software engineers by co
 - **Developers** who want to build a reputation based on proof of work rather than resumes.
 - **Clients and founders** looking to hire developers with verified track records of consistent shipping.
 
+## Machine-Readable Resources
+
+- OpenAPI Spec: https://www.vibetalent.work/api/v1/openapi
+- AI Plugin Manifest: https://www.vibetalent.work/.well-known/ai-plugin.json
+- Agent Skill File: https://www.vibetalent.work/skill.md
+- Extended Docs: https://www.vibetalent.work/llms-full.txt
+
+## API Endpoints
+
+- GET /api/v1/builders — Search builders by skills, streak, vibe score
+- GET /api/v1/builders/:username — Full builder profile with projects and stats
+- POST /api/v1/hire — Send a hire request to any builder
+
 ## Contact
 
 - Built by @abhiontwt

@@ -1,30 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { reviewLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
 import { calculateReviewTrust } from "@/lib/review-trust";
 import { createNotification } from "@/lib/notifications";
 import { sendReviewNotificationEmail } from "@/lib/email";
-
-const BLOCKED_DOMAINS = [
-  "mailinator.com", "tempmail.com", "throwaway.email", "guerrillamail.com",
-  "sharklasers.com", "grr.la", "guerrillamailblock.com", "yopmail.com",
-  "fakeinbox.com", "trashmail.com", "dispostable.com", "maildrop.cc",
-  "10minutemail.com", "temp-mail.org", "tempail.com",
-];
-
-function getSb() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
-
-function getAdminSb() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
+import { createAdminClient } from "@/lib/supabase/admin";
+import { validateName, validateEmail, validateUUID, BLOCKED_DOMAINS } from "@/lib/validation";
 
 export async function GET(req: NextRequest) {
   try {
@@ -35,12 +15,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "builder_id is required" }, { status: 400 });
     }
 
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(builderId)) {
+    if (!validateUUID(builderId)) {
       return NextResponse.json({ error: "Invalid builder_id" }, { status: 400 });
     }
 
-    const sb = getSb();
+    const sb = createAdminClient();
     const { data, error } = await sb
       .from("reviews")
       .select("id, builder_id, reviewer_name, rating, comment, trust_score, created_at")
@@ -86,13 +65,12 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(review_id)) {
+    if (!validateUUID(review_id)) {
       return NextResponse.json({ error: "Invalid review_id" }, { status: 400 });
     }
 
     const emailClean = String(reviewer_email).trim().toLowerCase();
-    const sb = getAdminSb();
+    const sb = createAdminClient();
 
     // Verify the review exists and belongs to this email
     const { data: review, error: fetchErr } = await sb
@@ -150,28 +128,18 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate name
-    const nameClean = String(reviewer_name).trim();
-    if (nameClean.length < 2 || !/^[a-zA-Z\s'-]+$/.test(nameClean)) {
-      return NextResponse.json(
-        { error: "Invalid name. Use letters only, at least 2 characters." },
-        { status: 400 }
-      );
+    const nameResult = validateName(reviewer_name);
+    if (!nameResult.valid) {
+      return NextResponse.json({ error: nameResult.error }, { status: 400 });
     }
+    const nameClean = nameResult.cleaned;
 
     // Validate email
-    const emailClean = String(reviewer_email).trim().toLowerCase();
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(emailClean)) {
-      return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
+    const emailResult = validateEmail(reviewer_email);
+    if (!emailResult.valid) {
+      return NextResponse.json({ error: emailResult.error }, { status: 400 });
     }
-
-    const emailDomain = emailClean.split("@")[1];
-    if (BLOCKED_DOMAINS.includes(emailDomain)) {
-      return NextResponse.json(
-        { error: "Disposable email addresses are not allowed." },
-        { status: 400 }
-      );
-    }
+    const emailClean = emailResult.cleaned;
 
     // Validate rating
     const ratingNum = Number(rating);
@@ -186,12 +154,11 @@ export async function POST(req: NextRequest) {
     const commentClean = comment ? String(comment).trim().slice(0, 1000) : null;
 
     // Validate UUID
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(builder_id)) {
+    if (!validateUUID(builder_id)) {
       return NextResponse.json({ error: "Invalid builder_id" }, { status: 400 });
     }
 
-    const sb = getSb();
+    const sb = createAdminClient();
 
     // Prevent duplicate reviews: one review per email per builder
     const { data: existingByEmail } = await sb
@@ -210,7 +177,7 @@ export async function POST(req: NextRequest) {
 
     // Validate hire_request_id if provided
     if (hire_request_id) {
-      if (!uuidRegex.test(hire_request_id)) {
+      if (!validateUUID(hire_request_id)) {
         return NextResponse.json({ error: "Invalid hire_request_id" }, { status: 400 });
       }
 
@@ -328,7 +295,7 @@ export async function POST(req: NextRequest) {
     }).catch(console.error);
 
     // Fire-and-forget: email notification to the builder
-    const adminSb = getAdminSb();
+    const adminSb = createAdminClient();
     adminSb.auth.admin.getUserById(builder_id).then(({ data: userData }) => {
       if (userData?.user?.email) {
         adminSb

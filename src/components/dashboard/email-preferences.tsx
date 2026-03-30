@@ -97,7 +97,7 @@ export function EmailPreferences() {
               disabled={saving}
               className="w-10 h-6 rounded-full relative cursor-pointer transition-colors shrink-0"
               style={{
-                backgroundColor: prefs[key] ? "var(--accent)" : "#D4D4D8",
+                backgroundColor: prefs[key] ? "var(--accent)" : "var(--border-subtle)",
                 border: "2px solid var(--border-hard)",
               }}
               aria-label={`Toggle ${label}`}

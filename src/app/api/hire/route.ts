@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { sendHireNotification } from "@/lib/email";
 import { createNotification } from "@/lib/notifications";
-
-const BLOCKED_DOMAINS = [
-  "mailinator.com", "tempmail.com", "throwaway.email", "guerrillamail.com",
-  "sharklasers.com", "grr.la", "guerrillamailblock.com", "yopmail.com",
-  "fakeinbox.com", "trashmail.com", "dispostable.com", "maildrop.cc",
-  "10minutemail.com", "temp-mail.org", "tempail.com",
-];
+import { validateName, validateEmail } from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,33 +18,28 @@ export async function POST(req: NextRequest) {
     }
 
     // Server-side validation
-    const nameClean = String(sender_name).trim();
-    if (nameClean.length < 2 || !/^[a-zA-Z\s'-]+$/.test(nameClean)) {
-      return NextResponse.json({ error: "Invalid name. Use letters only, at least 2 characters." }, { status: 400 });
+    const nameResult = validateName(sender_name);
+    if (!nameResult.valid) {
+      return NextResponse.json({ error: nameResult.error }, { status: 400 });
     }
+    const nameClean = nameResult.cleaned;
 
-    const emailClean = String(sender_email).trim().toLowerCase();
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(emailClean)) {
-      return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
+    const emailResult = validateEmail(sender_email);
+    if (!emailResult.valid) {
+      return NextResponse.json({ error: emailResult.error }, { status: 400 });
     }
-
-    const emailDomain = emailClean.split("@")[1];
-    if (BLOCKED_DOMAINS.includes(emailDomain)) {
-      return NextResponse.json({ error: "Disposable email addresses are not allowed." }, { status: 400 });
-    }
+    const emailClean = emailResult.cleaned;
 
     const msgClean = String(message).trim();
     if (msgClean.length < 20) {
       return NextResponse.json({ error: "Message must be at least 20 characters." }, { status: 400 });
     }
 
-    const supabase = await createServerSupabaseClient();
+    const adminClient = createAdminClient();
 
     // Rate limit: max 5 hire requests per email per day
     const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: recentRequests } = await (supabase as any)
+    const { data: recentRequests } = await adminClient
       .from("hire_requests")
       .select("id")
       .eq("sender_email", emailClean)
@@ -60,8 +49,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Too many requests. Please try again tomorrow." }, { status: 429 });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await adminClient
       .from("hire_requests")
       .insert({
         builder_id,
@@ -88,10 +76,7 @@ export async function POST(req: NextRequest) {
     }).catch(console.error);
 
     // Fire-and-forget: send email notification to builder
-    const serviceClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const serviceClient = createAdminClient();
     serviceClient.auth.admin.getUserById(builder_id).then(({ data: userData }) => {
       if (userData?.user?.email) {
         // Look up the builder's username

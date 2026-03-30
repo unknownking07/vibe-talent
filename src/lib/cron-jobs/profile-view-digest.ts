@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createNotification } from "@/lib/notifications";
 import { sendProfileViewDigestEmail } from "@/lib/email";
 
@@ -6,10 +6,7 @@ import { sendProfileViewDigestEmail } from "@/lib/email";
  * Send profile view digest notifications + emails to users who got views today.
  */
 export async function runProfileViewDigest(): Promise<{ notified: number }> {
-  const sb = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const sb = createAdminClient();
 
   const todayStr = new Date().toISOString().split("T")[0];
   const yesterdayStart = new Date();

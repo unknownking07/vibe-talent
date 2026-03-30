@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { endorsementsLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Project Endorsements API
@@ -162,9 +162,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Update cached count on project using service role to bypass RLS
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (serviceRoleKey) {
-      const adminSb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey);
+    {
+      const adminSb = createAdminClient();
       const { count } = await adminSb
         .from("project_endorsements")
         .select("id", { count: "exact", head: true })
@@ -181,8 +180,6 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({ success: true, count: count || 0 });
     }
-
-    return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
@@ -213,9 +210,8 @@ export async function DELETE(req: NextRequest) {
       .eq("user_id", user.id);
 
     // Update cached count using service role to bypass RLS
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (serviceRoleKey) {
-      const adminSb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey);
+    {
+      const adminSb = createAdminClient();
       const { count } = await adminSb
         .from("project_endorsements")
         .select("id", { count: "exact", head: true })
@@ -232,8 +228,6 @@ export async function DELETE(req: NextRequest) {
 
       return NextResponse.json({ success: true, count: count || 0 });
     }
-
-    return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }

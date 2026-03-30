@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createNotification } from "@/lib/notifications";
 import { sendVibeScoreMilestoneEmail } from "@/lib/email";
 
@@ -8,10 +8,7 @@ const VIBE_MILESTONES = [25, 50, 100, 200, 500, 1000];
  * Check for vibe score milestones and send notifications.
  */
 export async function runMilestoneCheck(): Promise<{ notified: number }> {
-  const sb = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const sb = createAdminClient();
 
   // Get all users with their vibe scores
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

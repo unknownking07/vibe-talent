@@ -25,11 +25,11 @@ function getBadgeLabel(level: BadgeLevel): string | null {
 
 function getBadgeBg(level: BadgeLevel): string {
   switch (level) {
-    case "diamond": return "#CFFAFE";
-    case "gold": return "#FEF9C3";
-    case "silver": return "#F4F4F5";
-    case "bronze": return "#FEF3C7";
-    default: return "#F4F4F5";
+    case "diamond": return "var(--bg-surface-light)";
+    case "gold": return "var(--status-warning-bg)";
+    case "silver": return "var(--bg-surface-light)";
+    case "bronze": return "var(--status-warning-bg)";
+    default: return "var(--bg-surface-light)";
   }
 }
 
@@ -283,7 +283,7 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
           <button
             onClick={() => handleCopyLink()}
             className="flex items-center justify-center gap-1 text-[10px] font-bold uppercase py-1.5 cursor-pointer hover:opacity-80"
-            style={{ backgroundColor: linkCopied ? "#D1FAE5" : "var(--bg-surface)", border: "2px solid var(--border-hard)" }}
+            style={{ backgroundColor: linkCopied ? "var(--status-success-bg)" : "var(--bg-surface)", border: "2px solid var(--border-hard)" }}
           >
             {linkCopied ? <Check size={10} className="text-emerald-600" /> : <LinkIcon size={10} />}
             {linkCopied ? "Copied!" : "Link"}

@@ -1,5 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
@@ -49,10 +49,7 @@ export async function GET(request: Request) {
           null;
 
         // Use service role client for DB operations to bypass RLS
-        const adminSb = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
+        const adminSb = createAdminClient();
 
         const { data: profile } = await adminSb
           .from("users")

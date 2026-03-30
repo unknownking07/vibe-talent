@@ -8,6 +8,33 @@ import { Flame, TrendingUp, Award, Zap, ArrowRight, Code2, Target, Users } from 
 
 export const revalidate = 60;
 
+const FAQ_ITEMS = [
+  {
+    q: "What is vibe coding?",
+    a: "Vibe coding is the practice of building software using AI-powered IDEs like Claude Code, Cursor, and Bolt. Vibe coders focus on shipping fast, staying in flow state, and building consistently rather than following traditional development processes.",
+  },
+  {
+    q: "How does the VibeTalent vibe score work?",
+    a: "The vibe score is a reputation metric calculated from your coding streak (consecutive days of commits), project quality scores, GitHub activity, and peer endorsements. The higher your consistency and quality, the higher your score.",
+  },
+  {
+    q: "What are coding streaks and why do they matter?",
+    a: "A coding streak tracks consecutive days you have committed code. Streaks matter because they are an unfakeable signal of consistency. Clients trust developers who show up every day over those with polished resumes but no proof of work.",
+  },
+  {
+    q: "How do VibeTalent badges work?",
+    a: "Badges are earned through streak milestones: Bronze at 30 days, Silver at 90 days, Gold at 180 days, and Diamond at 365 days. Each badge level signals increasing dedication and reliability to potential clients.",
+  },
+  {
+    q: "How is VibeTalent different from Upwork or Toptal?",
+    a: "Unlike traditional freelancer platforms that rely on resumes and client reviews, VibeTalent ranks developers by verifiable proof of work — coding streaks, shipped projects with live URLs, GitHub activity, and quality scores. You cannot fake a 200-day streak.",
+  },
+  {
+    q: "Is VibeTalent free to use?",
+    a: "Yes, creating a profile, building your streak, and getting discovered by clients is completely free. VibeTalent is a marketplace where your work speaks for itself.",
+  },
+];
+
 export default async function HomePage() {
   let topVibecoders: import("@/lib/types/database").UserWithSocials[] = [];
   let featuredProjects: import("@/lib/types/database").Project[] = [];
@@ -315,32 +342,7 @@ export default async function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
           <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-8">Frequently Asked Questions</h2>
           <div className="space-y-4">
-            {[
-              {
-                q: "What is vibe coding?",
-                a: "Vibe coding is the practice of building software using AI-powered IDEs like Claude Code, Cursor, and Bolt. Vibe coders focus on shipping fast, staying in flow state, and building consistently rather than following traditional development processes.",
-              },
-              {
-                q: "How does the VibeTalent vibe score work?",
-                a: "The vibe score is a reputation metric calculated from your coding streak (consecutive days of commits), project quality scores, GitHub activity, and peer endorsements. The higher your consistency and quality, the higher your score.",
-              },
-              {
-                q: "What are coding streaks and why do they matter?",
-                a: "A coding streak tracks consecutive days you have committed code. Streaks matter because they are an unfakeable signal of consistency. Clients trust developers who show up every day over those with polished resumes but no proof of work.",
-              },
-              {
-                q: "How do VibeTalent badges work?",
-                a: "Badges are earned through streak milestones: Bronze at 30 days, Silver at 90 days, Gold at 180 days, and Diamond at 365 days. Each badge level signals increasing dedication and reliability to potential clients.",
-              },
-              {
-                q: "How is VibeTalent different from Upwork or Toptal?",
-                a: "Unlike traditional freelancer platforms that rely on resumes and client reviews, VibeTalent ranks developers by verifiable proof of work — coding streaks, shipped projects with live URLs, GitHub activity, and quality scores. You cannot fake a 200-day streak.",
-              },
-              {
-                q: "Is VibeTalent free to use?",
-                a: "Yes, creating a profile, building your streak, and getting discovered by clients is completely free. VibeTalent is a marketplace where your work speaks for itself.",
-              },
-            ].map((faq) => (
+            {FAQ_ITEMS.map((faq) => (
               <div
                 key={faq.q}
                 className="p-5"
@@ -362,38 +364,11 @@ export default async function HomePage() {
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "FAQPage",
-              mainEntity: [
-                {
-                  "@type": "Question",
-                  name: "What is vibe coding?",
-                  acceptedAnswer: { "@type": "Answer", text: "Vibe coding is the practice of building software using AI-powered IDEs like Claude Code, Cursor, and Bolt. Vibe coders focus on shipping fast, staying in flow state, and building consistently rather than following traditional development processes." },
-                },
-                {
-                  "@type": "Question",
-                  name: "How does the VibeTalent vibe score work?",
-                  acceptedAnswer: { "@type": "Answer", text: "The vibe score is a reputation metric calculated from your coding streak (consecutive days of commits), project quality scores, GitHub activity, and peer endorsements. The higher your consistency and quality, the higher your score." },
-                },
-                {
-                  "@type": "Question",
-                  name: "What are coding streaks and why do they matter?",
-                  acceptedAnswer: { "@type": "Answer", text: "A coding streak tracks consecutive days you have committed code. Streaks matter because they are an unfakeable signal of consistency. Clients trust developers who show up every day over those with polished resumes but no proof of work." },
-                },
-                {
-                  "@type": "Question",
-                  name: "How do VibeTalent badges work?",
-                  acceptedAnswer: { "@type": "Answer", text: "Badges are earned through streak milestones: Bronze at 30 days, Silver at 90 days, Gold at 180 days, and Diamond at 365 days. Each badge level signals increasing dedication and reliability to potential clients." },
-                },
-                {
-                  "@type": "Question",
-                  name: "How is VibeTalent different from Upwork or Toptal?",
-                  acceptedAnswer: { "@type": "Answer", text: "Unlike traditional freelancer platforms that rely on resumes and client reviews, VibeTalent ranks developers by verifiable proof of work — coding streaks, shipped projects with live URLs, GitHub activity, and quality scores. You cannot fake a 200-day streak." },
-                },
-                {
-                  "@type": "Question",
-                  name: "Is VibeTalent free to use?",
-                  acceptedAnswer: { "@type": "Answer", text: "Yes, creating a profile, building your streak, and getting discovered by clients is completely free. VibeTalent is a marketplace where your work speaks for itself." },
-                },
-              ],
+              mainEntity: FAQ_ITEMS.map((faq) => ({
+                "@type": "Question",
+                name: faq.q,
+                acceptedAnswer: { "@type": "Answer", text: faq.a },
+              })),
             }),
           }}
         />
@@ -411,7 +386,7 @@ export default async function HomePage() {
         >
           <Zap size={40} className="mx-auto text-[var(--accent)] mb-4" />
           <h2 className="text-3xl sm:text-4xl font-extrabold uppercase text-white">Join the Marketplace</h2>
-          <p className="mt-4 text-zinc-400 font-medium max-w-xl mx-auto">
+          <p className="mt-4 text-[var(--text-muted-soft)] font-medium max-w-xl mx-auto">
             Start building your vibe coding reputation today. Create a profile,
             start your streak, and let VibeFinder Bot match you with clients.
           </p>
