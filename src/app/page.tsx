@@ -1,3 +1,4 @@
+import { LiveActivityFeed } from "@/components/ui/live-activity-feed";
 import Link from "next/link";
 import { VibecoderCard } from "@/components/ui/vibecoder-card";
 import { ProjectCard } from "@/components/ui/project-card";
@@ -151,6 +152,8 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      <LiveActivityFeed />
 
       {/* What is Vibe Coding */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
