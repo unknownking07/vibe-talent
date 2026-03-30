@@ -1,16 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
 import { reportLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const AUTO_FLAG_THRESHOLD = 3;
-
-function getSb() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
 
 export async function POST(req: NextRequest) {
   const { success } = await checkRateLimit(reportLimiter, getIP(req));
@@ -46,7 +39,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const sb = getSb();
+    const sb = createAdminClient();
 
     // Generate reporter_token server-side for undo support
     const reporter_token = randomUUID();
@@ -114,7 +107,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "reporter_token is required" }, { status: 400 });
     }
 
-    const sb = getSb();
+    const sb = createAdminClient();
 
     // Fetch the report to verify token and get project_id
     const { data: report, error: fetchError } = await sb
