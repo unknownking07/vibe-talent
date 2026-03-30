@@ -8,9 +8,9 @@ function getPublicClient() {
   );
 }
 
-// Simple in-memory throttle — only trigger sync every 30 min per instance
+// Throttle: only trigger sync every 30 min per serverless instance
 let lastSyncTrigger = 0;
-const SYNC_INTERVAL = 30 * 60 * 1000; // 30 minutes
+const SYNC_INTERVAL = 30 * 60 * 1000;
 
 type FeedItem = {
   id: string;
@@ -34,8 +34,7 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(Math.max(isNaN(rawLimit) ? 50 : rawLimit, 1), 100);
 
   try {
-    // Trigger github-sync in the background (fire-and-forget) so feed is fresh
-    // Only runs if last sync was >30 min ago (tracked via simple cache)
+    // Trigger github-sync in background if stale (fire-and-forget)
     const now = Date.now();
     if (now - lastSyncTrigger > SYNC_INTERVAL) {
       lastSyncTrigger = now;
@@ -90,7 +89,7 @@ export async function GET(request: NextRequest) {
         }
       }
     } catch {
-      // feed_events table may not exist yet â€” fall through to streak_logs
+      // feed_events table may not exist yet
     }
 
     // Fallback: if no feed_events, use streak_logs
