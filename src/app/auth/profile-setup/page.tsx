@@ -144,22 +144,30 @@ export default function ProfileSetupPage() {
   };
 
   const handleStep2Next = async () => {
+    const twitter = socials.twitter.trim();
+    const telegram = socials.telegram.trim();
+    if (!twitter && !telegram) {
+      setError("Please add your X (Twitter) or Telegram so clients can contact you.");
+      return;
+    }
+
     setError("");
     setLoading(true);
 
     try {
-      const hasLinks =
-        socials.github || socials.twitter || socials.website || socials.telegram;
+      const github = socials.github.trim();
+      const website = socials.website.trim();
+      const hasLinks = github || twitter || website || telegram;
 
       if (hasLinks) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: dbError } = await (supabase.from("social_links") as any).upsert(
           {
             user_id: userId,
-            github: socials.github || null,
-            twitter: socials.twitter || null,
-            website: socials.website || null,
-            telegram: socials.telegram || null,
+            github: github || null,
+            twitter: twitter || null,
+            website: website || null,
+            telegram: telegram || null,
           },
           { onConflict: "user_id" }
         );
@@ -379,7 +387,7 @@ export default function ProfileSetupPage() {
             Social Links
           </h2>
           <p className="text-xs text-[var(--text-secondary)] font-medium">
-            Connect your profiles (all optional)
+            X or Telegram required so clients can reach you
           </p>
         </div>
       </div>
@@ -461,16 +469,6 @@ export default function ProfileSetupPage() {
         </button>
       </div>
 
-      <button
-        type="button"
-        onClick={() => {
-          setError("");
-          setStep(3);
-        }}
-        className="w-full text-center text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] hover:text-[#FF3A00] transition-colors"
-      >
-        Skip this step
-      </button>
     </div>
   );
 

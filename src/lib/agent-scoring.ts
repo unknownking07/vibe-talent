@@ -12,8 +12,8 @@ function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
   );
 
   // Project Quality: use GitHub quality scores when available, fallback to heuristics
-  const verifiedProjects = user.projects.filter(p => p.verified);
-  const unverifiedProjects = user.projects.filter(p => !p.verified);
+  const verifiedProjects = (user.projects ?? []).filter(p => p.verified);
+  const unverifiedProjects = (user.projects ?? []).filter(p => !p.verified);
   const withLiveUrl = verifiedProjects.filter(p => p.live_url).length;
   const withGithub = verifiedProjects.filter(p => p.github_url).length;
 
@@ -42,7 +42,7 @@ function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
   }
 
   // Tech Breadth: unique technologies
-  const allTech = new Set(user.projects.flatMap(p => (p.tech_stack ?? []).map(t => t.toLowerCase())));
+  const allTech = new Set((user.projects ?? []).flatMap(p => (p.tech_stack ?? []).map(t => t.toLowerCase())));
   const tech_breadth = clamp(0, 100, allTech.size * 12);
 
   // Activity Recency: based on active streak
@@ -51,7 +51,7 @@ function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
     : 20;
 
   // Endorsements bonus: peer-validated projects boost quality
-  const totalEndorsements = user.projects.reduce((sum, p) => sum + (p.endorsement_count || 0), 0);
+  const totalEndorsements = (user.projects ?? []).reduce((sum, p) => sum + (p.endorsement_count || 0), 0);
   const endorsementBonus = Math.min(15, totalEndorsements * 3);
   project_quality = clamp(0, 100, project_quality + endorsementBonus);
 
@@ -86,12 +86,12 @@ function generateSummary(user: UserWithSocials, dims: EvaluationDimensions, over
   }
 
   if (dims.project_quality > 60) {
-    parts.push(`Has shipped ${user.projects.length} quality projects with live deployments and source code.`);
-  } else if (user.projects.length > 0) {
-    parts.push(`Has ${user.projects.length} project${user.projects.length > 1 ? "s" : ""} in their portfolio.`);
+    parts.push(`Has shipped ${(user.projects ?? []).length} quality projects with live deployments and source code.`);
+  } else if ((user.projects ?? []).length > 0) {
+    parts.push(`Has ${(user.projects ?? []).length} project${(user.projects ?? []).length > 1 ? "s" : ""} in their portfolio.`);
   }
 
-  const allTech = [...new Set(user.projects.flatMap(p => p.tech_stack))];
+  const allTech = [...new Set((user.projects ?? []).flatMap(p => p.tech_stack))];
   if (allTech.length > 4) {
     parts.push(`Versatile tech stack spanning ${allTech.slice(0, 4).join(", ")}, and more.`);
   }
@@ -111,18 +111,18 @@ function extractStrengths(user: UserWithSocials, dims: EvaluationDimensions): st
   else if (user.streak > 30) strengths.push(`${user.streak}-day streak shows dedication`);
   if (user.badge_level === "diamond") strengths.push("Diamond badge holder — top tier");
   else if (user.badge_level === "gold") strengths.push("Gold badge — proven consistency");
-  const verifiedProjCount = user.projects.filter(p => p.verified).length;
-  const highQualityCount = user.projects.filter(p => p.quality_score >= 50).length;
+  const verifiedProjCount = (user.projects ?? []).filter(p => p.verified).length;
+  const highQualityCount = (user.projects ?? []).filter(p => p.quality_score >= 50).length;
   if (highQualityCount >= 2) strengths.push(`${highQualityCount} high-quality verified projects`);
   else if (verifiedProjCount >= 3) strengths.push(`${verifiedProjCount} verified shipped projects`);
-  else if (user.projects.length >= 3) strengths.push(`${user.projects.length} shipped projects`);
-  const hasTests = user.projects.some(p => p.quality_metrics?.has_tests);
+  else if ((user.projects ?? []).length >= 3) strengths.push(`${(user.projects ?? []).length} shipped projects`);
+  const hasTests = (user.projects ?? []).some(p => p.quality_metrics?.has_tests);
   if (hasTests) strengths.push("Projects include test suites");
-  const hasCi = user.projects.some(p => p.quality_metrics?.has_ci);
+  const hasCi = (user.projects ?? []).some(p => p.quality_metrics?.has_ci);
   if (hasCi) strengths.push("Uses CI/CD pipelines");
   if (dims.tech_breadth > 60) strengths.push("Diverse tech stack");
-  if (user.projects.some(p => p.live_url)) strengths.push("Has live deployed projects");
-  if (user.projects.some(p => p.github_url)) strengths.push("Open source contributor");
+  if ((user.projects ?? []).some(p => p.live_url)) strengths.push("Has live deployed projects");
+  if ((user.projects ?? []).some(p => p.github_url)) strengths.push("Open source contributor");
   if (user.vibe_score > 500) strengths.push(`High vibe score: ${user.vibe_score}`);
   if (user.client_outcomes) {
     if (user.client_outcomes.completed_hires >= 3) strengths.push(`${user.client_outcomes.completed_hires} completed hires`);
@@ -130,23 +130,23 @@ function extractStrengths(user: UserWithSocials, dims: EvaluationDimensions): st
     if (user.client_outcomes.repeat_clients > 0) strengths.push(`${user.client_outcomes.repeat_clients} repeat client${user.client_outcomes.repeat_clients > 1 ? "s" : ""}`);
     if (user.client_outcomes.avg_response_hours !== null && user.client_outcomes.avg_response_hours <= 4) strengths.push("Fast responder (< 4h avg)");
   }
-  const totalEndorsements = user.projects.reduce((sum, p) => sum + (p.endorsement_count || 0), 0);
+  const totalEndorsements = (user.projects ?? []).reduce((sum, p) => sum + (p.endorsement_count || 0), 0);
   if (totalEndorsements >= 5) strengths.push(`${totalEndorsements} peer endorsements across projects`);
   return strengths.slice(0, 6);
 }
 
 function extractRisks(user: UserWithSocials, dims: EvaluationDimensions): string[] {
   const risks: string[] = [];
-  const unverifiedCount = user.projects.filter(p => !p.verified).length;
-  const verifiedCount = user.projects.filter(p => p.verified).length;
+  const unverifiedCount = (user.projects ?? []).filter(p => !p.verified).length;
+  const verifiedCount = (user.projects ?? []).filter(p => p.verified).length;
   if (unverifiedCount > 0 && verifiedCount === 0) risks.push("No verified projects — ownership unconfirmed");
-  else if (unverifiedCount > verifiedCount) risks.push(`${unverifiedCount} of ${user.projects.length} projects are unverified`);
-  const lowQualityCount = user.projects.filter(p => p.verified && p.quality_score > 0 && p.quality_score < 20).length;
+  else if (unverifiedCount > verifiedCount) risks.push(`${unverifiedCount} of ${(user.projects ?? []).length} projects are unverified`);
+  const lowQualityCount = (user.projects ?? []).filter(p => p.verified && p.quality_score > 0 && p.quality_score < 20).length;
   if (lowQualityCount > 0) risks.push(`${lowQualityCount} project${lowQualityCount > 1 ? "s" : ""} scored low on quality analysis`);
   if (user.streak === 0) risks.push("Currently inactive — no active streak");
-  if (user.projects.length < 2) risks.push("Limited project portfolio");
+  if ((user.projects ?? []).length < 2) risks.push("Limited project portfolio");
   if (!user.social_links?.telegram) risks.push("No Telegram for quick communication");
-  if (!user.projects.some(p => p.live_url)) risks.push("No live deployed projects");
+  if (!(user.projects ?? []).some(p => p.live_url)) risks.push("No live deployed projects");
   if (dims.tech_breadth < 30) risks.push("Narrow tech stack");
   if (user.badge_level === "none") risks.push("No badge earned yet");
   if (user.client_outcomes) {
@@ -197,9 +197,9 @@ export function matchUsers(users: UserWithSocials[], task: TaskRequest): MatchRe
   const requestedTech = task.tech_stack.map(t => t.toLowerCase().trim()).filter(Boolean);
 
   const results = users.map(user => {
-    const userTech = user.projects.flatMap(p => (p.tech_stack ?? []).map(t => t.toLowerCase()));
+    const userTech = (user.projects ?? []).flatMap(p => (p.tech_stack ?? []).map(t => t.toLowerCase()));
     const userTechSet = new Set(userTech);
-    const userTags = user.projects.flatMap(p => (p.tags ?? []).map(t => t.toLowerCase()));
+    const userTags = (user.projects ?? []).flatMap(p => (p.tags ?? []).map(t => t.toLowerCase()));
 
     // Skill overlap (40%)
     const matchedSkills = requestedTech.filter(t => userTechSet.has(t));
@@ -230,7 +230,7 @@ export function matchUsers(users: UserWithSocials[], task: TaskRequest): MatchRe
     if (matchedSkills.length > 0) match_reasons.push(`Knows ${matchedSkills.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")}`);
     if (user.streak > 30) match_reasons.push(`${user.streak}-day active streak`);
     if (user.badge_level !== "none") match_reasons.push(`${user.badge_level.charAt(0).toUpperCase() + user.badge_level.slice(1)} badge holder`);
-    if (user.projects.length > 2) match_reasons.push(`Shipped ${user.projects.length} projects`);
+    if ((user.projects ?? []).length > 2) match_reasons.push(`Shipped ${(user.projects ?? []).length} projects`);
     if (user.vibe_score > 400) match_reasons.push(`Vibe score: ${user.vibe_score}`);
 
     const projectTypeLabels = {

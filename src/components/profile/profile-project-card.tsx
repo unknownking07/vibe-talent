@@ -6,6 +6,7 @@ import Image from "next/image";
 import type { Project } from "@/lib/types/database";
 import { QualityScoreBadge } from "@/components/ui/quality-score-badge";
 import { EndorseButton } from "@/components/ui/endorse-button";
+import { createClient } from "@/lib/supabase/client";
 
 interface ProfileProjectCardProps {
   project: Project;
@@ -47,10 +48,18 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const [reportStatus, setReportStatus] = useState<"" | "success" | "error">("");
+  const [reportStatus, setReportStatus] = useState<"" | "success" | "error" | "auth">("");
 
   async function handleReport(reason: string) {
     try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setReportStatus("auth");
+        setShowReportMenu(false);
+        setTimeout(() => setReportStatus(""), 4000);
+        return;
+      }
       const res = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -99,7 +108,7 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
 
   return (
     <div
-      className="flex flex-col overflow-hidden cursor-pointer transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
+      className="flex flex-col cursor-pointer transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
       style={{
         backgroundColor: "var(--bg-surface)",
         border: "2px solid var(--border-hard)",
@@ -107,7 +116,7 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
       }}
     >
       {project.image_url && (
-        <div className="relative w-full h-28 border-b-2 border-[var(--border-hard)]">
+        <div className="relative w-full h-28 border-b-2 border-[var(--border-hard)] overflow-hidden">
           <Image src={project.image_url} alt={project.title} fill className="object-cover" />
         </div>
       )}
@@ -157,7 +166,7 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
             )}
             {showReportMenu && (
               <div
-                className="absolute right-0 top-6 z-50 min-w-[160px] py-1"
+                className="absolute right-0 bottom-6 z-50 min-w-[160px] py-1"
                 style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)", boxShadow: "var(--shadow-brutal-sm)" }}
               >
                 {REPORT_REASONS.map((reason) => (
@@ -201,6 +210,9 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
       )}
       {reportStatus === "error" && (
         <p className="text-xs font-bold text-red-600 mt-2">Failed to submit report. Please try again.</p>
+      )}
+      {reportStatus === "auth" && (
+        <p className="text-xs font-bold text-red-600 mt-2">Please sign in to report a project.</p>
       )}
       </div>
     </div>

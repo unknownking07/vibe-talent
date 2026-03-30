@@ -7,6 +7,7 @@ import Image from "next/image";
 import type { Project } from "@/lib/types/database";
 import { QualityScoreBadge } from "@/components/ui/quality-score-badge";
 import { EndorseButton } from "@/components/ui/endorse-button";
+import { createClient } from "@/lib/supabase/client";
 
 const REPORT_REASONS = [
   "Spam/Fake",
@@ -45,6 +46,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
   const [reported, setReported] = useState(() => !!getReportData(project.id));
   const [reporting, setReporting] = useState(false);
   const [undoing, setUndoing] = useState(false);
+  const [reportError, setReportError] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Check localStorage on mount — initialized via lazy state to avoid setState in effect
@@ -65,6 +67,15 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
     if (reporting || reported) return;
     setReporting(true);
     try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setReportError("Please sign in to report a project.");
+        setReporting(false);
+        setReportOpen(false);
+        setTimeout(() => setReportError(""), 4000);
+        return;
+      }
       const res = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -105,10 +116,10 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
 
   return (
     <div
-      className="card-brutal overflow-hidden transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
+      className="card-brutal transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
     >
       {project.image_url && (
-        <div className="relative w-full h-28 border-b-2 border-[var(--border-hard)]">
+        <div className="relative w-full h-28 border-b-2 border-[var(--border-hard)] overflow-hidden">
           <Image
             src={project.image_url}
             alt={project.title}
@@ -166,7 +177,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
                 </button>
               )}
               {reportOpen && (
-                <div className="absolute right-0 top-6 z-50 w-44 max-h-48 overflow-y-auto border-2 border-[var(--border-hard)] bg-[var(--bg-surface)] shadow-[4px_4px_0_var(--border-hard)]">
+                <div className="absolute right-0 bottom-6 z-50 w-44 border-2 border-[var(--border-hard)] bg-[var(--bg-surface)] shadow-[4px_4px_0_var(--border-hard)]">
                   {REPORT_REASONS.map((reason) => (
                     <button
                       key={reason}
@@ -226,7 +237,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
 
       {(project.tech_stack ?? []).length > 0 && (
       <div className="mt-2 flex flex-wrap gap-1">
-        {(project.tech_stack).map((tech) => (
+        {(project.tech_stack ?? []).map((tech) => (
           <span
             key={tech}
             className="px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--foreground)]"
@@ -256,6 +267,10 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
           </span>
         )}
       </div>
+
+      {reportError && (
+        <p className="text-[10px] font-bold text-red-600 mt-1" role="alert">{reportError}</p>
+      )}
 
       {!verified && onVerify && (
         <button

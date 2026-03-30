@@ -28,7 +28,7 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
         case "streak":
           return user.longest_streak > 0;
         case "projects":
-          return user.projects.length > 0;
+          return (user.projects ?? []).length > 0;
         default:
           return true;
       }
@@ -191,7 +191,7 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                     <StreakCounter streak={user.streak} size="sm" />
                   </td>
                   <td className="px-3 sm:px-4 py-3 text-right text-sm font-bold text-[var(--text-secondary)] hidden sm:table-cell">
-                    {user.projects.length}
+                    {(user.projects ?? []).length}
                   </td>
                   <td className="px-3 sm:px-4 py-3 text-right">
                     <BadgeDisplay level={user.badge_level} size="sm" />

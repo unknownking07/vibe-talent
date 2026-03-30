@@ -573,19 +573,21 @@ export default function DashboardPage() {
       setProjectError("Description must be at least 10 characters.");
       return;
     }
+    if (!projectForm.live_url || !projectForm.live_url.trim()) {
+      setProjectError("Live URL is required. Every project must have a deployed link.");
+      return;
+    }
+    try {
+      const url = new URL(projectForm.live_url.trim());
+      if (url.protocol !== "https:") throw new Error();
+    } catch {
+      setProjectError("Live URL must be a valid URL starting with https://");
+      return;
+    }
     if (projectForm.github_url) {
       const ghPattern = /^https:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+\/?$/;
       if (!ghPattern.test(projectForm.github_url.trim())) {
         setProjectError("GitHub URL must be in the format: https://github.com/username/repo");
-        return;
-      }
-    }
-    if (projectForm.live_url) {
-      try {
-        const url = new URL(projectForm.live_url.trim());
-        if (!["http:", "https:"].includes(url.protocol)) throw new Error();
-      } catch {
-        setProjectError("Live URL must be a valid URL starting with http:// or https://");
         return;
       }
     }
@@ -668,19 +670,21 @@ export default function DashboardPage() {
       setProjectError("Description must be at least 10 characters.");
       return;
     }
+    if (!projectForm.live_url || !projectForm.live_url.trim()) {
+      setProjectError("Live URL is required. Every project must have a deployed link.");
+      return;
+    }
+    try {
+      const url = new URL(projectForm.live_url.trim());
+      if (url.protocol !== "https:") throw new Error();
+    } catch {
+      setProjectError("Live URL must be a valid URL starting with https://");
+      return;
+    }
     if (projectForm.github_url) {
       const ghPattern = /^https:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+\/?$/;
       if (!ghPattern.test(projectForm.github_url.trim())) {
         setProjectError("GitHub URL must be in the format: https://github.com/username/repo");
-        return;
-      }
-    }
-    if (projectForm.live_url) {
-      try {
-        const url = new URL(projectForm.live_url.trim());
-        if (!["http:", "https:"].includes(url.protocol)) throw new Error();
-      } catch {
-        setProjectError("Live URL must be a valid URL starting with http:// or https://");
         return;
       }
     }
@@ -898,7 +902,7 @@ export default function DashboardPage() {
           }}
         >
           <Code2 size={20} className="text-[var(--accent)] mb-2" />
-          <div className="text-2xl font-extrabold font-mono text-[var(--foreground)]">{user.projects.length}</div>
+          <div className="text-2xl font-extrabold font-mono text-[var(--foreground)]">{(user.projects ?? []).length}</div>
           <div className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mt-1">Projects</div>
         </div>
       </div>
@@ -1173,10 +1177,11 @@ export default function DashboardPage() {
               <div className="grid grid-cols-2 gap-3">
                 <input
                   type="text"
-                  placeholder="Live URL"
+                  placeholder="Live URL (required) *"
                   value={projectForm.live_url}
                   onChange={(e) => setProjectForm({ ...projectForm, live_url: e.target.value })}
                   className="input-brutal"
+                  required
                 />
                 <input
                   type="text"
@@ -1233,7 +1238,7 @@ export default function DashboardPage() {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-          {user.projects.map((project) => (
+          {(user.projects ?? []).map((project) => (
             <div key={project.id}>
               <ProjectCard
                 project={project}

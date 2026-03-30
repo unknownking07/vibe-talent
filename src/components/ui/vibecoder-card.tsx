@@ -91,13 +91,13 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
               <VibeScore score={user.vibe_score} size="sm" />
               <div className="flex items-center gap-1 text-sm font-bold text-[var(--text-secondary)]">
                 <Code2 size={14} />
-                <span>{user.projects.length} projects</span>
+                <span>{(user.projects ?? []).length} projects</span>
               </div>
             </div>
 
             <div className="mt-3 flex flex-wrap gap-1.5 min-h-[28px]">
-              {user.projects.length > 0 ? (
-                user.projects.slice(0, 3).map((p) => (
+              {(user.projects ?? []).length > 0 ? (
+                (user.projects ?? []).slice(0, 3).map((p) => (
                   <span
                     key={p.id}
                     className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold text-[var(--foreground)]"

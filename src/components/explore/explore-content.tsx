@@ -40,7 +40,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
 
   const allTechStacks = useMemo(() => {
     const techs = new Set<string>();
-    users.forEach(u => u.projects.forEach(p => (p.tech_stack ?? []).forEach(t => techs.add(t))));
+    users.forEach(u => (u.projects ?? []).forEach(p => (p.tech_stack ?? []).forEach(t => techs.add(t))));
     return [...techs].sort();
   }, [users]);
 
@@ -53,7 +53,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
         (u) =>
           u.username.toLowerCase().includes(q) ||
           u.bio?.toLowerCase().includes(q) ||
-          u.projects.some((p) =>
+          (u.projects ?? []).some((p) =>
             p.title?.toLowerCase().includes(q) ||
             p.description?.toLowerCase().includes(q) ||
             (p.tech_stack ?? []).some((t) => t.toLowerCase().includes(q)) ||
@@ -68,7 +68,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
 
     if (selectedTech.length > 0) {
       filtered = filtered.filter(u =>
-        u.projects.some(p => (p.tech_stack ?? []).some(t => selectedTech.includes(t)))
+        (u.projects ?? []).some(p => (p.tech_stack ?? []).some(t => selectedTech.includes(t)))
       );
     }
     if (minStreak > 0) {
@@ -81,15 +81,15 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
       filtered = filtered.filter(u => u.streak > 0);
     }
     if (hasProjects) {
-      filtered = filtered.filter(u => u.projects.length > 0);
+      filtered = filtered.filter(u => (u.projects ?? []).length > 0);
     }
     if (verifiedOnly) {
-      filtered = filtered.filter(u => u.projects.some(p => p.verified));
+      filtered = filtered.filter(u => (u.projects ?? []).some(p => p.verified));
     }
 
     // Profile tier: complete profiles always first, then partial, then empty
     const profileTier = (u: typeof filtered[0]) => {
-      const hasProj = u.projects.length > 0;
+      const hasProj = (u.projects ?? []).length > 0;
       const hasBio = !!u.bio;
       const hasScore = u.vibe_score > 0;
       const hasStreak = u.streak > 0;

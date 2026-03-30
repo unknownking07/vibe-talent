@@ -40,7 +40,7 @@ const AI_ML = ["tensorflow", "pytorch", "openai", "langchain", "machine learning
 const WEB3 = ["solidity", "ethereum", "solana", "web3", "smart contracts", "blockchain", "hardhat", "foundry", "rust"];
 
 function deriveRole(projects: { tech_stack: string[] }[]): string {
-  const allTech = projects.flatMap(p => p.tech_stack.map(t => t.toLowerCase()));
+  const allTech = (projects ?? []).flatMap(p => (p.tech_stack ?? []).map(t => t.toLowerCase()));
   if (allTech.length === 0) return "Builder";
 
   const hasFrontend = allTech.some(t => FRONTEND.includes(t));
@@ -72,7 +72,7 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
     ? `${window.location.origin}/profile/${user.username}`
     : `https://vibetalent.work/profile/${user.username}`;
 
-  const shareText = `Check out @${user.username} on VibeTalent — ${user.streak}-day streak, ${user.projects.length} projects shipped!`;
+  const shareText = `Check out @${user.username} on VibeTalent — ${user.streak}-day streak, ${(user.projects ?? []).length} projects shipped!`;
 
   const handleShareTwitter = () => {
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(profileUrl)}`;
