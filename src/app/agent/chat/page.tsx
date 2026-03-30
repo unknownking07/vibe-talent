@@ -149,7 +149,7 @@ export default function AgentChatPage() {
   const showQuickActions = messages.length === 1 && stage === "greeting";
 
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8 flex flex-col" style={{ height: "calc(100vh - 64px)" }}>
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-4 sm:py-6 flex flex-col chat-fullscreen" style={{ height: "calc(100dvh - 64px)" }}>
       {/* Header */}
       <div className="flex items-center gap-3 mb-6 shrink-0">
         <div

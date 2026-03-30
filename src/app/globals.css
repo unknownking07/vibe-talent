@@ -324,6 +324,14 @@ html {
   transform: translateX(-50%) scale(1);
 }
 
+/* Chat fullscreen — hide footer so chat fills viewport */
+body:has(.chat-page-wrapper) footer {
+  display: none;
+}
+body:has(.chat-page-wrapper) main {
+  min-height: auto !important;
+}
+
 /* Focus ring for accessibility */
 .input-brutal:focus-visible,
 .btn-brutal:focus-visible {
