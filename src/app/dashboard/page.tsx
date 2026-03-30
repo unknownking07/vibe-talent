@@ -767,9 +767,9 @@ export default function DashboardPage() {
           className="px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide transition-all"
           style={{
             backgroundColor: activeTab === "overview" ? "var(--accent)" : "var(--bg-surface)",
-            color: activeTab === "overview" ? "#FFFFFF" : "var(--foreground)",
+            color: activeTab === "overview" ? "var(--text-on-inverted)" : "var(--foreground)",
             border: "2px solid var(--border-hard)",
-            boxShadow: activeTab === "overview" ? "none" : "4px 4px 0 #000",
+            boxShadow: activeTab === "overview" ? "none" : "4px 4px 0 var(--border-hard)",
           }}
         >
           Overview
@@ -779,9 +779,9 @@ export default function DashboardPage() {
           className="px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide transition-all flex items-center gap-2"
           style={{
             backgroundColor: activeTab === "inbox" ? "var(--accent)" : "var(--bg-surface)",
-            color: activeTab === "inbox" ? "#FFFFFF" : "var(--foreground)",
+            color: activeTab === "inbox" ? "var(--text-on-inverted)" : "var(--foreground)",
             border: "2px solid var(--border-hard)",
-            boxShadow: activeTab === "inbox" ? "none" : "4px 4px 0 #000",
+            boxShadow: activeTab === "inbox" ? "none" : "4px 4px 0 var(--border-hard)",
           }}
         >
           <Inbox size={16} />
@@ -825,7 +825,7 @@ export default function DashboardPage() {
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
-          <Trophy size={20} className="text-[#CA8A04] mb-2" />
+          <Trophy size={20} className="text-[var(--status-warning-text)] mb-2" />
           <div className="text-2xl font-extrabold font-mono text-[var(--foreground)]">{user.longest_streak}</div>
           <div className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mt-1">Longest Streak</div>
         </div>
@@ -880,18 +880,18 @@ export default function DashboardPage() {
             <div
               className="text-center px-4 py-2"
               style={{
-                backgroundColor: "#D1FAE5",
+                backgroundColor: "var(--status-success-bg)",
                 border: "2px solid var(--border-hard)",
                 boxShadow: "var(--shadow-brutal-sm)",
               }}
             >
               <div className="flex items-center gap-2 mb-1">
-                <Check size={14} className="text-[#065F46]" />
-                <span className="text-xs font-bold uppercase text-[#065F46]">Done for today</span>
+                <Check size={14} className="text-[var(--status-success-text)]" />
+                <span className="text-xs font-bold uppercase text-[var(--status-success-text)]">Done for today</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <Clock size={12} className="text-[#065F46]" />
-                <span className="text-sm font-extrabold font-mono text-[#065F46]">{countdown}</span>
+                <Clock size={12} className="text-[var(--status-success-text)]" />
+                <span className="text-sm font-extrabold font-mono text-[var(--status-success-text)]">{countdown}</span>
               </div>
             </div>
           ) : (
@@ -1007,7 +1007,7 @@ export default function DashboardPage() {
                     setTimeout(() => setBadgeCopied(null), 2000);
                   }}
                   className="btn-brutal flex-1 flex items-center justify-center gap-1.5 text-xs py-2"
-                  style={{ backgroundColor: badgeCopied === "md" ? "#D1FAE5" : "var(--bg-surface)" }}
+                  style={{ backgroundColor: badgeCopied === "md" ? "var(--status-success-bg)" : "var(--bg-surface)" }}
                 >
                   {badgeCopied === "md" ? "Copied!" : "Copy Markdown"}
                 </button>
@@ -1018,7 +1018,7 @@ export default function DashboardPage() {
                     setTimeout(() => setBadgeCopied(null), 2000);
                   }}
                   className="btn-brutal flex-1 flex items-center justify-center gap-1.5 text-xs py-2"
-                  style={{ backgroundColor: badgeCopied === "html" ? "#D1FAE5" : "var(--bg-surface)" }}
+                  style={{ backgroundColor: badgeCopied === "html" ? "var(--status-success-bg)" : "var(--bg-surface)" }}
                 >
                   {badgeCopied === "html" ? "Copied!" : "Copy HTML"}
                 </button>
@@ -1245,7 +1245,7 @@ export default function DashboardPage() {
                   key={request.id}
                   className="p-5"
                   style={{
-                    backgroundColor: request.status === "new" ? "#FFFBEB" : "var(--bg-surface)",
+                    backgroundColor: request.status === "new" ? "var(--status-warning-bg)" : "var(--bg-surface)",
                     border: "2px solid var(--border-hard)",
                     boxShadow: "var(--shadow-brutal-sm)",
                   }}
@@ -1264,13 +1264,13 @@ export default function DashboardPage() {
                                 ? "var(--accent)"
                                 : request.status === "read"
                                 ? "var(--border-subtle)"
-                                : "#D1FAE5",
+                                : "var(--status-success-bg)",
                             color:
                               request.status === "new"
                                 ? "var(--bg-surface)"
                                 : request.status === "read"
                                 ? "var(--text-secondary)"
-                                : "#065F46",
+                                : "var(--status-success-text)",
                             border: "2px solid var(--border-hard)",
                           }}
                         >
@@ -1341,7 +1341,7 @@ export default function DashboardPage() {
                           <button
                             onClick={() => { handleDeleteRequest(request.id); setConfirmingDelete(null); }}
                             className="btn-brutal text-xs py-2 px-3"
-                            style={{ backgroundColor: "#DC2626", color: "var(--text-on-inverted)" }}
+                            style={{ backgroundColor: "#DC2626", color: "#fff" }}
                           >
                             Yes, Delete
                           </button>

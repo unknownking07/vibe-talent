@@ -158,7 +158,7 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
             {showReportMenu && (
               <div
                 className="absolute right-0 top-6 z-50 min-w-[160px] py-1"
-                style={{ backgroundColor: "#fff", border: "2px solid var(--border-hard)", boxShadow: "var(--shadow-brutal-sm)" }}
+                style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)", boxShadow: "var(--shadow-brutal-sm)" }}
               >
                 {REPORT_REASONS.map((reason) => (
                   <button
