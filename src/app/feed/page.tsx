@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Activity, Rocket, Flame, ExternalLink, Github, Loader2, GitPullRequest, GitBranch, AlertCircle } from "lucide-react";
 
 type FeedItem = {
   id: string;
-  type: "push" | "pr" | "create" | "issue" | "project";
+  type: "push" | "pr" | "create" | "issue" | "project" | "streak";
   username: string;
   avatar_url: string | null;
   badge_level: string;
@@ -22,9 +22,50 @@ type FeedItem = {
   live_url?: string;
 };
 
+type GroupedItem = FeedItem & { count: number; messages: string[] };
+
+const GROUP_WINDOW = 4 * 60 * 60 * 1000; // 4 hours
+
+function groupFeedItems(items: FeedItem[]): GroupedItem[] {
+  const grouped: GroupedItem[] = [];
+
+  for (const item of items) {
+    // Projects are never grouped
+    if (item.type === "project") {
+      grouped.push({ ...item, count: 1, messages: item.message ? [item.message] : [] });
+      continue;
+    }
+
+    // Find existing group: same user + repo + type within time window
+    const existing = grouped.find(g =>
+      g.type === item.type &&
+      g.username === item.username &&
+      g.repo_name === item.repo_name &&
+      g.type !== "project" &&
+      Math.abs(new Date(g.date).getTime() - new Date(item.date).getTime()) < GROUP_WINDOW
+    );
+
+    if (existing) {
+      existing.count++;
+      if (item.message && item.message !== "pushed code" && item.message !== "logged a coding day" && !existing.messages.includes(item.message)) {
+        existing.messages.push(item.message);
+      }
+    } else {
+      const messages: string[] = [];
+      if (item.message && item.message !== "pushed code" && item.message !== "logged a coding day") {
+        messages.push(item.message);
+      }
+      grouped.push({ ...item, count: 1, messages });
+    }
+  }
+
+  return grouped;
+}
+
 function relativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
+  if (mins < 2) return "just now";
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
@@ -39,12 +80,13 @@ function EventIcon({ type }: { type: string }) {
   return <Flame size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />;
 }
 
-function actionText(item: FeedItem): string {
+function actionText(item: GroupedItem): string {
   if (item.type === "project") return `shipped ${item.project_title}`;
-  if (item.type === "pr") return "opened a PR";
-  if (item.type === "create") return "created";
-  if (item.type === "issue") return "opened an issue";
-  return "pushed to";
+  if (item.type === "pr") return item.count > 1 ? `opened ${item.count} PRs in` : "opened a PR in";
+  if (item.type === "create") return "created branch in";
+  if (item.type === "issue") return item.count > 1 ? `opened ${item.count} issues in` : "opened an issue in";
+  if (item.type === "streak") return "logged a coding day";
+  return item.count > 1 ? `pushed ${item.count} commits to` : "pushed to";
 }
 
 export default function FeedPage() {
@@ -53,12 +95,14 @@ export default function FeedPage() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    fetch("/api/feed?limit=50")
+    fetch("/api/feed?limit=100")
       .then((res) => { if (!res.ok) throw new Error(); return res.json(); })
       .then((data) => setFeed(data.feed || []))
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
+
+  const grouped = useMemo(() => groupFeedItems(feed), [feed]);
 
   if (loading) return (
     <div style={{ minHeight: "80vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}>
@@ -79,7 +123,7 @@ export default function FeedPage() {
       </div>
 
       {error && <div style={{ textAlign: "center", padding: "40px 24px", color: "var(--text-muted)", fontSize: "0.85rem", background: "var(--bg-surface)", border: "2px solid var(--border-hard)", borderRadius: 12, boxShadow: "var(--shadow-brutal-sm)" }}>Failed to load feed. Try refreshing.</div>}
-      {!error && feed.length === 0 && (
+      {!error && grouped.length === 0 && (
         <div style={{ textAlign: "center", padding: "60px 24px", color: "var(--text-muted)", fontSize: "0.9rem", background: "var(--bg-surface)", border: "2px solid var(--border-hard)", borderRadius: 12, boxShadow: "var(--shadow-brutal-sm)" }}>
           <Activity size={32} style={{ color: "var(--border-hard)", marginBottom: 12 }} />
           <p style={{ fontWeight: 700, marginBottom: 4, color: "var(--foreground)" }}>No activity yet</p>
@@ -88,10 +132,9 @@ export default function FeedPage() {
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {feed.map((item) => (
+        {grouped.map((item) => (
           <div key={item.id} style={{ background: "var(--bg-surface)", border: "2px solid var(--border-hard)", borderRadius: 12, padding: "14px 16px", boxShadow: "var(--shadow-brutal-sm)" }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-              {/* Avatar */}
               <Link href={`/profile/${item.username}`} style={{ flexShrink: 0, textDecoration: "none", marginTop: 2 }}>
                 <div style={{ width: 36, height: 36, borderRadius: "50%", border: "2px solid var(--border-hard)", overflow: "hidden", backgroundColor: "var(--bg-inverted)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {item.avatar_url ? (
@@ -102,34 +145,36 @@ export default function FeedPage() {
                 </div>
               </Link>
 
-              {/* Content */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: item.type !== "project" && item.message ? 4 : 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: (item.messages.length > 0 || item.type === "project") ? 4 : 0 }}>
                   <EventIcon type={item.type} />
                   <Link href={`/profile/${item.username}`} style={{ fontWeight: 800, fontSize: "0.85rem", color: "var(--foreground)", textDecoration: "none", fontFamily: "var(--font-space-grotesk)" }}>{item.username}</Link>
                   <span style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>{actionText(item)}</span>
-                  {item.repo_name && item.type !== "project" && (
+                  {item.repo_name && item.type !== "project" && item.type !== "streak" && (
                     <span style={{ fontWeight: 700, fontSize: "0.8rem", fontFamily: "var(--font-jetbrains-mono)", color: "var(--foreground)" }}>{item.repo_name}</span>
                   )}
-                  {item.streak > 1 && item.type === "push" && (
+                  {item.streak > 1 && (item.type === "push" || item.type === "streak") && (
                     <span style={{ fontSize: "0.68rem", fontWeight: 700, fontFamily: "var(--font-jetbrains-mono)", color: "var(--accent)", background: "rgba(255,58,0,0.08)", padding: "1px 6px", borderRadius: 4, border: "1px solid rgba(255,58,0,0.2)", whiteSpace: "nowrap" }}>{item.streak}d streak</span>
                   )}
                 </div>
 
-                {/* Commit message / PR title */}
-                {item.type !== "project" && item.message && item.message !== "logged a coding day" && (
-                  <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontFamily: "var(--font-jetbrains-mono)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
-                    {item.github_url ? (
-                      <a href={item.github_url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--text-muted)", textDecoration: "none" }}>&quot;{item.message}&quot;</a>
-                    ) : (
-                      <span>&quot;{item.message}&quot;</span>
+                {/* Show up to 3 unique commit messages */}
+                {item.messages.length > 0 && item.type !== "project" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    {item.messages.slice(0, 3).map((msg, i) => (
+                      <div key={i} style={{ fontSize: "0.76rem", color: "var(--text-muted)", fontFamily: "var(--font-jetbrains-mono)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
+                        &quot;{msg}&quot;
+                      </div>
+                    ))}
+                    {item.messages.length > 3 && (
+                      <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>+{item.messages.length - 3} more</div>
                     )}
                   </div>
                 )}
 
                 {/* Project details */}
                 {item.type === "project" && (
-                  <div style={{ marginTop: 6 }}>
+                  <div style={{ marginTop: 4 }}>
                     {item.project_description && <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", lineHeight: 1.5, margin: "0 0 8px 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{item.project_description}</p>}
                     {item.tech_stack && item.tech_stack.length > 0 && (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
@@ -148,7 +193,6 @@ export default function FeedPage() {
                 )}
               </div>
 
-              {/* Time */}
               <span style={{ color: "var(--text-muted)", fontSize: "0.68rem", fontWeight: 600, fontFamily: "var(--font-jetbrains-mono)", whiteSpace: "nowrap", flexShrink: 0, marginTop: 2 }}>{relativeTime(item.date)}</span>
             </div>
           </div>
