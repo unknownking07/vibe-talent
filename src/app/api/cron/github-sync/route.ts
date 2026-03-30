@@ -220,8 +220,7 @@ export async function GET(req: NextRequest) {
 
               if (event.type === 'PushEvent') {
                 eventType = 'push';
-                message = event.payload?.commits?.[0]?.message?.split('
-')[0] || 'pushed code';
+                message = event.payload?.commits?.[0]?.message?.split("\n")[0] || 'pushed code';
                 const sha = event.payload?.commits?.[0]?.sha || '';
                 githubUrl = sha ? 'https://github.com/' + event.repo?.name + '/commit/' + sha : '';
               } else if (event.type === 'PullRequestEvent') {
