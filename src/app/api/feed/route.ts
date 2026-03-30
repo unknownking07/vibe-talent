@@ -8,6 +8,10 @@ function getPublicClient() {
   );
 }
 
+// Throttle: only trigger sync every 30 min per serverless instance
+let lastSyncTrigger = 0;
+const SYNC_INTERVAL = 30 * 60 * 1000;
+
 type FeedItem = {
   id: string;
   type: "push" | "pr" | "create" | "issue" | "project" | "streak";
@@ -30,6 +34,19 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(Math.max(isNaN(rawLimit) ? 50 : rawLimit, 1), 100);
 
   try {
+    // Trigger github-sync in background if stale (fire-and-forget)
+    const now = Date.now();
+    if (now - lastSyncTrigger > SYNC_INTERVAL) {
+      lastSyncTrigger = now;
+      const baseUrl = request.nextUrl.origin || "https://www.vibetalent.work";
+      const cronSecret = process.env.CRON_SECRET;
+      if (cronSecret) {
+        fetch(`${baseUrl}/api/cron/github-sync`, {
+          headers: { Authorization: `Bearer ${cronSecret}` },
+        }).catch(() => {});
+      }
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = getPublicClient() as any;
     const feed: FeedItem[] = [];
@@ -72,7 +89,7 @@ export async function GET(request: NextRequest) {
         }
       }
     } catch {
-      // feed_events table may not exist yet — fall through to streak_logs
+      // feed_events table may not exist yet
     }
 
     // Fallback: if no feed_events, use streak_logs
