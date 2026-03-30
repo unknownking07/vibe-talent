@@ -8,6 +8,10 @@ function getPublicClient() {
   );
 }
 
+// Simple in-memory throttle — only trigger sync every 30 min per instance
+let lastSyncTrigger = 0;
+const SYNC_INTERVAL = 30 * 60 * 1000; // 30 minutes
+
 type FeedItem = {
   id: string;
   type: "push" | "pr" | "create" | "issue" | "project" | "streak";
@@ -30,6 +34,20 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(Math.max(isNaN(rawLimit) ? 50 : rawLimit, 1), 100);
 
   try {
+    // Trigger github-sync in the background (fire-and-forget) so feed is fresh
+    // Only runs if last sync was >30 min ago (tracked via simple cache)
+    const now = Date.now();
+    if (now - lastSyncTrigger > SYNC_INTERVAL) {
+      lastSyncTrigger = now;
+      const baseUrl = request.nextUrl.origin || "https://www.vibetalent.work";
+      const cronSecret = process.env.CRON_SECRET;
+      if (cronSecret) {
+        fetch(`${baseUrl}/api/cron/github-sync`, {
+          headers: { Authorization: `Bearer ${cronSecret}` },
+        }).catch(() => {});
+      }
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = getPublicClient() as any;
     const feed: FeedItem[] = [];
