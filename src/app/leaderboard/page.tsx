@@ -4,7 +4,7 @@ import { Trophy } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Leaderboard | VibeTalent",
+  title: "Leaderboard",
   description:
     "See the top vibe coders ranked by vibe score, streak, and projects shipped. The most consistent builders on the platform.",
   alternates: {
@@ -19,10 +19,26 @@ export default async function LeaderboardPage() {
 
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://www.vibetalent.work" },
-      { "@type": "ListItem", position: 2, name: "Leaderboard", item: "https://www.vibetalent.work/leaderboard" },
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: "https://www.vibetalent.work" },
+          { "@type": "ListItem", position: 2, name: "Leaderboard", item: "https://www.vibetalent.work/leaderboard" },
+        ],
+      },
+      {
+        "@type": "ItemList",
+        name: "VibeTalent Leaderboard",
+        description: "Top vibe coders ranked by vibe score, streak, and projects shipped",
+        numberOfItems: users.length,
+        itemListElement: users.slice(0, 10).map((user, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          name: user.username,
+          url: `https://www.vibetalent.work/profile/${user.username}`,
+        })),
+      },
     ],
   };
 
