@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function LeaderboardPage() {
-  let users;
+  let users: Awaited<ReturnType<typeof fetchAllUsersCached>>;
   try {
     users = await fetchAllUsersCached();
   } catch {
