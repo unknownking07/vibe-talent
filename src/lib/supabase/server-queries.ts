@@ -23,7 +23,11 @@ async function _fetchAllUsers(): Promise<UserWithSocials[]> {
     .select(USER_FIELDS)
     .order("vibe_score", { ascending: false });
 
-  if (error || !users) return [];
+  // Throw on error so unstable_cache does NOT cache empty results
+  if (error) {
+    throw new Error(`Failed to fetch users: ${error.message}`);
+  }
+  if (!users || users.length === 0) return [];
 
   const userIds = users.map((u: UserWithSocials) => u.id);
 
