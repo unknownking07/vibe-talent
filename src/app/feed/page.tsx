@@ -6,7 +6,7 @@ import Link from "next/link";
 
 type FeedItem = {
   id: string;
-  type: "push" | "pr" | "create" | "issue" | "project" | "streak";
+  type: "push" | "pr" | "create" | "issue" | "project" | "streak" | "joined";
   username: string;
   avatar_url: string | null;
   badge_level: string;
@@ -22,7 +22,7 @@ type FeedItem = {
 };
 
 type GroupedItem = FeedItem & { count: number; messages: string[] };
-type Filter = "all" | "push" | "pr" | "project" | "streak";
+type Filter = "all" | "push" | "pr" | "project" | "streak" | "joined";
 type LiveStats = { builders: number; projects: number; activeStreaks: number; endorsements: number } | null;
 
 const GROUP_WINDOW = 4 * 60 * 60 * 1000;
@@ -30,7 +30,7 @@ const GROUP_WINDOW = 4 * 60 * 60 * 1000;
 function groupFeedItems(items: FeedItem[]): GroupedItem[] {
   const grouped: GroupedItem[] = [];
   for (const item of items) {
-    if (item.type === "project") { grouped.push({ ...item, count: 1, messages: [] }); continue; }
+    if (item.type === "project" || item.type === "joined") { grouped.push({ ...item, count: 1, messages: [] }); continue; }
     const existing = grouped.find(g =>
       g.type === item.type && g.username === item.username && g.repo_name === item.repo_name &&
       g.type !== "project" && Math.abs(new Date(g.date).getTime() - new Date(item.date).getTime()) < GROUP_WINDOW
@@ -67,10 +67,11 @@ function actionText(item: GroupedItem): string {
   if (item.type === "create") return "created branch in";
   if (item.type === "issue") return item.count > 1 ? `opened ${item.count} issues in` : "opened issue in";
   if (item.type === "streak") return "logged coding activity";
+  if (item.type === "joined") return "joined VibeTalent";
   return item.count > 1 ? `pushed ${item.count} commits to` : "pushed to";
 }
 
-const FILTER_LABELS: Record<Filter, string> = { all: "All Activity", push: "Commits", pr: "PRs Merged", project: "Shipments", streak: "Streaks" };
+const FILTER_LABELS: Record<Filter, string> = { all: "All Activity", push: "Commits", pr: "PRs Merged", project: "Shipments", streak: "Streaks", joined: "New Builders" };
 
 export default function FeedPage() {
   const [feed, setFeed] = useState<FeedItem[]>([]);
@@ -94,6 +95,7 @@ export default function FeedPage() {
     const g = groupFeedItems(feed);
     if (filter === "all") return g;
     if (filter === "push") return g.filter(i => i.type === "push" || i.type === "create");
+    if (filter === "joined") return g.filter(i => i.type === "joined");
     return g.filter(i => i.type === filter);
   }, [feed, filter]);
 
@@ -105,6 +107,7 @@ export default function FeedPage() {
       pr: g.filter(i => i.type === "pr").length,
       project: g.filter(i => i.type === "project").length,
       streak: g.filter(i => i.type === "streak").length,
+      joined: g.filter(i => i.type === "joined").length,
     };
   }, [feed]);
 
@@ -131,13 +134,13 @@ export default function FeedPage() {
         .feed-layout { display: grid; grid-template-columns: 240px 1fr 320px; gap: 48px; max-width: 1440px; margin: 0 auto; padding: 40px; min-height: 100vh; }
         .feed-layout::before { content: ''; position: fixed; top: -20vh; left: 20vw; width: 60vw; height: 60vw; background: radial-gradient(circle, rgba(255,74,42,0.06) 0%, transparent 60%); z-index: -1; pointer-events: none; }
         .fl-sidebar { position: sticky; top: 100px; height: calc(100vh - 140px); display: flex; flex-direction: column; gap: 32px; }
-        .fl-nav-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-radius: 999px; color: var(--text-muted, #8A8B94); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s ease; border: 1px solid transparent; cursor: pointer; background: none; width: 100%; text-align: left; font-family: inherit; }
+        .fl-nav-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-radius: 999px; color: var(--text-muted, #8A8B94); text-decoration: none; font-size: 14px; font-weight: 700; transition: all 0.2s ease; border: 1px solid transparent; cursor: pointer; background: none; width: 100%; text-align: left; font-family: inherit; }
         .fl-nav-item:hover { color: var(--foreground, #fff); background: var(--bg-surface, #15151A); }
         .fl-nav-item.active { color: #0A0A0E; background: var(--accent, #FF4A2A); }
-        .fl-nav-count { background: rgba(255,255,255,0.08); color: inherit; padding: 2px 8px; border-radius: 999px; font-size: 12px; opacity: 0.8; }
-        .fl-nav-item.active .fl-nav-count { background: rgba(0,0,0,0.1); }
-        .fl-feed-item { display: flex; gap: 16px; padding: 24px 0; border-bottom: 1px solid rgba(255,255,255,0.08); transition: all 0.2s; }
-        .fl-feed-item:hover { background: rgba(255,255,255,0.02); border-radius: 8px; margin: 0 -16px; padding: 24px 16px; }
+        .fl-nav-count { background: var(--bg-surface-light, #F5F5F5); color: inherit; padding: 2px 8px; border-radius: 999px; font-size: 12px; opacity: 0.8; }
+        .fl-nav-item.active .fl-nav-count { background: rgba(0,0,0,0.15); }
+        .fl-feed-item { display: flex; gap: 16px; padding: 24px 0; border-bottom: 1px solid var(--border-subtle, #D4D4D4); transition: all 0.2s; }
+        .fl-feed-item:hover { background: var(--bg-surface-light, #F5F5F5); border-radius: 8px; margin: 0 -16px; padding: 24px 16px; }
         .fl-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--bg-surface, #15151A); border: 1px solid var(--border-hard, #2A2A33); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
         .fl-avatar img { width: 100%; height: 100%; object-fit: cover; opacity: 1; }
         .fl-avatar.orange { background: var(--accent, #FF4A2A); border-color: var(--accent, #FF4A2A); color: #0A0A0E; font-weight: 600; font-size: 14px; }
@@ -151,7 +154,7 @@ export default function FeedPage() {
         .fl-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .fl-section-label { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-muted, #8A8B94); margin-bottom: 16px; }
         .fl-section-num { font-variant-numeric: tabular-nums; }
-        .fl-section-pill { background: rgba(255,255,255,0.08); color: var(--foreground, #fff); padding: 4px 12px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+        .fl-section-pill { background: var(--bg-surface-light, #F5F5F5); color: var(--foreground); padding: 4px 12px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
         @media(max-width:1100px) { .feed-layout { grid-template-columns: 1fr; padding: 16px; gap: 24px; } .fl-sidebar { position: static; height: auto; } .fl-sidebar-right { display: none; } .fl-nav-list { display: flex; flex-wrap: wrap; gap: 6px; } .fl-nav-item { width: auto; padding: 8px 14px; font-size: 13px; } }
       `}</style>
       <div className="feed-layout">
@@ -175,8 +178,8 @@ export default function FeedPage() {
 
         {/* Center feed */}
         <main style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 24, borderBottom: "1px solid var(--border-hard, #2A2A33)" }}>
-            <h1 style={{ fontSize: 24, fontWeight: 500, letterSpacing: "-0.03em" }}>Live Network Feed</h1>
+          <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 24, borderBottom: "1px solid var(--border-subtle)" }}>
+            <h1 style={{ fontSize: 24, fontWeight: 600, letterSpacing: "-0.03em", color: "var(--foreground)" }}>Live Network Feed</h1>
             <span className="fl-tag fl-tag-dark"><span style={{ color: "#4ade80" }}>●</span> Live</span>
           </header>
 
@@ -205,8 +208,8 @@ export default function FeedPage() {
                   </Link>
 
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, paddingTop: 4 }}>
-                    <div style={{ fontSize: 15, color: "var(--text-muted, #8A8B94)" }}>
-                      <Link href={`/profile/${item.username}`} style={{ color: "var(--foreground, #fff)", fontWeight: 500, textDecoration: "none" }}>{item.username}</Link>
+                    <div style={{ fontSize: 15, color: "var(--text-secondary)" }}>
+                      <Link href={`/profile/${item.username}`} style={{ color: "var(--foreground)", fontWeight: 600, textDecoration: "none" }}>{item.username}</Link>
                       {" "}{actionText(item)}
                       {item.repo_name && item.type !== "project" && item.type !== "streak" && (
                         <span className="fl-tag fl-tag-dark">{item.repo_name}</span>
@@ -219,7 +222,7 @@ export default function FeedPage() {
                       )}
                     </div>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, color: "var(--text-muted, #8A8B94)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, color: "var(--text-muted)" }}>
                       <span style={{ fontVariantNumeric: "tabular-nums" }}>{relativeTime(item.date)}</span>
                       {item.count > 1 && <><span>·</span><span>{item.count} events</span></>}
                     </div>
@@ -228,7 +231,7 @@ export default function FeedPage() {
                     {item.messages.length > 0 && !isProject && (
                       <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
                         {item.messages.slice(0, 3).map((msg, i) => (
-                          <div key={i} style={{ fontSize: 13, color: "var(--text-muted, #8A8B94)", fontFamily: "var(--font-jetbrains-mono, monospace)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          <div key={i} style={{ fontSize: 13, color: "var(--text-secondary)", fontFamily: "var(--font-jetbrains-mono, monospace)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             &quot;{msg}&quot;
                           </div>
                         ))}
@@ -239,7 +242,7 @@ export default function FeedPage() {
                     {isProject && (
                       <div className="fl-attachment">
                         <div>
-                          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--foreground, #fff)" }}>{item.project_title}</div>
+                          <div style={{ fontSize: 14, fontWeight: 500, color: "var(--foreground)" }}>{item.project_title}</div>
                           {item.project_description && (
                             <div style={{ fontSize: 13, color: "var(--text-muted, #8A8B94)", marginTop: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{item.project_description}</div>
                           )}

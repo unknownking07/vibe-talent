@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { projectsLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
 
 // GET /api/projects — List projects (public)
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const { success } = await checkRateLimit(projectsLimiter, getIP(request));
+  if (!success) {
+    return NextResponse.json({ projects: [] }, { status: 429 });
+  }
+
   try {
     const supabase = await createServerSupabaseClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
