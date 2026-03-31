@@ -6,7 +6,7 @@ import Link from "next/link";
 
 type FeedItem = {
   id: string;
-  type: "push" | "pr" | "create" | "issue" | "project" | "streak";
+  type: "push" | "pr" | "create" | "issue" | "project" | "streak" | "joined";
   username: string;
   avatar_url: string | null;
   badge_level: string;
@@ -22,7 +22,7 @@ type FeedItem = {
 };
 
 type GroupedItem = FeedItem & { count: number; messages: string[] };
-type Filter = "all" | "push" | "pr" | "project" | "streak";
+type Filter = "all" | "push" | "pr" | "project" | "streak" | "joined";
 type LiveStats = { builders: number; projects: number; activeStreaks: number; endorsements: number } | null;
 
 const GROUP_WINDOW = 4 * 60 * 60 * 1000;
@@ -30,7 +30,7 @@ const GROUP_WINDOW = 4 * 60 * 60 * 1000;
 function groupFeedItems(items: FeedItem[]): GroupedItem[] {
   const grouped: GroupedItem[] = [];
   for (const item of items) {
-    if (item.type === "project") { grouped.push({ ...item, count: 1, messages: [] }); continue; }
+    if (item.type === "project" || item.type === "joined") { grouped.push({ ...item, count: 1, messages: [] }); continue; }
     const existing = grouped.find(g =>
       g.type === item.type && g.username === item.username && g.repo_name === item.repo_name &&
       g.type !== "project" && Math.abs(new Date(g.date).getTime() - new Date(item.date).getTime()) < GROUP_WINDOW
@@ -67,10 +67,11 @@ function actionText(item: GroupedItem): string {
   if (item.type === "create") return "created branch in";
   if (item.type === "issue") return item.count > 1 ? `opened ${item.count} issues in` : "opened issue in";
   if (item.type === "streak") return "logged coding activity";
+  if (item.type === "joined") return "joined VibeTalent";
   return item.count > 1 ? `pushed ${item.count} commits to` : "pushed to";
 }
 
-const FILTER_LABELS: Record<Filter, string> = { all: "All Activity", push: "Commits", pr: "PRs Merged", project: "Shipments", streak: "Streaks" };
+const FILTER_LABELS: Record<Filter, string> = { all: "All Activity", push: "Commits", pr: "PRs Merged", project: "Shipments", streak: "Streaks", joined: "New Builders" };
 
 export default function FeedPage() {
   const [feed, setFeed] = useState<FeedItem[]>([]);
@@ -94,6 +95,7 @@ export default function FeedPage() {
     const g = groupFeedItems(feed);
     if (filter === "all") return g;
     if (filter === "push") return g.filter(i => i.type === "push" || i.type === "create");
+    if (filter === "joined") return g.filter(i => i.type === "joined");
     return g.filter(i => i.type === filter);
   }, [feed, filter]);
 
@@ -105,6 +107,7 @@ export default function FeedPage() {
       pr: g.filter(i => i.type === "pr").length,
       project: g.filter(i => i.type === "project").length,
       streak: g.filter(i => i.type === "streak").length,
+      joined: g.filter(i => i.type === "joined").length,
     };
   }, [feed]);
 

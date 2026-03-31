@@ -10,7 +10,7 @@ function getPublicClient() {
 
 type FeedItem = {
   id: string;
-  type: "push" | "pr" | "create" | "issue" | "project" | "streak";
+  type: "push" | "pr" | "create" | "issue" | "project" | "streak" | "joined";
   username: string;
   avatar_url: string | null;
   badge_level: string;
@@ -131,6 +131,26 @@ export async function GET(request: NextRequest) {
         tech_stack: project.tech_stack || [],
         live_url: project.live_url || undefined,
         github_url: project.github_url || undefined,
+      });
+    }
+
+    // 4. Recent signups
+    const { data: recentUsers } = await supabase
+      .from("users")
+      .select("id, username, avatar_url, badge_level, streak, created_at")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    for (const user of (recentUsers || [])) {
+      feed.push({
+        id: `joined-${user.id}`,
+        type: "joined",
+        username: user.username,
+        avatar_url: user.avatar_url,
+        badge_level: user.badge_level || "none",
+        streak: user.streak || 0,
+        date: user.created_at,
+        message: "joined VibeTalent",
       });
     }
 
