@@ -31,8 +31,14 @@ export default function SignUpPage() {
     setError("");
     setLoading(true);
 
-    if (username.length < 3) {
+    const trimmedUsername = username.trim().toLowerCase();
+    if (trimmedUsername.length < 3) {
       setError("Username must be at least 3 characters");
+      setLoading(false);
+      return;
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(trimmedUsername)) {
+      setError("Username can only contain letters, numbers, hyphens, and underscores");
       setLoading(false);
       return;
     }
@@ -42,7 +48,7 @@ export default function SignUpPage() {
       email,
       password,
       options: {
-        data: { username },
+        data: { username: trimmedUsername },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
