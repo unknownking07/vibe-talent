@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { statsLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
 
 function getAdminClient() {
   return createClient(
@@ -8,7 +9,12 @@ function getAdminClient() {
   );
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const { success } = await checkRateLimit(statsLimiter, getIP(request));
+  if (!success) {
+    return NextResponse.json({ error: "Rate limited" }, { status: 429 });
+  }
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = getAdminClient() as any;

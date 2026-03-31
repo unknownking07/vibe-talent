@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { buildersLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,6 +12,11 @@ const corsHeaders = {
 };
 
 export async function GET(req: NextRequest) {
+  const { success } = await checkRateLimit(buildersLimiter, getIP(req));
+  if (!success) {
+    return NextResponse.json({ error: "Rate limited", builders: [] }, { status: 429, headers: corsHeaders });
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     const skills = searchParams.get("skills");

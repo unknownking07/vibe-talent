@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { feedLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
 
 function getPublicClient() {
   return createClient(
@@ -28,6 +29,11 @@ type FeedItem = {
 export async function GET(request: NextRequest) {
   const rawLimit = parseInt(request.nextUrl.searchParams.get("limit") || "100");
   const limit = Math.min(Math.max(isNaN(rawLimit) ? 100 : rawLimit, 1), 200);
+
+  const { success } = await checkRateLimit(feedLimiter, getIP(request));
+  if (!success) {
+    return NextResponse.json({ feed: [], error: "Rate limited" }, { status: 429 });
+  }
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
