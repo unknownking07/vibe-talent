@@ -7,7 +7,7 @@ import { TestimonialScroll } from "@/components/ui/testimonial-scroll";
 import { fetchHomepageDataCached } from "@/lib/supabase/server-queries";
 import { Flame, TrendingUp, Award, Zap, ArrowRight, Code2, Target, Users } from "lucide-react";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 const FAQ_ITEMS = [
   {
@@ -50,8 +50,8 @@ export default async function HomePage() {
     totalBuilders = data.totalBuilders;
     totalProjects = data.totalProjects;
     avgStreak = data.avgStreak;
-  } catch {
-    // Supabase not configured, show empty state
+  } catch (err) {
+    console.error("[HomePage] Failed to fetch homepage data:", err);
   }
 
   return (

@@ -62,8 +62,8 @@ export default function HireChatPage() {
     };
     init();
 
-    // Poll for new messages every 5 seconds
-    pollRef.current = setInterval(fetchMessages, 5000);
+    // Poll for new messages every 15 seconds
+    pollRef.current = setInterval(fetchMessages, 15000);
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);

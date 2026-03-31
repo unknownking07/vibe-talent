@@ -21,16 +21,16 @@ export async function GET() {
       { count: totalHires },
       { count: totalEndorsements },
       { data: recentUsers },
-      { data: activeStreaks },
+      { count: activeStreakCount },
     ] = await Promise.all([
       sb.from("users").select("id", { count: "exact", head: true }),
       sb.from("projects").select("id", { count: "exact", head: true }),
-      sb.from("users").select("streak, longest_streak, vibe_score"),
-      sb.from("users").select("badge_level").not("badge_level", "is", null),
+      sb.from("users").select("streak, longest_streak, vibe_score").limit(500),
+      sb.from("users").select("badge_level").not("badge_level", "is", null).limit(500),
       sb.from("hire_requests").select("id", { count: "exact", head: true }),
       sb.from("endorsements").select("id", { count: "exact", head: true }),
       sb.from("users").select("created_at").order("created_at", { ascending: false }).limit(100),
-      sb.from("users").select("streak").gt("streak", 0),
+      sb.from("users").select("id", { count: "exact", head: true }).gt("streak", 0),
     ]);
 
     // Compute stats
@@ -47,7 +47,7 @@ export async function GET() {
     const maxStreak = streaks.length > 0
       ? Math.max(...streaks.map((u: { longest_streak: number }) => u.longest_streak || 0))
       : 0;
-    const activeStreakCount = (activeStreaks || []).length;
+    const activeStreaks = activeStreakCount || 0;
     const totalVibeScore = streaks.reduce((a: number, u: { vibe_score: number }) => a + (u.vibe_score || 0), 0);
     const avgVibeScore = streaks.length > 0 ? Math.round(totalVibeScore / streaks.length) : 0;
 
@@ -75,7 +75,7 @@ export async function GET() {
       endorsements,
       avgStreak,
       maxStreak,
-      activeStreaks: activeStreakCount,
+      activeStreaks,
       avgVibeScore,
       badges,
       growth: {
