@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
         badge_level: user.badge_level,
         streak: user.streak,
         date: log.activity_date,
-        message: "logged a coding day",
+        message: "logged a day of coding",
       });
     }
 

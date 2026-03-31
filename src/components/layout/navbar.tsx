@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { Flame, Menu, X, LogOut, Settings, User, Users } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { NotificationBell } from "@/components/ui/notification-bell";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -26,7 +26,19 @@ export function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<{ username: string; avatar_url: string | null } | null>(null);
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const checkUnread = useCallback(async () => {
+    try {
+      const res = await fetch("/api/notifications");
+      if (!res.ok) return;
+      const data = await res.json();
+      setHasUnreadNotifications((data.unread_count || 0) > 0);
+    } catch {
+      // Silently fail
+    }
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -60,6 +72,7 @@ export function Navbar() {
       setIsLoggedIn(!!user);
       if (user) {
         fetchProfile(user.id, user.email);
+        checkUnread();
       }
     });
 
@@ -73,7 +86,8 @@ export function Navbar() {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkUnread]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -139,6 +153,12 @@ export function Navbar() {
               }}
             >
               {link.label}
+              {link.href === "/dashboard" && hasUnreadNotifications && (
+                <span
+                  className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
+                  style={{ backgroundColor: "var(--accent)" }}
+                />
+              )}
             </Link>
           ))}
           <a
@@ -311,12 +331,18 @@ export function Navbar() {
               key={link.href}
               href={link.href}
               onClick={() => setMobileOpen(false)}
-              className="block px-4 py-3 text-sm font-bold uppercase tracking-wide"
+              className="relative inline-block px-4 py-3 text-sm font-bold uppercase tracking-wide"
               style={{
                 color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
               }}
             >
               {link.label}
+              {link.href === "/dashboard" && hasUnreadNotifications && (
+                <span
+                  className="inline-block w-2 h-2 rounded-full ml-1.5 align-middle"
+                  style={{ backgroundColor: "var(--accent)" }}
+                />
+              )}
             </Link>
           ))}
           <a

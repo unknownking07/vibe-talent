@@ -17,7 +17,8 @@ export async function generateMetadata({
 }: {
   params: Promise<{ username: string }>;
 }): Promise<Metadata> {
-  const { username } = await params;
+  const { username: rawMeta } = await params;
+  const username = rawMeta?.trim();
   const user = await fetchUserByUsernameCached(username);
 
   if (!user) {
@@ -65,10 +66,11 @@ export default async function ProfilePage({
 }: {
   params: Promise<{ username: string }>;
 }) {
-  const { username } = await params;
+  const { username: rawUsername } = await params;
+  const username = rawUsername?.trim();
 
   // Validate username format to prevent unnecessary DB queries
-  if (!username || username.length > 50 || !/^[a-zA-Z0-9_-]+$/.test(username)) {
+  if (!username || username.length > 50 || !/^[a-zA-Z0-9_.\- ]+$/.test(username)) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
         <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Invalid username</h1>

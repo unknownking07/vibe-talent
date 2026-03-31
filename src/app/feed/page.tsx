@@ -37,12 +37,12 @@ function groupFeedItems(items: FeedItem[]): GroupedItem[] {
     );
     if (existing) {
       existing.count++;
-      if (item.message && item.message !== "pushed code" && item.message !== "logged a coding day" && item.message !== "opened a pull request" && !existing.messages.includes(item.message)) {
+      if (item.message && item.message !== "pushed code" && item.message !== "logged a day of coding" && item.message !== "opened a pull request" && !existing.messages.includes(item.message)) {
         existing.messages.push(item.message);
       }
     } else {
       const messages: string[] = [];
-      if (item.message && item.message !== "pushed code" && item.message !== "logged a coding day" && item.message !== "opened a pull request") messages.push(item.message);
+      if (item.message && item.message !== "pushed code" && item.message !== "logged a day of coding" && item.message !== "opened a pull request") messages.push(item.message);
       grouped.push({ ...item, count: 1, messages });
     }
   }
@@ -66,7 +66,7 @@ function actionText(item: GroupedItem): string {
   if (item.type === "pr") return item.count > 1 ? `merged ${item.count} PRs into` : "merged PR into";
   if (item.type === "create") return "created branch in";
   if (item.type === "issue") return item.count > 1 ? `opened ${item.count} issues in` : "opened issue in";
-  if (item.type === "streak") return "logged coding activity";
+  if (item.type === "streak") return "logged a day of coding";
   if (item.type === "joined") return "joined VibeTalent";
   return item.count > 1 ? `pushed ${item.count} commits to` : "pushed to";
 }
