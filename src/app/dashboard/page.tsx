@@ -903,8 +903,14 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* 2-Column Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      {/* Left Column — Main Content */}
+      <div className="lg:col-span-2 space-y-6">
+
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div
           className="p-5"
           style={{
@@ -955,110 +961,12 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Log Activity */}
-      <div
-        className="p-6 mb-8"
-        style={{
-          backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
-          boxShadow: "var(--shadow-brutal)",
-        }}
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-extrabold uppercase flex items-center gap-2 text-[var(--foreground)]">
-              <Flame size={20} className="text-[var(--accent)]" />
-              {todayLogged ? "Activity Logged Today" : "Log Today\u0027s Activity"}
-            </h2>
-            <p className="text-sm text-[var(--text-secondary)] font-medium mt-1">
-              {todayLogged
-                ? "You\u0027ve already logged your activity today. Come back tomorrow!"
-                : "Log your coding activity to keep your streak alive"}
-            </p>
-          </div>
-          {todayLogged ? (
-            <div
-              className="text-center px-4 py-2"
-              style={{
-                backgroundColor: "var(--status-success-bg)",
-                border: "2px solid var(--border-hard)",
-                boxShadow: "var(--shadow-brutal-sm)",
-              }}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <Check size={14} className="text-[var(--status-success-text)]" />
-                <span className="text-xs font-bold uppercase text-[var(--status-success-text)]">Done for today</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Clock size={12} className="text-[var(--status-success-text)]" />
-                <span className="text-sm font-extrabold font-mono text-[var(--status-success-text)]">{countdown}</span>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={handleLogActivity}
-              disabled={logging}
-              className="btn-brutal text-sm"
-              style={{
-                backgroundColor: "var(--accent)",
-                color: "var(--text-on-inverted)",
-              }}
-            >
-              {logging ? "Logging..." : "Log Activity"}
-            </button>
-          )}
-        </div>
-        <div className="mt-4 flex items-center gap-3">
-          <StreakCounter streak={user.streak} size="lg" />
-          <span className="text-sm font-bold text-[var(--text-secondary)] uppercase">day streak</span>
-        </div>
-        <div className="mt-2">
-          <BadgeDisplay level={user.badge_level} />
-        </div>
-        {/* Streak Freeze Status */}
-        <div className="mt-3 flex items-center gap-2">
-          <ShieldCheck size={16} className="text-cyan-600" />
-          <span className="text-sm font-bold text-[var(--text-secondary)]">
-            {user.streak_freezes_remaining ?? 2} / 2 Freezes Available
-          </span>
-          {(user.streak_freezes_used ?? 0) > 0 && (
-            <span className="text-xs font-medium text-zinc-400">
-              ({user.streak_freezes_used} used this month)
-            </span>
-          )}
-        </div>
-        {/* GitHub Sync */}
-        {user.social_links?.github && (
-          <div className="mt-4 pt-4 border-t-2 border-zinc-100">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Code2 size={16} className="text-[var(--text-secondary)]" />
-                <span className="text-sm font-bold text-[var(--text-secondary)]">GitHub Auto-Sync</span>
-              </div>
-              <button onClick={handleGithubSync} disabled={syncingGithub} className="btn-brutal btn-brutal-secondary text-xs py-1.5 px-3">
-                {syncingGithub ? "Syncing..." : "Sync Now"}
-              </button>
-            </div>
-            {githubSyncResult && (
-              <p className={`text-xs mt-2 font-medium ${githubSyncResult.startsWith("\u2713") ? "text-emerald-700" : githubSyncResult.startsWith("\u26A0") ? "text-amber-700" : "text-zinc-500"}`}>
-                {githubSyncResult}
-              </p>
-            )}
-            {lastSyncLabel && !githubSyncResult && (
-              <p className="text-xs mt-2 font-medium text-zinc-400">
-                Last synced {lastSyncLabel}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-
       {/* Streak Milestone & Motivation */}
       <StreakMilestone streak={user.streak} />
 
       {/* Activity Heatmap */}
       <div
-        className="p-6 mb-8"
+        className="p-6"
         style={{
           backgroundColor: "var(--bg-surface)",
           border: "2px solid var(--border-hard)",
@@ -1067,70 +975,6 @@ export default function DashboardPage() {
       >
         <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">Your Activity</h2>
         <ActivityHeatmap data={heatmapData} totalOverride={ghTotal > 0 ? ghTotal : undefined} />
-      </div>
-
-      {/* Embeddable Badge for GitHub */}
-      <div
-        className="p-5 mb-8"
-        style={{
-          backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
-          boxShadow: "var(--shadow-brutal)",
-        }}
-      >
-        <h2 className="text-base font-extrabold uppercase flex items-center gap-2 text-[var(--foreground)] mb-3">
-          <ExternalLink size={16} className="text-[var(--accent)]" />
-          Embeddable Badge for GitHub
-        </h2>
-
-        <div className="flex items-center gap-4 p-3 bg-zinc-50 border-2 border-zinc-200 mb-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`/api/badge/${user.username}`}
-            alt={`${user.username}'s VibeTalent badge`}
-            height={28}
-          />
-        </div>
-
-        <div className="flex gap-2">
-          {(() => {
-            const siteUrl = "https://www.vibetalent.work";
-            const encodedName = encodeURIComponent(user.username);
-            const badgeImgUrl = `${siteUrl}/api/badge/${encodedName}`;
-            const profileUrl = `${siteUrl}/profile/${encodedName}`;
-            return (
-              <>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(`[![VibeTalent](${badgeImgUrl})](${profileUrl})`);
-                    setBadgeCopied("md");
-                    setTimeout(() => setBadgeCopied(null), 2000);
-                  }}
-                  className="btn-brutal flex-1 flex items-center justify-center gap-1.5 text-xs py-2"
-                  style={{ backgroundColor: badgeCopied === "md" ? "var(--status-success-bg)" : "var(--bg-surface)" }}
-                >
-                  {badgeCopied === "md" ? "Copied!" : "Copy Markdown"}
-                </button>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(`<a href="${profileUrl}"><img src="${badgeImgUrl}" alt="VibeTalent Badge" /></a>`);
-                    setBadgeCopied("html");
-                    setTimeout(() => setBadgeCopied(null), 2000);
-                  }}
-                  className="btn-brutal flex-1 flex items-center justify-center gap-1.5 text-xs py-2"
-                  style={{ backgroundColor: badgeCopied === "html" ? "var(--status-success-bg)" : "var(--bg-surface)" }}
-                >
-                  {badgeCopied === "html" ? "Copied!" : "Copy HTML"}
-                </button>
-              </>
-            );
-          })()}
-        </div>
-      </div>
-
-      {/* Profile Views */}
-      <div className="mb-8">
-        <ProfileViewsWidget />
       </div>
 
       {/* Your Projects */}
@@ -1379,6 +1223,174 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
+
+      </div>{/* End Left Column */}
+
+      {/* Right Column — Sidebar */}
+      <div className="lg:col-span-1 space-y-6">
+
+      {/* Log Activity */}
+      <div
+        className="p-6"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          border: "2px solid var(--border-hard)",
+          boxShadow: "var(--shadow-brutal)",
+        }}
+      >
+        <div className="flex flex-col gap-3">
+          <div>
+            <h2 className="text-base font-extrabold uppercase flex items-center gap-2 text-[var(--foreground)]">
+              <Flame size={18} className="text-[var(--accent)]" />
+              {todayLogged ? "Logged Today" : "Log Activity"}
+            </h2>
+            <p className="text-xs text-[var(--text-secondary)] font-medium mt-1">
+              {todayLogged
+                ? "Come back tomorrow!"
+                : "Keep your streak alive"}
+            </p>
+          </div>
+          {todayLogged ? (
+            <div
+              className="text-center px-3 py-2"
+              style={{
+                backgroundColor: "var(--status-success-bg)",
+                border: "2px solid var(--border-hard)",
+              }}
+            >
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Check size={14} className="text-[var(--status-success-text)]" />
+                <span className="text-xs font-bold uppercase text-[var(--status-success-text)]">Done for today</span>
+              </div>
+              <div className="flex items-center justify-center gap-1.5">
+                <Clock size={12} className="text-[var(--status-success-text)]" />
+                <span className="text-sm font-extrabold font-mono text-[var(--status-success-text)]">{countdown}</span>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={handleLogActivity}
+              disabled={logging}
+              className="btn-brutal text-sm w-full"
+              style={{
+                backgroundColor: "var(--accent)",
+                color: "var(--text-on-inverted)",
+              }}
+            >
+              {logging ? "Logging..." : "Log Activity"}
+            </button>
+          )}
+        </div>
+        <div className="mt-4 flex items-center gap-3">
+          <StreakCounter streak={user.streak} size="lg" />
+          <span className="text-sm font-bold text-[var(--text-secondary)] uppercase">day streak</span>
+        </div>
+        <div className="mt-2">
+          <BadgeDisplay level={user.badge_level} />
+        </div>
+        {/* Streak Freeze Status */}
+        <div className="mt-3 flex items-center gap-2">
+          <ShieldCheck size={16} className="text-cyan-600" />
+          <span className="text-sm font-bold text-[var(--text-secondary)]">
+            {user.streak_freezes_remaining ?? 2} / 2 Freezes Available
+          </span>
+          {(user.streak_freezes_used ?? 0) > 0 && (
+            <span className="text-xs font-medium text-zinc-400">
+              ({user.streak_freezes_used} used this month)
+            </span>
+          )}
+        </div>
+        {/* GitHub Sync */}
+        {user.social_links?.github && (
+          <div className="mt-4 pt-4 border-t-2 border-zinc-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Code2 size={16} className="text-[var(--text-secondary)]" />
+                <span className="text-sm font-bold text-[var(--text-secondary)]">GitHub Auto-Sync</span>
+              </div>
+              <button onClick={handleGithubSync} disabled={syncingGithub} className="btn-brutal btn-brutal-secondary text-xs py-1.5 px-3">
+                {syncingGithub ? "Syncing..." : "Sync Now"}
+              </button>
+            </div>
+            {githubSyncResult && (
+              <p className={`text-xs mt-2 font-medium ${githubSyncResult.startsWith("\u2713") ? "text-emerald-700" : githubSyncResult.startsWith("\u26A0") ? "text-amber-700" : "text-zinc-500"}`}>
+                {githubSyncResult}
+              </p>
+            )}
+            {lastSyncLabel && !githubSyncResult && (
+              <p className="text-xs mt-2 font-medium text-zinc-400">
+                Last synced {lastSyncLabel}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Profile Views */}
+      <ProfileViewsWidget />
+
+      {/* Embeddable Badge for GitHub */}
+      <div
+        className="p-5"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          border: "2px solid var(--border-hard)",
+          boxShadow: "var(--shadow-brutal)",
+        }}
+      >
+        <h2 className="text-base font-extrabold uppercase flex items-center gap-2 text-[var(--foreground)] mb-3">
+          <ExternalLink size={16} className="text-[var(--accent)]" />
+          Embeddable Badge
+        </h2>
+
+        <div className="flex items-center gap-4 p-3 bg-zinc-50 border-2 border-zinc-200 mb-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`/api/badge/${user.username}`}
+            alt={`${user.username}'s VibeTalent badge`}
+            height={28}
+          />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          {(() => {
+            const siteUrl = "https://www.vibetalent.work";
+            const encodedName = encodeURIComponent(user.username);
+            const badgeImgUrl = `${siteUrl}/api/badge/${encodedName}`;
+            const profileUrl = `${siteUrl}/profile/${encodedName}`;
+            return (
+              <>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`[![VibeTalent](${badgeImgUrl})](${profileUrl})`);
+                    setBadgeCopied("md");
+                    setTimeout(() => setBadgeCopied(null), 2000);
+                  }}
+                  className="btn-brutal flex items-center justify-center gap-1.5 text-xs py-2"
+                  style={{ backgroundColor: badgeCopied === "md" ? "var(--status-success-bg)" : "var(--bg-surface)" }}
+                >
+                  {badgeCopied === "md" ? "Copied!" : "Copy Markdown"}
+                </button>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`<a href="${profileUrl}"><img src="${badgeImgUrl}" alt="VibeTalent Badge" /></a>`);
+                    setBadgeCopied("html");
+                    setTimeout(() => setBadgeCopied(null), 2000);
+                  }}
+                  className="btn-brutal flex items-center justify-center gap-1.5 text-xs py-2"
+                  style={{ backgroundColor: badgeCopied === "html" ? "var(--status-success-bg)" : "var(--bg-surface)" }}
+                >
+                  {badgeCopied === "html" ? "Copied!" : "Copy HTML"}
+                </button>
+              </>
+            );
+          })()}
+        </div>
+      </div>
+
+      </div>{/* End Right Column */}
+
+      </div>{/* End 2-Column Grid */}
       </>
       )}
 
