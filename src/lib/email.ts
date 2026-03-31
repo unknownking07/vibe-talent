@@ -94,14 +94,14 @@ export async function sendHireNotification({
               New Hire Request
             </h2>
             <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-              Hey <strong>@${builderUsername}</strong>, you've received a new hire request!
+              Hey <strong>@${escapeHtml(builderUsername)}</strong>, you've received a new hire request!
             </p>
             <div style="border: 2px solid #0F0F0F; padding: 20px; margin: 0 0 24px;">
               <p style="color: #0F0F0F; font-size: 14px; margin: 0 0 8px;">
-                <strong>From:</strong> ${senderName}
+                <strong>From:</strong> ${escapeHtml(senderName)}
               </p>
               <p style="color: #52525B; font-size: 14px; line-height: 1.5; margin: 0;">
-                "${message.slice(0, 200)}${message.length > 200 ? "..." : ""}"
+                "${escapeHtml(message.slice(0, 200))}${message.length > 200 ? "..." : ""}"
               </p>
             </div>
             <a href="${dashboardUrl}" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
@@ -112,8 +112,8 @@ export async function sendHireNotification({
             </a>
           </div>
           <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #71717A; font-size: 12px; margin: 0;">
-              You received this because someone wants to hire you on VibeTalent. <a href="${unsubUrl(builderEmail)}" style="color: #71717A;">Unsubscribe</a>
+            <p style="color: #52525B; font-size: 12px; margin: 0;">
+              You received this because someone wants to hire you on VibeTalent. <a href="${unsubUrl(builderEmail)}" style="color: #52525B;">Unsubscribe</a>
             </p>
           </div>
         </div>
@@ -156,15 +156,15 @@ export async function sendStreakMilestoneEmail({
               🔥 ${streakDays}-Day Streak!
             </h2>
             <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-              Hey <strong>@${username}</strong>, you've been coding for <strong>${streakDays} consecutive days</strong>. Keep the momentum going!
+              Hey <strong>@${escapeHtml(username)}</strong>, you've been coding for <strong>${streakDays} consecutive days</strong>. Keep the momentum going!
             </p>
             <a href="${siteUrl}/dashboard" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
               View Dashboard
             </a>
           </div>
           <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #71717A; font-size: 12px; margin: 0;">
-              You received this because you hit a streak milestone on VibeTalent. <a href="${unsubUrl(email)}" style="color: #71717A;">Unsubscribe</a>
+            <p style="color: #52525B; font-size: 12px; margin: 0;">
+              You received this because you hit a streak milestone on VibeTalent. <a href="${unsubUrl(email)}" style="color: #52525B;">Unsubscribe</a>
             </p>
           </div>
         </div>
@@ -209,15 +209,15 @@ export async function sendBadgeEarnedEmail({
               ${badgeEmoji[badgeLevel] || "🏅"} ${badgeName} Badge Earned!
             </h2>
             <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-              Congrats <strong>@${username}</strong>! Your consistency has earned you the <strong>${badgeLevel}</strong> badge. This badge is permanently displayed on your profile.
+              Congrats <strong>@${escapeHtml(username)}</strong>! Your consistency has earned you the <strong>${escapeHtml(badgeLevel)}</strong> badge. This badge is permanently displayed on your profile.
             </p>
             <a href="${siteUrl}/dashboard" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
               View Your Profile
             </a>
           </div>
           <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #71717A; font-size: 12px; margin: 0;">
-              You received this because you earned a new badge on VibeTalent. <a href="${unsubUrl(email)}" style="color: #71717A;">Unsubscribe</a>
+            <p style="color: #52525B; font-size: 12px; margin: 0;">
+              You received this because you earned a new badge on VibeTalent. <a href="${unsubUrl(email)}" style="color: #52525B;">Unsubscribe</a>
             </p>
           </div>
         </div>
@@ -260,15 +260,15 @@ export async function sendProjectVerifiedEmail({
               ✅ Project Verified!
             </h2>
             <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-              Hey <strong>@${username}</strong>, your project <strong>"${projectTitle}"</strong> has been verified. It now shows a verified badge in your profile and listings.
+              Hey <strong>@${escapeHtml(username)}</strong>, your project <strong>"${escapeHtml(projectTitle)}"</strong> has been verified. It now shows a verified badge in your profile and listings.
             </p>
             <a href="${siteUrl}/dashboard" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
               View Dashboard
             </a>
           </div>
           <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #71717A; font-size: 12px; margin: 0;">
-              You received this because your project was verified on VibeTalent. <a href="${unsubUrl(email)}" style="color: #71717A;">Unsubscribe</a>
+            <p style="color: #52525B; font-size: 12px; margin: 0;">
+              You received this because your project was verified on VibeTalent. <a href="${unsubUrl(email)}" style="color: #52525B;">Unsubscribe</a>
             </p>
           </div>
         </div>
@@ -320,8 +320,8 @@ export async function sendStreakWarningEmail({
             </a>
           </div>
           <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #71717A; font-size: 12px; margin: 0;">
-              You received this because your streak is about to expire on VibeTalent. <a href="${unsubUrl(email)}" style="color: #71717A;">Unsubscribe</a>
+            <p style="color: #52525B; font-size: 12px; margin: 0;">
+              You received this because your streak is about to expire on VibeTalent. <a href="${unsubUrl(email)}" style="color: #52525B;">Unsubscribe</a>
             </p>
           </div>
         </div>
@@ -382,8 +382,8 @@ export async function sendProfileViewDigestEmail({
             </a>
           </div>
           <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #71717A; font-size: 12px; margin: 0;">
-              You received this because someone viewed your profile on VibeTalent. <a href="${unsubUrl(email)}" style="color: #71717A;">Unsubscribe</a>
+            <p style="color: #52525B; font-size: 12px; margin: 0;">
+              You received this because someone viewed your profile on VibeTalent. <a href="${unsubUrl(email)}" style="color: #52525B;">Unsubscribe</a>
             </p>
           </div>
         </div>
@@ -421,7 +421,7 @@ export async function sendWeeklyDigestEmail({
   try {
     await sendEmail(client, {
       to: email,
-      subject: `Your weekly VibeTalent recap | VibeTalent`,
+      subject: `Your weekly recap | VibeTalent`,
       text: `Hey @${username}, here's how your week went:\n\nProfile Views: ${stats.profileViews}\nDay Streak: ${stats.streakDays}\nVibe Score: ${stats.vibeScore}\nHire Requests: ${stats.hireRequests}\n\nView Dashboard: ${siteUrl}/dashboard\n\nUnsubscribe: ${unsubUrl(email)}`,
       html: `
         <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #0F0F0F; background: #FFFFFF;">
@@ -439,21 +439,21 @@ export async function sendWeeklyDigestEmail({
               <tr>
                 <td style="border: 2px solid #0F0F0F; padding: 16px; text-align: center; width: 50%;">
                   <div style="font-size: 28px; font-weight: 800; color: #0F0F0F;">${stats.profileViews}</div>
-                  <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #71717A; margin-top: 4px;">Profile Views</div>
+                  <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #52525B; margin-top: 4px;">Profile Views</div>
                 </td>
                 <td style="border: 2px solid #0F0F0F; padding: 16px; text-align: center; width: 50%;">
                   <div style="font-size: 28px; font-weight: 800; color: #FF3A00;">🔥 ${stats.streakDays}</div>
-                  <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #71717A; margin-top: 4px;">Day Streak</div>
+                  <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #52525B; margin-top: 4px;">Day Streak</div>
                 </td>
               </tr>
               <tr>
                 <td style="border: 2px solid #0F0F0F; padding: 16px; text-align: center;">
                   <div style="font-size: 28px; font-weight: 800; color: #0F0F0F;">${stats.vibeScore}</div>
-                  <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #71717A; margin-top: 4px;">Vibe Score</div>
+                  <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #52525B; margin-top: 4px;">Vibe Score</div>
                 </td>
                 <td style="border: 2px solid #0F0F0F; padding: 16px; text-align: center;">
                   <div style="font-size: 28px; font-weight: 800; color: #0F0F0F;">${stats.hireRequests}</div>
-                  <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #71717A; margin-top: 4px;">Hire Requests</div>
+                  <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #52525B; margin-top: 4px;">Hire Requests</div>
                 </td>
               </tr>
             </table>
@@ -462,8 +462,8 @@ export async function sendWeeklyDigestEmail({
             </a>
           </div>
           <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #71717A; font-size: 12px; margin: 0;">
-              You received this weekly recap from VibeTalent. <a href="${unsubUrl(email)}" style="color: #71717A;">Unsubscribe</a>
+            <p style="color: #52525B; font-size: 12px; margin: 0;">
+              You received this weekly recap from VibeTalent. <a href="${unsubUrl(email)}" style="color: #52525B;">Unsubscribe</a>
             </p>
           </div>
         </div>
@@ -516,8 +516,8 @@ export async function sendVibeScoreMilestoneEmail({
             </a>
           </div>
           <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #71717A; font-size: 12px; margin: 0;">
-              You received this because you hit a milestone on VibeTalent. <a href="${unsubUrl(email)}" style="color: #71717A;">Unsubscribe</a>
+            <p style="color: #52525B; font-size: 12px; margin: 0;">
+              You received this because you hit a milestone on VibeTalent. <a href="${unsubUrl(email)}" style="color: #52525B;">Unsubscribe</a>
             </p>
           </div>
         </div>
@@ -572,7 +572,7 @@ export async function sendReviewNotificationEmail({
             </p>
             <div style="border: 2px solid #0F0F0F; padding: 20px; margin: 0 0 24px;">
               <p style="color: #F59E0B; font-size: 20px; margin: 0 0 8px; letter-spacing: 2px;">
-                ${stars}
+                ${escapeHtml(stars)}
               </p>
               <p style="color: #0F0F0F; font-size: 14px; margin: 0 0 8px;">
                 <strong>From:</strong> ${safeReviewer}
@@ -584,8 +584,8 @@ export async function sendReviewNotificationEmail({
             </a>
           </div>
           <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #71717A; font-size: 12px; margin: 0;">
-              You received this because someone reviewed you on VibeTalent. <a href="${unsubUrl(email)}" style="color: #71717A;">Unsubscribe</a>
+            <p style="color: #52525B; font-size: 12px; margin: 0;">
+              You received this because someone reviewed you on VibeTalent. <a href="${unsubUrl(email)}" style="color: #52525B;">Unsubscribe</a>
             </p>
           </div>
         </div>
