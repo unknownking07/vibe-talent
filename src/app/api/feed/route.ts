@@ -8,10 +8,6 @@ function getPublicClient() {
   );
 }
 
-// Throttle: only trigger sync every 30 min per serverless instance
-let lastSyncTrigger = 0;
-const SYNC_INTERVAL = 30 * 60 * 1000;
-
 type FeedItem = {
   id: string;
   type: "push" | "pr" | "create" | "issue" | "project" | "streak";
@@ -34,27 +30,16 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(Math.max(isNaN(rawLimit) ? 100 : rawLimit, 1), 200);
 
   try {
-    // Trigger github-sync in background if stale (fire-and-forget)
-    const now = Date.now();
-    if (now - lastSyncTrigger > SYNC_INTERVAL) {
-      lastSyncTrigger = now;
-      const baseUrl = request.nextUrl.origin || "https://www.vibetalent.work";
-      const cronSecret = process.env.CRON_SECRET;
-      if (cronSecret) {
-        fetch(`${baseUrl}/api/cron/github-sync`, {
-          headers: { Authorization: `Bearer ${cronSecret}` },
-        }).catch(() => {});
-      }
-    }
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = getPublicClient() as any;
     const feed: FeedItem[] = [];
 
-    // Build user lookup map
+    // Build user lookup map — limit to recent/active users to reduce DB load
     const { data: allUsers } = await supabase
       .from("users")
-      .select("id, username, avatar_url, badge_level, streak");
+      .select("id, username, avatar_url, badge_level, streak")
+      .order("vibe_score", { ascending: false })
+      .limit(200);
     const userMap = new Map<string, { username: string; avatar_url: string | null; badge_level: string; streak: number }>();
     for (const u of (allUsers || [])) {
       userMap.set(u.id, { username: u.username, avatar_url: u.avatar_url, badge_level: u.badge_level || "none", streak: u.streak || 0 });
@@ -96,7 +81,7 @@ export async function GET(request: NextRequest) {
       .from("streak_logs")
       .select("id, activity_date, user_id")
       .order("activity_date", { ascending: false })
-      .limit(300);
+      .limit(100);
 
     // Build set of user+date combos from feed_events to avoid duplicates
     const coveredDates = new Set(

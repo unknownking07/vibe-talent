@@ -447,7 +447,7 @@ export default function DashboardPage() {
 
     // Poll for new messages
     if (chatPollRef.current) clearInterval(chatPollRef.current);
-    chatPollRef.current = setInterval(() => loadChatMessages(requestId), 5000);
+    chatPollRef.current = setInterval(() => loadChatMessages(requestId), 15000);
   };
 
   // Clean up polling on unmount

@@ -50,8 +50,8 @@ export default async function HomePage() {
     totalBuilders = data.totalBuilders;
     totalProjects = data.totalProjects;
     avgStreak = data.avgStreak;
-  } catch {
-    // Supabase not configured, show empty state
+  } catch (err) {
+    console.error("[HomePage] Failed to fetch homepage data:", err);
   }
 
   return (

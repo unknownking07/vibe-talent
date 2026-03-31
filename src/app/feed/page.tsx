@@ -79,7 +79,7 @@ export default function FeedPage() {
   const [stats, setStats] = useState<LiveStats>(null);
 
   useEffect(() => {
-    fetch("/api/feed?limit=200")
+    fetch("/api/feed?limit=50")
       .then((r) => r.json())
       .then((d) => setFeed(d.feed || []))
       .catch(() => {})

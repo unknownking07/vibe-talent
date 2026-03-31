@@ -120,9 +120,10 @@ export default function OAuthConsentModal({ provider, onConfirm, onCancel }: OAu
         <div className="p-6 space-y-2">
           <button
             onClick={onConfirm}
-            className="w-full flex items-center justify-center px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white cursor-pointer transition-colors hover:opacity-90"
+            className="w-full flex items-center justify-center px-5 py-3 text-sm font-extrabold uppercase tracking-wide cursor-pointer transition-colors hover:opacity-90"
             style={{
               backgroundColor: config.color,
+              color: "var(--background)",
               border: "2px solid var(--border-hard)",
             }}
           >
