@@ -7,17 +7,7 @@ import type { Project } from "@/lib/types/database";
 import { QualityScoreBadge } from "@/components/ui/quality-score-badge";
 import { EndorseButton } from "@/components/ui/endorse-button";
 import { createClient } from "@/lib/supabase/client";
-
-function parseImageCrop(url: string): { objectPosition: string; scale: number } {
-  try {
-    const u = new URL(url);
-    const y = parseInt(u.searchParams.get("y") || "50");
-    const z = parseFloat(u.searchParams.get("z") || "1");
-    return { objectPosition: `center ${y}%`, scale: z };
-  } catch {
-    return { objectPosition: "center 50%", scale: 1 };
-  }
-}
+import { parseImageCrop } from "@/lib/image-crop";
 
 interface ProfileProjectCardProps {
   project: Project;

@@ -986,7 +986,13 @@ export default function DashboardPage() {
               if (showProjectForm) {
                 setShowProjectForm(false);
                 setEditingProjectId(null);
+                setEditingOriginalGithubUrl("");
                 setProjectForm({ title: "", description: "", tech_stack: "", live_url: "", github_url: "", build_time: "", tags: "" });
+                setProjectError("");
+                setProjectImageFile(null);
+                setProjectImagePreview(null);
+                setImageOffsetY(50);
+                setImageZoom(1);
                 setGithubSkipped(false);
               } else {
                 setShowProjectForm(true);
@@ -1166,8 +1172,9 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 ) : (
-                  <div
-                    className={`w-full border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${imageDragging ? "border-[var(--accent)] bg-[rgba(255,58,0,0.06)]" : "border-[var(--border-hard)] hover:border-[var(--accent)]"}`}
+                  <button
+                    type="button"
+                    className={`w-full border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent)] ${imageDragging ? "border-[var(--accent)] bg-[rgba(255,58,0,0.06)]" : "border-[var(--border-hard)] hover:border-[var(--accent)]"}`}
                     style={{ height: 120 }}
                     onClick={() => projectImageInputRef.current?.click()}
                     onDragOver={(e) => { e.preventDefault(); setImageDragging(true); }}
@@ -1178,11 +1185,12 @@ export default function DashboardPage() {
                       const file = e.dataTransfer.files?.[0];
                       if (file) validateAndSetImage(file);
                     }}
+                    aria-label="Upload project screenshot"
                   >
                     <Camera size={20} className="text-[var(--text-muted)]" />
                     <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Drag & drop or click to upload</span>
                     <span className="text-[10px] text-[var(--text-muted-soft)]">Max 5MB. JPG, PNG, WebP, GIF.</span>
-                  </div>
+                  </button>
                 )}
                 <input ref={projectImageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleProjectImageSelect} className="hidden" />
               </div>
