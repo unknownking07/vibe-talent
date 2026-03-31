@@ -194,7 +194,7 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
         {(project.tech_stack ?? []).map((tech) => (
           <span
             key={tech}
-            className="font-mono text-xs font-bold uppercase text-[var(--foreground)] px-2.5 py-1"
+            className="font-mono text-xs font-bold uppercase text-[var(--text-tertiary)] px-2.5 py-1"
             style={{
               backgroundColor: "var(--bg-surface-light)",
               border: "1px solid var(--border-hard)",

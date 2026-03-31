@@ -100,7 +100,7 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
                 (user.projects ?? []).slice(0, 3).map((p) => (
                   <span
                     key={p.id}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold text-[var(--foreground)]"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold text-[var(--text-tertiary)]"
                     style={{
                       backgroundColor: "var(--bg-surface-light)",
                       border: "1px solid var(--border-hard)",

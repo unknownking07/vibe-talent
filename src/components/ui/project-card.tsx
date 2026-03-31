@@ -118,7 +118,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
     <div
       className="card-brutal transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
     >
-      {project.image_url && (
+      {project.image_url ? (
         <div className="relative w-full h-28 border-b-2 border-[var(--border-hard)] overflow-hidden">
           <Image
             src={project.image_url}
@@ -126,6 +126,10 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
             fill
             className="object-cover"
           />
+        </div>
+      ) : (
+        <div className="w-full h-28 border-b-2 border-[var(--border-hard)] bg-[var(--bg-surface-light)] flex items-center justify-center">
+          <span className="text-3xl font-extrabold uppercase text-[var(--text-muted-soft)] tracking-widest select-none">{project.title?.charAt(0) ?? "P"}</span>
         </div>
       )}
       <div className="px-4 py-3">
@@ -240,7 +244,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
         {(project.tech_stack ?? []).map((tech) => (
           <span
             key={tech}
-            className="px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--foreground)]"
+            className="px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--text-tertiary)]"
             style={{
               backgroundColor: "var(--bg-surface-light)",
               border: "1px solid var(--border-hard)",

@@ -59,24 +59,24 @@
   --bg-inverted: #262626;
   --text-on-inverted: #FFFFFF;
 
-  --bg-surface: #1a1a1a;
-  --bg-surface-light: #262626;
-  --bg-pill: #262626;
-  --bg-pill-hover: #3a3a3a;
-  --border-hard: #FFFFFF;
-  --border-subtle: #3a3a3a;
+  --bg-surface: hsl(14, 4%, 10%);
+  --bg-surface-light: hsl(14, 4%, 15%);
+  --bg-pill: hsl(14, 4%, 15%);
+  --bg-pill-hover: hsl(14, 4%, 23%);
+  --border-hard: hsl(14, 10%, 45%);
+  --border-subtle: hsl(14, 6%, 24%);
 
-  --text-muted: #A1A1AA;
-  --text-muted-soft: #71717A;
-  --text-secondary: #A1A1AA;
-  --text-tertiary: #D4D4D4;
+  --text-muted: hsl(14, 8%, 58%);
+  --text-muted-soft: hsl(14, 6%, 48%);
+  --text-secondary: hsl(14, 8%, 62%);
+  --text-tertiary: hsl(14, 6%, 78%);
 
   --badge-bronze: #A0522D;
   --badge-silver: #A9A9A9;
   --badge-gold: #FFD700;
   --badge-diamond: #FF3A00;
 
-  --hm-0: #3a3a3a;
+  --hm-0: hsl(14, 4%, 23%);
   --hm-1: #6b3a1a;
   --hm-2: #b5501e;
   --hm-3: #FF6A40;
