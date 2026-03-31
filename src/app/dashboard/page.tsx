@@ -273,6 +273,10 @@ export default function DashboardPage() {
   const [projectImagePreview, setProjectImagePreview] = useState<string | null>(null);
   const projectImageInputRef = useRef<HTMLInputElement>(null);
   const [imageDragging, setImageDragging] = useState(false);
+  const [imageOffsetY, setImageOffsetY] = useState(50);
+  const [imageZoom, setImageZoom] = useState(1);
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
+  const dragStartRef = useRef<{ y: number; startOffset: number } | null>(null);
   const [syncingGithub, setSyncingGithub] = useState(false);
   const [githubSyncResult, setGithubSyncResult] = useState<string | null>(null);
   const [lastSyncLabel, setLastSyncLabel] = useState<string | null>(null);
@@ -638,7 +642,7 @@ export default function DashboardPage() {
       const { error: uploadError } = await sb.storage.from("project-images").upload(filePath, projectImageFile, { upsert: true });
       if (!uploadError) {
         const { data: { publicUrl } } = sb.storage.from("project-images").getPublicUrl(filePath);
-        await sb.from("projects").update({ image_url: `${publicUrl}?t=${Date.now()}` }).eq("id", insertedProject.id);
+        await sb.from("projects").update({ image_url: `${publicUrl}?t=${Date.now()}&y=${Math.round(imageOffsetY)}&z=${imageZoom.toFixed(2)}` }).eq("id", insertedProject.id);
       }
     }
 
@@ -652,6 +656,8 @@ export default function DashboardPage() {
     setProjectForm({ title: "", description: "", tech_stack: "", live_url: "", github_url: "", build_time: "", tags: "" });
     setProjectImageFile(null);
     setProjectImagePreview(null);
+    setImageOffsetY(50);
+    setImageZoom(1);
     setShowProjectForm(false);
     setAddingProject(false);
     setGithubSkipped(false);
@@ -674,9 +680,22 @@ export default function DashboardPage() {
       build_time: project.build_time || "",
       tags: project.tags?.join(", ") || "",
     });
-    // Load existing image preview
+    // Load existing image preview and crop settings
     setProjectImageFile(null);
     setProjectImagePreview(project.image_url || null);
+    if (project.image_url) {
+      try {
+        const u = new URL(project.image_url);
+        setImageOffsetY(parseInt(u.searchParams.get("y") || "50"));
+        setImageZoom(parseFloat(u.searchParams.get("z") || "1"));
+      } catch {
+        setImageOffsetY(50);
+        setImageZoom(1);
+      }
+    } else {
+      setImageOffsetY(50);
+      setImageZoom(1);
+    }
     setShowProjectForm(true);
   };
 
@@ -739,8 +758,12 @@ export default function DashboardPage() {
       const { error: uploadError } = await sb.storage.from("project-images").upload(filePath, projectImageFile, { upsert: true });
       if (!uploadError) {
         const { data: { publicUrl } } = sb.storage.from("project-images").getPublicUrl(filePath);
-        await sb.from("projects").update({ image_url: `${publicUrl}?t=${Date.now()}` }).eq("id", editingProjectId);
+        await sb.from("projects").update({ image_url: `${publicUrl}?t=${Date.now()}&y=${Math.round(imageOffsetY)}&z=${imageZoom.toFixed(2)}` }).eq("id", editingProjectId);
       }
+    } else if (!projectImageFile && projectImagePreview && editingProjectId) {
+      // User repositioned/zoomed existing image without uploading a new one
+      const baseUrl = projectImagePreview.split("?")[0];
+      await sb.from("projects").update({ image_url: `${baseUrl}?t=${Date.now()}&y=${Math.round(imageOffsetY)}&z=${imageZoom.toFixed(2)}` }).eq("id", editingProjectId);
     }
 
     await reloadUser();
@@ -752,6 +775,8 @@ export default function DashboardPage() {
     setProjectForm({ title: "", description: "", tech_stack: "", live_url: "", github_url: "", build_time: "", tags: "" });
     setProjectImageFile(null);
     setProjectImagePreview(null);
+    setImageOffsetY(50);
+    setImageZoom(1);
     setShowProjectForm(false);
     setEditingProjectId(null);
     setEditingOriginalGithubUrl("");
@@ -1234,18 +1259,72 @@ export default function DashboardPage() {
               <div>
                 <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Project Screenshot</label>
                 {projectImagePreview ? (
-                  <div className="relative w-full aspect-video border-2 border-[var(--border-hard)] overflow-hidden">
-                    <Image src={projectImagePreview} alt="Preview" fill className="object-cover" />
-                    <div className="absolute top-2 right-2 flex gap-2">
-                      <button type="button" onClick={() => projectImageInputRef.current?.click()} className="w-7 h-7 bg-[var(--bg-inverted)] text-white rounded-full flex items-center justify-center text-xs hover:opacity-80 transition-opacity" title="Change image">
-                        <Camera size={14} />
-                      </button>
-                      <button onClick={() => { setProjectImageFile(null); setProjectImagePreview(null); }} className="w-7 h-7 bg-[var(--bg-inverted)] text-white rounded-full flex items-center justify-center text-xs hover:opacity-80 transition-opacity" title="Remove image">&times;</button>
+                  <div>
+                    <div
+                      className="relative w-full border-2 border-[var(--border-hard)] overflow-hidden select-none"
+                      style={{ height: 120, cursor: isDraggingImage ? "grabbing" : "grab" }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        setIsDraggingImage(true);
+                        dragStartRef.current = { y: e.clientY, startOffset: imageOffsetY };
+                      }}
+                      onMouseMove={(e) => {
+                        if (!isDraggingImage || !dragStartRef.current) return;
+                        const delta = e.clientY - dragStartRef.current.y;
+                        const newOffset = Math.min(100, Math.max(0, dragStartRef.current.startOffset + delta * 0.5));
+                        setImageOffsetY(newOffset);
+                      }}
+                      onMouseUp={() => { setIsDraggingImage(false); dragStartRef.current = null; }}
+                      onMouseLeave={() => { setIsDraggingImage(false); dragStartRef.current = null; }}
+                      onTouchStart={(e) => {
+                        const touch = e.touches[0];
+                        setIsDraggingImage(true);
+                        dragStartRef.current = { y: touch.clientY, startOffset: imageOffsetY };
+                      }}
+                      onTouchMove={(e) => {
+                        if (!isDraggingImage || !dragStartRef.current) return;
+                        const delta = e.touches[0].clientY - dragStartRef.current.y;
+                        const newOffset = Math.min(100, Math.max(0, dragStartRef.current.startOffset + delta * 0.5));
+                        setImageOffsetY(newOffset);
+                      }}
+                      onTouchEnd={() => { setIsDraggingImage(false); dragStartRef.current = null; }}
+                    >
+                      <Image
+                        src={projectImagePreview}
+                        alt="Preview"
+                        fill
+                        className="object-cover pointer-events-none"
+                        style={{ objectPosition: `center ${imageOffsetY}%`, transform: `scale(${imageZoom})` }}
+                        draggable={false}
+                      />
+                      <div className="absolute top-2 right-2 flex gap-2">
+                        <button type="button" onClick={(e) => { e.stopPropagation(); projectImageInputRef.current?.click(); }} className="w-7 h-7 bg-black/60 text-white rounded-full flex items-center justify-center text-xs hover:bg-black/80 transition-colors" title="Change image">
+                          <Camera size={14} />
+                        </button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setProjectImageFile(null); setProjectImagePreview(null); setImageOffsetY(50); setImageZoom(1); }} className="w-7 h-7 bg-black/60 text-white rounded-full flex items-center justify-center text-xs hover:bg-black/80 transition-colors" title="Remove image">&times;</button>
+                      </div>
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/60 rounded-full text-[10px] text-white font-bold uppercase pointer-events-none">
+                        Drag to reposition
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 mt-2">
+                      <span className="text-[10px] font-bold uppercase text-[var(--text-muted)]">Zoom</span>
+                      <input
+                        type="range"
+                        min="1"
+                        max="2"
+                        step="0.05"
+                        value={imageZoom}
+                        onChange={(e) => setImageZoom(parseFloat(e.target.value))}
+                        className="flex-1 h-1 accent-[var(--accent)]"
+                      />
+                      <span className="text-[10px] font-mono text-[var(--text-muted)]">{Math.round(imageZoom * 100)}%</span>
                     </div>
                   </div>
                 ) : (
                   <div
-                    className={`w-full aspect-video border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${imageDragging ? "border-[var(--accent)] bg-[rgba(255,58,0,0.06)]" : "border-[var(--border-hard)] hover:border-[var(--accent)]"}`}
+                    className={`w-full border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${imageDragging ? "border-[var(--accent)] bg-[rgba(255,58,0,0.06)]" : "border-[var(--border-hard)] hover:border-[var(--accent)]"}`}
+                    style={{ height: 120 }}
                     onClick={() => projectImageInputRef.current?.click()}
                     onDragOver={(e) => { e.preventDefault(); setImageDragging(true); }}
                     onDragLeave={() => setImageDragging(false)}
@@ -1256,9 +1335,9 @@ export default function DashboardPage() {
                       if (file) validateAndSetImage(file);
                     }}
                   >
-                    <Camera size={24} className="text-[var(--text-muted)]" />
+                    <Camera size={20} className="text-[var(--text-muted)]" />
                     <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Drag & drop or click to upload</span>
-                    <span className="text-[10px] text-[var(--text-muted-soft)]">16:9 recommended. Max 5MB.</span>
+                    <span className="text-[10px] text-[var(--text-muted-soft)]">Max 5MB. JPG, PNG, WebP, GIF.</span>
                   </div>
                 )}
                 <input ref={projectImageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleProjectImageSelect} className="hidden" />

@@ -9,6 +9,32 @@ import { QualityScoreBadge } from "@/components/ui/quality-score-badge";
 import { EndorseButton } from "@/components/ui/endorse-button";
 import { createClient } from "@/lib/supabase/client";
 
+function parseImageCrop(url: string): { objectPosition: string; scale: number } {
+  try {
+    const u = new URL(url);
+    const y = parseInt(u.searchParams.get("y") || "50");
+    const z = parseFloat(u.searchParams.get("z") || "1");
+    return { objectPosition: `center ${y}%`, scale: z };
+  } catch {
+    return { objectPosition: "center 50%", scale: 1 };
+  }
+}
+
+function ProjectImageBanner({ url, alt }: { url: string; alt: string }) {
+  const crop = parseImageCrop(url);
+  return (
+    <div className="relative w-full h-28 border-b-2 border-[var(--border-hard)] overflow-hidden">
+      <Image
+        src={url}
+        alt={alt}
+        fill
+        className="object-cover"
+        style={{ objectPosition: crop.objectPosition, transform: `scale(${crop.scale})` }}
+      />
+    </div>
+  );
+}
+
 const REPORT_REASONS = [
   "Spam/Fake",
   "Inappropriate content",
@@ -119,14 +145,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
       className="card-brutal transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
     >
       {project.image_url ? (
-        <div className="relative w-full h-28 border-b-2 border-[var(--border-hard)] overflow-hidden">
-          <Image
-            src={project.image_url}
-            alt={project.title}
-            fill
-            className="object-cover"
-          />
-        </div>
+        <ProjectImageBanner url={project.image_url} alt={project.title} />
       ) : (
         <div className="w-full h-28 border-b-2 border-[var(--border-hard)] bg-[var(--bg-surface-light)] flex items-center justify-center">
           <span className="text-3xl font-extrabold uppercase text-[var(--text-muted-soft)] tracking-widest select-none">{project.title?.charAt(0) ?? "P"}</span>

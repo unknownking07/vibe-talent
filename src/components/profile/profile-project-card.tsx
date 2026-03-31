@@ -8,6 +8,17 @@ import { QualityScoreBadge } from "@/components/ui/quality-score-badge";
 import { EndorseButton } from "@/components/ui/endorse-button";
 import { createClient } from "@/lib/supabase/client";
 
+function parseImageCrop(url: string): { objectPosition: string; scale: number } {
+  try {
+    const u = new URL(url);
+    const y = parseInt(u.searchParams.get("y") || "50");
+    const z = parseFloat(u.searchParams.get("z") || "1");
+    return { objectPosition: `center ${y}%`, scale: z };
+  } catch {
+    return { objectPosition: "center 50%", scale: 1 };
+  }
+}
+
 interface ProfileProjectCardProps {
   project: Project;
   verified?: boolean;
@@ -115,11 +126,14 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
         boxShadow: "var(--shadow-brutal-sm)",
       }}
     >
-      {project.image_url && (
-        <div className="relative w-full h-28 border-b-2 border-[var(--border-hard)] overflow-hidden">
-          <Image src={project.image_url} alt={project.title} fill className="object-cover" />
-        </div>
-      )}
+      {project.image_url && (() => {
+        const crop = parseImageCrop(project.image_url);
+        return (
+          <div className="relative w-full h-28 border-b-2 border-[var(--border-hard)] overflow-hidden">
+            <Image src={project.image_url} alt={project.title} fill className="object-cover" style={{ objectPosition: crop.objectPosition, transform: `scale(${crop.scale})` }} />
+          </div>
+        );
+      })()}
       <div className="flex flex-col gap-2 p-4 flex-grow">
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-2">
