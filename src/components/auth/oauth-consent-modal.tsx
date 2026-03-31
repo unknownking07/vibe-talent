@@ -14,7 +14,7 @@ const providerConfig = {
   github: {
     name: "GitHub",
     icon: <Github size={24} />,
-    color: "var(--foreground)",
+    color: "#24292e",
     permissions: [
       { icon: <User size={18} />, label: "Profile information", detail: "Your name, username, and avatar" },
       { icon: <Mail size={18} />, label: "Email address", detail: "Your primary email on GitHub" },
@@ -123,7 +123,7 @@ export default function OAuthConsentModal({ provider, onConfirm, onCancel }: OAu
             className="w-full flex items-center justify-center px-5 py-3 text-sm font-extrabold uppercase tracking-wide cursor-pointer transition-colors hover:opacity-90"
             style={{
               backgroundColor: config.color,
-              color: "var(--background)",
+              color: "#FFFFFF",
               border: "2px solid var(--border-hard)",
             }}
           >

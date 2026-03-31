@@ -115,6 +115,14 @@ export default function DashboardPage() {
       });
       setLoading(false);
 
+      // Sync streak back to DB if it differs, so profile page shows the same value
+      if (actualStreak !== (profile.streak || 0) || actualLongest !== (profile.longest_streak || 0)) {
+        sb.from("users").update({
+          streak: actualStreak,
+          longest_streak: actualLongest,
+        }).eq("id", authUser.id).then(() => {});
+      }
+
       // Auto-sync GitHub if configured and hasn't synced recently
       if (socials?.github) {
         const lastSync = localStorage.getItem("last_github_sync");
@@ -264,6 +272,7 @@ export default function DashboardPage() {
   const [projectImageFile, setProjectImageFile] = useState<File | null>(null);
   const [projectImagePreview, setProjectImagePreview] = useState<string | null>(null);
   const projectImageInputRef = useRef<HTMLInputElement>(null);
+  const [imageDragging, setImageDragging] = useState(false);
   const [syncingGithub, setSyncingGithub] = useState(false);
   const [githubSyncResult, setGithubSyncResult] = useState<string | null>(null);
   const [lastSyncLabel, setLastSyncLabel] = useState<string | null>(null);
@@ -322,10 +331,7 @@ export default function DashboardPage() {
     setVerifyingProjectId(null);
   };
 
-  const handleProjectImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const validateAndSetImage = (file: File) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(file.type)) {
       alert('Only JPG, PNG, WebP, and GIF images are allowed');
@@ -339,6 +345,12 @@ export default function DashboardPage() {
 
     setProjectImageFile(file);
     setProjectImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleProjectImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    validateAndSetImage(file);
   };
 
   const handleGithubSync = async () => {
@@ -1221,19 +1233,35 @@ export default function DashboardPage() {
               </div>
               <div>
                 <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Project Screenshot</label>
-                <div className="flex items-center gap-4">
-                  {projectImagePreview && (
-                    <div className="relative w-24 h-16 border-2 border-[var(--border-hard)]">
-                      <Image src={projectImagePreview} alt="Preview" fill className="object-cover" />
-                      <button onClick={() => { setProjectImageFile(null); setProjectImagePreview(null); }} className="absolute -top-2 -right-2 w-5 h-5 bg-[var(--bg-inverted)] text-white rounded-full flex items-center justify-center text-xs">&times;</button>
+                {projectImagePreview ? (
+                  <div className="relative w-full aspect-video border-2 border-[var(--border-hard)] overflow-hidden">
+                    <Image src={projectImagePreview} alt="Preview" fill className="object-cover" />
+                    <div className="absolute top-2 right-2 flex gap-2">
+                      <button type="button" onClick={() => projectImageInputRef.current?.click()} className="w-7 h-7 bg-[var(--bg-inverted)] text-white rounded-full flex items-center justify-center text-xs hover:opacity-80 transition-opacity" title="Change image">
+                        <Camera size={14} />
+                      </button>
+                      <button onClick={() => { setProjectImageFile(null); setProjectImagePreview(null); }} className="w-7 h-7 bg-[var(--bg-inverted)] text-white rounded-full flex items-center justify-center text-xs hover:opacity-80 transition-opacity" title="Remove image">&times;</button>
                     </div>
-                  )}
-                  <button type="button" onClick={() => projectImageInputRef.current?.click()} className="btn-brutal btn-brutal-secondary text-xs py-1.5 px-3">
-                    <Camera size={14} className="mr-1 inline" /> {projectImagePreview ? "Change" : "Add Image"}
-                  </button>
-                  <input ref={projectImageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleProjectImageSelect} className="hidden" />
-                </div>
-                <p className="text-xs text-[var(--text-muted)] mt-1">Recommended: 1280×720px (16:9). Max 5MB. JPG, PNG, WebP, GIF.</p>
+                  </div>
+                ) : (
+                  <div
+                    className={`w-full aspect-video border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${imageDragging ? "border-[var(--accent)] bg-[rgba(255,58,0,0.06)]" : "border-[var(--border-hard)] hover:border-[var(--accent)]"}`}
+                    onClick={() => projectImageInputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); setImageDragging(true); }}
+                    onDragLeave={() => setImageDragging(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setImageDragging(false);
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) validateAndSetImage(file);
+                    }}
+                  >
+                    <Camera size={24} className="text-[var(--text-muted)]" />
+                    <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Drag & drop or click to upload</span>
+                    <span className="text-[10px] text-[var(--text-muted-soft)]">16:9 recommended. Max 5MB.</span>
+                  </div>
+                )}
+                <input ref={projectImageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleProjectImageSelect} className="hidden" />
               </div>
               <button
                 onClick={editingProjectId ? handleSaveEdit : handleAddProject}
