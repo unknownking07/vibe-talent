@@ -14,7 +14,12 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function ExplorePage() {
-  const users = await fetchAllUsersCached();
+  let users: Awaited<ReturnType<typeof fetchAllUsersCached>>;
+  try {
+    users = await fetchAllUsersCached();
+  } catch {
+    users = [];
+  }
 
   const jsonLd = {
     "@context": "https://schema.org",
