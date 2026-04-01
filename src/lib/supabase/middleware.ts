@@ -39,14 +39,14 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Use getSession() (reads cookies locally, no network call) for the
-  // middleware guard. The dashboard component calls getUser() itself for
-  // the verified auth state — no need to do it twice.
+  // Use getUser() to validate the JWT and refresh the session if needed.
+  // getSession() only reads cookies locally and won't refresh an expired
+  // access token, which causes false redirects to login on client-side nav.
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);
