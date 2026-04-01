@@ -1,17 +1,34 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Megaphone, ChevronLeft, ChevronRight, ExternalLink, Clock, Sparkles, Lock } from "lucide-react";
+import { Megaphone, ChevronLeft, ChevronRight, ExternalLink, Clock, Sparkles, Lock, Wallet, Loader2, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const CONTRACT_ADDR = "0x2cDB438f418f5cb53e8Ea87cFD981397FDe3d0da";
+const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const BASE_CHAIN_ID = 8453;
 const BASE_RPC = "https://mainnet.base.org";
 
 // Only these GitHub users can see the full carousel during testing
 const PREVIEW_USERS = ["stuart5915", "unknownking07"];
 
-// ABI-encoded selector for getActivePromotions()
-const GET_ACTIVE_PROMOS_SELECTOR = "0x5fd2d522";
+// Function selectors (keccak256 of signature, first 4 bytes)
+const SEL = {
+  getActivePromotions: "0x5fd2d522",
+  getPrices: "0xbd9a548b",
+  promote: "0x511c3fa5",
+  approve: "0x095ea7b3",
+  allowance: "0xdd62ed3e",
+  balanceOf: "0x70a08231",
+};
+
+const PACKAGES = [
+  { label: "1 Day", value: 0 },
+  { label: "3 Days", value: 1 },
+  { label: "7 Days", value: 2 },
+  { label: "30 Days", value: 3 },
+  { label: "Lifetime", value: 4 },
+] as const;
 
 type Promotion = {
   id: number;
@@ -77,7 +94,7 @@ async function fetchPromotions(): Promise<Promotion[]> {
       jsonrpc: "2.0",
       id: 1,
       method: "eth_call",
-      params: [{ to: CONTRACT_ADDR, data: GET_ACTIVE_PROMOS_SELECTOR }, "latest"],
+      params: [{ to: CONTRACT_ADDR, data: SEL.getActivePromotions }, "latest"],
     }),
   });
   const json = await res.json();
@@ -104,6 +121,113 @@ async function fetchPromotions(): Promise<Promotion[]> {
     expiresAt: expiresAts[i],
     paidAmount: paidAmounts[i],
   }));
+}
+
+// ── ABI encoding helpers for wallet transactions ──
+
+function padLeft(hex: string, bytes: number): string {
+  return hex.padStart(bytes * 2, "0");
+}
+
+function encodeUint256(n: number | bigint): string {
+  return padLeft(BigInt(n).toString(16), 32);
+}
+
+function encodeAddress(addr: string): string {
+  return padLeft(addr.replace("0x", "").toLowerCase(), 32);
+}
+
+function encodeString(s: string): string {
+  const hex = Array.from(new TextEncoder().encode(s))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  const paddedLen = Math.ceil(hex.length / 64) * 64;
+  return encodeUint256(s.length) + hex.padEnd(paddedLen, "0");
+}
+
+// promote(string projectId, string projectName, uint8 package_, uint256 maxPrice)
+function encodePromoteCalldata(
+  projectId: string,
+  projectName: string,
+  pkg: number,
+  maxPrice: bigint
+): string {
+  // Head: 4 offsets for (string, string, uint8, uint256)
+  // string offsets point to tail data, uint8 and uint256 are inline
+  const headSlots = 4; // 4 params
+  const pidEncoded = encodeString(projectId);
+  const pnameEncoded = encodeString(projectName);
+
+  // Offsets: projectId at slot 4*32=128, projectName after that
+  const pidOffset = headSlots * 32;
+  const pnameOffset = pidOffset + pidEncoded.length / 2;
+
+  return (
+    SEL.promote +
+    encodeUint256(pidOffset) + // offset to projectId
+    encodeUint256(pnameOffset) + // offset to projectName
+    encodeUint256(pkg) + // package_ (uint8 but padded to 32)
+    encodeUint256(maxPrice) + // maxPrice
+    pidEncoded +
+    pnameEncoded
+  );
+}
+
+function encodeApproveCalldata(spender: string, amount: bigint): string {
+  return SEL.approve + encodeAddress(spender) + encodeUint256(amount);
+}
+
+function encodeAllowanceCalldata(owner: string, spender: string): string {
+  return SEL.allowance + encodeAddress(owner) + encodeAddress(spender);
+}
+
+async function fetchPrices(): Promise<bigint[]> {
+  const res = await fetch(BASE_RPC, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "eth_call",
+      params: [{ to: CONTRACT_ADDR, data: SEL.getPrices }, "latest"],
+    }),
+  });
+  const json = await res.json();
+  if (!json.result || json.result === "0x") return [];
+  const data = json.result.slice(2);
+  const prices: bigint[] = [];
+  for (let i = 0; i < 5; i++) {
+    prices.push(BigInt("0x" + data.slice(i * 64, i * 64 + 64)));
+  }
+  return prices;
+}
+
+// ── Ethereum wallet helpers ──
+
+interface EthereumProvider {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  on: (event: string, cb: (...args: unknown[]) => void) => void;
+}
+
+function getEthereum(): EthereumProvider | null {
+  if (typeof window !== "undefined" && (window as unknown as { ethereum?: EthereumProvider }).ethereum) {
+    return (window as unknown as { ethereum: EthereumProvider }).ethereum;
+  }
+  return null;
+}
+
+async function ensureBaseChain(ethereum: EthereumProvider): Promise<boolean> {
+  const chainId = (await ethereum.request({ method: "eth_chainId" })) as string;
+  if (parseInt(chainId, 16) === BASE_CHAIN_ID) return true;
+  try {
+    await ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: "0x" + BASE_CHAIN_ID.toString(16) }],
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function shortAddr(addr: string): string {
@@ -390,7 +514,12 @@ export function FeaturedCarousel() {
           </div>
         )}
 
-        <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] text-center">
+        {/* Promote Form — only for preview users */}
+        <PromoteForm onSuccess={() => {
+          fetchPromotions().then(setPromotions);
+        }} />
+
+        <p className="mt-6 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] text-center">
           On-chain promotions powered by{" "}
           <a
             href="https://inclawbate.app"
@@ -404,4 +533,265 @@ export function FeaturedCarousel() {
       </div>
     </section>
   );
+}
+
+// ── Promote Form (wallet connect + USDC approve + promote) ──
+
+function PromoteForm({ onSuccess }: { onSuccess: () => void }) {
+  const [wallet, setWallet] = useState<string | null>(null);
+  const [prices, setPrices] = useState<bigint[]>([]);
+  const [selectedPkg, setSelectedPkg] = useState(2); // default 7 days
+  const [projectId, setProjectId] = useState("");
+  const [projectName, setProjectName] = useState("");
+  const [status, setStatus] = useState<{ msg: string; type: "info" | "error" | "success" } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  // Load prices on mount
+  useEffect(() => {
+    fetchPrices().then(setPrices).catch(() => {});
+  }, []);
+
+  async function connectWallet() {
+    const ethereum = getEthereum();
+    if (!ethereum) {
+      setStatus({ msg: "Install MetaMask to continue", type: "error" });
+      return;
+    }
+    try {
+      const accounts = (await ethereum.request({ method: "eth_requestAccounts" })) as string[];
+      if (accounts[0]) {
+        const ok = await ensureBaseChain(ethereum);
+        if (!ok) {
+          setStatus({ msg: "Please switch to Base network", type: "error" });
+          return;
+        }
+        setWallet(accounts[0].toLowerCase());
+        setStatus(null);
+      }
+    } catch {
+      setStatus({ msg: "Wallet connection failed", type: "error" });
+    }
+  }
+
+  async function handlePromote() {
+    if (!wallet || !projectId.trim() || !projectName.trim()) {
+      setStatus({ msg: "Fill in project ID and name", type: "error" });
+      return;
+    }
+    if (prices.length === 0) {
+      setStatus({ msg: "Prices not loaded yet", type: "error" });
+      return;
+    }
+
+    const ethereum = getEthereum();
+    if (!ethereum) return;
+
+    const price = prices[selectedPkg];
+    setBusy(true);
+
+    try {
+      // Check allowance
+      setStatus({ msg: "Checking USDC allowance...", type: "info" });
+      const allowanceData = encodeAllowanceCalldata(wallet, CONTRACT_ADDR);
+      const allowanceRes = await fetch(BASE_RPC, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0", id: 1, method: "eth_call",
+          params: [{ to: USDC_ADDR, data: allowanceData }, "latest"],
+        }),
+      });
+      const allowanceJson = await allowanceRes.json();
+      const currentAllowance = BigInt(allowanceJson.result || "0x0");
+
+      if (currentAllowance < price) {
+        setStatus({ msg: `Approving $${(Number(price) / 1e6).toFixed(2)} USDC...`, type: "info" });
+        const approveTx = encodeApproveCalldata(CONTRACT_ADDR, price);
+        const approveTxHash = await ethereum.request({
+          method: "eth_sendTransaction",
+          params: [{ from: wallet, to: USDC_ADDR, data: approveTx }],
+        });
+        setStatus({ msg: "Waiting for approval...", type: "info" });
+        await waitForTx(ethereum, approveTxHash as string);
+      }
+
+      // Send promote tx
+      setStatus({ msg: `Promoting "${projectName.trim()}"...`, type: "info" });
+      const promoteData = encodePromoteCalldata(
+        projectId.trim(),
+        projectName.trim(),
+        selectedPkg,
+        price
+      );
+      const txHash = await ethereum.request({
+        method: "eth_sendTransaction",
+        params: [{ from: wallet, to: CONTRACT_ADDR, data: promoteData }],
+      });
+      setStatus({ msg: "Waiting for confirmation...", type: "info" });
+      await waitForTx(ethereum, txHash as string);
+
+      setStatus({ msg: `"${projectName.trim()}" is now featured!`, type: "success" });
+      setProjectId("");
+      setProjectName("");
+      onSuccess();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Transaction failed";
+      setStatus({ msg, type: "error" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const currentPrice = prices[selectedPkg];
+  const priceStr = currentPrice ? `$${(Number(currentPrice) / 1e6).toFixed(2)}` : "...";
+
+  return (
+    <div
+      className="mt-8 p-6"
+      style={{
+        border: "2px solid var(--border-hard)",
+        boxShadow: "var(--shadow-brutal-sm)",
+        backgroundColor: "var(--bg-surface)",
+      }}
+    >
+      <h3 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">
+        Feature Your Project
+      </h3>
+
+      {!wallet ? (
+        <button
+          onClick={connectWallet}
+          className="btn-brutal btn-brutal-primary text-sm flex items-center gap-2"
+        >
+          <Wallet size={16} /> Connect Wallet to Promote
+        </button>
+      ) : (
+        <div className="space-y-4">
+          <p className="text-xs font-bold text-[var(--text-muted)] font-mono">
+            Connected: {shortAddr(wallet)}
+          </p>
+
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">
+              Project ID
+            </label>
+            <input
+              type="text"
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              placeholder="e.g. my-cool-app"
+              maxLength={200}
+              className="w-full px-3 py-2 text-sm font-medium"
+              style={{
+                backgroundColor: "var(--background)",
+                border: "2px solid var(--border-hard)",
+                color: "var(--foreground)",
+                outline: "none",
+              }}
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">
+              Project Name (shown in carousel)
+            </label>
+            <input
+              type="text"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              placeholder="e.g. My Cool App"
+              maxLength={200}
+              className="w-full px-3 py-2 text-sm font-medium"
+              style={{
+                backgroundColor: "var(--background)",
+                border: "2px solid var(--border-hard)",
+                color: "var(--foreground)",
+                outline: "none",
+              }}
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">
+              Package
+            </label>
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+              {PACKAGES.map((pkg) => (
+                <button
+                  key={pkg.value}
+                  onClick={() => setSelectedPkg(pkg.value)}
+                  className="p-3 text-center transition-all"
+                  style={{
+                    border: `2px solid ${selectedPkg === pkg.value ? "var(--accent)" : "var(--border-hard)"}`,
+                    backgroundColor: selectedPkg === pkg.value ? "var(--accent)" : "var(--bg-surface)",
+                    boxShadow: selectedPkg === pkg.value ? "var(--shadow-brutal-xs)" : "none",
+                    color: selectedPkg === pkg.value ? "white" : "var(--foreground)",
+                  }}
+                >
+                  <div className="text-xs font-extrabold uppercase">{pkg.label}</div>
+                  <div className="text-[10px] font-bold font-mono mt-0.5">
+                    {prices[pkg.value] ? `$${(Number(prices[pkg.value]) / 1e6).toFixed(2)}` : "..."}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {status && (
+            <div
+              className="px-3 py-2 text-xs font-bold uppercase"
+              style={{
+                border: "2px solid var(--border-hard)",
+                backgroundColor:
+                  status.type === "error" ? "var(--status-error-bg)" :
+                  status.type === "success" ? "var(--status-success-bg)" :
+                  "var(--bg-surface)",
+                color:
+                  status.type === "error" ? "var(--status-error-text)" :
+                  status.type === "success" ? "var(--status-success-text)" :
+                  "var(--foreground)",
+              }}
+            >
+              {status.msg}
+            </div>
+          )}
+
+          <button
+            onClick={handlePromote}
+            disabled={busy || !projectId.trim() || !projectName.trim()}
+            className="btn-brutal btn-brutal-primary text-sm w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {busy ? (
+              <><Loader2 size={16} className="animate-spin" /> Processing...</>
+            ) : (
+              <><Check size={16} /> Approve {priceStr} USDC &amp; Promote</>
+            )}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Wait for tx confirmation ──
+
+async function waitForTx(ethereum: EthereumProvider, txHash: string, timeout = 60000): Promise<void> {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const res = await fetch(BASE_RPC, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0", id: 1, method: "eth_getTransactionReceipt",
+        params: [txHash],
+      }),
+    });
+    const json = await res.json();
+    if (json.result) {
+      if (json.result.status === "0x1") return;
+      throw new Error("Transaction reverted");
+    }
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+  throw new Error("Transaction timed out");
 }
