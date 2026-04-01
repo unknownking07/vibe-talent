@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 // Always use www — Vercel redirects non-www with 307 which breaks social media crawlers
-const siteUrl = "https://www.vibetalent.work";
+export const siteUrl = "https://www.vibetalent.work";
 const siteName = "VibeTalent";
 
 export function createMetadata(options: {

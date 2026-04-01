@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-
-const siteUrl = "https://www.vibetalent.work";
+import { siteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Live Feed — See What Builders Are Shipping",

@@ -8,9 +8,7 @@ import ReviewsSection from "@/components/profile/reviews-section";
 import { ProfileViewTracker } from "@/components/profile/profile-view-tracker";
 import Link from "next/link";
 import type { Metadata } from "next";
-
-// Always use www — Vercel redirects non-www with 307 which breaks social media crawlers
-const siteUrl = "https://www.vibetalent.work";
+import { siteUrl } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -59,7 +57,7 @@ export async function generateMetadata({
   };
 }
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function ProfilePage({
   params,

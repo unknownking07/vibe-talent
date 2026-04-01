@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useLayoutEffect, useRef } from "react";
 
 interface ProfileHeatmapProps {
   data: Record<string, number>;
@@ -94,9 +94,11 @@ export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
   const total = ghTotal > 0 ? ghTotal : Object.values(mergedData).reduce((sum, v) => sum + (v > 0 ? v : 0), 0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (scrollRef.current) {
+  const hasScrolledRef = useRef(false);
+  useLayoutEffect(() => {
+    if (scrollRef.current && !hasScrolledRef.current) {
       scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+      hasScrolledRef.current = true;
     }
   }, [weeks]);
 

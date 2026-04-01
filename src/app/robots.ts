@@ -1,6 +1,14 @@
 import type { MetadataRoute } from "next";
+import { siteUrl } from "@/lib/seo";
 
-const siteUrl = "https://www.vibetalent.work";
+const privateDisallow = [
+  "/api/",
+  "/dashboard",
+  "/settings",
+  "/admin",
+  "/auth/",
+  "/hire/chat/",
+];
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -8,25 +16,16 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: [
-          "/api/",
-          "/dashboard/",
-          "/settings/",
-          "/admin/",
-          "/auth/forgot-password",
-          "/auth/reset-password",
-          "/auth/profile-setup",
-          "/hire/chat/",
-        ],
+        disallow: privateDisallow,
       },
-      { userAgent: "GPTBot", allow: "/" },
-      { userAgent: "ChatGPT-User", allow: "/" },
-      { userAgent: "Google-Extended", allow: "/" },
-      { userAgent: "ClaudeBot", allow: "/" },
-      { userAgent: "PerplexityBot", allow: "/" },
-      { userAgent: "CCBot", allow: "/" },
-      { userAgent: "OAI-SearchBot", allow: "/" },
-      { userAgent: "Bingbot", allow: "/" },
+      { userAgent: "GPTBot", allow: "/", disallow: privateDisallow },
+      { userAgent: "ChatGPT-User", allow: "/", disallow: privateDisallow },
+      { userAgent: "Google-Extended", allow: "/", disallow: privateDisallow },
+      { userAgent: "ClaudeBot", allow: "/", disallow: privateDisallow },
+      { userAgent: "PerplexityBot", allow: "/", disallow: privateDisallow },
+      { userAgent: "CCBot", allow: "/", disallow: privateDisallow },
+      { userAgent: "OAI-SearchBot", allow: "/", disallow: privateDisallow },
+      { userAgent: "Bingbot", allow: "/", disallow: privateDisallow },
     ],
     sitemap: `${siteUrl}/sitemap.xml`,
   };

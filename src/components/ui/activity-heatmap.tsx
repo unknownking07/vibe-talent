@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useRef } from "react";
+import { useMemo, useLayoutEffect, useRef } from "react";
 
 interface ActivityHeatmapProps {
   data: Record<string, number>;
@@ -70,9 +70,11 @@ export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
   const totalContributions = totalOverride ?? Object.values(data).reduce((sum, v) => sum + (v > 0 ? v : 0), 0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (scrollRef.current) {
+  const hasScrolledRef = useRef(false);
+  useLayoutEffect(() => {
+    if (scrollRef.current && !hasScrolledRef.current) {
       scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+      hasScrolledRef.current = true;
     }
   }, [weeks]);
 

@@ -1,17 +1,18 @@
 import type { MetadataRoute } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { siteUrl } from "@/lib/seo";
 
-const siteUrl = "https://www.vibetalent.work";
+const fallbackLastModified = new Date("2026-03-15");
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
-    { url: siteUrl, lastModified: new Date("2026-03-15") },
-    { url: `${siteUrl}/explore`, lastModified: new Date("2026-03-15") },
-    { url: `${siteUrl}/leaderboard`, lastModified: new Date("2026-03-15") },
-    { url: `${siteUrl}/feed`, lastModified: new Date("2026-03-15") },
-    { url: `${siteUrl}/agent`, lastModified: new Date("2026-03-15") },
-    { url: `${siteUrl}/agent/find`, lastModified: new Date("2026-03-15") },
-    { url: `${siteUrl}/agent/chat`, lastModified: new Date("2026-03-15") },
+    { url: siteUrl, lastModified: fallbackLastModified },
+    { url: `${siteUrl}/explore`, lastModified: fallbackLastModified },
+    { url: `${siteUrl}/leaderboard`, lastModified: fallbackLastModified },
+    { url: `${siteUrl}/feed`, lastModified: fallbackLastModified },
+    { url: `${siteUrl}/agent`, lastModified: fallbackLastModified },
+    { url: `${siteUrl}/agent/find`, lastModified: fallbackLastModified },
+    { url: `${siteUrl}/agent/chat`, lastModified: fallbackLastModified },
   ];
 
   try {
@@ -22,7 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const profilePages: MetadataRoute.Sitemap = (users || []).map(
       (user: { username: string; updated_at: string }) => ({
         url: `${siteUrl}/profile/${user.username.trim()}`,
-        lastModified: user.updated_at ? new Date(user.updated_at) : new Date("2026-03-15"),
+        lastModified: user.updated_at ? new Date(user.updated_at) : fallbackLastModified,
       })
     );
 
