@@ -7,7 +7,7 @@ import { TestimonialScroll } from "@/components/ui/testimonial-scroll";
 import { fetchHomepageDataCached } from "@/lib/supabase/server-queries";
 import { Flame, TrendingUp, Award, Zap, ArrowRight, Code2, Target, Users } from "lucide-react";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const FAQ_ITEMS = [
   {
