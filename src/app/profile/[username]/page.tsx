@@ -92,6 +92,16 @@ export default async function ProfilePage({
 
   const heatmapData = await fetchStreakLogsCached(user.id);
 
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 2, name: "Explore", item: `${siteUrl}/explore` },
+      { "@type": "ListItem", position: 3, name: `@${user.username}`, item: `${siteUrl}/profile/${user.username}` },
+    ],
+  };
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Person",
@@ -120,6 +130,10 @@ export default async function ProfilePage({
   return (
     <div className="flex justify-center p-4 sm:p-8">
       {!isOwner && <ProfileViewTracker viewedUserId={user.id} />}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

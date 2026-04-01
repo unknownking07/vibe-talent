@@ -12,27 +12,27 @@ export const dynamic = "force-dynamic";
 const FAQ_ITEMS = [
   {
     q: "What is vibe coding?",
-    a: "Vibe coding is the practice of building software using AI-powered IDEs like Claude Code, Cursor, and Bolt. Vibe coders focus on shipping fast, staying in flow state, and building consistently rather than following traditional development processes.",
+    a: "Vibe coding is the practice of building software using AI-powered IDEs and coding assistants like Claude Code, Cursor, Bolt, and Windsurf. Rather than following traditional development processes with lengthy planning cycles and sprints, vibe coders focus on staying in flow state, shipping features fast, and committing code every single day. The philosophy prioritizes working software in production over documentation, and consistency over sporadic bursts of activity. Vibe coders leverage AI to handle boilerplate and repetitive tasks, freeing them to focus on architecture decisions, product design, and rapid iteration. The result is developers who ship more, ship faster, and build a verifiable track record of daily output that speaks louder than any resume.",
   },
   {
     q: "How does the VibeTalent vibe score work?",
-    a: "The vibe score is a reputation metric calculated from your coding streak (consecutive days of commits), project quality scores, GitHub activity, and peer endorsements. The higher your consistency and quality, the higher your score.",
+    a: "The vibe score is VibeTalent's core reputation metric — a single number representing how consistently and effectively a developer ships code. It is calculated from four weighted components: coding streak days (40% weight), which measures consecutive days of GitHub commits; project quality scores (30% weight), based on GitHub repo health including stars, forks, commit frequency, and deployment status; GitHub activity (20% weight), covering commits, pull requests, code reviews, and issue participation; and peer endorsements (10% weight), where endorsements from higher-scored developers carry more weight. The score updates daily and is always based on verifiable, public data. It cannot be gamed through fake reviews or purchased followers — only real, consistent shipping moves the needle.",
   },
   {
     q: "What are coding streaks and why do they matter?",
-    a: "A coding streak tracks consecutive days you have committed code. Streaks matter because they are an unfakeable signal of consistency. Clients trust developers who show up every day over those with polished resumes but no proof of work.",
+    a: "A coding streak tracks the number of consecutive days you have committed code to at least one GitHub repository. VibeTalent syncs with your GitHub profile daily, and any commit to any public repository counts toward your streak. If a full calendar day passes with no commits (based on UTC), the streak resets to zero. Streaks matter because they are the single most reliable signal of developer consistency. A long streak is nearly impossible to fake — you cannot buy a 200-day streak. For clients evaluating talent, streak length is a stronger predictor of delivery reliability than years of experience or interview performance. Developers who code every day demonstrate intrinsic motivation, discipline, and the kind of sustained effort that translates directly into project success.",
   },
   {
     q: "How do VibeTalent badges work?",
-    a: "Badges are earned through streak milestones: Bronze at 30 days, Silver at 90 days, Gold at 180 days, and Diamond at 365 days. Each badge level signals increasing dedication and reliability to potential clients.",
+    a: "Badges are visual milestones earned through streak achievements that appear on your profile and in search results. There are four levels: Bronze at 30 consecutive days, Silver at 90 days, Gold at 180 days, and Diamond at 365 days — a full year of daily coding. Each badge level signals increasing dedication and reliability to potential clients browsing the platform. Badges are permanent once earned — even if your streak resets, the badge remains on your profile as proof of past achievement. However, your active streak is displayed separately so clients can see both your historical consistency and current momentum. The badge system creates clear, achievable milestones that motivate developers to maintain their streaks while giving clients an instant visual indicator of a developer's commitment level.",
   },
   {
     q: "How is VibeTalent different from Upwork or Toptal?",
-    a: "Unlike traditional freelancer platforms that rely on resumes and client reviews, VibeTalent ranks developers by verifiable proof of work — coding streaks, shipped projects with live URLs, GitHub activity, and quality scores. You cannot fake a 200-day streak.",
+    a: "Traditional freelancer platforms like Upwork and Toptal rely on resumes, client reviews, and interview processes to evaluate developers. These signals are easy to game — anyone can write a polished resume or get a friend to leave a five-star review. VibeTalent takes a fundamentally different approach by ranking developers on verifiable proof of work: coding streaks that track consecutive days of GitHub commits, shipped projects with live URLs you can visit, quality scores based on actual repository health, and peer endorsements from other verified developers. You cannot fake a 200-day coding streak or fabricate a deployed project with real GitHub activity. This means clients can trust that the rankings reflect genuine ability and consistency, not just good self-marketing.",
   },
   {
     q: "Is VibeTalent free to use?",
-    a: "Yes, creating a profile, building your streak, and getting discovered by clients is completely free. VibeTalent is a marketplace where your work speaks for itself.",
+    a: "Yes, VibeTalent is completely free for developers. Creating a profile, connecting your GitHub account, building your streak, earning badges, adding projects, and getting discovered by clients costs nothing. The platform is designed as a marketplace where your work speaks for itself — the better your streak, the higher your vibe score, and the more visible you become to potential clients. There are no premium tiers, hidden fees, or pay-to-rank features for developers. VibeTalent believes that the best developers should rise to the top based on merit and consistency, not marketing budgets. Simply sign up, start coding every day, add your best projects, and let your proof of work attract opportunities.",
   },
 ];
 
@@ -78,7 +78,12 @@ export default async function HomePage() {
                 "@type": "Organization",
                 name: "VibeTalent",
                 url: "https://www.vibetalent.work",
-                logo: "https://www.vibetalent.work/opengraph-image",
+                logo: {
+                  "@type": "ImageObject",
+                  url: "https://www.vibetalent.work/logo.png",
+                  width: 512,
+                  height: 512,
+                },
                 sameAs: [
                   "https://x.com/abhiontwt",
                   "https://github.com/unknownking07/vibe-talent",
@@ -346,18 +351,21 @@ export default async function HomePage() {
           <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-8">Frequently Asked Questions</h2>
           <div className="space-y-4">
             {FAQ_ITEMS.map((faq) => (
-              <div
+              <details
                 key={faq.q}
-                className="p-5"
+                className="group p-5 cursor-pointer"
                 style={{
                   backgroundColor: "var(--bg-surface)",
                   border: "2px solid var(--border-hard)",
                   boxShadow: "var(--shadow-brutal-sm)",
                 }}
               >
-                <h3 className="text-base font-extrabold uppercase text-[var(--foreground)]">{faq.q}</h3>
-                <p className="mt-2 text-sm text-[var(--text-secondary)] font-medium leading-relaxed">{faq.a}</p>
-              </div>
+                <summary className="text-base font-extrabold uppercase text-[var(--foreground)] list-none flex items-center justify-between gap-4 [&::-webkit-details-marker]:hidden">
+                  {faq.q}
+                  <span className="text-[var(--text-muted)] text-lg shrink-0 transition-transform group-open:rotate-45">+</span>
+                </summary>
+                <p className="mt-3 text-sm text-[var(--text-secondary)] font-medium leading-relaxed">{faq.a}</p>
+              </details>
             ))}
           </div>
         </div>

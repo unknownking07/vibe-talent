@@ -41,6 +41,13 @@ export function Footer() {
               <a href="https://vibe-talent.gitbook.io/untitled" target="_blank" rel="noopener noreferrer" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Docs</a>
             </div>
           </div>
+          <div>
+            <h4 className="text-sm font-extrabold uppercase tracking-wide mb-3" style={{ color: "var(--foreground)" }}>Legal</h4>
+            <div className="flex flex-col gap-2">
+              <Link href="/privacy" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Privacy Policy</Link>
+              <Link href="/terms" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Terms of Service</Link>
+            </div>
+          </div>
         </div>
         <div
           className="mt-10 pt-6 text-center text-xs font-bold uppercase tracking-wider"

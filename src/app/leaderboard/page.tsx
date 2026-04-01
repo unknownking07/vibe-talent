@@ -4,11 +4,23 @@ import { Trophy } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Leaderboard",
+  title: "Top Vibe Coders — Developer Leaderboard by Streak & Score",
   description:
     "See the top vibe coders ranked by vibe score, streak, and projects shipped. The most consistent builders on the platform.",
   alternates: {
     canonical: "https://www.vibetalent.work/leaderboard",
+  },
+  openGraph: {
+    title: "Top Vibe Coders — VibeTalent Leaderboard",
+    description: "See the top developers ranked by vibe score, coding streak, and projects shipped.",
+    url: "https://www.vibetalent.work/leaderboard",
+    siteName: "VibeTalent",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Top Vibe Coders — VibeTalent Leaderboard",
+    description: "See the top developers ranked by vibe score, coding streak, and projects shipped.",
   },
 };
 
@@ -66,6 +78,9 @@ export default async function LeaderboardPage() {
         </div>
         <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">Leaderboard</h1>
         <p className="mt-2 text-[var(--text-secondary)] font-medium">The most consistent builders on the platform</p>
+        <p className="mt-3 text-sm text-[var(--text-secondary)] leading-relaxed max-w-2xl mx-auto">
+          The VibeTalent leaderboard ranks developers by their vibe score — a reputation metric calculated from coding streaks, project quality, GitHub activity, and community endorsements. The most consistent builders rise to the top, proving their dedication through daily shipping.
+        </p>
       </div>
 
       <LeaderboardContent users={users} />
