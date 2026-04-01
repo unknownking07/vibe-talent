@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef } from "react";
 
 interface ActivityHeatmapProps {
   data: Record<string, number>;
@@ -69,6 +69,13 @@ export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
 
   const totalContributions = totalOverride ?? Object.values(data).reduce((sum, v) => sum + (v > 0 ? v : 0), 0);
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+    }
+  }, [weeks]);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -91,7 +98,7 @@ export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
         </div>
       </div>
 
-      <div className="overflow-x-auto pb-2">
+      <div ref={scrollRef} className="overflow-x-auto pb-2">
         {/* Month labels */}
         <div className="flex" style={{ paddingLeft: 32, marginBottom: 4 }}>
           {monthLabels.map((m, i) => {
