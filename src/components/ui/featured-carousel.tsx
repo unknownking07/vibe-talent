@@ -86,41 +86,54 @@ function decodeAddressArray(data: string, arrayWordOffset: number): string[] {
   return addrs;
 }
 
+// Fallback prices matching contract defaults (in USDC 6 decimals)
+const FALLBACK_PRICES: bigint[] = [
+  BigInt(500000),   // $0.50
+  BigInt(1000000),  // $1.00
+  BigInt(2000000),  // $2.00
+  BigInt(5000000),  // $5.00
+  BigInt(15000000), // $15.00
+];
+
 async function fetchPromotions(): Promise<Promotion[]> {
-  const res = await fetch(BASE_RPC, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "eth_call",
-      params: [{ to: CONTRACT_ADDR, data: SEL.getActivePromotions }, "latest"],
-    }),
-  });
-  const json = await res.json();
-  if (!json.result || json.result === "0x") return [];
+  try {
+    const res = await fetch(BASE_RPC, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "eth_call",
+        params: [{ to: CONTRACT_ADDR, data: SEL.getActivePromotions }, "latest"],
+      }),
+    });
+    const json = await res.json();
+    if (!json.result || json.result === "0x" || json.result.length < 10) return [];
 
-  const data = json.result.slice(2); // strip 0x
+    const data = json.result.slice(2); // strip 0x
+    if (data.length < 384) return []; // minimum 6 offset words = 6*64 chars
 
-  // Return type: (uint256[] ids, address[] promoters, string[] projectIds, string[] projectNames, uint256[] expiresAts, uint256[] paidAmounts)
-  // First 6 words are offsets to each dynamic array
-  const ids = decodeUint256Array(data, 0);
-  if (ids.length === 0) return [];
+    // Return type: (uint256[] ids, address[] promoters, string[] projectIds, string[] projectNames, uint256[] expiresAts, uint256[] paidAmounts)
+    const ids = decodeUint256Array(data, 0);
+    if (ids.length === 0) return [];
 
-  const promoters = decodeAddressArray(data, 1);
-  const projectIds = decodeStringArray(data, 2);
-  const projectNames = decodeStringArray(data, 3);
-  const expiresAts = decodeUint256Array(data, 4);
-  const paidAmounts = decodeUint256Array(data, 5);
+    const promoters = decodeAddressArray(data, 1);
+    const projectIds = decodeStringArray(data, 2);
+    const projectNames = decodeStringArray(data, 3);
+    const expiresAts = decodeUint256Array(data, 4);
+    const paidAmounts = decodeUint256Array(data, 5);
 
-  return ids.map((id, i) => ({
-    id,
-    promoter: promoters[i],
-    projectId: projectIds[i],
-    projectName: projectNames[i],
-    expiresAt: expiresAts[i],
-    paidAmount: paidAmounts[i],
-  }));
+    return ids.map((id, i) => ({
+      id,
+      promoter: promoters[i],
+      projectId: projectIds[i],
+      projectName: projectNames[i],
+      expiresAt: expiresAts[i],
+      paidAmount: paidAmounts[i],
+    }));
+  } catch {
+    return [];
+  }
 }
 
 // ── ABI encoding helpers for wallet transactions ──
@@ -182,24 +195,28 @@ function encodeAllowanceCalldata(owner: string, spender: string): string {
 }
 
 async function fetchPrices(): Promise<bigint[]> {
-  const res = await fetch(BASE_RPC, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: 1,
-      method: "eth_call",
-      params: [{ to: CONTRACT_ADDR, data: SEL.getPrices }, "latest"],
-    }),
-  });
-  const json = await res.json();
-  if (!json.result || json.result === "0x") return [];
-  const data = json.result.slice(2);
-  const prices: bigint[] = [];
-  for (let i = 0; i < 5; i++) {
-    prices.push(BigInt("0x" + data.slice(i * 64, i * 64 + 64)));
+  try {
+    const res = await fetch(BASE_RPC, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "eth_call",
+        params: [{ to: CONTRACT_ADDR, data: SEL.getPrices }, "latest"],
+      }),
+    });
+    const json = await res.json();
+    if (!json.result || json.result === "0x" || json.result.length < 10) return FALLBACK_PRICES;
+    const data = json.result.slice(2);
+    const prices: bigint[] = [];
+    for (let i = 0; i < 5; i++) {
+      prices.push(BigInt("0x" + data.slice(i * 64, i * 64 + 64)));
+    }
+    return prices;
+  } catch {
+    return FALLBACK_PRICES;
   }
-  return prices;
 }
 
 // ── Ethereum wallet helpers ──
@@ -249,7 +266,6 @@ export function FeaturedCarousel() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [current, setCurrent] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
   const [hasAccess, setHasAccess] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -269,20 +285,20 @@ export function FeaturedCarousel() {
     });
   }, []);
 
+  const refreshPromotions = useCallback(() => {
+    fetchPromotions().then((p) => {
+      setPromotions(p);
+      setLoading(false);
+    }).catch(() => {
+      setPromotions([]);
+      setLoading(false);
+    });
+  }, []);
+
   useEffect(() => {
     if (!authChecked) return;
-    // Always fetch promotions — we show "coming soon" to non-preview users
-    // but still want to know if there are any (to decide whether to render at all)
-    fetchPromotions()
-      .then((p) => {
-        setPromotions(p);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError(true);
-        setLoading(false);
-      });
-  }, [authChecked]);
+    refreshPromotions();
+  }, [authChecked, refreshPromotions]);
 
   // Auto-advance every 5s
   useEffect(() => {
@@ -331,25 +347,11 @@ export function FeaturedCarousel() {
               Pay with USDC to feature your project on the VibeTalent homepage.
               On-chain. Transparent. Launching soon.
             </p>
-            <p className="mt-4 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-              Powered by{" "}
-              <a
-                href="https://inclawbate.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-[var(--accent)] transition-colors"
-              >
-                Inclawbate
-              </a>
-            </p>
           </div>
         </div>
       </section>
     );
   }
-
-  // For preview users: hide if no promotions
-  if (!loading && !error && promotions.length === 0) return null;
 
   return (
     <section
@@ -386,12 +388,12 @@ export function FeaturedCarousel() {
             }}
           >
             <p className="text-sm font-bold uppercase text-[var(--text-muted)] animate-pulse">
-              Loading on-chain promotions...
+              Loading promotions...
             </p>
           </div>
         )}
 
-        {error && (
+        {!loading && promotions.length === 0 && (
           <div
             className="p-8 text-center"
             style={{
@@ -400,12 +402,12 @@ export function FeaturedCarousel() {
             }}
           >
             <p className="text-sm font-bold uppercase text-[var(--text-muted)]">
-              Could not load promotions
+              No active promotions yet — be the first!
             </p>
           </div>
         )}
 
-        {!loading && !error && promotions.length > 0 && (
+        {!loading && promotions.length > 0 && (
           <div className="relative">
             {/* Carousel container */}
             <div
@@ -515,40 +517,43 @@ export function FeaturedCarousel() {
         )}
 
         {/* Promote Form — only for preview users */}
-        <PromoteForm onSuccess={() => {
-          fetchPromotions().then(setPromotions);
-        }} />
-
-        <p className="mt-6 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] text-center">
-          On-chain promotions powered by{" "}
-          <a
-            href="https://inclawbate.app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-[var(--accent)] transition-colors"
-          >
-            Inclawbate
-          </a>
-        </p>
+        <PromoteForm onSuccess={refreshPromotions} />
       </div>
     </section>
   );
 }
 
-// ── Promote Form (wallet connect + USDC approve + promote) ──
+// ── Promote Form (wallet connect + project dropdown + USDC approve + promote) ──
+
+type UserProject = { id: string; title: string };
 
 function PromoteForm({ onSuccess }: { onSuccess: () => void }) {
   const [wallet, setWallet] = useState<string | null>(null);
-  const [prices, setPrices] = useState<bigint[]>([]);
+  const [prices, setPrices] = useState<bigint[]>(FALLBACK_PRICES);
   const [selectedPkg, setSelectedPkg] = useState(2); // default 7 days
-  const [projectId, setProjectId] = useState("");
-  const [projectName, setProjectName] = useState("");
+  const [projects, setProjects] = useState<UserProject[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string>("");
+  const [loadingProjects, setLoadingProjects] = useState(true);
   const [status, setStatus] = useState<{ msg: string; type: "info" | "error" | "success" } | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Load prices on mount
+  // Load prices + user's projects on mount
   useEffect(() => {
-    fetchPrices().then(setPrices).catch(() => {});
+    fetchPrices().then(setPrices);
+
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) { setLoadingProjects(false); return; }
+      supabase
+        .from("projects")
+        .select("id, title")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .then(({ data }) => {
+          setProjects(data || []);
+          setLoadingProjects(false);
+        });
+    });
   }, []);
 
   async function connectWallet() {
@@ -574,12 +579,9 @@ function PromoteForm({ onSuccess }: { onSuccess: () => void }) {
   }
 
   async function handlePromote() {
-    if (!wallet || !projectId.trim() || !projectName.trim()) {
-      setStatus({ msg: "Fill in project ID and name", type: "error" });
-      return;
-    }
-    if (prices.length === 0) {
-      setStatus({ msg: "Prices not loaded yet", type: "error" });
+    const project = projects.find((p) => p.id === selectedProject);
+    if (!wallet || !project) {
+      setStatus({ msg: "Select a project first", type: "error" });
       return;
     }
 
@@ -590,7 +592,6 @@ function PromoteForm({ onSuccess }: { onSuccess: () => void }) {
     setBusy(true);
 
     try {
-      // Check allowance
       setStatus({ msg: "Checking USDC allowance...", type: "info" });
       const allowanceData = encodeAllowanceCalldata(wallet, CONTRACT_ADDR);
       const allowanceRes = await fetch(BASE_RPC, {
@@ -612,27 +613,20 @@ function PromoteForm({ onSuccess }: { onSuccess: () => void }) {
           params: [{ from: wallet, to: USDC_ADDR, data: approveTx }],
         });
         setStatus({ msg: "Waiting for approval...", type: "info" });
-        await waitForTx(ethereum, approveTxHash as string);
+        await waitForTx(approveTxHash as string);
       }
 
-      // Send promote tx
-      setStatus({ msg: `Promoting "${projectName.trim()}"...`, type: "info" });
-      const promoteData = encodePromoteCalldata(
-        projectId.trim(),
-        projectName.trim(),
-        selectedPkg,
-        price
-      );
+      setStatus({ msg: `Promoting "${project.title}"...`, type: "info" });
+      const promoteData = encodePromoteCalldata(project.id, project.title, selectedPkg, price);
       const txHash = await ethereum.request({
         method: "eth_sendTransaction",
         params: [{ from: wallet, to: CONTRACT_ADDR, data: promoteData }],
       });
       setStatus({ msg: "Waiting for confirmation...", type: "info" });
-      await waitForTx(ethereum, txHash as string);
+      await waitForTx(txHash as string);
 
-      setStatus({ msg: `"${projectName.trim()}" is now featured!`, type: "success" });
-      setProjectId("");
-      setProjectName("");
+      setStatus({ msg: `"${project.title}" is now featured!`, type: "success" });
+      setSelectedProject("");
       onSuccess();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Transaction failed";
@@ -643,7 +637,8 @@ function PromoteForm({ onSuccess }: { onSuccess: () => void }) {
   }
 
   const currentPrice = prices[selectedPkg];
-  const priceStr = currentPrice ? `$${(Number(currentPrice) / 1e6).toFixed(2)}` : "...";
+  const priceStr = `$${(Number(currentPrice) / 1e6).toFixed(2)}`;
+  const hasProject = selectedProject !== "";
 
   return (
     <div
@@ -671,46 +666,48 @@ function PromoteForm({ onSuccess }: { onSuccess: () => void }) {
             Connected: {shortAddr(wallet)}
           </p>
 
+          {/* Project dropdown */}
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">
-              Project ID
+              Select Project
             </label>
-            <input
-              type="text"
-              value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
-              placeholder="e.g. my-cool-app"
-              maxLength={200}
-              className="w-full px-3 py-2 text-sm font-medium"
-              style={{
-                backgroundColor: "var(--background)",
-                border: "2px solid var(--border-hard)",
-                color: "var(--foreground)",
-                outline: "none",
-              }}
-            />
+            {loadingProjects ? (
+              <p className="text-xs text-[var(--text-muted)] animate-pulse">Loading your projects...</p>
+            ) : projects.length === 0 ? (
+              <div
+                className="p-4 text-center"
+                style={{ border: "2px solid var(--border-hard)", backgroundColor: "var(--background)" }}
+              >
+                <p className="text-sm font-bold text-[var(--text-muted)] mb-2">No projects on your profile yet</p>
+                <a
+                  href="/dashboard"
+                  className="btn-brutal btn-brutal-primary text-xs inline-flex items-center gap-1"
+                >
+                  Add a Project
+                </a>
+              </div>
+            ) : (
+              <select
+                value={selectedProject}
+                onChange={(e) => setSelectedProject(e.target.value)}
+                className="w-full px-3 py-2 text-sm font-medium"
+                style={{
+                  backgroundColor: "var(--background)",
+                  border: "2px solid var(--border-hard)",
+                  color: "var(--foreground)",
+                  outline: "none",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="">Choose a project...</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.title}</option>
+                ))}
+              </select>
+            )}
           </div>
 
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">
-              Project Name (shown in carousel)
-            </label>
-            <input
-              type="text"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              placeholder="e.g. My Cool App"
-              maxLength={200}
-              className="w-full px-3 py-2 text-sm font-medium"
-              style={{
-                backgroundColor: "var(--background)",
-                border: "2px solid var(--border-hard)",
-                color: "var(--foreground)",
-                outline: "none",
-              }}
-            />
-          </div>
-
+          {/* Package selector */}
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">
               Package
@@ -730,7 +727,7 @@ function PromoteForm({ onSuccess }: { onSuccess: () => void }) {
                 >
                   <div className="text-xs font-extrabold uppercase">{pkg.label}</div>
                   <div className="text-[10px] font-bold font-mono mt-0.5">
-                    {prices[pkg.value] ? `$${(Number(prices[pkg.value]) / 1e6).toFixed(2)}` : "..."}
+                    ${(Number(prices[pkg.value]) / 1e6).toFixed(2)}
                   </div>
                 </button>
               ))}
@@ -758,7 +755,7 @@ function PromoteForm({ onSuccess }: { onSuccess: () => void }) {
 
           <button
             onClick={handlePromote}
-            disabled={busy || !projectId.trim() || !projectName.trim()}
+            disabled={busy || !hasProject}
             className="btn-brutal btn-brutal-primary text-sm w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {busy ? (
@@ -775,7 +772,7 @@ function PromoteForm({ onSuccess }: { onSuccess: () => void }) {
 
 // ── Wait for tx confirmation ──
 
-async function waitForTx(ethereum: EthereumProvider, txHash: string, timeout = 60000): Promise<void> {
+async function waitForTx(txHash: string, timeout = 60000): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < timeout) {
     const res = await fetch(BASE_RPC, {
