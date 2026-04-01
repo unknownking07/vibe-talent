@@ -330,7 +330,7 @@ export function FeaturedCarousel() {
           backgroundColor: "var(--bg-surface)",
         }}
       >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+        <div className="mx-auto max-w-2xl px-4 sm:px-6 py-12">
           <div
             className="p-8 sm:p-12 text-center"
             style={{
@@ -361,7 +361,7 @@ export function FeaturedCarousel() {
         backgroundColor: "var(--bg-surface)",
       }}
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+      <div className="mx-auto max-w-2xl px-4 sm:px-6 py-12">
         <div className="flex items-center gap-3 mb-6">
           <Megaphone size={20} style={{ color: "var(--accent)" }} />
           <h2 className="text-xl font-extrabold uppercase text-[var(--foreground)]">
