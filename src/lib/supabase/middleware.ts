@@ -39,14 +39,24 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Use getUser() to validate the JWT and refresh the session if needed.
-  // getSession() only reads cookies locally and won't refresh an expired
-  // access token, which causes false redirects to login on client-side nav.
+  // Try getUser() first (validates JWT, refreshes token if needed).
+  // Fall back to getSession() (local cookie read) if the network call fails,
+  // so we don't redirect authenticated users to login on transient errors.
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
 
   if (!user) {
+    // If getUser() failed due to a network/server error, check session locally
+    if (error) {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        return supabaseResponse;
+      }
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);
