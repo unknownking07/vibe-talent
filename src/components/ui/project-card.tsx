@@ -13,7 +13,7 @@ import { parseImageCrop } from "@/lib/image-crop";
 function ProjectImageBanner({ url, alt }: { url: string; alt: string }) {
   const crop = parseImageCrop(url);
   return (
-    <div className="relative w-full h-28 border-b-2 border-[var(--border-hard)] overflow-hidden">
+    <div className="relative w-full h-28 border-b-2 border-[var(--border-hard)] overflow-hidden" style={{ backgroundColor: "#ffffff" }}>
       <Image
         src={url}
         alt={alt}
@@ -132,7 +132,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
 
   return (
     <div
-      className="card-brutal transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
+      className="card-brutal h-full flex flex-col transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
     >
       {project.image_url ? (
         <ProjectImageBanner url={project.image_url} alt={project.title} />
@@ -141,7 +141,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
           <span className="text-3xl font-extrabold uppercase text-[var(--text-muted-soft)] tracking-widest select-none">{project.title?.charAt(0) ?? "P"}</span>
         </div>
       )}
-      <div className="px-4 py-3">
+      <div className="px-4 py-3 flex-1 flex flex-col">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)] truncate">{project.title}</h3>
@@ -233,7 +233,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
         </div>
       </div>
 
-      <p className="mt-1.5 text-xs text-[var(--text-secondary)] font-medium line-clamp-2">
+      <p className="mt-1.5 flex-1 text-xs text-[var(--text-secondary)] font-medium line-clamp-2">
         {project.description}
       </p>
 
