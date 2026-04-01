@@ -54,7 +54,7 @@ export default function AgentHubPage() {
             >
               <Search size={22} className="text-white" />
             </div>
-            <h3 className="text-lg font-extrabold uppercase text-[var(--foreground)]">Find Talent</h3>
+            <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)]">Find Talent</h2>
             <p className="mt-2 text-sm text-[var(--text-secondary)] font-medium">
               Describe your project and let VibeFinder Bot analyze every builder on the platform
               to find your perfect match.
@@ -84,7 +84,7 @@ export default function AgentHubPage() {
             >
               <Zap size={22} className="text-[var(--accent)]" />
             </div>
-            <h3 className="text-lg font-extrabold uppercase text-[var(--foreground)]">Evaluate Builder</h3>
+            <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)]">Evaluate Builder</h2>
             <p className="mt-2 text-sm text-[var(--text-secondary)] font-medium">
               Run a deep evaluation on any builder — analyzing git activity, streak consistency,
               project quality, and reputation.
@@ -115,7 +115,7 @@ export default function AgentHubPage() {
             >
               <Send size={22} className="text-[var(--foreground)]" />
             </div>
-            <h3 className="text-lg font-extrabold uppercase text-[var(--foreground)]">Quick Contact</h3>
+            <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)]">Quick Contact</h2>
             <p className="mt-2 text-sm text-[var(--text-secondary)] font-medium">
               Let VibeFinder Bot draft a personalized hire request based on the builder&apos;s profile,
               skills, and your project needs.
@@ -144,7 +144,7 @@ export default function AgentHubPage() {
             >
               <MessageCircle size={22} className="text-white" />
             </div>
-            <h3 className="text-lg font-extrabold uppercase text-white">Bot Chat</h3>
+            <h2 className="text-lg font-extrabold uppercase text-white">Bot Chat</h2>
             <p className="mt-2 text-sm text-[var(--text-muted-soft)] font-medium">
               Chat with VibeFinder Bot directly. Describe what you need and get instant
               talent recommendations.
@@ -165,7 +165,7 @@ export default function AgentHubPage() {
           boxShadow: "8px 8px 0 var(--accent)",
         }}
       >
-        <h2 className="text-2xl font-extrabold uppercase text-white mb-6">How VibeFinder Bot Works</h2>
+        <h2 className="text-2xl font-extrabold uppercase text-white mb-6">How It Works</h2>
         <div className="grid sm:grid-cols-4 gap-6">
           {[
             { step: "01", title: "Describe", text: "Tell the bot what you're building and what skills you need" },

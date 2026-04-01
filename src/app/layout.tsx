@@ -4,6 +4,7 @@ import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { siteUrl } from "@/lib/seo";
 import "./globals.css";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
@@ -17,9 +18,6 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
   subsets: ["latin"],
 });
-
-// Always use www — Vercel redirects non-www with 307 which breaks social media crawlers
-const siteUrl = "https://www.vibetalent.work";
 
 export const metadata: Metadata = {
   title: {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useLayoutEffect, useRef } from "react";
 
 interface ProfileHeatmapProps {
   data: Record<string, number>;
@@ -93,6 +93,15 @@ export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
   // Use GitHub's actual total when available; fall back to counting active days
   const total = ghTotal > 0 ? ghTotal : Object.values(mergedData).reduce((sum, v) => sum + (v > 0 ? v : 0), 0);
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const hasScrolledRef = useRef(false);
+  useLayoutEffect(() => {
+    if (scrollRef.current && !hasScrolledRef.current) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+      hasScrolledRef.current = true;
+    }
+  }, [weeks]);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -111,7 +120,7 @@ export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
           <span>More</span>
         </div>
       </div>
-      <div className="overflow-x-auto pb-2">
+      <div ref={scrollRef} className="overflow-x-auto pb-2">
         <div className="flex" style={{ paddingLeft: 32, marginBottom: 4 }}>
           {monthLabels.map((m, i) => {
             const nextCol = i < monthLabels.length - 1 ? monthLabels[i + 1].col : weeks.length;

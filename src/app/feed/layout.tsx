@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-
-const siteUrl = "https://www.vibetalent.work";
+import { siteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Live Feed — See What Builders Are Shipping",
@@ -45,5 +44,34 @@ export default function FeedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 2, name: "Feed", item: `${siteUrl}/feed` },
+    ],
+  };
+
+  const collectionLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "Live Network Feed",
+    description: "Real-time GitHub activity from vibe coders on VibeTalent",
+    url: `${siteUrl}/feed`,
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }}
+      />
+      {children}
+    </>
+  );
 }

@@ -3,15 +3,27 @@ import { ExploreContent } from "@/components/explore/explore-content";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Explore Talent",
+  title: "Explore Vibe Coders — Browse Developers by Streak & Skills",
   description:
     "Discover talented vibe coders. Filter by badge level, streak, tech stack, and more to find the perfect builder for your project.",
   alternates: {
     canonical: "https://www.vibetalent.work/explore",
   },
+  openGraph: {
+    title: "Explore Vibe Coders — VibeTalent",
+    description: "Browse developers by streak, skills, and vibe score. Find the perfect builder for your project.",
+    url: "https://www.vibetalent.work/explore",
+    siteName: "VibeTalent",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Explore Vibe Coders — VibeTalent",
+    description: "Browse developers by streak, skills, and vibe score. Find the perfect builder for your project.",
+  },
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function ExplorePage() {
   let users: Awaited<ReturnType<typeof fetchAllUsersCached>>;
@@ -56,6 +68,9 @@ export default async function ExplorePage() {
         <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">Explore Talent</h1>
         <p className="mt-2 text-[var(--text-secondary)] font-medium">
           Discover talented vibe coders and find the perfect builder for your project
+        </p>
+        <p className="mt-3 text-sm text-[var(--text-secondary)] leading-relaxed max-w-3xl">
+          Browse our community of vibe coders — developers who prove their skills through daily coding streaks, shipped projects, and peer endorsements. Use the filters below to narrow by tech stack, badge level, or minimum streak length and find the right builder for your next project.
         </p>
       </div>
 
