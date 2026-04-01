@@ -67,10 +67,15 @@ export function LiveActivityFeed() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    fetch("/api/feed?limit=20")
-      .then((r) => r.json())
-      .then((d) => { setFeed(d.feed || []); setLoaded(true); })
-      .catch(() => setLoaded(true));
+    function fetchFeed() {
+      fetch("/api/feed?limit=20")
+        .then((r) => r.json())
+        .then((d) => { setFeed(d.feed || []); setLoaded(true); })
+        .catch(() => setLoaded(true));
+    }
+    fetchFeed();
+    const interval = setInterval(fetchFeed, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const grouped = useMemo(() => groupFeedItems(feed).slice(0, 6), [feed]);
