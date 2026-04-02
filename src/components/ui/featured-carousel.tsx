@@ -3,20 +3,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { Megaphone, ChevronLeft, ChevronRight, ExternalLink, Clock, Sparkles, Wallet, Loader2, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { encodeFunctionData, parseAbi } from "viem";
 
 const CONTRACT_ADDR = "0x2cDB438f418f5cb53e8Ea87cFD981397FDe3d0da";
 const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const BASE_CHAIN_ID = 8453;
 const BASE_RPC = "https://mainnet.base.org";
 
-// Function selectors (keccak256 of signature, first 4 bytes)
+// Function selectors (keccak256 of signature, first 4 bytes) — read-only calls
 const SEL = {
   getActivePromotions: "0x5fd2d522",
   getPrices: "0xbd9a548b",
-  promote: "0x511c3fa5",
-  approve: "0x095ea7b3",
-  allowance: "0xdd62ed3e",
-  balanceOf: "0x70a08231",
 };
 
 const PACKAGES = [
@@ -133,63 +130,16 @@ async function fetchPromotions(): Promise<Promotion[]> {
   }
 }
 
-// ── ABI encoding helpers for wallet transactions ──
+// ── ABI definitions for viem encoding ──
 
-function padLeft(hex: string, bytes: number): string {
-  return hex.padStart(bytes * 2, "0");
-}
+const PROMOTE_ABI = parseAbi([
+  "function promote(string projectId, string projectName, uint8 package_, uint256 maxPrice)",
+]);
 
-function encodeUint256(n: number | bigint): string {
-  return padLeft(BigInt(n).toString(16), 32);
-}
-
-function encodeAddress(addr: string): string {
-  return padLeft(addr.replace("0x", "").toLowerCase(), 32);
-}
-
-function encodeString(s: string): string {
-  const hex = Array.from(new TextEncoder().encode(s))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  const paddedLen = Math.ceil(hex.length / 64) * 64;
-  return encodeUint256(s.length) + hex.padEnd(paddedLen, "0");
-}
-
-// promote(string projectId, string projectName, uint8 package_, uint256 maxPrice)
-function encodePromoteCalldata(
-  projectId: string,
-  projectName: string,
-  pkg: number,
-  maxPrice: bigint
-): string {
-  // Head: 4 offsets for (string, string, uint8, uint256)
-  // string offsets point to tail data, uint8 and uint256 are inline
-  const headSlots = 4; // 4 params
-  const pidEncoded = encodeString(projectId);
-  const pnameEncoded = encodeString(projectName);
-
-  // Offsets: projectId at slot 4*32=128, projectName after that
-  const pidOffset = headSlots * 32;
-  const pnameOffset = pidOffset + pidEncoded.length / 2;
-
-  return (
-    SEL.promote +
-    encodeUint256(pidOffset) + // offset to projectId
-    encodeUint256(pnameOffset) + // offset to projectName
-    encodeUint256(pkg) + // package_ (uint8 but padded to 32)
-    encodeUint256(maxPrice) + // maxPrice
-    pidEncoded +
-    pnameEncoded
-  );
-}
-
-function encodeApproveCalldata(spender: string, amount: bigint): string {
-  return SEL.approve + encodeAddress(spender) + encodeUint256(amount);
-}
-
-function encodeAllowanceCalldata(owner: string, spender: string): string {
-  return SEL.allowance + encodeAddress(owner) + encodeAddress(spender);
-}
+const ERC20_ABI = parseAbi([
+  "function approve(address spender, uint256 amount) returns (bool)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+]);
 
 async function fetchPrices(): Promise<bigint[]> {
   try {
@@ -216,32 +166,10 @@ async function fetchPrices(): Promise<bigint[]> {
   }
 }
 
-// ── Ethereum wallet helpers ──
+// ── Ethereum provider type (from Privy wallet) ──
 
 interface EthereumProvider {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-  on: (event: string, cb: (...args: unknown[]) => void) => void;
-}
-
-function getEthereum(): EthereumProvider | null {
-  if (typeof window !== "undefined" && (window as unknown as { ethereum?: EthereumProvider }).ethereum) {
-    return (window as unknown as { ethereum: EthereumProvider }).ethereum;
-  }
-  return null;
-}
-
-async function ensureBaseChain(ethereum: EthereumProvider): Promise<boolean> {
-  const chainId = (await ethereum.request({ method: "eth_chainId" })) as string;
-  if (parseInt(chainId, 16) === BASE_CHAIN_ID) return true;
-  try {
-    await ethereum.request({
-      method: "wallet_switchEthereumChain",
-      params: [{ chainId: "0x" + BASE_CHAIN_ID.toString(16) }],
-    });
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 function shortAddr(addr: string): string {
@@ -265,8 +193,9 @@ export function FeaturedCarousel() {
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const { ready: privyReady } = usePrivy();
 
-  // Check if user is logged in
+  // Check if user is logged in (Supabase auth, not Privy)
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -485,7 +414,10 @@ export function FeaturedCarousel() {
 type UserProject = { id: string; title: string };
 
 function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLoggedIn: boolean }) {
-  const [wallet, setWallet] = useState<string | null>(null);
+  const { login: privyLogin, authenticated: privyAuthenticated, ready: privyReady } = usePrivy();
+  const { wallets } = useWallets();
+  const connectedWallet = wallets[0];
+
   const [prices, setPrices] = useState<bigint[]>(FALLBACK_PRICES);
   const [selectedPkg, setSelectedPkg] = useState(2); // default 7 days
   const [projects, setProjects] = useState<UserProject[]>([]);
@@ -494,63 +426,73 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
   const [status, setStatus] = useState<{ msg: string; type: "info" | "error" | "success" } | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Load prices + user's projects on mount
+  // Load prices on mount
   useEffect(() => {
     fetchPrices().then(setPrices);
+  }, []);
 
+  // Load user's projects + listen for auth changes
+  useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) { setLoadingProjects(false); return; }
+
+    const loadProjects = (userId: string) => {
       supabase
         .from("projects")
         .select("id, title")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .then(({ data }) => {
           setProjects(data || []);
           setLoadingProjects(false);
         });
+    };
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) { setLoadingProjects(false); return; }
+      loadProjects(user.id);
     });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || !session?.user) {
+        setProjects([]);
+        setSelectedProject("");
+        setLoadingProjects(false);
+      } else if (event === "SIGNED_IN" && session?.user) {
+        loadProjects(session.user.id);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  async function connectWallet() {
-    const ethereum = getEthereum();
-    if (!ethereum) {
-      setStatus({ msg: "Install MetaMask to continue", type: "error" });
+  async function handleConnectWallet() {
+    if (!isLoggedIn) {
+      window.location.href = "/auth/login?redirect=/&reason=promote";
       return;
     }
-    try {
-      const accounts = (await ethereum.request({ method: "eth_requestAccounts" })) as string[];
-      if (accounts[0]) {
-        const ok = await ensureBaseChain(ethereum);
-        if (!ok) {
-          setStatus({ msg: "Please switch to Base network", type: "error" });
-          return;
-        }
-        setWallet(accounts[0].toLowerCase());
-        setStatus(null);
-      }
-    } catch {
-      setStatus({ msg: "Wallet connection failed", type: "error" });
-    }
+    privyLogin();
   }
 
   async function handlePromote() {
     const project = projects.find((p) => p.id === selectedProject);
-    if (!wallet || !project) {
+    if (!connectedWallet || !project) {
       setStatus({ msg: "Select a project first", type: "error" });
       return;
     }
-
-    const ethereum = getEthereum();
-    if (!ethereum) return;
 
     const price = prices[selectedPkg];
     setBusy(true);
 
     try {
+      const provider = await connectedWallet.getEthereumProvider() as EthereumProvider;
+      const walletAddr = connectedWallet.address.toLowerCase();
+
       setStatus({ msg: "Checking USDC allowance...", type: "info" });
-      const allowanceData = encodeAllowanceCalldata(wallet, CONTRACT_ADDR);
+      const allowanceData = encodeFunctionData({
+        abi: ERC20_ABI,
+        functionName: "allowance",
+        args: [walletAddr as `0x${string}`, CONTRACT_ADDR as `0x${string}`],
+      });
       const allowanceRes = await fetch(BASE_RPC, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -564,20 +506,28 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
 
       if (currentAllowance < price) {
         setStatus({ msg: `Approving $${(Number(price) / 1e6).toFixed(2)} USDC...`, type: "info" });
-        const approveTx = encodeApproveCalldata(CONTRACT_ADDR, price);
-        const approveTxHash = await ethereum.request({
+        const approveData = encodeFunctionData({
+          abi: ERC20_ABI,
+          functionName: "approve",
+          args: [CONTRACT_ADDR as `0x${string}`, price],
+        });
+        const approveTxHash = await provider.request({
           method: "eth_sendTransaction",
-          params: [{ from: wallet, to: USDC_ADDR, data: approveTx }],
+          params: [{ from: walletAddr, to: USDC_ADDR, data: approveData }],
         });
         setStatus({ msg: "Waiting for approval...", type: "info" });
         await waitForTx(approveTxHash as string);
       }
 
       setStatus({ msg: `Promoting "${project.title}"...`, type: "info" });
-      const promoteData = encodePromoteCalldata(project.id, project.title, selectedPkg, price);
-      const txHash = await ethereum.request({
+      const promoteData = encodeFunctionData({
+        abi: PROMOTE_ABI,
+        functionName: "promote",
+        args: [project.id, project.title, selectedPkg, price],
+      });
+      const txHash = await provider.request({
         method: "eth_sendTransaction",
-        params: [{ from: wallet, to: CONTRACT_ADDR, data: promoteData }],
+        params: [{ from: walletAddr, to: CONTRACT_ADDR, data: promoteData }],
       });
       setStatus({ msg: "Waiting for confirmation...", type: "info" });
       await waitForTx(txHash as string);
@@ -599,7 +549,7 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
 
   return (
     <div
-      className="mt-8 p-6"
+      className="mt-8 p-6 max-w-xl"
       style={{
         border: "2px solid var(--border-hard)",
         boxShadow: "var(--shadow-brutal-sm)",
@@ -610,12 +560,11 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
         Feature Your Project
       </h3>
 
-      {!wallet ? (
+      {!privyReady ? (
+        <p className="text-sm font-bold text-[var(--text-muted)] animate-pulse">Loading wallet...</p>
+      ) : !isLoggedIn || !privyAuthenticated || !connectedWallet ? (
         <button
-          onClick={() => {
-            if (!isLoggedIn) { window.location.href = "/auth/login?redirect=/&reason=promote"; return; }
-            connectWallet();
-          }}
+          onClick={handleConnectWallet}
           className="btn-brutal btn-brutal-primary text-sm flex items-center gap-2"
         >
           <Wallet size={16} /> Pay with USDC
@@ -623,7 +572,7 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
       ) : (
         <div className="space-y-4">
           <p className="text-xs font-bold text-[var(--text-muted)] font-mono">
-            Connected: {shortAddr(wallet)}
+            Connected: {shortAddr(connectedWallet.address)}
           </p>
 
           {/* Project dropdown */}
