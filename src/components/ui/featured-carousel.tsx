@@ -567,7 +567,7 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
 
   return (
     <div
-      className="mt-8 p-6"
+      className="mt-8 p-6 max-w-xl"
       style={{
         border: "2px solid var(--border-hard)",
         boxShadow: "var(--shadow-brutal-sm)",
