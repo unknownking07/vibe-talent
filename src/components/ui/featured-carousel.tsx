@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Megaphone, ChevronLeft, ChevronRight, ExternalLink, Clock, Sparkles, Wallet, Loader2, Check, CreditCard } from "lucide-react";
+import { Megaphone, ChevronLeft, ChevronRight, ExternalLink, Clock, Sparkles, Wallet, Loader2, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const CONTRACT_ADDR = "0x2cDB438f418f5cb53e8Ea87cFD981397FDe3d0da";
@@ -484,33 +484,7 @@ export function FeaturedCarousel() {
 
 type UserProject = { id: string; title: string };
 
-function loadRazorpayScript(): Promise<boolean> {
-  return new Promise((resolve) => {
-    // Already loaded and ready
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((window as any).Razorpay) {
-      resolve(true);
-      return;
-    }
-    // Script tag exists but not loaded yet — wait for it
-    const existing = document.getElementById("razorpay-script");
-    if (existing) {
-      existing.addEventListener("load", () => resolve(true));
-      existing.addEventListener("error", () => resolve(false));
-      return;
-    }
-    // Load fresh
-    const script = document.createElement("script");
-    script.id = "razorpay-script";
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-}
-
 function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLoggedIn: boolean }) {
-  const [payMethod, setPayMethod] = useState<"crypto" | "fiat" | null>(null);
   const [wallet, setWallet] = useState<string | null>(null);
   const [prices, setPrices] = useState<bigint[]>(FALLBACK_PRICES);
   const [selectedPkg, setSelectedPkg] = useState(2); // default 7 days
@@ -554,7 +528,6 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
           return;
         }
         setWallet(accounts[0].toLowerCase());
-        setPayMethod("crypto");
         setStatus(null);
       }
     } catch {
@@ -562,7 +535,7 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
     }
   }
 
-  async function handlePromoteCrypto() {
+  async function handlePromote() {
     const project = projects.find((p) => p.id === selectedProject);
     if (!wallet || !project) {
       setStatus({ msg: "Select a project first", type: "error" });
@@ -620,74 +593,9 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
     }
   }
 
-  async function handlePromoteFiat() {
-    const project = projects.find((p) => p.id === selectedProject);
-    if (!project) {
-      setStatus({ msg: "Select a project first", type: "error" });
-      return;
-    }
-
-    setBusy(true);
-    setStatus({ msg: "Creating order...", type: "info" });
-
-    try {
-      const res = await fetch("/api/promote/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          project_id: project.id,
-          project_title: project.title,
-          package_index: selectedPkg,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to create order");
-      }
-
-      const { order_id, amount, currency, key_id } = await res.json();
-
-      const loaded = await loadRazorpayScript();
-      if (!loaded) {
-        throw new Error("Failed to load payment gateway");
-      }
-
-      setStatus(null);
-
-      const options = {
-        key: key_id,
-        amount,
-        currency,
-        name: "VibeTalent",
-        description: `Promote "${project.title}" — ${PACKAGES[selectedPkg].label}`,
-        order_id,
-        handler: () => {
-          setStatus({ msg: `"${project.title}" is now featured!`, type: "success" });
-          setSelectedProject("");
-          onSuccess();
-        },
-        theme: { color: "#000000" },
-      };
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rzp = new (window as any).Razorpay(options);
-      rzp.on("payment.failed", (response: { error?: { description?: string } }) => {
-        setStatus({ msg: response.error?.description || "Payment failed", type: "error" });
-      });
-      rzp.open();
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Payment failed";
-      setStatus({ msg, type: "error" });
-    } finally {
-      setBusy(false);
-    }
-  }
-
   const currentPrice = prices[selectedPkg];
   const priceStr = `$${(Number(currentPrice) / 1e6).toFixed(2)}`;
   const hasProject = selectedProject !== "";
-  const showForm = payMethod === "crypto" ? !!wallet : payMethod === "fiat";
 
   return (
     <div
@@ -702,62 +610,21 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
         Feature Your Project
       </h3>
 
-      {!showForm ? (
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={() => {
-              if (!isLoggedIn) { window.location.href = "/auth/login?redirect=/&reason=promote"; return; }
-              connectWallet();
-            }}
-            className="btn-brutal btn-brutal-primary text-sm flex items-center gap-2"
-          >
-            <Wallet size={16} /> Pay with USDC
-          </button>
-          <button
-            onClick={() => {
-              if (!isLoggedIn) { window.location.href = "/auth/login?redirect=/&reason=promote"; return; }
-              setPayMethod("fiat");
-            }}
-            className="btn-brutal text-sm flex items-center gap-2"
-            style={{
-              border: "2px solid var(--border-hard)",
-              boxShadow: "var(--shadow-brutal-xs)",
-              backgroundColor: "var(--bg-surface)",
-              color: "var(--foreground)",
-            }}
-          >
-            <CreditCard size={16} /> Pay with Card
-          </button>
-        </div>
+      {!wallet ? (
+        <button
+          onClick={() => {
+            if (!isLoggedIn) { window.location.href = "/auth/login?redirect=/&reason=promote"; return; }
+            connectWallet();
+          }}
+          className="btn-brutal btn-brutal-primary text-sm flex items-center gap-2"
+        >
+          <Wallet size={16} /> Connect Wallet
+        </button>
       ) : (
         <div className="space-y-4">
-          {payMethod === "crypto" && wallet && (
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold text-[var(--text-muted)] font-mono">
-                Connected: {shortAddr(wallet)}
-              </p>
-              <button
-                onClick={() => { setPayMethod(null); setWallet(null); setStatus(null); }}
-                className="text-[10px] font-bold uppercase text-[var(--text-muted)] hover:text-[var(--foreground)]"
-              >
-                Change method
-              </button>
-            </div>
-          )}
-
-          {payMethod === "fiat" && (
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold text-[var(--text-muted)] flex items-center gap-1">
-                <CreditCard size={12} /> Paying with card (USD)
-              </p>
-              <button
-                onClick={() => { setPayMethod(null); setStatus(null); }}
-                className="text-[10px] font-bold uppercase text-[var(--text-muted)] hover:text-[var(--foreground)]"
-              >
-                Change method
-              </button>
-            </div>
-          )}
+          <p className="text-xs font-bold text-[var(--text-muted)] font-mono">
+            Connected: {shortAddr(wallet)}
+          </p>
 
           {/* Project dropdown */}
           <div>
@@ -846,31 +713,17 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
             </div>
           )}
 
-          {payMethod === "crypto" ? (
-            <button
-              onClick={handlePromoteCrypto}
-              disabled={busy || !hasProject}
-              className="btn-brutal btn-brutal-primary text-sm w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {busy ? (
-                <><Loader2 size={16} className="animate-spin" /> Processing...</>
-              ) : (
-                <><Check size={16} /> Approve {priceStr} USDC &amp; Promote</>
-              )}
-            </button>
-          ) : (
-            <button
-              onClick={handlePromoteFiat}
-              disabled={busy || !hasProject}
-              className="btn-brutal btn-brutal-primary text-sm w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {busy ? (
-                <><Loader2 size={16} className="animate-spin" /> Processing...</>
-              ) : (
-                <><CreditCard size={16} /> Pay {priceStr} &amp; Promote</>
-              )}
-            </button>
-          )}
+          <button
+            onClick={handlePromote}
+            disabled={busy || !hasProject}
+            className="btn-brutal btn-brutal-primary text-sm w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {busy ? (
+              <><Loader2 size={16} className="animate-spin" /> Processing...</>
+            ) : (
+              <><Check size={16} /> Approve {priceStr} USDC &amp; Promote</>
+            )}
+          </button>
         </div>
       )}
     </div>
