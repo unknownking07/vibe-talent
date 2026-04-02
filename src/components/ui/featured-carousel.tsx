@@ -486,10 +486,20 @@ type UserProject = { id: string; title: string };
 
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
-    if (document.getElementById("razorpay-script")) {
+    // Already loaded and ready
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((window as any).Razorpay) {
       resolve(true);
       return;
     }
+    // Script tag exists but not loaded yet — wait for it
+    const existing = document.getElementById("razorpay-script");
+    if (existing) {
+      existing.addEventListener("load", () => resolve(true));
+      existing.addEventListener("error", () => resolve(false));
+      return;
+    }
+    // Load fresh
     const script = document.createElement("script");
     script.id = "razorpay-script";
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
