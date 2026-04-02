@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Flame,
   Github,
@@ -45,7 +45,9 @@ const STEP_LABELS = ["Profile", "Links", "Project", "Go!"] as const;
 
 export default function ProfileSetupPage() {
   const router = useRouter();
-  const [step, setStep] = useState(1);
+  const searchParams = useSearchParams();
+  const initialStep = Number(searchParams.get("step")) || 1;
+  const [step, setStep] = useState(initialStep);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
@@ -93,9 +95,27 @@ export default function ProfileSetupPage() {
         user.user_metadata?.picture ||
         null;
       setOauthAvatarUrl(avatar);
+
+      // If returning user redirected to step 2, pre-fill existing socials
+      if (initialStep === 2) {
+        const supabase = createClient();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data } = await (supabase.from("social_links") as any)
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+        if (data) {
+          setSocials({
+            github: data.github || "",
+            twitter: data.twitter || "",
+            website: data.website || "",
+            telegram: data.telegram || "",
+          });
+        }
+      }
     };
     checkAuth();
-  }, [router]);
+  }, [router, initialStep]);
 
   /* ── Helpers ─────────────────────────────────────────────── */
 
@@ -144,8 +164,13 @@ export default function ProfileSetupPage() {
   };
 
   const handleStep2Next = async () => {
+    const github = socials.github.trim();
     const twitter = socials.twitter.trim();
     const telegram = socials.telegram.trim();
+    if (!github) {
+      setError("GitHub username is required so we can verify your work.");
+      return;
+    }
     if (!twitter && !telegram) {
       setError("Please add your X (Twitter) or Telegram so clients can contact you.");
       return;
@@ -175,7 +200,12 @@ export default function ProfileSetupPage() {
         if (dbError) throw dbError;
       }
 
-      setStep(3);
+      // If returning user (came from dashboard redirect), skip to streak step
+      if (initialStep === 2) {
+        setStep(4);
+      } else {
+        setStep(3);
+      }
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to save links";
@@ -387,7 +417,7 @@ export default function ProfileSetupPage() {
             Social Links
           </h2>
           <p className="text-xs text-[var(--text-secondary)] font-medium">
-            X or Telegram required so clients can reach you
+            GitHub required + X or Telegram so clients can reach you
           </p>
         </div>
       </div>
@@ -398,8 +428,9 @@ export default function ProfileSetupPage() {
           type="text"
           value={socials.github}
           onChange={(e) => setSocials({ ...socials, github: e.target.value })}
-          placeholder="GitHub username"
+          placeholder="GitHub username *"
           className="input-brutal w-full"
+          required
         />
       </div>
 
