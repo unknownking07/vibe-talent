@@ -17,7 +17,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://*.supabase.co https://avatars.githubusercontent.com https://lh3.googleusercontent.com https://cdn.jsdelivr.net https://unavatar.io https://www.google-analytics.com",
       "font-src 'self'",
-      "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://api.github.com",
+      "connect-src 'self' https://*.supabase.co https://www.google-analytics.com https://api.github.com https://mainnet.base.org",
       "frame-ancestors 'none'",
     ].join("; "),
   },
