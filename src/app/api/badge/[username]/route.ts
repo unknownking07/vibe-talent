@@ -83,11 +83,11 @@ export async function GET(
 
       <!-- Streak -->
       <rect x="${streakX}" y="0" width="${streakW}" height="${h}" fill="#1A1A1A"/>
-      <text x="${streakX + streakW / 2}" y="${textY}" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="12" font-weight="600" fill="${colors.accent}">${user.streak}d streak</text>
+      <text x="${streakX + streakW / 2}" y="${textY}" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="12" font-weight="600" fill="#FFFFFF">${user.streak}d streak</text>
 
       <!-- Vibe Score -->
       <rect x="${scoreX}" y="0" width="${scoreW}" height="${h}" fill="${colors.bg}"/>
-      <text x="${scoreX + scoreW / 2}" y="${textY}" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="12" font-weight="600" fill="${colors.accent}">${user.vibe_score} vibe</text>
+      <text x="${scoreX + scoreW / 2}" y="${textY}" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="12" font-weight="600" fill="#FFFFFF">${user.vibe_score} vibe</text>
 
       ${badgeLabel ? `
       <!-- Badge Level -->
