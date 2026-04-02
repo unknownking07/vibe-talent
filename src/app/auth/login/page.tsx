@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { Flame, Github, Mail, Lock } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Flame, Github, Mail, Lock, Megaphone } from "lucide-react";
 import OAuthConsentModal from "@/components/auth/oauth-consent-modal";
 
 export default function LoginPage() {
@@ -12,6 +13,9 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [consentProvider, setConsentProvider] = useState<"github" | "google" | null>(null);
+  const searchParams = useSearchParams();
+  const reason = searchParams.get("reason");
+  const redirectTo = searchParams.get("redirect") || "/dashboard";
 
   // Redirect already-authenticated users to dashboard
   useEffect(() => {
@@ -36,7 +40,7 @@ export default function LoginPage() {
       setLoading(false);
     } else {
       // Full reload to clear stale router cache and pick up fresh auth state
-      window.location.href = "/dashboard";
+      window.location.href = redirectTo;
     }
   };
 
@@ -74,6 +78,22 @@ export default function LoginPage() {
           Sign in to your VibeTalent account
         </p>
       </div>
+
+      {reason === "promote" && (
+        <div
+          className="mb-4 p-4 flex items-start gap-3"
+          style={{
+            backgroundColor: "var(--bg-surface)",
+            border: "2px solid var(--accent)",
+            boxShadow: "var(--shadow-brutal-sm)",
+          }}
+        >
+          <Megaphone size={18} className="mt-0.5 shrink-0" style={{ color: "var(--accent)" }} />
+          <p className="text-sm font-bold text-[var(--foreground)]">
+            Sign in to promote your project on the VibeTalent homepage. It only takes a few seconds!
+          </p>
+        </div>
+      )}
 
       <div
         className="p-6 space-y-5"
