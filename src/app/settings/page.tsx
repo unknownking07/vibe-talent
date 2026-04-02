@@ -260,7 +260,7 @@ export default function SettingsPage() {
               onClick={() => avatarInputRef.current?.click()}
             >
               {user.avatar_url ? (
-                <Image src={user.avatar_url} alt={user.username} width={80} height={80} className="w-full h-full object-cover" />
+                <Image src={user.avatar_url} alt={user.username} width={80} height={80} className="w-full h-full object-cover" unoptimized />
               ) : (
                 user.username.slice(0, 2).toUpperCase()
               )}
