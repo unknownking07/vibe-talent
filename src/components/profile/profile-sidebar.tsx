@@ -123,6 +123,7 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
                 width={128}
                 height={128}
                 className="w-full h-full object-cover"
+                unoptimized
               />
             ) : (
               initials

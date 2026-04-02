@@ -208,6 +208,7 @@ export function Navbar() {
                     height={48}
                     className="w-full h-full object-cover"
                     style={{ borderRadius: "50%" }}
+                    unoptimized
                   />
                 ) : (
                   <span className="text-sm font-extrabold text-white">{initials}</span>
@@ -317,6 +318,7 @@ export function Navbar() {
                     height={36}
                     className="w-full h-full object-cover"
                     style={{ borderRadius: "50%" }}
+                    unoptimized
                   />
                 ) : (
                   <span className="text-xs font-extrabold text-white">{initials}</span>

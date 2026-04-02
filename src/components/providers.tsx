@@ -15,16 +15,16 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <PrivyProvider
       appId={appId}
       config={{
-        loginMethods: ["wallet"],
+        loginMethods: ["wallet", "email"],
         defaultChain: base,
         supportedChains: [base],
         appearance: {
-          walletList: ["metamask", "rainbow", "wallet_connect", "coinbase_wallet"],
+          walletList: ["rabby_wallet", "metamask", "coinbase_wallet", "rainbow", "wallet_connect"],
           walletChainType: "ethereum-only",
         },
         embeddedWallets: {
           ethereum: {
-            createOnLogin: "off",
+            createOnLogin: "users-without-wallets",
           },
         },
       }}

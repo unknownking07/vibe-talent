@@ -61,7 +61,7 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
             }}
           >
             {user.avatar_url ? (
-              <Image src={user.avatar_url} alt={user.username} width={48} height={48} className="w-full h-full object-cover" />
+              <Image src={user.avatar_url} alt={user.username} width={48} height={48} className="w-full h-full object-cover" unoptimized />
             ) : (
               initials
             )}

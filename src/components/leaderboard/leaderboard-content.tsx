@@ -117,7 +117,7 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                 }}
               >
                 {user.avatar_url ? (
-                  <Image src={user.avatar_url} alt={user.username} width={64} height={64} className="w-full h-full object-cover" />
+                  <Image src={user.avatar_url} alt={user.username} width={64} height={64} className="w-full h-full object-cover" unoptimized />
                 ) : (
                   initials
                 )}
@@ -176,7 +176,7 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                         style={{ backgroundColor: "var(--bg-inverted)", border: "2px solid var(--border-hard)" }}
                       >
                         {user.avatar_url ? (
-                          <Image src={user.avatar_url} alt={user.username} width={64} height={64} className="w-full h-full object-cover" />
+                          <Image src={user.avatar_url} alt={user.username} width={64} height={64} className="w-full h-full object-cover" unoptimized />
                         ) : (
                           initials
                         )}
