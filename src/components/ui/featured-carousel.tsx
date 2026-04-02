@@ -4,19 +4,16 @@ import { useState, useEffect, useCallback } from "react";
 import { Megaphone, ChevronLeft, ChevronRight, ExternalLink, Clock, Sparkles, Wallet, Loader2, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { encodeFunctionData, parseAbi } from "viem";
 
 const CONTRACT_ADDR = "0x2cDB438f418f5cb53e8Ea87cFD981397FDe3d0da";
 const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const BASE_RPC = "https://mainnet.base.org";
 
-// Function selectors (keccak256 of signature, first 4 bytes)
+// Function selectors (keccak256 of signature, first 4 bytes) — read-only calls
 const SEL = {
   getActivePromotions: "0x5fd2d522",
   getPrices: "0xbd9a548b",
-  promote: "0x511c3fa5",
-  approve: "0x095ea7b3",
-  allowance: "0xdd62ed3e",
-  balanceOf: "0x70a08231",
 };
 
 const PACKAGES = [
@@ -133,63 +130,16 @@ async function fetchPromotions(): Promise<Promotion[]> {
   }
 }
 
-// ── ABI encoding helpers for wallet transactions ──
+// ── ABI definitions for viem encoding ──
 
-function padLeft(hex: string, bytes: number): string {
-  return hex.padStart(bytes * 2, "0");
-}
+const PROMOTE_ABI = parseAbi([
+  "function promote(string projectId, string projectName, uint8 package_, uint256 maxPrice)",
+]);
 
-function encodeUint256(n: number | bigint): string {
-  return padLeft(BigInt(n).toString(16), 32);
-}
-
-function encodeAddress(addr: string): string {
-  return padLeft(addr.replace("0x", "").toLowerCase(), 32);
-}
-
-function encodeString(s: string): string {
-  const hex = Array.from(new TextEncoder().encode(s))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  const paddedLen = Math.ceil(hex.length / 64) * 64;
-  return encodeUint256(s.length) + hex.padEnd(paddedLen, "0");
-}
-
-// promote(string projectId, string projectName, uint8 package_, uint256 maxPrice)
-function encodePromoteCalldata(
-  projectId: string,
-  projectName: string,
-  pkg: number,
-  maxPrice: bigint
-): string {
-  // Head: 4 offsets for (string, string, uint8, uint256)
-  // string offsets point to tail data, uint8 and uint256 are inline
-  const headSlots = 4; // 4 params
-  const pidEncoded = encodeString(projectId);
-  const pnameEncoded = encodeString(projectName);
-
-  // Offsets: projectId at slot 4*32=128, projectName after that
-  const pidOffset = headSlots * 32;
-  const pnameOffset = pidOffset + pidEncoded.length / 2;
-
-  return (
-    SEL.promote +
-    encodeUint256(pidOffset) + // offset to projectId
-    encodeUint256(pnameOffset) + // offset to projectName
-    encodeUint256(pkg) + // package_ (uint8 but padded to 32)
-    encodeUint256(maxPrice) + // maxPrice
-    pidEncoded +
-    pnameEncoded
-  );
-}
-
-function encodeApproveCalldata(spender: string, amount: bigint): string {
-  return SEL.approve + encodeAddress(spender) + encodeUint256(amount);
-}
-
-function encodeAllowanceCalldata(owner: string, spender: string): string {
-  return SEL.allowance + encodeAddress(owner) + encodeAddress(spender);
-}
+const ERC20_ABI = parseAbi([
+  "function approve(address spender, uint256 amount) returns (bool)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+]);
 
 async function fetchPrices(): Promise<bigint[]> {
   try {
@@ -476,23 +426,43 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
   const [status, setStatus] = useState<{ msg: string; type: "info" | "error" | "success" } | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Load prices + user's projects on mount
+  // Load prices on mount
   useEffect(() => {
     fetchPrices().then(setPrices);
+  }, []);
 
+  // Load user's projects + listen for auth changes
+  useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) { setLoadingProjects(false); return; }
+
+    const loadProjects = (userId: string) => {
       supabase
         .from("projects")
         .select("id, title")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .then(({ data }) => {
           setProjects(data || []);
           setLoadingProjects(false);
         });
+    };
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) { setLoadingProjects(false); return; }
+      loadProjects(user.id);
     });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || !session?.user) {
+        setProjects([]);
+        setSelectedProject("");
+        setLoadingProjects(false);
+      } else if (event === "SIGNED_IN" && session?.user) {
+        loadProjects(session.user.id);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   async function handleConnectWallet() {
@@ -518,7 +488,11 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
       const walletAddr = connectedWallet.address.toLowerCase();
 
       setStatus({ msg: "Checking USDC allowance...", type: "info" });
-      const allowanceData = encodeAllowanceCalldata(walletAddr, CONTRACT_ADDR);
+      const allowanceData = encodeFunctionData({
+        abi: ERC20_ABI,
+        functionName: "allowance",
+        args: [walletAddr as `0x${string}`, CONTRACT_ADDR as `0x${string}`],
+      });
       const allowanceRes = await fetch(BASE_RPC, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -532,17 +506,25 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
 
       if (currentAllowance < price) {
         setStatus({ msg: `Approving $${(Number(price) / 1e6).toFixed(2)} USDC...`, type: "info" });
-        const approveTx = encodeApproveCalldata(CONTRACT_ADDR, price);
+        const approveData = encodeFunctionData({
+          abi: ERC20_ABI,
+          functionName: "approve",
+          args: [CONTRACT_ADDR as `0x${string}`, price],
+        });
         const approveTxHash = await provider.request({
           method: "eth_sendTransaction",
-          params: [{ from: walletAddr, to: USDC_ADDR, data: approveTx }],
+          params: [{ from: walletAddr, to: USDC_ADDR, data: approveData }],
         });
         setStatus({ msg: "Waiting for approval...", type: "info" });
         await waitForTx(approveTxHash as string);
       }
 
       setStatus({ msg: `Promoting "${project.title}"...`, type: "info" });
-      const promoteData = encodePromoteCalldata(project.id, project.title, selectedPkg, price);
+      const promoteData = encodeFunctionData({
+        abi: PROMOTE_ABI,
+        functionName: "promote",
+        args: [project.id, project.title, selectedPkg, price],
+      });
       const txHash = await provider.request({
         method: "eth_sendTransaction",
         params: [{ from: walletAddr, to: CONTRACT_ADDR, data: promoteData }],
@@ -580,7 +562,7 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
 
       {!privyReady ? (
         <p className="text-sm font-bold text-[var(--text-muted)] animate-pulse">Loading wallet...</p>
-      ) : !privyAuthenticated || !connectedWallet ? (
+      ) : !isLoggedIn || !privyAuthenticated || !connectedWallet ? (
         <button
           onClick={handleConnectWallet}
           className="btn-brutal btn-brutal-primary text-sm flex items-center gap-2"
