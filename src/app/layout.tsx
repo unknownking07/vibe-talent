@@ -4,6 +4,7 @@ import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import Providers from "@/components/providers";
 import { siteUrl } from "@/lib/seo";
 import "./globals.css";
 
@@ -99,11 +100,13 @@ export default function RootLayout({
       <body
         className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        <Navbar />
-        <ErrorBoundary>
-          <main className="min-h-screen">{children}</main>
-        </ErrorBoundary>
-        <Footer />
+        <Providers>
+          <Navbar />
+          <ErrorBoundary>
+            <main className="min-h-screen">{children}</main>
+          </ErrorBoundary>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );
