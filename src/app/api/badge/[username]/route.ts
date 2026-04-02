@@ -10,12 +10,12 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
-const BADGE_COLORS: Record<string, { bg: string; accent: string }> = {
-  diamond: { bg: "#0E7490", accent: "#67E8F9" },
-  gold: { bg: "#A16207", accent: "#FDE68A" },
-  silver: { bg: "#52525B", accent: "#D4D4D8" },
-  bronze: { bg: "#B45309", accent: "#FCD34D" },
-  none: { bg: "#0F0F0F", accent: "#FF3A00" },
+const BADGE_COLORS: Record<string, { bg: string; accent: string; brandText: string }> = {
+  diamond: { bg: "#0E7490", accent: "#67E8F9", brandText: "#0E7490" },
+  gold: { bg: "#A16207", accent: "#FDE68A", brandText: "#A16207" },
+  silver: { bg: "#52525B", accent: "#D4D4D8", brandText: "#52525B" },
+  bronze: { bg: "#B45309", accent: "#FCD34D", brandText: "#B45309" },
+  none: { bg: "#0F0F0F", accent: "#FF3A00", brandText: "#FFFFFF" },
 };
 
 export async function GET(
@@ -38,9 +38,9 @@ export async function GET(
   }
 
   if (!user) {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="220" height="28" viewBox="0 0 220 28">
-      <rect width="220" height="28" rx="4" fill="#0F0F0F"/>
-      <text x="110" y="18" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#FFFFFF">VibeTalent — User not found</text>
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="32" viewBox="0 0 240 32">
+      <rect width="240" height="32" rx="5" fill="#0F0F0F"/>
+      <text x="120" y="21" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="600" fill="#FFFFFF">VibeTalent — User not found</text>
     </svg>`;
     return new NextResponse(svg, {
       status: 404,
@@ -54,14 +54,15 @@ export async function GET(
     : null;
 
   // Section widths
-  const brandW = 82;
-  const userW = Math.max(user.username.length * 7 + 24, 70);
-  const streakW = 72;
-  const scoreW = 64;
-  const badgeW = badgeLabel ? badgeLabel.length * 7 + 20 : 0;
+  const brandW = 90;
+  const userW = Math.max(user.username.length * 8 + 28, 80);
+  const streakW = 82;
+  const scoreW = 74;
+  const badgeW = badgeLabel ? badgeLabel.length * 8 + 24 : 0;
   const gap = 1;
   const totalW = brandW + gap + userW + gap + streakW + gap + scoreW + (badgeLabel ? gap + badgeW : 0);
-  const h = 28;
+  const h = 32;
+  const textY = 21;
 
   const brandX = 0;
   const userX = brandW + gap;
@@ -70,28 +71,28 @@ export async function GET(
   const badgeX = scoreX + scoreW + gap;
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${h}" viewBox="0 0 ${totalW} ${h}">
-    <clipPath id="rounded"><rect width="${totalW}" height="${h}" rx="4"/></clipPath>
+    <clipPath id="rounded"><rect width="${totalW}" height="${h}" rx="5"/></clipPath>
     <g clip-path="url(#rounded)">
       <!-- Brand -->
       <rect x="${brandX}" y="0" width="${brandW}" height="${h}" fill="${colors.accent}"/>
-      <text x="${brandX + brandW / 2}" y="18" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="${colors.bg}">VibeTalent</text>
+      <text x="${brandX + brandW / 2}" y="${textY}" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="700" fill="${colors.brandText}">VibeTalent</text>
 
       <!-- Username -->
       <rect x="${userX}" y="0" width="${userW}" height="${h}" fill="${colors.bg}"/>
-      <text x="${userX + userW / 2}" y="18" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="#FFFFFF">@${escapeXml(user.username)}</text>
+      <text x="${userX + userW / 2}" y="${textY}" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="12" font-weight="600" fill="#FFFFFF">@${escapeXml(user.username)}</text>
 
       <!-- Streak -->
       <rect x="${streakX}" y="0" width="${streakW}" height="${h}" fill="#1A1A1A"/>
-      <text x="${streakX + streakW / 2}" y="18" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="${colors.accent}">${user.streak}d streak</text>
+      <text x="${streakX + streakW / 2}" y="${textY}" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="12" font-weight="600" fill="${colors.accent}">${user.streak}d streak</text>
 
       <!-- Vibe Score -->
       <rect x="${scoreX}" y="0" width="${scoreW}" height="${h}" fill="${colors.bg}"/>
-      <text x="${scoreX + scoreW / 2}" y="18" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="600" fill="${colors.accent}">${user.vibe_score} vibe</text>
+      <text x="${scoreX + scoreW / 2}" y="${textY}" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="12" font-weight="600" fill="${colors.accent}">${user.vibe_score} vibe</text>
 
       ${badgeLabel ? `
       <!-- Badge Level -->
       <rect x="${badgeX}" y="0" width="${badgeW}" height="${h}" fill="${colors.accent}"/>
-      <text x="${badgeX + badgeW / 2}" y="18" text-anchor="middle" font-family="system-ui,sans-serif" font-size="11" font-weight="700" fill="${colors.bg}">${badgeLabel}</text>
+      <text x="${badgeX + badgeW / 2}" y="${textY}" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" font-weight="700" fill="${colors.brandText}">${badgeLabel}</text>
       ` : ""}
     </g>
   </svg>`;
