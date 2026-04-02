@@ -75,6 +75,15 @@ export default function DashboardPage() {
         window.location.href = "/auth/profile-setup";
         return;
       }
+
+      // Enforce mandatory socials: GitHub + (X or Telegram)
+      const hasGithub = socials?.github?.trim();
+      const hasTwitter = socials?.twitter?.trim();
+      const hasTelegram = socials?.telegram?.trim();
+      if (!hasGithub || (!hasTwitter && !hasTelegram)) {
+        window.location.href = "/auth/profile-setup?step=2";
+        return;
+      }
       setHeatmapData(streakData);
 
       // Calculate actual streak from streak_logs (in case DB trigger didn't run)

@@ -618,7 +618,7 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
           }}
           className="btn-brutal btn-brutal-primary text-sm flex items-center gap-2"
         >
-          <Wallet size={16} /> Connect Wallet
+          <Wallet size={16} /> Pay with USDC
         </button>
       ) : (
         <div className="space-y-4">
