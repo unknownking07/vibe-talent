@@ -23,6 +23,7 @@ export async function GET() {
       milestone_alerts: true,
       weekly_digest: true,
       hire_notifications: true,
+      re_engagement: true,
     });
   } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
@@ -48,6 +49,7 @@ export async function PATCH(req: Request) {
         milestone_alerts: body.milestone_alerts ?? true,
         weekly_digest: body.weekly_digest ?? true,
         hire_notifications: body.hire_notifications ?? true,
+        re_engagement: body.re_engagement ?? true,
         updated_at: new Date().toISOString(),
       });
 

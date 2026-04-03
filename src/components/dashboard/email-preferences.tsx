@@ -9,6 +9,7 @@ interface Preferences {
   milestone_alerts: boolean;
   weekly_digest: boolean;
   hire_notifications: boolean;
+  re_engagement: boolean;
 }
 
 const PREF_LABELS: { key: keyof Preferences; label: string; description: string }[] = [
@@ -17,6 +18,7 @@ const PREF_LABELS: { key: keyof Preferences; label: string; description: string 
   { key: "milestone_alerts", label: "Milestone Alerts", description: "Notifications for badge and vibe score milestones" },
   { key: "weekly_digest", label: "Weekly Digest", description: "Weekly recap of your stats and activity" },
   { key: "hire_notifications", label: "Hire Notifications", description: "Emails when someone wants to hire you" },
+  { key: "re_engagement", label: "Feedback Requests", description: "Occasional emails asking for your feedback if you've been away" },
 ];
 
 export function EmailPreferences() {
@@ -26,6 +28,7 @@ export function EmailPreferences() {
     milestone_alerts: true,
     weekly_digest: true,
     hire_notifications: true,
+    re_engagement: true,
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
