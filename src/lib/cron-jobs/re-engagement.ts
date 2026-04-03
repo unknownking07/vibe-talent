@@ -47,6 +47,21 @@ export async function runReEngagement(): Promise<{ sent: number; skipped: number
 
   const recentlyActiveIds = new Set((recentLogs || []).map((l: { user_id: string }) => l.user_id));
 
+  // Get last activity date per user for accurate "days since last active" in the email
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: lastActivityLogs } = await (sb as any)
+    .from("streak_logs")
+    .select("user_id, activity_date")
+    .in("user_id", userIds)
+    .order("activity_date", { ascending: false });
+
+  const lastActivityMap = new Map<string, string>();
+  for (const log of (lastActivityLogs || [])) {
+    if (!lastActivityMap.has(log.user_id)) {
+      lastActivityMap.set(log.user_id, log.activity_date);
+    }
+  }
+
   // Check email preferences
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: prefs } = await (sb as any)
@@ -70,26 +85,32 @@ export async function runReEngagement(): Promise<{ sent: number; skipped: number
   const skipped = users.length - targets.length;
 
   for (const user of targets) {
-    // Calculate days since signup
-    const signupDate = new Date(user.created_at);
-    const daysSince = Math.floor((Date.now() - signupDate.getTime()) / (1000 * 60 * 60 * 24));
+    // Calculate days since last activity (fall back to signup date if no activity)
+    const lastActivity = lastActivityMap.get(user.id);
+    const referenceDate = lastActivity ? new Date(lastActivity) : new Date(user.created_at);
+    const daysSince = Math.floor((Date.now() - referenceDate.getTime()) / (1000 * 60 * 60 * 24));
 
     // Get user email from auth
     const { data: authUser } = await sb.auth.admin.getUserById(user.id);
     if (!authUser?.user?.email) continue;
 
+    // Log first to prevent duplicates if email succeeds but log fails on retry
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: logError } = await (sb as any).from("email_log").insert({
+      user_id: user.id,
+      email_type: "re_engagement",
+      sent_at: new Date().toISOString(),
+    });
+
+    if (logError) {
+      console.error(`Failed to log re-engagement email for ${user.username}:`, logError);
+      continue;
+    }
+
     await sendReEngagementEmail({
       email: authUser.user.email,
       username: user.username,
       daysSinceLastActive: daysSince,
-    });
-
-    // Log that we sent this email so we don't send again
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (sb as any).from("email_log").insert({
-      user_id: user.id,
-      email_type: "re_engagement",
-      sent_at: new Date().toISOString(),
     });
 
     sent++;

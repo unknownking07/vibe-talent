@@ -22,27 +22,32 @@ function FeedbackForm() {
   const [wouldReturn, setWouldReturn] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reason) return;
 
     setSubmitting(true);
+    setError(false);
     try {
-      await fetch("/api/feedback", {
+      const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username,
           reason,
-          details,
+          details: details.slice(0, 2000),
           would_return: wouldReturn,
         }),
       });
-      setSubmitted(true);
+      if (res.ok) {
+        setSubmitted(true);
+      } else {
+        setError(true);
+      }
     } catch {
-      // Still show success — we don't want to frustrate them
-      setSubmitted(true);
+      setError(true);
     }
     setSubmitting(false);
   };
@@ -99,11 +104,17 @@ function FeedbackForm() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {error && (
+            <div className="p-3 text-sm font-bold text-red-600" style={{ border: "2px solid currentColor" }}>
+              Something went wrong. Please try again.
+            </div>
+          )}
+
           {/* Reason */}
-          <div>
-            <label className="block text-sm font-bold text-[var(--foreground)] mb-2">
+          <fieldset>
+            <legend className="block text-sm font-bold text-[var(--foreground)] mb-2">
               What made you stop using VibeTalent?
-            </label>
+            </legend>
             <div className="space-y-2">
               {REASONS.map((r) => (
                 <label
@@ -126,7 +137,7 @@ function FeedbackForm() {
                 </label>
               ))}
             </div>
-          </div>
+          </fieldset>
 
           {/* Details */}
           <div>
@@ -149,12 +160,13 @@ function FeedbackForm() {
             <label className="block text-sm font-bold text-[var(--foreground)] mb-2">
               Would you try VibeTalent again if we fixed this?
             </label>
-            <div className="flex gap-2">
+            <div className="flex gap-2" role="group" aria-label="Would you try VibeTalent again if we fixed this?">
               {["Yes", "Maybe", "No"].map((opt) => (
                 <button
                   key={opt}
                   type="button"
                   onClick={() => setWouldReturn(opt.toLowerCase())}
+                  aria-pressed={wouldReturn === opt.toLowerCase()}
                   className="flex-1 py-2 text-sm font-bold transition-colors"
                   style={{
                     border: wouldReturn === opt.toLowerCase() ? "2px solid var(--accent)" : "2px solid var(--border-subtle)",
