@@ -531,6 +531,71 @@ export async function sendVibeScoreMilestoneEmail({
 /**
  * Send an email when a builder receives a new review. Fire-and-forget.
  */
+/**
+ * Send a re-engagement email to inactive users asking for feedback. Fire-and-forget.
+ */
+export async function sendReEngagementEmail({
+  email,
+  username,
+  daysSinceLastActive,
+}: {
+  email: string;
+  username: string;
+  daysSinceLastActive: number;
+}): Promise<void> {
+  const client = getResend();
+  if (!client) return;
+
+  const siteUrl = getSiteUrl();
+  const safeUsername = escapeHtml(username);
+  const feedbackUrl = `${siteUrl}/feedback?ref=re-engagement&u=${encodeURIComponent(username)}`;
+
+  try {
+    await sendEmail(client, {
+      to: email,
+      subject: `We miss you on VibeTalent — quick question?`,
+      text: `Hey @${username}, we noticed you haven't been active on VibeTalent for ${daysSinceLastActive} days. We'd love to hear what happened — was something missing, confusing, or just not useful?\n\nTake 30 seconds to let us know: ${feedbackUrl}\n\nYour feedback genuinely shapes what we build next.\n\n— The VibeTalent Team\n\nUnsubscribe: ${unsubUrl(email)}`,
+      html: `
+        <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #0F0F0F; background: #FFFFFF;">
+          <div style="background: #0F0F0F; color: #FFFFFF; padding: 24px 32px;">
+            <h1 style="margin: 0; font-size: 20px; font-weight: 800;">⚡ VibeTalent</h1>
+          </div>
+          <div style="padding: 32px;">
+            <h2 style="color: #0F0F0F; font-size: 24px; font-weight: 700; margin: 0 0 16px;">
+              We'd love your honest feedback
+            </h2>
+            <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 16px;">
+              Hey <strong>@${safeUsername}</strong>, we noticed you haven't been on VibeTalent for <strong>${daysSinceLastActive} days</strong>.
+            </p>
+            <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
+              No guilt trip — we just want to understand what happened. Was something missing? Confusing? Not useful? Your feedback genuinely shapes what we build next.
+            </p>
+            <div style="border: 2px solid #0F0F0F; padding: 20px; margin: 0 0 24px; background: #FAFAFA;">
+              <p style="color: #0F0F0F; font-size: 14px; font-weight: 700; margin: 0 0 8px;">Quick question:</p>
+              <p style="color: #52525B; font-size: 14px; line-height: 1.5; margin: 0;">
+                What's the #1 thing that would bring you back?
+              </p>
+            </div>
+            <a href="${feedbackUrl}" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
+              Share Feedback (30 sec)
+            </a>
+            <a href="${siteUrl}/dashboard" style="display: inline-block; background: #FFFFFF; color: #0F0F0F; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F; margin-left: 12px;">
+              Back to VibeTalent
+            </a>
+          </div>
+          <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
+            <p style="color: #52525B; font-size: 12px; margin: 0;">
+              You received this because you haven't been active on VibeTalent recently. <a href="${unsubUrl(email)}" style="color: #52525B;">Unsubscribe</a>
+            </p>
+          </div>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error("Failed to send re-engagement email:", error);
+  }
+}
+
 export async function sendReviewNotificationEmail({
   email,
   username,
