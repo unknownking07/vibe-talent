@@ -95,7 +95,7 @@ function FeedbackForm() {
           Quick feedback
         </h1>
         <p className="text-sm text-[var(--text-muted)] mb-6">
-          No guilt trip — we just want to build something you'd actually use. Takes 30 seconds.
+          No guilt trip — we just want to build something you&apos;d actually use. Takes 30 seconds.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -131,7 +131,7 @@ function FeedbackForm() {
           {/* Details */}
           <div>
             <label className="block text-sm font-bold text-[var(--foreground)] mb-2">
-              What's the #1 thing that would bring you back?
+              What&apos;s the #1 thing that would bring you back?
               <span className="font-normal text-[var(--text-muted)]"> (optional)</span>
             </label>
             <textarea
