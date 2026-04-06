@@ -7,8 +7,21 @@ export const metadata: Metadata = {
 };
 
 export default function TermsOfServicePage() {
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://www.vibetalent.work" },
+      { "@type": "ListItem", position: 2, name: "Terms of Service", item: "https://www.vibetalent.work/terms" },
+    ],
+  };
+
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-8">Terms of Service</h1>
       <p className="text-sm text-[var(--text-muted)] mb-8">Last updated: April 1, 2026</p>
 
@@ -30,7 +43,8 @@ export default function TermsOfServicePage() {
             consistency, shipped projects, and community endorsements. The Platform provides tools
             for developers to build public profiles, track coding streaks, and connect with clients
             seeking to hire developers. We also provide an AI-powered agent to help clients find
-            suitable developers.
+            suitable developers. Additionally, developers can optionally pay with USDC (on Base network)
+            to feature their projects on the homepage carousel for increased visibility.
           </p>
         </section>
 
@@ -84,7 +98,23 @@ export default function TermsOfServicePage() {
         </section>
 
         <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">7. Prohibited Conduct</h2>
+          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">7. Featured Projects and Payments</h2>
+          <p className="mb-3">
+            VibeTalent offers an optional Featured Projects feature that allows developers to promote
+            a project on the homepage carousel by paying with USDC on the Base network. By using this feature, you agree that:
+          </p>
+          <ul className="list-disc pl-6 space-y-2">
+            <li>All payments are processed on-chain via smart contract and are non-refundable once the transaction is confirmed on the blockchain.</li>
+            <li>Featured placement is for visibility only — it does not affect your vibe score, badge level, streak, or search ranking.</li>
+            <li>VibeTalent reserves the right to remove featured projects that violate these terms or contain misleading content.</li>
+            <li>Pricing and duration of featured placements are determined by the smart contract and may change over time.</li>
+            <li>You are solely responsible for ensuring your wallet has sufficient USDC balance and that you approve the correct transaction amount.</li>
+            <li>VibeTalent is not responsible for failed, delayed, or incorrect transactions due to blockchain network issues, wallet errors, or insufficient gas fees.</li>
+          </ul>
+        </section>
+
+        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
+          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">8. Prohibited Conduct</h2>
           <p className="mb-3">You agree not to:</p>
           <ul className="list-disc pl-6 space-y-2">
             <li>Use the Platform for any unlawful purpose</li>
@@ -98,7 +128,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">8. Intellectual Property</h2>
+          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">9. Intellectual Property</h2>
           <p>
             The VibeTalent name, logo, design, and platform code are the property of VibeTalent.
             You may not copy, modify, or distribute our branding or proprietary materials without
@@ -107,7 +137,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">9. Termination</h2>
+          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">10. Termination</h2>
           <p>
             We reserve the right to suspend or terminate your account at any time for violation of
             these terms or for any conduct we deem harmful to the Platform or its users. You may
@@ -117,7 +147,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">10. Disclaimers</h2>
+          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">11. Disclaimers</h2>
           <p>
             VibeTalent is provided &quot;as is&quot; without warranties of any kind, express or implied.
             We do not guarantee the accuracy of vibe scores, streak data, or project quality assessments.
@@ -128,7 +158,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">11. Limitation of Liability</h2>
+          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">12. Limitation of Liability</h2>
           <p>
             To the maximum extent permitted by law, VibeTalent and its operators shall not be liable
             for any indirect, incidental, special, consequential, or punitive damages, regardless of
@@ -138,7 +168,7 @@ export default function TermsOfServicePage() {
         </section>
 
         <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">12. Contact</h2>
+          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">13. Contact</h2>
           <p>
             For questions about these Terms of Service, contact us at{" "}
             <a

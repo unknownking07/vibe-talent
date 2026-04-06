@@ -84,7 +84,6 @@ export function ProfileViewsWidget() {
                     width={32}
                     height={32}
                     className="w-full h-full object-cover"
-                    unoptimized
                   />
                 ) : (
                   viewer.username.slice(0, 2).toUpperCase()

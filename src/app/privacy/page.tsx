@@ -7,8 +7,21 @@ export const metadata: Metadata = {
 };
 
 export default function PrivacyPolicyPage() {
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://www.vibetalent.work" },
+      { "@type": "ListItem", position: 2, name: "Privacy Policy", item: "https://www.vibetalent.work/privacy" },
+    ],
+  };
+
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-8">Privacy Policy</h1>
       <p className="text-sm text-[var(--text-muted)] mb-8">Last updated: April 1, 2026</p>
 
@@ -32,6 +45,7 @@ export default function PrivacyPolicyPage() {
             <li><strong>Profile Information:</strong> Any information you voluntarily add to your profile, including bio, social links, and project descriptions.</li>
             <li><strong>Usage Data:</strong> We automatically collect information about how you interact with the platform, including pages visited, features used, and referring URLs.</li>
             <li><strong>Analytics:</strong> We use Google Analytics to collect anonymized usage statistics to improve the platform.</li>
+            <li><strong>Wallet and Payment Data:</strong> If you use the Featured Projects feature, we collect your blockchain wallet address and record on-chain transaction data (USDC payments on Base network). We do not store private keys or seed phrases. All payment transactions are processed on-chain and are publicly verifiable.</li>
           </ul>
         </section>
 
@@ -42,6 +56,7 @@ export default function PrivacyPolicyPage() {
             <li>To calculate and display your vibe score, coding streak, and badge level</li>
             <li>To enable clients to discover and contact you for hiring opportunities</li>
             <li>To send you notifications about hire requests, endorsements, and streak milestones</li>
+            <li>To process Featured Project payments and verify on-chain USDC transactions</li>
             <li>To improve and optimize the platform experience</li>
             <li>To detect and prevent fraud or abuse</li>
           </ul>

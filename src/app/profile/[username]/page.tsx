@@ -57,7 +57,7 @@ export async function generateMetadata({
   };
 }
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600; // ISR: regenerate at most every hour
 
 export default async function ProfilePage({
   params,
@@ -103,10 +103,12 @@ export default async function ProfilePage({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Person",
+    "@id": `${siteUrl}/profile/${user.username}#person`,
     name: user.username,
-    url: `https://www.vibetalent.work/profile/${user.username}`,
-    image: user.avatar_url || undefined,
+    url: `${siteUrl}/profile/${user.username}`,
+    ...(user.avatar_url ? { image: user.avatar_url } : {}),
     description: user.bio || `Builder on VibeTalent with a ${user.streak}-day streak`,
+    jobTitle: "Software Developer",
     sameAs: [
       user.social_links?.github ? `https://github.com/${user.social_links.github}` : null,
       user.social_links?.twitter ? `https://x.com/${user.social_links.twitter}` : null,
