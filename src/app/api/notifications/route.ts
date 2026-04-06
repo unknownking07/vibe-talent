@@ -48,7 +48,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { id, mark_all } = body;
+    const { id, mark_all, type } = body;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
@@ -64,6 +64,18 @@ export async function PATCH(req: NextRequest) {
         console.error("Failed to mark all notifications read:", error);
         return NextResponse.json({ error: "Failed to update" }, { status: 500 });
       }
+    } else if (type) {
+      const { error } = await sb
+        .from("notifications")
+        .update({ read: true })
+        .eq("user_id", user.id)
+        .eq("type", type)
+        .eq("read", false);
+
+      if (error) {
+        console.error("Failed to mark notifications by type read:", error);
+        return NextResponse.json({ error: "Failed to update" }, { status: 500 });
+      }
     } else if (id) {
       const { error } = await sb
         .from("notifications")
@@ -76,7 +88,7 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: "Failed to update" }, { status: 500 });
       }
     } else {
-      return NextResponse.json({ error: "Provide id or mark_all" }, { status: 400 });
+      return NextResponse.json({ error: "Provide id, type, or mark_all" }, { status: 400 });
     }
 
     return NextResponse.json({ success: true });
