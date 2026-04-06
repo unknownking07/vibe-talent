@@ -8,13 +8,13 @@ You can't buy it. You can only earn it — through consistent work and quality o
 
 Your Vibe Score is made up of four components:
 
-```
+```text
 Vibe Score = Streak Points + Project Quality Score + Badge Bonus + Review Bonus
 ```
 
 ### 1. Streak Points
 
-```
+```text
 Current Streak × 2
 ```
 
@@ -34,9 +34,7 @@ Each project you add earns points based on how complete and polished it is:
 | **Screenshot** | +1 pt | Upload a preview image |
 | **Tech stack (3+)** | +2 pts | List at least 3 technologies |
 
-**Max per verified project: 15 points**
-
-This means a single well-documented, verified project with a live demo earns **15 points** — more than a week of streak points.
+**Max per verified project: 15 detail points.** When GitHub quality analysis runs, the Vibe Score contribution is capped at **10 points** per project (based on quality_score). Verified projects without quality data contribute **5 points**. Unverified projects earn **1 point**.
 
 ### 3. Badge Bonus
 
@@ -54,7 +52,7 @@ Permanent bonus points based on your highest badge:
 
 Client reviews directly impact your score:
 
-```
+```text
 Review Bonus = avg_rating × number_of_reviews × 2 (capped at 50)
 ```
 
@@ -78,6 +76,7 @@ And when a client is choosing who to hire? They're looking at live demos, verifi
 ## How to Increase Your Vibe Score
 
 ### Quick wins
+
 1. **Verify your projects** — 5x the points vs unverified
 2. **Add live URLs** — +3 points per project, and clients love seeing live demos
 3. **Write detailed descriptions** — 50+ characters earns +2 per project
@@ -85,11 +84,12 @@ And when a client is choosing who to hire? They're looking at live demos, verifi
 5. **List your full tech stack** — 3+ technologies earns +2 per project
 
 ### Long-term growth
-6. **Maintain your streak** — log activity daily for steady point growth
-7. **Ship more projects** — each verified project is worth up to 15 points
-8. **Earn badges** — permanent bonus that never goes away
-9. **Get client reviews** — deliver great work and ask clients to review you
-10. **Connect GitHub** — auto-log activity so you never miss a day
+
+1. **Maintain your streak** — log activity daily for steady point growth
+2. **Ship more projects** — each verified project contributes up to 10 Vibe Score points
+3. **Earn badges** — permanent bonus that never goes away
+4. **Get client reviews** — deliver great work and ask clients to review you
+5. **Connect GitHub** — auto-log activity so you never miss a day
 
 ## Where Your Score Appears
 

@@ -13,7 +13,7 @@ A streak counts the number of **consecutive days** you've logged coding activity
 
 ### Example
 
-```
+```text
 Mon: Logged ✓  → Streak: 1
 Tue: Logged ✓  → Streak: 2
 Wed: Logged ✓  → Streak: 3
@@ -51,7 +51,7 @@ Badges are **permanent achievements** earned through sustained streaks. Once you
 
 ### Badge Progression Example
 
-```
+```text
 Day 1-29:   No badge yet, keep going!
 Day 30:     🥉 Bronze earned! +10 Vibe Score bonus
 Day 31-89:  Still Bronze, streak growing...

@@ -595,8 +595,10 @@ export default function DashboardPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "streak_warning" }),
-    }).then(() => {
-      window.dispatchEvent(new Event("notifications-updated"));
+    }).then((res) => {
+      if (res.ok) {
+        window.dispatchEvent(new Event("notifications-updated"));
+      }
     }).catch(() => {});
   };
 

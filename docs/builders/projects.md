@@ -26,7 +26,7 @@ Not all project listings are created equal. Here's what earns maximum points and
 | **Build Time** | No | — | Shows clients your speed ("Built in 3 days") |
 | **Tags** | No | — | Helps categorization ("AI", "SaaS", "DevTool") |
 
-**A fully filled-out, verified project earns up to 15 Vibe Score points.** An empty, unverified one earns just 1.
+**A fully filled-out, verified project earns up to 15 points from the detail breakdown above.** When GitHub quality analysis runs, verified projects can contribute up to 10 Vibe Score points (based on quality_score), or 5 points if no quality data is available. An empty, unverified project earns just 1 point.
 
 ## Verifying Your Projects
 
@@ -39,9 +39,9 @@ If you signed up with GitHub and the project's GitHub URL points to a repo you o
 ### Method 2: Verification File
 
 1. Create a file called `.vibetalent` in your repo's root
-2. Add your VibeTalent username or user ID inside it
+2. Add your **GitHub username** (e.g., `unknownking07`) or **GitHub user ID** (numeric) inside it
 3. Click **Verify** on the project in your Dashboard
-4. VibeTalent checks the file and verifies ownership
+4. VibeTalent checks the file against your GitHub credentials and verifies ownership
 
 ## Tips for Standout Projects
 
@@ -51,7 +51,7 @@ If you signed up with GitHub and the project's GitHub URL points to a repo you o
 - **Show screenshots** — Especially for UI-heavy projects
 
 ### For Your Score
-- **Verify every project** — The scoring difference is massive (1 pt vs up to 15 pts)
+- **Verify every project** — The scoring difference is massive (1 pt vs up to 10 pts with quality analysis)
 - **Fill every field** — Each piece of detail adds points
 - **Use 3+ technologies** — Shows breadth and earns +2 bonus
 

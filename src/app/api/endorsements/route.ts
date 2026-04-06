@@ -149,6 +149,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Explicit duplicate check before insert (belt and suspenders with DB unique constraint)
+    const { data: existingEndorsement } = await sb
+      .from("project_endorsements")
+      .select("id")
+      .eq("project_id", project_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (existingEndorsement) {
+      // Return current count so client can sync without extra fetch
+      const adminSb = createAdminClient();
+      const { count: currentCount } = await adminSb
+        .from("project_endorsements")
+        .select("id", { count: "exact", head: true })
+        .eq("project_id", project_id);
+      return NextResponse.json(
+        { error: "You already endorsed this project", count: currentCount || 0 },
+        { status: 409 }
+      );
+    }
+
     // Insert endorsement (unique constraint prevents duplicates)
     const { error } = await sb
       .from("project_endorsements")
@@ -156,7 +177,15 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       if (error.code === "23505") {
-        return NextResponse.json({ error: "You already endorsed this project" }, { status: 409 });
+        const adminSb = createAdminClient();
+        const { count: currentCount } = await adminSb
+          .from("project_endorsements")
+          .select("id", { count: "exact", head: true })
+          .eq("project_id", project_id);
+        return NextResponse.json(
+          { error: "You already endorsed this project", count: currentCount || 0 },
+          { status: 409 }
+        );
       }
       return NextResponse.json({ error: "Failed to endorse" }, { status: 500 });
     }
