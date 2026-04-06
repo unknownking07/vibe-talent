@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { ThumbsUp } from "lucide-react";
 
 interface EndorseButtonProps {
@@ -17,24 +17,20 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
   const [error, setError] = useState<string | null>(null);
 
   // Check endorsement state on mount so button shows correct state after refresh
-  const checkEndorsementState = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/endorsements?project_id=${projectId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setEndorsed(data.user_endorsed);
-        setCount(data.count);
-      }
-    } catch {
-      // silent — use initial values
-    }
-  }, [projectId]);
-
   useEffect(() => {
-    if (!isOwner) {
-      checkEndorsementState();
-    }
-  }, [isOwner, checkEndorsementState]);
+    if (isOwner) return;
+    let cancelled = false;
+    fetch(`/api/endorsements?project_id=${projectId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && !cancelled) {
+          setEndorsed(data.user_endorsed);
+          setCount(data.count);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [projectId, isOwner]);
 
   async function handleToggle() {
     if (loading) return;
@@ -75,9 +71,12 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
           } else if (res.status === 403) {
             setError("Can't endorse own project");
           } else if (res.status === 409) {
-            // Already endorsed — sync state and count
+            // Already endorsed — sync state and refresh count
             setEndorsed(true);
-            checkEndorsementState();
+            fetch(`/api/endorsements?project_id=${projectId}`)
+              .then((r) => (r.ok ? r.json() : null))
+              .then((d) => { if (d) setCount(d.count); })
+              .catch(() => {});
           } else {
             setError(data.error || "Failed to endorse");
           }
@@ -103,7 +102,6 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
     <div className="inline-flex flex-col items-start">
       <button
         onClick={(e) => { e.stopPropagation(); handleToggle(); }}
-        onMouseEnter={checkEndorsementState}
         disabled={loading}
         className={`inline-flex items-center gap-1 text-xs font-bold transition-all ${
           endorsed
