@@ -19,17 +19,19 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
   // Check endorsement state on mount so button shows correct state after refresh
   useEffect(() => {
     if (isOwner) return;
-    let cancelled = false;
-    fetch(`/api/endorsements?project_id=${projectId}`)
+    const controller = new AbortController();
+    fetch(`/api/endorsements?project_id=${projectId}`, { signal: controller.signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data && !cancelled) {
+        if (data) {
           setEndorsed(data.user_endorsed);
           setCount(data.count);
         }
       })
-      .catch(() => {});
-    return () => { cancelled = true; };
+      .catch((err) => {
+        if (err.name !== "AbortError") { /* silent */ }
+      });
+    return () => { controller.abort(); };
   }, [projectId, isOwner]);
 
   async function handleToggle() {
@@ -71,12 +73,9 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
           } else if (res.status === 403) {
             setError("Can't endorse own project");
           } else if (res.status === 409) {
-            // Already endorsed — sync state and refresh count
+            // Already endorsed — sync state and count from response
             setEndorsed(true);
-            fetch(`/api/endorsements?project_id=${projectId}`)
-              .then((r) => (r.ok ? r.json() : null))
-              .then((d) => { if (d) setCount(d.count); })
-              .catch(() => {});
+            if (data.count != null) setCount(data.count);
           } else {
             setError(data.error || "Failed to endorse");
           }

@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
+const ALLOWED_NOTIFICATION_TYPES = [
+  "streak_warning",
+  "badge_earned",
+  "project_verified",
+  "hire_request",
+  "hire_message",
+  "endorsement",
+  "review",
+  "streak_milestone",
+] as const;
+
 export async function GET() {
   try {
     const supabase = await createServerSupabaseClient();
@@ -65,6 +76,9 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: "Failed to update" }, { status: 500 });
       }
     } else if (type) {
+      if (!ALLOWED_NOTIFICATION_TYPES.includes(type)) {
+        return NextResponse.json({ error: "Invalid notification type" }, { status: 400 });
+      }
       const { error } = await sb
         .from("notifications")
         .update({ read: true })
