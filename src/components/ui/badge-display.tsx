@@ -10,10 +10,10 @@ interface BadgeDisplayProps {
 }
 
 const badgeColors: Record<string, { bg: string; text: string }> = {
-  bronze: { bg: "#FEF3C7", text: "#92400E" },
-  silver: { bg: "#F4F4F5", text: "#3F3F46" },
-  gold: { bg: "#FEF9C3", text: "#854D0E" },
-  diamond: { bg: "#CFFAFE", text: "#155E75" },
+  bronze: { bg: "var(--status-warning-bg)", text: "var(--status-warning-text)" },
+  silver: { bg: "var(--bg-surface-light)", text: "var(--text-tertiary)" },
+  gold: { bg: "var(--status-warning-bg)", text: "var(--badge-gold)" },
+  diamond: { bg: "var(--bg-surface-light)", text: "var(--badge-diamond)" },
 };
 
 export function BadgeDisplay({ level, size = "md", showLabel = true }: BadgeDisplayProps) {
@@ -27,7 +27,7 @@ export function BadgeDisplay({ level, size = "md", showLabel = true }: BadgeDisp
     lg: "text-base px-4 py-1.5",
   };
 
-  const colors = badgeColors[level] || { bg: "#F4F4F5", text: "#3F3F46" };
+  const colors = badgeColors[level] || { bg: "#F4F4F5", text: "var(--text-tertiary)" };
 
   return (
     <span
@@ -35,7 +35,7 @@ export function BadgeDisplay({ level, size = "md", showLabel = true }: BadgeDisp
       style={{
         backgroundColor: colors.bg,
         color: colors.text,
-        border: "1px solid #0F0F0F",
+        border: "1px solid var(--border-hard)",
       }}
     >
       <span>{info.icon}</span>

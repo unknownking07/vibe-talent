@@ -1,16 +1,16 @@
-# Finding Builders
+# Finding VibeCoders
 
-VibeTalent makes it easy to find reliable developers you can trust. Every builder on the platform has a public track record — so you're never guessing.
+VibeTalent makes it easy to find reliable developers you can trust. Every vibecoder on the platform has a public track record — so you're never guessing.
 
 ## The Explore Page
 
-Head to `/explore` to browse the full marketplace. This is your main tool for finding the right builder.
+Head to `/explore` to browse the full marketplace. This is your main tool for finding the right vibecoder.
 
 ### Search
 
-Type in the search bar to find builders by:
+Type in the search bar to find vibecoders by:
 - **Username** — if you know who you're looking for
-- **Bio keywords** — search for "React developer" or "AI builder"
+- **Bio keywords** — search for "React developer" or "AI vibecoder"
 - **Tech stack** — search for "TypeScript" or "Python" to find specialists
 
 ### Filter by Badge
@@ -29,13 +29,13 @@ Badges are earned through sustained daily coding streaks. They're a trust signal
 
 | Sort By | Best For |
 |---|---|
-| **Vibe Score** (default) | Overall best builders — balances consistency + quality |
+| **Vibe Score** (default) | Overall best vibecoders — balances consistency + quality |
 | **Longest Streak** | Finding the most consistent daily coders |
 | **Most Projects** | Finding prolific shippers with lots of experience |
 
-## Reading a Builder's Profile
+## Reading a VibeCoder's Profile
 
-When you click on a builder, their profile shows everything you need:
+When you click on a vibecoder, their profile shows everything you need:
 
 ### Key Stats
 - **Vibe Score** — Their overall reputation number. Higher = better track record.
@@ -54,14 +54,14 @@ A gallery of their shipped work. Look for:
 - **Descriptions** — do they communicate clearly about what they built?
 
 ### Reviews
-Star ratings and written feedback from previous clients. This is the most direct signal of what it's like to work with this builder.
+Star ratings and written feedback from previous clients. This is the most direct signal of what it's like to work with this vibecoder.
 
 ### Social Links
 How to reach them outside VibeTalent — Twitter, GitHub, Telegram, website, Farcaster.
 
 ## The Leaderboard
 
-The `/leaderboard` page ranks all builders. The top 3 are featured prominently on a "podium."
+The `/leaderboard` page ranks all vibecoders. The top 3 are featured prominently on a "podium."
 
 Use the leaderboard to:
 - **Find the best overall** — sort by Vibe Score
@@ -74,9 +74,9 @@ The Vibe Score combines multiple quality signals into one number:
 
 | Component | What It Measures |
 |---|---|
-| **Streak Points** | Daily consistency — are they actively coding? |
 | **Project Quality** | Shipped work with live demos, code, and documentation |
+| **Streak Points** | Daily consistency — are they actively coding? |
 | **Badge Bonus** | Long-term commitment over months |
 | **Review Bonus** | Positive feedback from real clients |
 
-A high Vibe Score means the builder is both consistent **and** quality-focused. It's designed to be unfakeable — you can only earn it through real work.
+A high Vibe Score means the vibecoder is both consistent **and** quality-focused. It's designed to be unfakeable — you can only earn it through real work.

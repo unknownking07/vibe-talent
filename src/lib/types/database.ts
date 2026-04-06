@@ -27,7 +27,26 @@ export interface Project {
   build_time: string | null;
   tags: string[];
   verified: boolean;
+  quality_score: number;
+  quality_metrics: RepoQualityData | null;
+  live_url_ok: boolean | null;
+  endorsement_count: number;
   created_at: string;
+}
+
+export interface RepoQualityData {
+  stars: number;
+  forks: number;
+  contributors: number;
+  total_commits: number;
+  has_tests: boolean;
+  has_ci: boolean;
+  has_readme: boolean;
+  community_score: number;
+  substance_score: number;
+  maintenance_score: number;
+  quality_score: number;
+  analyzed_at: string;
 }
 
 export interface StreakLog {
@@ -50,6 +69,7 @@ export interface UserWithSocials extends User {
   social_links: SocialLinks | null;
   projects: Project[];
   last_activity_date?: string | null;
+  client_outcomes?: ClientOutcomes | null;
 }
 
 export interface HireRequest {
@@ -81,10 +101,54 @@ export interface Review {
   hire_request_id: string | null;
   rating: number;
   comment: string | null;
+  trust_score: number;
   created_at: string;
 }
 
-export type NotificationType = "hire_request" | "streak_milestone" | "streak_warning" | "badge_earned" | "project_verified" | "project_flagged";
+export interface ProjectEndorsement {
+  id: string;
+  project_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+export interface ClientOutcomes {
+  total_hires: number;
+  completed_hires: number;
+  avg_rating: number;
+  total_reviews: number;
+  repeat_clients: number;
+  avg_response_hours: number | null;
+  completion_rate: number;
+  outcome_score: number;
+}
+
+export interface Referral {
+  id: string;
+  referrer_id: string;
+  referred_id: string;
+  created_at: string;
+}
+
+export type NotificationType = "hire_request" | "streak_milestone" | "streak_warning" | "badge_earned" | "project_verified" | "project_flagged" | "new_review" | "profile_view_summary" | "weekly_digest" | "vibe_score_milestone";
+
+export interface ProfileView {
+  id: string;
+  viewed_user_id: string;
+  viewer_user_id: string | null;
+  viewer_ip_hash: string | null;
+  viewed_at: string;
+}
+
+export interface EmailPreferences {
+  user_id: string;
+  profile_view_digest: boolean;
+  streak_reminders: boolean;
+  milestone_alerts: boolean;
+  weekly_digest: boolean;
+  hire_notifications: boolean;
+  updated_at: string;
+}
 
 export interface Notification {
   id: string;
@@ -110,15 +174,22 @@ export interface Database {
           longest_streak?: number;
           vibe_score?: number;
           badge_level?: BadgeLevel;
+          streak_freezes_remaining?: number;
+          streak_freezes_used?: number;
+          referral_count?: number;
         };
         Update: Partial<User>;
       };
       projects: {
         Row: Project;
-        Insert: Omit<Project, "id" | "created_at" | "verified"> & {
+        Insert: Omit<Project, "id" | "created_at" | "verified" | "quality_score" | "quality_metrics" | "live_url_ok" | "endorsement_count"> & {
           id?: string;
           created_at?: string;
           verified?: boolean;
+          quality_score?: number;
+          quality_metrics?: RepoQualityData | null;
+          live_url_ok?: boolean | null;
+          endorsement_count?: number;
         };
         Update: Partial<Project>;
       };
@@ -149,6 +220,14 @@ export interface Database {
           read?: boolean;
         };
         Update: Partial<Notification>;
+      };
+      project_endorsements: {
+        Row: ProjectEndorsement;
+        Insert: Omit<ProjectEndorsement, "id" | "created_at"> & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<ProjectEndorsement>;
       };
     };
     Views: Record<string, never>;

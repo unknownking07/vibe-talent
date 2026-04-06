@@ -1,6 +1,6 @@
 # Database Schema
 
-VibeTalent uses **Supabase PostgreSQL** with Row Level Security (RLS) enabled on all tables. The schema is designed around the core concept: **builders earn reputation through consistent activity and shipped projects**.
+VibeTalent uses **Supabase PostgreSQL** with Row Level Security (RLS) enabled on all tables. The schema is designed around the core concept: **vibecoders earn reputation through consistent activity and shipped projects**.
 
 ## Entity Relationship Diagram
 
@@ -20,20 +20,34 @@ VibeTalent uses **Supabase PostgreSQL** with Row Level Security (RLS) enabled on
 │ created_at   │   │ │ build_time   │     │ user_id (FK) │──→ users
 └──────────────┘   │ │ verified     │     │ twitter      │
                    │ │ flagged      │     │ telegram     │
-                   │ └──────────────┘     │ github       │
-                   │                      │ website      │
-                   │ ┌──────────────┐     │ farcaster    │
-                   │ │hire_requests │     └──────────────┘
-                   ├─│──────────────│
-                   │ │ id (PK)      │     ┌──────────────┐
-                   │ │ builder_id   │←────│hire_messages │
-                   │ │ sender_name  │     │──────────────│
-                   │ │ sender_email │     │ id (PK)      │
-                   │ │ message      │     │hire_request_id│
-                   │ │ budget       │     │ sender_type  │
-                   │ │ status       │     │ message      │
-                   │ │ reply        │     │ created_at   │
-                   │ └──────────────┘     └──────────────┘
+                   │ │ quality_score│     │ github       │
+                   │ │ quality_met. │     │ website      │
+                   │ │ live_url_ok  │     │ farcaster    │
+                   │ │ endorse_count│     └──────────────┘
+                   │ └──────────────┘
+                   │        ↑
+                   │ ┌──────────────┐
+                   │ │  project_    │
+                   │ │ endorsements │
+                   │ │──────────────│
+                   │ │ id (PK)      │
+                   │ │ project_id   │──→ projects
+                   │ │ user_id      │──→ users
+                   │ │ (UNIQUE pair)│
+                   │ └──────────────┘
+                   │
+                   │ ┌──────────────┐     ┌──────────────┐
+                   │ │hire_requests │     │hire_messages │
+                   ├─│──────────────│     │──────────────│
+                   │ │ id (PK)      │←────│ id (PK)      │
+                   │ │ builder_id   │     │hire_request_id│
+                   │ │ sender_name  │     │ sender_type  │
+                   │ │ sender_email │     │ message      │
+                   │ │ message      │     │ created_at   │
+                   │ │ budget       │     └──────────────┘
+                   │ │ status       │
+                   │ │ reply        │
+                   │ └──────────────┘
                    │
                    │ ┌──────────────┐     ┌────────────────┐
                    │ │   reviews    │     │project_reports │
@@ -44,6 +58,7 @@ VibeTalent uses **Supabase PostgreSQL** with Row Level Security (RLS) enabled on
                      │ reviewer_name│     │ reporter_token │
                      │ rating (1-5) │     │ created_at     │
                      │ comment      │     └────────────────┘
+                     │ trust_score  │
                      └──────────────┘
 ```
 
@@ -57,7 +72,7 @@ The core profile table. Scores and badges are **auto-calculated** by database tr
 |---|---|---|
 | `id` | UUID (PK) | Matches Supabase Auth user ID |
 | `username` | TEXT (UNIQUE) | Public handle, used in profile URLs |
-| `bio` | TEXT | Builder description (max 500 chars) |
+| `bio` | TEXT | VibeCoder description (max 500 chars) |
 | `avatar_url` | TEXT | Profile photo URL |
 | `streak` | INTEGER | Current consecutive active days |
 | `longest_streak` | INTEGER | All-time best streak |
@@ -68,7 +83,7 @@ The core profile table. Scores and badges are **auto-calculated** by database tr
 
 ### projects
 
-Shipped work that proves a builder's capability.
+Shipped work that proves a vibecoder's capability.
 
 | Column | Type | Description |
 |---|---|---|
@@ -84,6 +99,10 @@ Shipped work that proves a builder's capability.
 | `build_time` | TEXT | How long it took to build |
 | `verified` | BOOLEAN | GitHub ownership verified |
 | `flagged` | BOOLEAN | Auto-flagged after 3 reports |
+| `quality_score` | INTEGER | GitHub repo quality score (0-100), computed at verification |
+| `quality_metrics` | JSONB | Detailed breakdown: community_score, substance_score, maintenance_score |
+| `live_url_ok` | BOOLEAN | Whether the live URL passed the last weekly health check |
+| `endorsement_count` | INTEGER | Cached count of peer endorsements |
 | `created_at` | TIMESTAMPTZ | When the project was added |
 
 ### streak_logs
@@ -104,7 +123,7 @@ One row per user (UNIQUE on user_id).
 
 | Column | Type | Description |
 |---|---|---|
-| `user_id` | UUID (FK → users, UNIQUE) | Builder |
+| `user_id` | UUID (FK → users, UNIQUE) | VibeCoder |
 | `twitter` | TEXT | Twitter/X handle |
 | `telegram` | TEXT | Telegram username |
 | `github` | TEXT | GitHub profile URL |
@@ -113,19 +132,19 @@ One row per user (UNIQUE on user_id).
 
 ### hire_requests
 
-Client inquiries to builders. No authentication required to submit.
+Client inquiries to vibecoders. No authentication required to submit.
 
 | Column | Type | Description |
 |---|---|---|
 | `id` | UUID (PK) | Also used as access token for chat |
-| `builder_id` | UUID (FK → users) | Target builder |
+| `builder_id` | UUID (FK → users) | Target vibecoder |
 | `sender_name` | TEXT | Client name |
 | `sender_email` | TEXT | Client email (disposable emails blocked) |
 | `message` | TEXT | Initial inquiry |
 | `budget` | TEXT | Budget range or description |
 | `status` | TEXT | `new`, `read`, `replied` |
-| `reply` | TEXT | Builder's response |
-| `replied_at` | TIMESTAMPTZ | When the builder replied |
+| `reply` | TEXT | VibeCoder's response |
+| `replied_at` | TIMESTAMPTZ | When the vibecoder replied |
 | `created_at` | TIMESTAMPTZ | When the request was sent |
 
 ### hire_messages
@@ -142,18 +161,34 @@ Chat thread for ongoing communication after the initial hire request.
 
 ### reviews
 
-Public feedback from clients about builders.
+Public feedback from clients about vibecoders.
 
 | Column | Type | Description |
 |---|---|---|
 | `id` | UUID (PK) | Auto-generated |
-| `builder_id` | UUID (FK → users) | Reviewed builder |
+| `builder_id` | UUID (FK → users) | Reviewed vibecoder |
 | `hire_request_id` | UUID (FK → hire_requests) | Related engagement |
 | `reviewer_name` | TEXT | Client name |
 | `reviewer_email` | TEXT | Client email |
 | `rating` | INTEGER | 1 to 5 stars |
 | `comment` | TEXT | Written feedback |
+| `trust_score` | INTEGER | 0-100, computed at insert time (fake/bot detection) |
 | `created_at` | TIMESTAMPTZ | When the review was posted |
+
+Reviews with `trust_score < 30` are excluded from the builder's average rating calculation.
+
+### project_endorsements
+
+Peer validation of projects by other vibecoders.
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | UUID (PK) | Auto-generated |
+| `project_id` | UUID (FK → projects) | Endorsed project |
+| `user_id` | UUID (FK → users) | Endorsing user |
+| `created_at` | TIMESTAMPTZ | When the endorsement was made |
+
+Constraints: `UNIQUE(project_id, user_id)`. RLS prevents endorsing own projects.
 
 ### project_reports
 

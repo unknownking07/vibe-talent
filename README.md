@@ -112,7 +112,7 @@ src/
 
 ### Vibe Score
 
-```
+```text
 Vibe Score = (Current Streak x 2) + (Projects Built x 5) + Badge Bonus
 ```
 
@@ -131,7 +131,7 @@ Badge bonuses: Bronze +10, Silver +20, Gold +30, Diamond +40
 
 - Log coding activity daily to maintain your streak
 - Missing a day resets the streak to 0 (unless you have a streak freeze)
-- Streak freezes: up to 3 per month, reset on the 1st
+- Streak freezes: up to 2 per month, reset on the 1st
 - Streak warning emails sent at 6 PM UTC for at-risk users
 
 ### GitHub Quality Score
@@ -140,7 +140,7 @@ Per-project score based on repo health: community engagement, code substance, an
 
 ### Endorsements
 
-Authenticated users can endorse projects. Anti-gaming rules: can't endorse own projects, 7-day account age minimum, 10 endorsements/day limit.
+Authenticated users can endorse projects. Anti-gaming rules: can't endorse own projects, 7-day account age minimum, 10 endorsements/day limit, 30 requests/hour rate limit.
 
 ### Hire System
 
@@ -181,19 +181,16 @@ Clients can send hire requests to builders. Includes real-time chat, email notif
 
 Configured in `vercel.json`. All protected by `CRON_SECRET`.
 
-| Job | Schedule | Description |
+| Scheduled Path | Schedule | Description |
 |---|---|---|
-| `/api/cron/reset-streaks` | Daily midnight UTC | Reset expired streaks |
-| `/api/cron/streak-warning` | Daily 6 PM UTC | Warn users about expiring streaks |
-| `/api/cron/github-sync` | Daily | Sync GitHub contribution data |
-| `/api/cron/check-live-urls` | Weekly | Verify project live URLs |
-| `/api/cron/reset-freezes` | Monthly 1st | Reset streak freeze allowance |
+| `/api/cron/daily` | Daily 06:00 UTC | Orchestrator — fans out to reset-streaks, streak-warning, github-sync, reset-freezes |
+| `/api/cron/check-live-urls` | Weekly Sun 03:00 UTC | Verify project live URLs |
 
 ## Security
 
 - **RLS policies** block anonymous PostgREST inserts on sensitive tables
 - **Database constraints** enforce minimum message length, valid email format, and name length on hire requests
-- All API mutations use a shared admin client (`createAdminClient()`) that requires `SUPABASE_SERVICE_ROLE_KEY`
+- Privileged/public-write endpoints use `createAdminClient()` (requires `SUPABASE_SERVICE_ROLE_KEY`); authenticated user mutations use session-scoped clients with RLS
 - Rate limiting via Upstash Redis on hire, endorsement, and review endpoints
 - Input validation via shared utilities (`src/lib/validation.ts`)
 

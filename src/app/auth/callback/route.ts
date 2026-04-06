@@ -1,5 +1,7 @@
+import { createServerClient } from "@supabase/ssr";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -7,7 +9,30 @@ export async function GET(request: Request) {
   const next = searchParams.get("next") ?? "/dashboard";
 
   if (code) {
-    const supabase = await createServerSupabaseClient();
+    const cookieStore = await cookies();
+
+    // Build the redirect response first so cookies can be forwarded onto it
+    const redirectTo = `${origin}${next}`;
+    const forwardedResponse = NextResponse.redirect(redirectTo);
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+              forwardedResponse.cookies.set(name, value, options);
+            });
+          },
+        },
+      }
+    );
+
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       // Pull avatar from OAuth provider if user doesn't have one
@@ -18,38 +43,34 @@ export async function GET(request: Request) {
           user.user_metadata?.picture ||
           null;
 
-        // Extract GitHub username from OAuth metadata
-        // GitHub provides this as user_name or preferred_username
         const githubUsername =
           user.user_metadata?.user_name ||
           user.user_metadata?.preferred_username ||
           null;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: profile } = await (supabase as any)
+        // Use service role client for DB operations to bypass RLS
+        const adminSb = createAdminClient();
+
+        const { data: profile } = await adminSb
           .from("users")
           .select("avatar_url, github_username")
           .eq("id", user.id)
           .single();
 
         if (profile) {
-          // Build update object with fields that need updating
           const updates: Record<string, string> = {};
 
-          if (oauthAvatar && !(profile as Record<string, unknown>).avatar_url) {
+          // Always sync avatar from OAuth provider on login
+          if (oauthAvatar) {
             updates.avatar_url = oauthAvatar;
           }
 
-          // Always update github_username from OAuth metadata on login
-          // NOTE: If the `github_username` column doesn't exist yet, run:
-          // ALTER TABLE users ADD COLUMN IF NOT EXISTS github_username TEXT;
           if (githubUsername) {
             updates.github_username = githubUsername;
           }
 
           if (Object.keys(updates).length > 0) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (supabase as any)
+            await adminSb
               .from("users")
               .update(updates)
               .eq("id", user.id);
@@ -57,7 +78,7 @@ export async function GET(request: Request) {
         }
       }
 
-      return NextResponse.redirect(`${origin}${next}`);
+      return forwardedResponse;
     }
   }
 

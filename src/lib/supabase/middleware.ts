@@ -39,14 +39,24 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Use getSession() (reads cookies locally, no network call) for the
-  // middleware guard. The dashboard component calls getUser() itself for
-  // the verified auth state — no need to do it twice.
+  // Try getUser() first (validates JWT, refreshes token if needed).
+  // Fall back to getSession() (local cookie read) if the network call fails,
+  // so we don't redirect authenticated users to login on transient errors.
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
+    // If getUser() failed due to a network/server error, check session locally
+    if (error) {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        return supabaseResponse;
+      }
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);

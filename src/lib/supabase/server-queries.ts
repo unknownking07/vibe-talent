@@ -23,7 +23,11 @@ async function _fetchAllUsers(): Promise<UserWithSocials[]> {
     .select(USER_FIELDS)
     .order("vibe_score", { ascending: false });
 
-  if (error || !users) return [];
+  // Throw on error so unstable_cache does NOT cache empty results
+  if (error) {
+    throw new Error(`Failed to fetch users: ${error.message}`);
+  }
+  if (!users || users.length === 0) return [];
 
   const userIds = users.map((u: UserWithSocials) => u.id);
 
@@ -31,8 +35,7 @@ async function _fetchAllUsers(): Promise<UserWithSocials[]> {
     sb
       .from("projects")
       .select(PROJECT_FIELDS)
-      .in("user_id", userIds)
-      .eq("flagged", false),
+      .in("user_id", userIds),
     sb
       .from("social_links")
       .select(SOCIAL_FIELDS)
@@ -70,15 +73,18 @@ async function _fetchUserByUsername(username: string): Promise<UserWithSocials |
     .eq("username", username)
     .single();
 
-  if (error || !user) return null;
+  // PGRST116 = "not found" (single row expected but 0 returned) — legitimate null
+  if (error && error.code !== "PGRST116") {
+    throw new Error(`Failed to fetch user "${username}": ${error.message}`);
+  }
+  if (!user) return null;
 
   const [{ data: projects }, { data: socialLinks }] = await Promise.all([
     sb
       .from("projects")
       .select(PROJECT_FIELDS)
       .eq("user_id", user.id)
-      .eq("flagged", false)
-      .order("created_at", { ascending: false }),
+            .order("created_at", { ascending: false }),
     sb
       .from("social_links")
       .select(SOCIAL_FIELDS)
@@ -116,23 +122,26 @@ async function _fetchHomepageData() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = getPublicClient() as any;
 
-  const [
-    { data: allUsers },
-    { data: featuredProjectsData },
-    { count: builderCount },
-    { count: projectCount },
-    { data: streakData },
-  ] = await Promise.all([
+  const [usersResult, projectsResult, builderCountResult, projectCountResult, streakResult] = await Promise.all([
     sb.from("users").select(USER_FIELDS).order("vibe_score", { ascending: false }).limit(20),
-    sb.from("projects").select(`${PROJECT_FIELDS}, users!projects_user_id_fkey(username)`).eq("flagged", false).order("created_at", { ascending: false }).limit(3),
+    sb.from("projects").select(`${PROJECT_FIELDS}, users!projects_user_id_fkey(username)`).not("live_url", "is", null).order("created_at", { ascending: false }).limit(3),
     sb.from("users").select("id", { count: "exact", head: true }),
-    sb.from("projects").select("id", { count: "exact", head: true }).eq("flagged", false),
+    sb.from("projects").select("id", { count: "exact", head: true }),
     sb.from("users").select("streak"),
   ]);
 
-  const totalBuilders = builderCount || 0;
-  const totalProjects = projectCount || 0;
-  const featuredProjects = featuredProjectsData || [];
+  // If critical queries failed, throw so unstable_cache does NOT cache zeros
+  if (builderCountResult.error || projectCountResult.error) {
+    throw new Error(
+      `Homepage stats query failed: ${builderCountResult.error?.message || ""} ${projectCountResult.error?.message || ""}`.trim()
+    );
+  }
+
+  const allUsers = usersResult.data;
+  const featuredProjects = projectsResult.data || [];
+  const totalBuilders = builderCountResult.count || 0;
+  const totalProjects = projectCountResult.count || 0;
+  const streakData = streakResult.data;
 
   let avgStreak = 0;
   if (streakData && streakData.length > 0) {
@@ -144,7 +153,7 @@ async function _fetchHomepageData() {
   if (allUsers && allUsers.length > 0) {
     const allUserIds = allUsers.map((u: { id: string }) => u.id);
     const [{ data: allProjects }, { data: socials }] = await Promise.all([
-      sb.from("projects").select(PROJECT_FIELDS).in("user_id", allUserIds).eq("flagged", false),
+      sb.from("projects").select(PROJECT_FIELDS).in("user_id", allUserIds),
       sb.from("social_links").select(SOCIAL_FIELDS).in("user_id", allUserIds),
     ]);
 

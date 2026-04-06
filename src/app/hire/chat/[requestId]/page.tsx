@@ -62,8 +62,8 @@ export default function HireChatPage() {
     };
     init();
 
-    // Poll for new messages every 5 seconds
-    pollRef.current = setInterval(fetchMessages, 5000);
+    // Poll for new messages every 15 seconds
+    pollRef.current = setInterval(fetchMessages, 15000);
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
@@ -130,16 +130,16 @@ export default function HireChatPage() {
         <div
           className="p-12"
           style={{
-            backgroundColor: "#FFFFFF",
-            border: "2px solid #0F0F0F",
-            boxShadow: "4px 4px 0 #000",
+            backgroundColor: "var(--bg-surface)",
+            border: "2px solid var(--border-hard)",
+            boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
-          <MessageCircle size={48} className="mx-auto text-[#D4D4D8] mb-4" />
-          <h1 className="text-xl font-extrabold uppercase text-[#0F0F0F] mb-2">
+          <MessageCircle size={48} className="mx-auto text-[var(--text-muted-soft)] mb-4" />
+          <h1 className="text-xl font-extrabold uppercase text-[var(--foreground)] mb-2">
             Conversation Not Found
           </h1>
-          <p className="text-sm text-[#52525B] font-medium">{error}</p>
+          <p className="text-sm text-[var(--text-secondary)] font-medium">{error}</p>
           <Link
             href="/"
             className="btn-brutal btn-brutal-primary text-sm mt-6 inline-flex items-center gap-2"
@@ -158,9 +158,9 @@ export default function HireChatPage() {
       <div
         className="p-5 mb-6"
         style={{
-          backgroundColor: "#FFFFFF",
-          border: "2px solid #0F0F0F",
-          boxShadow: "4px 4px 0 #000",
+          backgroundColor: "var(--bg-surface)",
+          border: "2px solid var(--border-hard)",
+          boxShadow: "var(--shadow-brutal-sm)",
         }}
       >
         <div className="flex items-center gap-3 mb-3">
@@ -168,34 +168,34 @@ export default function HireChatPage() {
             className="w-10 h-10 flex items-center justify-center"
             style={{
               backgroundColor: "var(--accent)",
-              border: "2px solid #0F0F0F",
+              border: "2px solid var(--border-hard)",
             }}
           >
             <MessageCircle size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-extrabold uppercase text-[#0F0F0F]">
+            <h1 className="text-lg font-extrabold uppercase text-[var(--foreground)]">
               Hire Request Chat
             </h1>
-            <p className="text-xs text-[#71717A] font-bold uppercase">
+            <p className="text-xs text-[var(--text-muted)] font-bold uppercase">
               Conversation with builder
             </p>
           </div>
         </div>
 
         {hireRequest && (
-          <div className="text-sm text-[#52525B]">
+          <div className="text-sm text-[var(--text-secondary)]">
             <p>
-              <span className="font-bold text-[#0F0F0F]">From:</span>{" "}
+              <span className="font-bold text-[var(--foreground)]">From:</span>{" "}
               {hireRequest.sender_name} ({hireRequest.sender_email})
             </p>
             {hireRequest.budget && (
               <p>
-                <span className="font-bold text-[#0F0F0F]">Budget:</span>{" "}
+                <span className="font-bold text-[var(--foreground)]">Budget:</span>{" "}
                 {hireRequest.budget}
               </p>
             )}
-            <p className="text-xs text-[#A1A1AA] mt-1">
+            <p className="text-xs text-[var(--text-muted-soft)] mt-1">
               Sent{" "}
               {new Date(hireRequest.created_at).toLocaleDateString("en-US", {
                 year: "numeric",
@@ -213,9 +213,9 @@ export default function HireChatPage() {
       <div
         className="mb-4"
         style={{
-          backgroundColor: "#FAFAFA",
-          border: "2px solid #0F0F0F",
-          boxShadow: "4px 4px 0 #000",
+          backgroundColor: "var(--bg-surface-light)",
+          border: "2px solid var(--border-hard)",
+          boxShadow: "var(--shadow-brutal-sm)",
           minHeight: "400px",
           maxHeight: "60vh",
           overflowY: "auto",
@@ -227,24 +227,24 @@ export default function HireChatPage() {
             <div className="flex justify-start">
               <div className="max-w-[80%]">
                 <div className="flex items-center gap-2 mb-1">
-                  <User size={12} className="text-[#71717A]" />
-                  <span className="text-xs font-bold uppercase text-[#71717A]">
+                  <User size={12} className="text-[var(--text-muted)]" />
+                  <span className="text-xs font-bold uppercase text-[var(--text-muted)]">
                     {hireRequest.sender_name} (You)
                   </span>
                 </div>
                 <div
                   className="p-3"
                   style={{
-                    backgroundColor: "#FFFFFF",
-                    border: "2px solid #0F0F0F",
-                    boxShadow: "2px 2px 0 #000",
+                    backgroundColor: "var(--bg-surface)",
+                    border: "2px solid var(--border-hard)",
+                    boxShadow: "var(--shadow-brutal-xs)",
                   }}
                 >
-                  <p className="text-sm text-[#3F3F46] whitespace-pre-wrap">
+                  <p className="text-sm text-[var(--text-tertiary)] whitespace-pre-wrap">
                     {hireRequest.message}
                   </p>
                 </div>
-                <p className="text-xs text-[#A1A1AA] mt-1">
+                <p className="text-xs text-[var(--text-muted-soft)] mt-1">
                   {new Date(hireRequest.created_at).toLocaleTimeString("en-US", {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -269,27 +269,27 @@ export default function HireChatPage() {
                     }`}
                   >
                     {isClient ? (
-                      <User size={12} className="text-[#71717A]" />
+                      <User size={12} className="text-[var(--text-muted)]" />
                     ) : (
                       <Wrench size={12} className="text-[var(--accent)]" />
                     )}
-                    <span className="text-xs font-bold uppercase text-[#71717A]">
+                    <span className="text-xs font-bold uppercase text-[var(--text-muted)]">
                       {isClient ? "You" : "Builder"}
                     </span>
                   </div>
                   <div
                     className="p-3"
                     style={{
-                      backgroundColor: isClient ? "#FFFFFF" : "var(--accent)",
-                      color: isClient ? "#3F3F46" : "#FFFFFF",
-                      border: "2px solid #0F0F0F",
-                      boxShadow: "2px 2px 0 #000",
+                      backgroundColor: isClient ? "var(--bg-surface)" : "var(--accent)",
+                      color: isClient ? "var(--text-tertiary)" : "var(--text-on-inverted)",
+                      border: "2px solid var(--border-hard)",
+                      boxShadow: "var(--shadow-brutal-xs)",
                     }}
                   >
                     <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
                   </div>
                   <p
-                    className={`text-xs text-[#A1A1AA] mt-1 ${
+                    className={`text-xs text-[var(--text-muted-soft)] mt-1 ${
                       isClient ? "" : "text-right"
                     }`}
                   >
@@ -309,10 +309,10 @@ export default function HireChatPage() {
       {/* Error */}
       {error && (
         <div
-          className="p-3 mb-4 text-sm font-bold text-[#991B1B]"
+          className="p-3 mb-4 text-sm font-bold text-[var(--status-error-text)]"
           style={{
-            backgroundColor: "#FEE2E2",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--status-error-border)",
+            border: "2px solid var(--border-hard)",
           }}
         >
           {error}
@@ -323,9 +323,9 @@ export default function HireChatPage() {
       <div
         className="p-4"
         style={{
-          backgroundColor: "#FFFFFF",
-          border: "2px solid #0F0F0F",
-          boxShadow: "4px 4px 0 #000",
+          backgroundColor: "var(--bg-surface)",
+          border: "2px solid var(--border-hard)",
+          boxShadow: "var(--shadow-brutal-sm)",
         }}
       >
         <div className="flex gap-3">
@@ -343,7 +343,7 @@ export default function HireChatPage() {
             className="btn-brutal self-end text-sm py-3 px-4 flex items-center gap-2 disabled:opacity-50"
             style={{
               backgroundColor: "var(--accent)",
-              color: "#FFFFFF",
+              color: "var(--text-on-inverted)",
             }}
           >
             <Send size={16} />
@@ -352,7 +352,7 @@ export default function HireChatPage() {
         </div>
       </div>
 
-      <p className="text-xs text-[#A1A1AA] text-center mt-4 font-medium">
+      <p className="text-xs text-[var(--text-muted-soft)] text-center mt-4 font-medium">
         Messages refresh automatically. Keep this page bookmarked to continue the conversation.
       </p>
     </div>

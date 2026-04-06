@@ -23,10 +23,10 @@ export function MatchCard({ match, rank }: MatchCardProps) {
 
   return (
     <div
-      className="p-5 transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#0F0F0F]"
+      className="p-5 transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
       style={{
-        backgroundColor: "#FFFFFF",
-        border: "2px solid #0F0F0F",
+        backgroundColor: "var(--bg-surface)",
+        border: "2px solid var(--border-hard)",
         boxShadow: rank === 1 ? "var(--shadow-brutal-accent)" : "var(--shadow-brutal)",
       }}
     >
@@ -35,13 +35,13 @@ export function MatchCard({ match, rank }: MatchCardProps) {
         <div className="flex flex-col items-center gap-2">
           <div
             className="text-xs font-extrabold text-white px-2 py-0.5"
-            style={{ backgroundColor: rank === 1 ? "var(--accent)" : "#0F0F0F" }}
+            style={{ backgroundColor: rank === 1 ? "var(--accent)" : "var(--bg-inverted)" }}
           >
             #{rank}
           </div>
           <div
             className="flex h-12 w-12 shrink-0 items-center justify-center text-sm font-extrabold text-white overflow-hidden"
-            style={{ backgroundColor: "#0F0F0F", border: "2px solid #0F0F0F" }}
+            style={{ backgroundColor: "var(--bg-inverted)", border: "2px solid var(--border-hard)" }}
           >
             {user.avatar_url ? (
               <Image src={user.avatar_url} alt={user.username} width={48} height={48} className="w-full h-full object-cover" />
@@ -55,7 +55,7 @@ export function MatchCard({ match, rank }: MatchCardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-extrabold uppercase text-[#0F0F0F]">@{user.username}</h3>
+              <h3 className="font-extrabold uppercase text-[var(--foreground)]">@{user.username}</h3>
               <BadgeDisplay level={user.badge_level} size="sm" />
             </div>
             <div
@@ -66,14 +66,14 @@ export function MatchCard({ match, rank }: MatchCardProps) {
             </div>
           </div>
 
-          <div className="text-xs font-bold uppercase text-[#71717A] mt-1">
+          <div className="text-xs font-bold uppercase text-[var(--text-muted)] mt-1">
             {recommended_for}
           </div>
 
           {/* Match reasons */}
           <div className="mt-3 space-y-1">
             {match_reasons.map((reason, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm text-[#52525B] font-medium">
+              <div key={i} className="flex items-center gap-2 text-sm text-[var(--text-secondary)] font-medium">
                 <Bot size={12} className="text-[var(--accent)] shrink-0" />
                 {reason}
               </div>
@@ -88,7 +88,7 @@ export function MatchCard({ match, rank }: MatchCardProps) {
                   key={skill}
                   className="px-2 py-0.5 text-xs font-bold uppercase"
                   style={{
-                    backgroundColor: "#FFF7ED",
+                    backgroundColor: "var(--status-warning-bg)",
                     border: "1px solid var(--accent)",
                     color: "var(--accent)",
                   }}

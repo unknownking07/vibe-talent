@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Flame,
   Github,
@@ -45,10 +45,13 @@ const STEP_LABELS = ["Profile", "Links", "Project", "Go!"] as const;
 
 export default function ProfileSetupPage() {
   const router = useRouter();
-  const [step, setStep] = useState(1);
+  const searchParams = useSearchParams();
+  const initialStep = Number(searchParams.get("step")) || 1;
+  const [step, setStep] = useState(initialStep);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [oauthAvatarUrl, setOauthAvatarUrl] = useState<string | null>(null);
   const [streakLogged, setStreakLogged] = useState(false);
 
   // Step 1
@@ -86,9 +89,33 @@ export default function ProfileSetupPage() {
         return;
       }
       setUserId(user.id);
+      // Grab OAuth avatar from provider metadata
+      const avatar =
+        user.user_metadata?.avatar_url ||
+        user.user_metadata?.picture ||
+        null;
+      setOauthAvatarUrl(avatar);
+
+      // If returning user redirected to step 2, pre-fill existing socials
+      if (initialStep === 2) {
+        const supabase = createClient();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data } = await (supabase.from("social_links") as any)
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+        if (data) {
+          setSocials({
+            github: data.github || "",
+            twitter: data.twitter || "",
+            website: data.website || "",
+            telegram: data.telegram || "",
+          });
+        }
+      }
     };
     checkAuth();
-  }, [router]);
+  }, [router, initialStep]);
 
   /* ── Helpers ─────────────────────────────────────────────── */
 
@@ -120,6 +147,7 @@ export default function ProfileSetupPage() {
           id: userId,
           username: profile.username,
           bio: profile.bio || null,
+          ...(oauthAvatarUrl ? { avatar_url: oauthAvatarUrl } : {}),
         },
         { onConflict: "id" }
       );
@@ -136,22 +164,35 @@ export default function ProfileSetupPage() {
   };
 
   const handleStep2Next = async () => {
+    const github = socials.github.trim();
+    const twitter = socials.twitter.trim();
+    const telegram = socials.telegram.trim();
+    if (!github) {
+      setError("GitHub username is required so we can verify your work.");
+      return;
+    }
+    if (!twitter && !telegram) {
+      setError("Please add your X (Twitter) or Telegram so clients can contact you.");
+      return;
+    }
+
     setError("");
     setLoading(true);
 
     try {
-      const hasLinks =
-        socials.github || socials.twitter || socials.website || socials.telegram;
+      const github = socials.github.trim();
+      const website = socials.website.trim();
+      const hasLinks = github || twitter || website || telegram;
 
       if (hasLinks) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: dbError } = await (supabase.from("social_links") as any).upsert(
           {
             user_id: userId,
-            github: socials.github || null,
-            twitter: socials.twitter || null,
-            website: socials.website || null,
-            telegram: socials.telegram || null,
+            github: github || null,
+            twitter: twitter || null,
+            website: website || null,
+            telegram: telegram || null,
           },
           { onConflict: "user_id" }
         );
@@ -159,7 +200,12 @@ export default function ProfileSetupPage() {
         if (dbError) throw dbError;
       }
 
-      setStep(3);
+      // If returning user (came from dashboard redirect), skip to streak step
+      if (initialStep === 2) {
+        setStep(4);
+      } else {
+        setStep(3);
+      }
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to save links";
@@ -239,16 +285,16 @@ export default function ProfileSetupPage() {
         <div key={s} className="flex items-center gap-2">
           <div className="flex flex-col items-center gap-1">
             <div
-              className="w-8 h-8 flex items-center justify-center text-xs font-extrabold border-2 border-[#0F0F0F]"
+              className="w-8 h-8 flex items-center justify-center text-xs font-extrabold border-2 border-[var(--border-hard)]"
               style={{
                 backgroundColor:
-                  s < step ? "#0F0F0F" : s === step ? "#FF3A00" : "#FFFFFF",
-                color: s <= step ? "#FFFFFF" : "#0F0F0F",
+                  s < step ? "var(--foreground)" : s === step ? "#FF3A00" : "var(--bg-surface)",
+                color: s <= step ? "var(--background)" : "var(--foreground)",
               }}
             >
               {s < step ? "✓" : s}
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-wide text-[#52525B]">
+            <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-secondary)]">
               {STEP_LABELS[s - 1]}
             </span>
           </div>
@@ -256,7 +302,7 @@ export default function ProfileSetupPage() {
             <div
               className="w-8 h-0.5 mb-4"
               style={{
-                backgroundColor: s < step ? "#0F0F0F" : "#E5E5E5",
+                backgroundColor: s < step ? "var(--bg-inverted)" : "var(--border-subtle)",
               }}
             />
           )}
@@ -269,10 +315,10 @@ export default function ProfileSetupPage() {
 
   const errorBox = error ? (
     <div
-      className="p-3 text-sm font-bold text-[#991B1B]"
+      className="p-3 text-sm font-bold text-[var(--status-error-text)]"
       style={{
-        backgroundColor: "#FEF2F2",
-        border: "2px solid #0F0F0F",
+        backgroundColor: "var(--status-error-bg)",
+        border: "2px solid var(--border-hard)",
       }}
     >
       {error}
@@ -288,23 +334,23 @@ export default function ProfileSetupPage() {
           className="w-10 h-10 flex items-center justify-center"
           style={{
             backgroundColor: "#FF3A00",
-            border: "2px solid #0F0F0F",
+            border: "2px solid var(--border-hard)",
           }}
         >
           <Zap size={20} className="text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-extrabold uppercase text-[#0F0F0F]">
+          <h2 className="text-xl font-extrabold uppercase text-[var(--foreground)]">
             Profile Basics
           </h2>
-          <p className="text-xs text-[#52525B] font-medium">
+          <p className="text-xs text-[var(--text-secondary)] font-medium">
             Tell us who you are
           </p>
         </div>
       </div>
 
       <div>
-        <label className="text-xs font-bold uppercase tracking-wide text-[#52525B] mb-1.5 block">
+        <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5 block">
           Username *
         </label>
         <input
@@ -320,13 +366,13 @@ export default function ProfileSetupPage() {
           className="input-brutal w-full"
           required
         />
-        <p className="text-[10px] text-[#52525B] mt-1">
+        <p className="text-[10px] text-[var(--text-secondary)] mt-1">
           Min 3 chars. Lowercase letters, numbers, and underscores only.
         </p>
       </div>
 
       <div>
-        <label className="text-xs font-bold uppercase tracking-wide text-[#52525B] mb-1.5 block">
+        <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5 block">
           Bio
         </label>
         <textarea
@@ -361,29 +407,30 @@ export default function ProfileSetupPage() {
           className="w-10 h-10 flex items-center justify-center"
           style={{
             backgroundColor: "#FF3A00",
-            border: "2px solid #0F0F0F",
+            border: "2px solid var(--border-hard)",
           }}
         >
           <LinkIcon size={20} className="text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-extrabold uppercase text-[#0F0F0F]">
+          <h2 className="text-xl font-extrabold uppercase text-[var(--foreground)]">
             Social Links
           </h2>
-          <p className="text-xs text-[#52525B] font-medium">
-            Connect your profiles (all optional)
+          <p className="text-xs text-[var(--text-secondary)] font-medium">
+            GitHub required + X or Telegram so clients can reach you
           </p>
         </div>
       </div>
 
       <div className="flex items-center gap-3">
-        <Github size={18} className="text-[#52525B] shrink-0" />
+        <Github size={18} className="text-[var(--text-secondary)] shrink-0" />
         <input
           type="text"
           value={socials.github}
           onChange={(e) => setSocials({ ...socials, github: e.target.value })}
-          placeholder="GitHub username"
+          placeholder="GitHub username *"
           className="input-brutal w-full"
+          required
         />
       </div>
 
@@ -407,7 +454,7 @@ export default function ProfileSetupPage() {
       </div>
 
       <div className="flex items-center gap-3">
-        <Globe size={18} className="text-[#52525B] shrink-0" />
+        <Globe size={18} className="text-[var(--text-secondary)] shrink-0" />
         <input
           type="text"
           value={socials.website}
@@ -418,7 +465,7 @@ export default function ProfileSetupPage() {
       </div>
 
       <div className="flex items-center gap-3">
-        <TelegramIcon size={18} className="text-[#52525B] shrink-0" />
+        <TelegramIcon size={18} className="text-[var(--text-secondary)] shrink-0" />
         <input
           type="text"
           value={socials.telegram}
@@ -453,16 +500,6 @@ export default function ProfileSetupPage() {
         </button>
       </div>
 
-      <button
-        type="button"
-        onClick={() => {
-          setError("");
-          setStep(3);
-        }}
-        className="w-full text-center text-xs font-bold uppercase tracking-wide text-[#52525B] hover:text-[#FF3A00] transition-colors"
-      >
-        Skip this step
-      </button>
     </div>
   );
 
@@ -475,23 +512,23 @@ export default function ProfileSetupPage() {
           className="w-10 h-10 flex items-center justify-center"
           style={{
             backgroundColor: "#FF3A00",
-            border: "2px solid #0F0F0F",
+            border: "2px solid var(--border-hard)",
           }}
         >
           <FolderGit2 size={20} className="text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-extrabold uppercase text-[#0F0F0F]">
+          <h2 className="text-xl font-extrabold uppercase text-[var(--foreground)]">
             First Project
           </h2>
-          <p className="text-xs text-[#52525B] font-medium">
+          <p className="text-xs text-[var(--text-secondary)] font-medium">
             Showcase what you&apos;re building (optional)
           </p>
         </div>
       </div>
 
       <div>
-        <label className="text-xs font-bold uppercase tracking-wide text-[#52525B] mb-1.5 block">
+        <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5 block">
           Project Title *
         </label>
         <input
@@ -504,7 +541,7 @@ export default function ProfileSetupPage() {
       </div>
 
       <div>
-        <label className="text-xs font-bold uppercase tracking-wide text-[#52525B] mb-1.5 block">
+        <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5 block">
           Description *
         </label>
         <textarea
@@ -519,7 +556,7 @@ export default function ProfileSetupPage() {
       </div>
 
       <div>
-        <label className="text-xs font-bold uppercase tracking-wide text-[#52525B] mb-1.5 block">
+        <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5 block">
           Tech Stack
         </label>
         <input
@@ -531,11 +568,11 @@ export default function ProfileSetupPage() {
           placeholder="React, Node.js, Supabase"
           className="input-brutal w-full"
         />
-        <p className="text-[10px] text-[#52525B] mt-1">Comma-separated</p>
+        <p className="text-[10px] text-[var(--text-secondary)] mt-1">Comma-separated</p>
       </div>
 
       <div>
-        <label className="text-xs font-bold uppercase tracking-wide text-[#52525B] mb-1.5 block">
+        <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5 block">
           GitHub URL
         </label>
         <input
@@ -580,7 +617,7 @@ export default function ProfileSetupPage() {
           setError("");
           setStep(4);
         }}
-        className="w-full text-center text-xs font-bold uppercase tracking-wide text-[#52525B] hover:text-[#FF3A00] transition-colors"
+        className="w-full text-center text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] hover:text-[#FF3A00] transition-colors"
       >
         Skip this step
       </button>
@@ -596,16 +633,16 @@ export default function ProfileSetupPage() {
           className="w-10 h-10 flex items-center justify-center"
           style={{
             backgroundColor: "#FF3A00",
-            border: "2px solid #0F0F0F",
+            border: "2px solid var(--border-hard)",
           }}
         >
           <Flame size={20} className="text-white" />
         </div>
         <div className="text-left">
-          <h2 className="text-xl font-extrabold uppercase text-[#0F0F0F]">
+          <h2 className="text-xl font-extrabold uppercase text-[var(--foreground)]">
             Start Your Streak
           </h2>
-          <p className="text-xs text-[#52525B] font-medium">
+          <p className="text-xs text-[var(--text-secondary)] font-medium">
             Build every day. Ship every day.
           </p>
         </div>
@@ -616,8 +653,8 @@ export default function ProfileSetupPage() {
           <div
             className="p-8"
             style={{
-              backgroundColor: "#FFFBF5",
-              border: "2px solid #0F0F0F",
+              backgroundColor: "var(--bg-surface-light)",
+              border: "2px solid var(--border-hard)",
             }}
           >
             <Flame
@@ -625,10 +662,10 @@ export default function ProfileSetupPage() {
               className="mx-auto mb-4"
               style={{ color: "#FF3A00" }}
             />
-            <p className="text-sm font-bold text-[#0F0F0F] uppercase mb-1">
+            <p className="text-sm font-bold text-[var(--foreground)] uppercase mb-1">
               Day 1 starts now
             </p>
-            <p className="text-xs text-[#52525B]">
+            <p className="text-xs text-[var(--text-secondary)]">
               Log your first day and begin your building streak
             </p>
           </div>
@@ -651,8 +688,8 @@ export default function ProfileSetupPage() {
           <div
             className="p-8"
             style={{
-              backgroundColor: "#F0FFF4",
-              border: "2px solid #0F0F0F",
+              backgroundColor: "var(--status-success-bg)",
+              border: "2px solid var(--border-hard)",
               boxShadow: "var(--shadow-brutal)",
             }}
           >
@@ -662,7 +699,7 @@ export default function ProfileSetupPage() {
                 className="animate-bounce"
                 style={{ color: "#FF3A00" }}
               />
-              <span className="text-4xl font-extrabold text-[#0F0F0F]">
+              <span className="text-4xl font-extrabold text-[var(--foreground)]">
                 1
               </span>
               <Flame
@@ -671,17 +708,56 @@ export default function ProfileSetupPage() {
                 style={{ color: "#FF3A00" }}
               />
             </div>
-            <p className="text-lg font-extrabold uppercase text-[#0F0F0F]">
+            <p className="text-lg font-extrabold uppercase text-[var(--foreground)]">
               Streak Started!
             </p>
-            <p className="text-sm text-[#52525B] mt-1">
+            <p className="text-sm text-[var(--text-secondary)] mt-1">
               You&apos;re officially a builder. Keep it going!
             </p>
           </div>
 
           <button
             type="button"
-            onClick={() => router.push("/dashboard")}
+            onClick={async () => {
+              // Process referral if exists
+              const refCode = localStorage.getItem("referral_code");
+              if (refCode && refCode !== profile.username && userId) {
+                try {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const sb = supabase as any;
+                  // Find the referrer
+                  const { data: referrer } = await sb
+                    .from("users")
+                    .select("id, referral_count")
+                    .eq("username", refCode)
+                    .single();
+                  if (referrer) {
+                    // Create referral record
+                    await sb.from("referrals").insert({
+                      referrer_id: referrer.id,
+                      referred_id: userId,
+                    });
+                    // Give referrer a streak bonus day
+                    const today = new Date().toISOString().split("T")[0];
+                    await sb.from("streak_logs").upsert(
+                      { user_id: referrer.id, activity_date: today },
+                      { onConflict: "user_id,activity_date" }
+                    );
+                    // Increment referral count
+                    await sb
+                      .from("users")
+                      .update({
+                        referral_count: (referrer.referral_count || 0) + 1,
+                      })
+                      .eq("id", referrer.id);
+                  }
+                } catch {
+                  // Silently ignore referral errors — don't block onboarding
+                }
+                localStorage.removeItem("referral_code");
+              }
+              router.push("/dashboard");
+            }}
             className="btn-brutal btn-brutal-primary w-full justify-center text-sm"
             style={{ fontSize: "16px", padding: "14px 24px" }}
           >
@@ -703,16 +779,16 @@ export default function ProfileSetupPage() {
           className="inline-flex items-center justify-center w-14 h-14 mb-4"
           style={{
             backgroundColor: "#FF3A00",
-            border: "2px solid #0F0F0F",
+            border: "2px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
           <Flame size={28} className="text-white" />
         </div>
-        <h1 className="text-3xl font-extrabold uppercase text-[#0F0F0F]">
+        <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">
           Set Up Profile
         </h1>
-        <p className="mt-2 text-sm text-[#52525B] font-medium">
+        <p className="mt-2 text-sm text-[var(--text-secondary)] font-medium">
           Complete your VibeTalent builder profile
         </p>
       </div>
@@ -724,8 +800,8 @@ export default function ProfileSetupPage() {
       <div
         className="p-6"
         style={{
-          backgroundColor: "#FFFFFF",
-          border: "2px solid #0F0F0F",
+          backgroundColor: "var(--bg-surface)",
+          border: "2px solid var(--border-hard)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >

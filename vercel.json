@@ -1,12 +1,25 @@
 {
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "vibetalent.work"
+        }
+      ],
+      "destination": "https://www.vibetalent.work/$1",
+      "permanent": true
+    }
+  ],
   "crons": [
     {
-      "path": "/api/cron/streak-warning",
-      "schedule": "0 18 * * *"
+      "path": "/api/cron/daily",
+      "schedule": "0 6 * * *"
     },
     {
-      "path": "/api/cron/reset-streaks",
-      "schedule": "0 0 * * *"
+      "path": "/api/cron/check-live-urls",
+      "schedule": "0 3 * * 0"
     }
   ]
 }

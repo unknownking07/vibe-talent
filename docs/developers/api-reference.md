@@ -7,11 +7,11 @@ VibeTalent exposes two sets of APIs:
 
 ## Public API (v1)
 
-Base URL: `https://vibetalent.dev/api/v1`
+Base URL: `https://vibetalent.work/api/v1`
 
 All v1 endpoints include CORS headers and return JSON. No authentication required.
 
-### List Builders
+### List VibeCoders
 
 ```
 GET /api/v1/builders
@@ -54,7 +54,7 @@ GET /api/v1/builders
 }
 ```
 
-### Get Builder Profile
+### Get VibeCoder Profile
 
 ```
 GET /api/v1/builders/{username}
@@ -137,7 +137,7 @@ POST /api/streak
 GET /api/users/{username}
 ```
 
-Returns public profile data for a builder.
+Returns public profile data for a vibecoder.
 
 ### Reviews
 
@@ -145,7 +145,7 @@ Returns public profile data for a builder.
 GET /api/reviews?builder_id={uuid}
 ```
 
-Returns all reviews for a builder.
+Returns all reviews for a vibecoder.
 
 ```
 POST /api/reviews
@@ -186,7 +186,7 @@ Undo a report using the `reporter_token`.
 GET /api/hire
 ```
 
-**Requires authentication.** Returns all hire requests for the authenticated builder.
+**Requires authentication.** Returns all hire requests for the authenticated vibecoder.
 
 ```
 POST /api/hire
@@ -230,6 +230,57 @@ Send a message in a hire chat thread.
 }
 ```
 
+### Endorsements
+
+```
+GET /api/endorsements?project_id={uuid}
+```
+
+Returns endorsement count and whether the current user has endorsed.
+
+```
+POST /api/endorsements
+```
+
+**Requires authentication.** Endorse a project. **Rate limit:** 30 requests/hour per IP, max 10 endorsements/day per user.
+
+**Body:**
+
+```json
+{
+  "project_id": "uuid"
+}
+```
+
+**Anti-gaming rules:**
+- Cannot endorse your own projects (403)
+- One endorsement per user per project (409)
+- Account must be 7+ days old (403)
+- Must have at least one project or streak activity (403)
+- Max 10 endorsements per day (429)
+
+```
+DELETE /api/endorsements
+```
+
+**Requires authentication.** Remove your endorsement from a project.
+
+### Builder Outcomes
+
+```
+GET /api/builders/{username}/outcomes
+```
+
+Returns client outcome metrics for a builder: completed hires, avg rating, repeat clients, response time, outcome score.
+
+### Live URL Health Check (Cron)
+
+```
+GET /api/cron/check-live-urls
+```
+
+**Requires `CRON_SECRET` header.** Runs weekly to ping all verified project URLs and update `live_url_ok`.
+
 ### GitHub Activity Sync
 
 ```
@@ -252,7 +303,7 @@ GET /api/cron/reset-streaks
 GET /api/share-card/{username}
 ```
 
-Returns a dynamically generated PNG image of a builder's profile card (for social sharing).
+Returns a dynamically generated PNG image of a vibecoder's profile card (for social sharing).
 
 ## Error Responses
 

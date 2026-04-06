@@ -5,8 +5,8 @@ export default function ProfileLoading() {
         <div
           className="p-6 space-y-6"
           style={{
-            backgroundColor: "#FFFFFF",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--bg-surface)",
+            border: "2px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >

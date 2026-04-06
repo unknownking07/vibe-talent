@@ -38,26 +38,26 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
   return (
     <Link href={`/profile/${user.username}`}>
       <div
-        className="group relative p-5 transition-all card-brutal hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#0F0F0F]"
+        className="group relative p-5 transition-all card-brutal hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)] h-full flex flex-col"
       >
         {rank && (
           <div
             className="absolute -top-3 -left-3 flex h-8 w-8 items-center justify-center text-xs font-extrabold text-white"
             style={{
               backgroundColor: "var(--accent)",
-              border: "2px solid #0F0F0F",
+              border: "2px solid var(--border-hard)",
             }}
           >
             #{rank}
           </div>
         )}
 
-        <div className="flex items-start gap-4">
+        <div className="flex items-start gap-4 flex-1">
           <div
             className="flex h-12 w-12 shrink-0 items-center justify-center text-sm font-extrabold text-white overflow-hidden"
             style={{
-              backgroundColor: "#0F0F0F",
-              border: "2px solid #0F0F0F",
+              backgroundColor: "var(--bg-inverted)",
+              border: "2px solid var(--border-hard)",
             }}
           >
             {user.avatar_url ? (
@@ -69,7 +69,7 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-extrabold uppercase text-[#0F0F0F] group-hover:text-[var(--accent)] transition-colors">
+              <h3 className="font-extrabold uppercase text-[var(--foreground)] group-hover:text-[var(--accent)] transition-colors">
                 @{user.username}
               </h3>
               <BadgeDisplay level={user.badge_level} size="sm" />
@@ -82,38 +82,40 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
               </span>
             )}
 
-            {user.bio && (
-              <p className="mt-1 text-sm text-[#52525B] font-medium line-clamp-2">
-                {user.bio}
-              </p>
-            )}
+            <p className="mt-1 text-sm text-[var(--text-secondary)] font-medium line-clamp-2">
+              {user.bio || "No bio yet"}
+            </p>
 
             <div className="mt-3 flex items-center gap-4 flex-wrap">
               <StreakCounter streak={user.streak} size="sm" />
               <VibeScore score={user.vibe_score} size="sm" />
-              <div className="flex items-center gap-1 text-sm font-bold text-[#52525B]">
+              <div className="flex items-center gap-1 text-sm font-bold text-[var(--text-secondary)]">
                 <Code2 size={14} />
-                <span>{user.projects.length} projects</span>
+                <span>{(user.projects ?? []).length} projects</span>
               </div>
             </div>
 
-            {user.projects.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {user.projects.slice(0, 3).map((p) => (
+            <div className="mt-3 flex flex-wrap gap-1.5 min-h-[28px]">
+              {(user.projects ?? []).length > 0 ? (
+                (user.projects ?? []).slice(0, 3).map((p) => (
                   <span
                     key={p.id}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold text-[#0F0F0F]"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold text-[var(--text-tertiary)]"
                     style={{
-                      backgroundColor: "#F5F5F5",
-                      border: "1px solid #0F0F0F",
+                      backgroundColor: "var(--bg-surface-light)",
+                      border: "1px solid var(--border-hard)",
                     }}
                   >
                     <ExternalLink size={10} />
                     {p.title}
                   </span>
-                ))}
-              </div>
-            )}
+                ))
+              ) : (
+                <span className="text-xs font-medium text-zinc-400 italic">
+                  No projects shipped yet
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

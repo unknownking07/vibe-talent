@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Cron job: Reset streaks for users who haven't logged activity recently.
  * Should be called once daily (e.g., via Vercel Cron or external service).
+ *
+ * If a user has streak freezes remaining, their streak is preserved and
+ * one freeze is consumed instead of resetting.
  *
  * Protected by CRON_SECRET to prevent unauthorized access.
  */
@@ -17,16 +20,14 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabase = createAdminClient();
 
   try {
     // Find users with active streaks who haven't logged activity today or yesterday
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: staleUsers, error: fetchError } = await supabase
       .from("users")
-      .select("id, username, streak")
+      .select("id, username, streak, streak_freezes_remaining, streak_freezes_used")
       .gt("streak", 0);
 
     if (fetchError) {
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (!staleUsers || staleUsers.length === 0) {
-      return NextResponse.json({ message: "No active streaks to check", reset: 0 });
+      return NextResponse.json({ message: "No active streaks to check", reset: 0, froze: 0 });
     }
 
     // Get yesterday's date (users have until end of day to log)
@@ -54,33 +55,71 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch logs" }, { status: 500 });
     }
 
-    const activeUserIds = new Set((recentLogs || []).map((log) => log.user_id));
+    const activeUserIds = new Set((recentLogs || []).map((log: { user_id: string }) => log.user_id));
 
-    // Find users whose streak should be reset
-    const usersToReset = staleUsers.filter((user) => !activeUserIds.has(user.id));
+    // Find users whose streak is at risk (no recent activity)
+    const inactiveUsers = staleUsers.filter(
+      (user: { id: string }) => !activeUserIds.has(user.id)
+    );
 
-    if (usersToReset.length === 0) {
-      return NextResponse.json({ message: "All streaks are current", reset: 0 });
+    if (inactiveUsers.length === 0) {
+      return NextResponse.json({ message: "All streaks are current", reset: 0, froze: 0 });
     }
 
-    // Reset streaks to 0
-    const resetIds = usersToReset.map((u) => u.id);
-    const { error: updateError } = await supabase
-      .from("users")
-      .update({ streak: 0 })
-      .in("id", resetIds);
+    // Separate users into those who can use a freeze and those who get reset
+    const usersToFreeze = inactiveUsers.filter(
+      (u: { streak_freezes_remaining: number }) => (u.streak_freezes_remaining ?? 0) > 0
+    );
+    const usersToReset = inactiveUsers.filter(
+      (u: { streak_freezes_remaining: number }) => (u.streak_freezes_remaining ?? 0) <= 0
+    );
 
-    if (updateError) {
-      console.error("Failed to reset streaks:", updateError);
-      return NextResponse.json({ error: "Failed to reset streaks" }, { status: 500 });
+    // Consume a freeze for users who have freezes remaining
+    if (usersToFreeze.length > 0) {
+      for (const u of usersToFreeze) {
+        const { error: freezeError } = await supabase
+          .from("users")
+          .update({
+            streak_freezes_remaining: (u.streak_freezes_remaining ?? 2) - 1,
+            streak_freezes_used: (u.streak_freezes_used ?? 0) + 1,
+          })
+          .eq("id", u.id);
+
+        if (freezeError) {
+          console.error(`Failed to consume freeze for ${u.username}:`, freezeError);
+        }
+      }
+      console.log(
+        `Consumed streak freezes for ${usersToFreeze.length} users:`,
+        usersToFreeze.map((u: { username: string }) => u.username)
+      );
     }
 
-    console.log(`Reset streaks for ${usersToReset.length} users:`, usersToReset.map((u) => u.username));
+    // Reset streaks to 0 for users without freezes
+    if (usersToReset.length > 0) {
+      const resetIds = usersToReset.map((u: { id: string }) => u.id);
+      const { error: updateError } = await supabase
+        .from("users")
+        .update({ streak: 0 })
+        .in("id", resetIds);
+
+      if (updateError) {
+        console.error("Failed to reset streaks:", updateError);
+        return NextResponse.json({ error: "Failed to reset streaks" }, { status: 500 });
+      }
+
+      console.log(
+        `Reset streaks for ${usersToReset.length} users:`,
+        usersToReset.map((u: { username: string }) => u.username)
+      );
+    }
 
     return NextResponse.json({
-      message: `Reset ${usersToReset.length} stale streaks`,
+      message: `Reset ${usersToReset.length} stale streaks, froze ${usersToFreeze.length} streaks`,
       reset: usersToReset.length,
-      users: usersToReset.map((u) => u.username),
+      froze: usersToFreeze.length,
+      resetUsers: usersToReset.map((u: { username: string }) => u.username),
+      frozeUsers: usersToFreeze.map((u: { username: string }) => u.username),
     });
   } catch (error) {
     console.error("Cron job error:", error);

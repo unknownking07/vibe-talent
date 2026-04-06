@@ -40,7 +40,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
 
   const allTechStacks = useMemo(() => {
     const techs = new Set<string>();
-    users.forEach(u => u.projects.forEach(p => p.tech_stack.forEach(t => techs.add(t))));
+    users.forEach(u => (u.projects ?? []).forEach(p => (p.tech_stack ?? []).forEach(t => techs.add(t))));
     return [...techs].sort();
   }, [users]);
 
@@ -53,9 +53,11 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
         (u) =>
           u.username.toLowerCase().includes(q) ||
           u.bio?.toLowerCase().includes(q) ||
-          u.projects.some((p) =>
-            p.tech_stack.some((t) => t.toLowerCase().includes(q)) ||
-            p.tags.some((t) => t.toLowerCase().includes(q))
+          (u.projects ?? []).some((p) =>
+            p.title?.toLowerCase().includes(q) ||
+            p.description?.toLowerCase().includes(q) ||
+            (p.tech_stack ?? []).some((t) => t.toLowerCase().includes(q)) ||
+            (p.tags ?? []).some((t) => t.toLowerCase().includes(q))
           )
       );
     }
@@ -66,7 +68,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
 
     if (selectedTech.length > 0) {
       filtered = filtered.filter(u =>
-        u.projects.some(p => p.tech_stack.some(t => selectedTech.includes(t)))
+        (u.projects ?? []).some(p => (p.tech_stack ?? []).some(t => selectedTech.includes(t)))
       );
     }
     if (minStreak > 0) {
@@ -79,24 +81,47 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
       filtered = filtered.filter(u => u.streak > 0);
     }
     if (hasProjects) {
-      filtered = filtered.filter(u => u.projects.length > 0);
+      filtered = filtered.filter(u => (u.projects ?? []).length > 0);
     }
     if (verifiedOnly) {
-      filtered = filtered.filter(u => u.projects.some(p => p.verified));
+      filtered = filtered.filter(u => (u.projects ?? []).some(p => p.verified));
     }
+
+    // Quality ranking: normalized 0-1 scores, profiles with projects always above those without
+    const qualityScore = (u: typeof filtered[0]) => {
+      const projects = u.projects ?? [];
+
+      // No projects = always last, regardless of streak/score
+      if (projects.length === 0) return -1;
+
+      const projectCount = Math.min(projects.length, 5);
+      const verifiedCount = Math.min(projects.filter(p => p.verified).length, 5);
+      const withLiveUrl = Math.min(projects.filter(p => p.live_url).length, 5);
+
+      // All axes normalized to 0-1
+      // Max project raw = (5*8)+(5*10)+(5*5) = 115
+      const projectNorm = ((projectCount * 8) + (verifiedCount * 10) + (withLiveUrl * 5)) / 115;
+      const streakNorm = Math.min(u.streak, 100) / 100;
+      const vibeNorm = Math.min(u.vibe_score, 500) / 500;
+
+      return projectNorm * 0.4 + streakNorm * 0.3 + vibeNorm * 0.3;
+    };
+
+    // Has-projects first, then sort by selected field, quality score as tiebreaker
+    const hasProj = (u: typeof filtered[0]) => (u.projects ?? []).length > 0 ? 1 : 0;
 
     switch (sortBy) {
       case "vibe_score":
-        filtered.sort((a, b) => b.vibe_score - a.vibe_score);
+        filtered.sort((a, b) => hasProj(b) - hasProj(a) || b.vibe_score - a.vibe_score || qualityScore(b) - qualityScore(a));
         break;
       case "streak":
-        filtered.sort((a, b) => b.streak - a.streak);
+        filtered.sort((a, b) => hasProj(b) - hasProj(a) || b.streak - a.streak || qualityScore(b) - qualityScore(a));
         break;
       case "projects":
-        filtered.sort((a, b) => b.projects.length - a.projects.length);
+        filtered.sort((a, b) => hasProj(b) - hasProj(a) || (b.projects ?? []).length - (a.projects ?? []).length || qualityScore(b) - qualityScore(a));
         break;
       case "newest":
-        filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        filtered.sort((a, b) => hasProj(b) - hasProj(a) || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
     }
 
@@ -112,13 +137,13 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
 
   return (
     <>
-      {/* AI Agent Banner */}
+      {/* VibeFinder Bot Banner */}
       <Link
         href="/agent/find"
         className="flex items-center gap-4 p-4 mb-10 transition-all hover:translate-x-[1px] hover:translate-y-[1px]"
         style={{
-          backgroundColor: "#0F0F0F",
-          border: "2px solid #0F0F0F",
+          backgroundColor: "var(--bg-inverted)",
+          border: "2px solid var(--border-hard)",
           boxShadow: "var(--shadow-brutal-sm)",
         }}
       >
@@ -130,10 +155,10 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
         </div>
         <div>
           <div className="text-sm font-extrabold uppercase text-white">
-            Let AI Find Your Perfect Match
+            Let VibeFinder Bot Match You
           </div>
           <div className="text-xs font-medium text-zinc-400">
-            Describe your project and our agent will rank the best vibe coders for you
+            Describe your project and our bot reads platform data to find the best vibe coders for you
           </div>
         </div>
       </Link>
@@ -142,10 +167,10 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
       <div className="mb-8 space-y-4">
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#71717A]" />
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
               type="text"
-              placeholder="Search by name, tech stack, or tags..."
+              placeholder="Search by name, bio, projects, tech stack..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="input-brutal" style={{ paddingLeft: "2.5rem" }}
@@ -155,9 +180,9 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
             onClick={() => setShowFilters(!showFilters)}
             className="flex items-center gap-2 px-4 py-3 text-sm font-extrabold uppercase tracking-wide cursor-pointer transition-colors"
             style={{
-              backgroundColor: showFilters ? "var(--accent)" : "#FFFFFF",
-              color: showFilters ? "#FFFFFF" : "#0F0F0F",
-              border: "2px solid #0F0F0F",
+              backgroundColor: showFilters ? "var(--accent)" : "var(--bg-surface)",
+              color: showFilters ? "var(--background)" : "var(--foreground)",
+              border: "2px solid var(--border-hard)",
             }}
           >
             <SlidersHorizontal size={16} />
@@ -169,13 +194,13 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
           <div
             className="flex flex-wrap gap-4 p-4"
             style={{
-              backgroundColor: "#FFFFFF",
-              border: "2px solid #0F0F0F",
+              backgroundColor: "var(--bg-surface)",
+              border: "2px solid var(--border-hard)",
               boxShadow: "var(--shadow-brutal-sm)",
             }}
           >
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Sort By</label>
+              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Sort By</label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
@@ -188,7 +213,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
               </select>
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">Badge Level</label>
+              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Badge Level</label>
               <select
                 value={badgeFilter}
                 onChange={(e) => setBadgeFilter(e.target.value as BadgeLevel | "all")}
@@ -203,15 +228,15 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
               </select>
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-2 block">Tech Stack</label>
+              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-2 block">Tech Stack</label>
               <div className="flex flex-wrap gap-1.5">
                 {allTechStacks.slice(0, 20).map((tech) => (
                   <button key={tech} onClick={() => setSelectedTech(prev => prev.includes(tech) ? prev.filter(t => t !== tech) : [...prev, tech])}
                     className="px-2.5 py-1 text-xs font-bold transition-all"
                     style={{
-                      backgroundColor: selectedTech.includes(tech) ? "var(--accent)" : "#FFFFFF",
-                      color: selectedTech.includes(tech) ? "#FFFFFF" : "#0F0F0F",
-                      border: "2px solid #0F0F0F",
+                      backgroundColor: selectedTech.includes(tech) ? "var(--accent)" : "var(--bg-surface)",
+                      color: selectedTech.includes(tech) ? "var(--background)" : "var(--foreground)",
+                      border: "2px solid var(--border-hard)",
                     }}>
                     {tech}
                   </button>
@@ -219,41 +244,41 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
               </div>
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-2 block">Streak Range</label>
+              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-2 block">Streak Range</label>
               <div className="flex items-center gap-2">
                 <input type="number" min={0} max={365} value={minStreak} onChange={(e) => setMinStreak(Number(e.target.value))}
                   className="input-brutal w-20 text-center text-sm py-1.5" placeholder="Min" />
-                <span className="text-sm font-bold text-[#71717A]">to</span>
+                <span className="text-sm font-bold text-[var(--text-muted)]">to</span>
                 <input type="number" min={0} max={365} value={maxStreak} onChange={(e) => setMaxStreak(Number(e.target.value))}
                   className="input-brutal w-20 text-center text-sm py-1.5" placeholder="Max" />
-                <span className="text-xs font-bold text-[#71717A]">days</span>
+                <span className="text-xs font-bold text-[var(--text-muted)]">days</span>
               </div>
             </div>
             <div className="flex gap-2">
               <button onClick={() => setAvailableOnly(!availableOnly)}
                 className="px-3 py-1.5 text-xs font-bold transition-all"
                 style={{
-                  backgroundColor: availableOnly ? "#0F0F0F" : "#FFFFFF",
-                  color: availableOnly ? "#FFFFFF" : "#0F0F0F",
-                  border: "2px solid #0F0F0F",
+                  backgroundColor: availableOnly ? "var(--bg-inverted)" : "var(--bg-surface)",
+                  color: availableOnly ? "var(--background)" : "var(--foreground)",
+                  border: "2px solid var(--border-hard)",
                 }}>
                 🟢 Active Only
               </button>
               <button onClick={() => setHasProjects(!hasProjects)}
                 className="px-3 py-1.5 text-xs font-bold transition-all"
                 style={{
-                  backgroundColor: hasProjects ? "#0F0F0F" : "#FFFFFF",
-                  color: hasProjects ? "#FFFFFF" : "#0F0F0F",
-                  border: "2px solid #0F0F0F",
+                  backgroundColor: hasProjects ? "var(--bg-inverted)" : "var(--bg-surface)",
+                  color: hasProjects ? "var(--background)" : "var(--foreground)",
+                  border: "2px solid var(--border-hard)",
                 }}>
                 📦 Has Projects
               </button>
               <button onClick={() => setVerifiedOnly(!verifiedOnly)}
                 className="px-3 py-1.5 text-xs font-bold transition-all"
                 style={{
-                  backgroundColor: verifiedOnly ? "#0F0F0F" : "#FFFFFF",
-                  color: verifiedOnly ? "#FFFFFF" : "#0F0F0F",
-                  border: "2px solid #0F0F0F",
+                  backgroundColor: verifiedOnly ? "var(--bg-inverted)" : "var(--bg-surface)",
+                  color: verifiedOnly ? "var(--background)" : "var(--foreground)",
+                  border: "2px solid var(--border-hard)",
                 }}>
                 ✅ Verified Projects
               </button>
@@ -266,33 +291,33 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
       {(selectedTech.length > 0 || minStreak > 0 || maxStreak < 365 || availableOnly || hasProjects || verifiedOnly) && (
         <div className="flex flex-wrap gap-1.5 mb-4">
           {selectedTech.map(tech => (
-            <span key={tech} className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[var(--accent)] text-white border-2 border-[#0F0F0F]">
+            <span key={tech} className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[var(--accent)] text-white border-2 border-[var(--border-hard)]">
               {tech}
               <button onClick={() => setSelectedTech(prev => prev.filter(t => t !== tech))} className="hover:opacity-70">×</button>
             </span>
           ))}
           {minStreak > 0 && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[#0F0F0F] text-white border-2 border-[#0F0F0F]">
+            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[var(--bg-inverted)] text-white border-2 border-[var(--border-hard)]">
               Min: {minStreak}d <button onClick={() => setMinStreak(0)} className="hover:opacity-70">×</button>
             </span>
           )}
           {maxStreak < 365 && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[#0F0F0F] text-white border-2 border-[#0F0F0F]">
+            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[var(--bg-inverted)] text-white border-2 border-[var(--border-hard)]">
               Max: {maxStreak}d <button onClick={() => setMaxStreak(365)} className="hover:opacity-70">×</button>
             </span>
           )}
           {availableOnly && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[#0F0F0F] text-white border-2 border-[#0F0F0F]">
+            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[var(--bg-inverted)] text-white border-2 border-[var(--border-hard)]">
               Active Only <button onClick={() => setAvailableOnly(false)} className="hover:opacity-70">×</button>
             </span>
           )}
           {hasProjects && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[#0F0F0F] text-white border-2 border-[#0F0F0F]">
+            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[var(--bg-inverted)] text-white border-2 border-[var(--border-hard)]">
               Has Projects <button onClick={() => setHasProjects(false)} className="hover:opacity-70">×</button>
             </span>
           )}
           {verifiedOnly && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[#0F0F0F] text-white border-2 border-[#0F0F0F]">
+            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold bg-[var(--bg-inverted)] text-white border-2 border-[var(--border-hard)]">
               Verified <button onClick={() => setVerifiedOnly(false)} className="hover:opacity-70">×</button>
             </span>
           )}
@@ -304,7 +329,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
       )}
 
       {/* Results count */}
-      <p className="mb-4 text-sm font-bold uppercase tracking-wide text-[#71717A]">
+      <p className="mb-4 text-sm font-bold uppercase tracking-wide text-[var(--text-muted)]">
         {filteredUsers.length > PAGE_SIZE
           ? `Showing ${(activePage - 1) * PAGE_SIZE + 1}–${Math.min(activePage * PAGE_SIZE, filteredUsers.length)} of ${filteredUsers.length} builders`
           : `${filteredUsers.length} builder${filteredUsers.length !== 1 ? "s" : ""} found`}
@@ -327,8 +352,8 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
                 disabled={activePage === 1}
                 className="flex items-center justify-center w-10 h-10 font-extrabold uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 style={{
-                  backgroundColor: "#FFFFFF",
-                  border: "2px solid #0F0F0F",
+                  backgroundColor: "var(--bg-surface)",
+                  border: "2px solid var(--border-hard)",
                   boxShadow: "var(--shadow-brutal-sm)",
                 }}
               >
@@ -340,9 +365,9 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
                   onClick={() => goToPage(page)}
                   className="flex items-center justify-center w-10 h-10 text-sm font-extrabold uppercase transition-all"
                   style={{
-                    backgroundColor: activePage === page ? "#0F0F0F" : "#FFFFFF",
-                    color: activePage === page ? "#FFFFFF" : "#0F0F0F",
-                    border: "2px solid #0F0F0F",
+                    backgroundColor: activePage === page ? "var(--accent)" : "var(--bg-surface)",
+                    color: activePage === page ? "#FFFFFF" : "var(--foreground)",
+                    border: "2px solid var(--border-hard)",
                     boxShadow: activePage === page ? "none" : "var(--shadow-brutal-sm)",
                   }}
                 >
@@ -354,8 +379,8 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
                 disabled={activePage === totalPages}
                 className="flex items-center justify-center w-10 h-10 font-extrabold uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 style={{
-                  backgroundColor: "#FFFFFF",
-                  border: "2px solid #0F0F0F",
+                  backgroundColor: "var(--bg-surface)",
+                  border: "2px solid var(--border-hard)",
                   boxShadow: "var(--shadow-brutal-sm)",
                 }}
               >
@@ -368,12 +393,12 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
         <div
           className="p-12 text-center"
           style={{
-            backgroundColor: "#FFFFFF",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--bg-surface)",
+            border: "2px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
-          <p className="text-[#52525B] font-bold uppercase">No builders match your search.</p>
+          <p className="text-[var(--text-secondary)] font-bold uppercase">No builders match your search.</p>
           <button
             onClick={() => { setSearch(""); setBadgeFilter("all"); setSelectedTech([]); setMinStreak(0); setMaxStreak(365); setAvailableOnly(false); setHasProjects(false); setVerifiedOnly(false); }}
             className="mt-3 text-sm font-bold uppercase text-[var(--accent)] hover:underline"

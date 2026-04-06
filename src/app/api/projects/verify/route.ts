@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createNotification } from "@/lib/notifications";
+import { analyzeRepository, checkLiveUrl } from "@/lib/github-quality";
 
 export async function POST(request: Request) {
   try {
@@ -97,23 +98,62 @@ export async function POST(request: Request) {
 
     // Method 1: Owner match
     if (repoOwner.toLowerCase() === githubUsername.toLowerCase()) {
+      // Run quality analysis on the repo
+      const qualityResult = await analyzeRepository(repoOwner, repoName);
+      const qualityScore = qualityResult.success ? (qualityResult.metrics?.quality_score ?? 0) : 0;
+      const qualityMetrics = (qualityResult.success && qualityResult.metrics)
+        ? {
+            stars: qualityResult.metrics.stars,
+            forks: qualityResult.metrics.forks,
+            contributors: qualityResult.metrics.contributors,
+            total_commits: qualityResult.metrics.total_commits,
+            has_tests: qualityResult.metrics.has_tests,
+            has_ci: qualityResult.metrics.has_ci,
+            has_readme: qualityResult.metrics.has_readme,
+            community_score: qualityResult.metrics.community_score,
+            substance_score: qualityResult.metrics.substance_score,
+            maintenance_score: qualityResult.metrics.maintenance_score,
+            quality_score: qualityResult.metrics.quality_score,
+            analyzed_at: new Date().toISOString(),
+          }
+        : null;
+
+      // Check live URL health if provided
+      let live_url_ok: boolean | null = null;
+      const { data: fullProject } = await sb
+        .from("projects")
+        .select("live_url")
+        .eq("id", project_id)
+        .single();
+      if (fullProject?.live_url) {
+        live_url_ok = await checkLiveUrl(fullProject.live_url);
+      }
+
       await sb
         .from("projects")
-        .update({ verified: true })
+        .update({
+          verified: true,
+          quality_score: qualityScore,
+          quality_metrics: qualityMetrics,
+          live_url_ok,
+        })
         .eq("id", project_id);
 
       createNotification({
         user_id: user.id,
         type: "project_verified",
         title: "Project verified",
-        message: `Your project has been verified via owner match.`,
-        metadata: { project_id },
+        message: `Your project has been verified via owner match. Quality score: ${qualityScore}/100.`,
+        metadata: { project_id, quality_score: qualityScore },
       }).catch(console.error);
 
       return NextResponse.json({
         verified: true,
         reason: "Repository owner matches your GitHub username.",
         method: "owner_match",
+        quality_score: qualityScore,
+        quality_metrics: qualityMetrics,
+        live_url_ok,
       });
     }
 
@@ -146,17 +186,53 @@ export async function POST(request: Request) {
           fileContent.includes(githubUsername) ||
           fileContent.includes(user.id)
         ) {
+          // Run quality analysis on the repo
+          const qualityResult = await analyzeRepository(repoOwner, repoName);
+          const qualityScore = qualityResult.success ? (qualityResult.metrics?.quality_score ?? 0) : 0;
+          const qualityMetrics = (qualityResult.success && qualityResult.metrics)
+            ? {
+                stars: qualityResult.metrics.stars,
+                forks: qualityResult.metrics.forks,
+                contributors: qualityResult.metrics.contributors,
+                total_commits: qualityResult.metrics.total_commits,
+                has_tests: qualityResult.metrics.has_tests,
+                has_ci: qualityResult.metrics.has_ci,
+                has_readme: qualityResult.metrics.has_readme,
+                community_score: qualityResult.metrics.community_score,
+                substance_score: qualityResult.metrics.substance_score,
+                maintenance_score: qualityResult.metrics.maintenance_score,
+                quality_score: qualityResult.metrics.quality_score,
+                analyzed_at: new Date().toISOString(),
+              }
+            : null;
+
+          // Check live URL health
+          let live_url_ok: boolean | null = null;
+          const { data: fullProject } = await sb
+            .from("projects")
+            .select("live_url")
+            .eq("id", project_id)
+            .single();
+          if (fullProject?.live_url) {
+            live_url_ok = await checkLiveUrl(fullProject.live_url);
+          }
+
           await sb
             .from("projects")
-            .update({ verified: true })
+            .update({
+              verified: true,
+              quality_score: qualityScore,
+              quality_metrics: qualityMetrics,
+              live_url_ok,
+            })
             .eq("id", project_id);
 
           createNotification({
             user_id: user.id,
             type: "project_verified",
             title: "Project verified",
-            message: `Your project has been verified via verification file.`,
-            metadata: { project_id },
+            message: `Your project has been verified via verification file. Quality score: ${qualityScore}/100.`,
+            metadata: { project_id, quality_score: qualityScore },
           }).catch(console.error);
 
           return NextResponse.json({
@@ -164,6 +240,9 @@ export async function POST(request: Request) {
             reason:
               "Verification file (.vibetalent) found with your credentials.",
             method: "verification_file",
+            quality_score: qualityScore,
+            quality_metrics: qualityMetrics,
+            live_url_ok,
           });
         } else {
           return NextResponse.json({

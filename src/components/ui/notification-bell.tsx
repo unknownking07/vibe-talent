@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Bell, Flame, Trophy, CheckCircle, AlertTriangle, Mail } from "lucide-react";
+import { Bell, Flame, Trophy, CheckCircle, AlertTriangle, Mail, Star, Eye, BarChart3, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Notification } from "@/lib/types/database";
 
@@ -12,6 +12,10 @@ const typeIcons: Record<string, typeof Bell> = {
   badge_earned: Trophy,
   project_verified: CheckCircle,
   project_flagged: AlertTriangle,
+  new_review: Star,
+  profile_view_summary: Eye,
+  weekly_digest: BarChart3,
+  vibe_score_milestone: Zap,
 };
 
 const typeColors: Record<string, string> = {
@@ -21,6 +25,10 @@ const typeColors: Record<string, string> = {
   badge_earned: "#8B5CF6",
   project_verified: "#10B981",
   project_flagged: "#EF4444",
+  new_review: "#F59E0B",
+  profile_view_summary: "#3B82F6",
+  weekly_digest: "#6366F1",
+  vibe_score_milestone: "#FF3A00",
 };
 
 function timeAgo(dateStr: string): string {
@@ -117,13 +125,13 @@ export function NotificationBell() {
         onClick={() => setOpen(!open)}
         className="relative w-10 h-10 flex items-center justify-center cursor-pointer transition-all hover:translate-x-[1px] hover:translate-y-[1px]"
         style={{
-          backgroundColor: "#FFFFFF",
-          border: "2px solid #0F0F0F",
-          boxShadow: open ? "2px 2px 0 #0F0F0F" : "3px 3px 0 #0F0F0F",
+          backgroundColor: "var(--bg-surface)",
+          border: "2px solid var(--border-hard)",
+          boxShadow: open ? "var(--shadow-brutal-xs)" : "var(--shadow-brutal-sm)",
         }}
         aria-label="Notifications"
       >
-        <Bell size={18} className="text-[#0F0F0F]" />
+        <Bell size={18} className="text-[var(--foreground)]" />
         {unreadCount > 0 && (
           <span
             className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center px-1 text-[10px] font-extrabold text-white rounded-full"
@@ -138,12 +146,12 @@ export function NotificationBell() {
         <div
           className="absolute right-0 top-12 z-50 w-80 max-h-96 overflow-y-auto"
           style={{
-            backgroundColor: "#FFFFFF",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--bg-surface)",
+            border: "2px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
-          <div className="flex items-center justify-between px-4 py-3 border-b-2 border-[#0F0F0F]">
+          <div className="flex items-center justify-between px-4 py-3 border-b-2 border-[var(--border-hard)]">
             <span className="text-sm font-extrabold uppercase tracking-wide">Notifications</span>
             {unreadCount > 0 && (
               <button
@@ -158,31 +166,31 @@ export function NotificationBell() {
 
           {notifications.length === 0 ? (
             <div className="px-4 py-8 text-center">
-              <Bell size={24} className="mx-auto mb-2 text-[#A1A1AA]" />
-              <p className="text-sm font-medium text-[#A1A1AA]">No notifications yet</p>
+              <Bell size={24} className="mx-auto mb-2 text-[var(--text-muted-soft)]" />
+              <p className="text-sm font-medium text-[var(--text-muted-soft)]">No notifications yet</p>
             </div>
           ) : (
             <div>
               {notifications.map((n) => {
                 const Icon = typeIcons[n.type] || Bell;
-                const color = typeColors[n.type] || "#71717A";
+                const color = typeColors[n.type] || "var(--text-muted)";
                 return (
                   <button
                     key={n.id}
                     onClick={() => handleClickNotification(n)}
-                    className="w-full text-left px-4 py-3 flex gap-3 items-start transition-colors hover:bg-[#F4F4F5] cursor-pointer"
+                    className="w-full text-left px-4 py-3 flex gap-3 items-start transition-colors hover:bg-[var(--bg-surface-light)] cursor-pointer"
                     style={{
                       borderLeft: `3px solid ${color}`,
-                      backgroundColor: n.read ? "transparent" : "#FFFBEB",
+                      backgroundColor: n.read ? "transparent" : "var(--bg-surface-light, #FFFBEB)",
                     }}
                   >
                     <Icon size={16} style={{ color, marginTop: 2, flexShrink: 0 }} />
                     <div className="min-w-0 flex-1">
-                      <p className={`text-sm leading-tight ${n.read ? "font-medium text-[#52525B]" : "font-bold text-[#0F0F0F]"}`}>
+                      <p className={`text-sm leading-tight ${n.read ? "font-medium text-[var(--text-secondary)]" : "font-bold text-[var(--foreground)]"}`}>
                         {n.title}
                       </p>
-                      <p className="text-xs text-[#71717A] mt-0.5 truncate">{n.message}</p>
-                      <p className="text-[10px] text-[#A1A1AA] mt-1 font-medium">{timeAgo(n.created_at)}</p>
+                      <p className="text-xs mt-0.5 truncate" style={{ color: n.read ? "var(--text-muted)" : "var(--text-secondary)" }}>{n.message}</p>
+                      <p className="text-[10px] mt-1 font-medium" style={{ color: "var(--text-muted)" }}>{timeAgo(n.created_at)}</p>
                     </div>
                     {!n.read && (
                       <span

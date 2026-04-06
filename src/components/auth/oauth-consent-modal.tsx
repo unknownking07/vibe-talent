@@ -14,7 +14,7 @@ const providerConfig = {
   github: {
     name: "GitHub",
     icon: <Github size={24} />,
-    color: "#0F0F0F",
+    color: "#24292e",
     permissions: [
       { icon: <User size={18} />, label: "Profile information", detail: "Your name, username, and avatar" },
       { icon: <Mail size={18} />, label: "Email address", detail: "Your primary email on GitHub" },
@@ -53,15 +53,15 @@ export default function OAuthConsentModal({ provider, onConfirm, onCancel }: OAu
       <div
         className="relative w-full max-w-sm"
         style={{
-          backgroundColor: "#FFFFFF",
-          border: "2px solid #0F0F0F",
-          boxShadow: "6px 6px 0px #0F0F0F",
+          backgroundColor: "var(--bg-surface)",
+          border: "2px solid var(--border-hard)",
+          boxShadow: "var(--shadow-brutal)",
         }}
       >
         {/* Close button */}
         <button
           onClick={onCancel}
-          className="absolute top-3 right-3 p-1 text-[#71717A] hover:text-[#0F0F0F] cursor-pointer"
+          className="absolute top-3 right-3 p-1 text-[var(--text-muted)] hover:text-[var(--foreground)] cursor-pointer"
         >
           <X size={18} />
         </button>
@@ -72,17 +72,17 @@ export default function OAuthConsentModal({ provider, onConfirm, onCancel }: OAu
             className="inline-flex items-center justify-center w-12 h-12 mb-3"
             style={{
               backgroundColor: config.color,
-              border: "2px solid #0F0F0F",
-              boxShadow: "3px 3px 0px #0F0F0F",
-              color: "#FFFFFF",
+              border: "2px solid var(--border-hard)",
+              boxShadow: "var(--shadow-brutal-sm)",
+              color: "var(--text-on-inverted)",
             }}
           >
             {config.icon}
           </div>
-          <h2 className="text-lg font-extrabold uppercase text-[#0F0F0F]">
+          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)]">
             Sign in with {config.name}
           </h2>
-          <p className="mt-1 text-xs font-medium text-[#71717A]">
+          <p className="mt-1 text-xs font-medium text-[var(--text-muted)]">
             VibeTalent will access the following from your {config.name} account
           </p>
         </div>
@@ -93,12 +93,12 @@ export default function OAuthConsentModal({ provider, onConfirm, onCancel }: OAu
             <div
               key={i}
               className="flex items-start gap-3 py-3"
-              style={{ borderTop: i === 0 ? "2px solid #E4E4E7" : "1px solid #E4E4E7" }}
+              style={{ borderTop: i === 0 ? "2px solid var(--border-subtle)" : "1px solid var(--border-subtle)" }}
             >
-              <div className="mt-0.5 text-[#52525B]">{perm.icon}</div>
+              <div className="mt-0.5 text-[var(--text-secondary)]">{perm.icon}</div>
               <div>
-                <p className="text-sm font-bold text-[#0F0F0F]">{perm.label}</p>
-                <p className="text-xs text-[#71717A]">{perm.detail}</p>
+                <p className="text-sm font-bold text-[var(--foreground)]">{perm.label}</p>
+                <p className="text-xs text-[var(--text-muted)]">{perm.detail}</p>
               </div>
             </div>
           ))}
@@ -108,29 +108,30 @@ export default function OAuthConsentModal({ provider, onConfirm, onCancel }: OAu
         <div
           className="mx-6 mt-4 p-3 flex items-start gap-2"
           style={{
-            backgroundColor: "#F0FDF4",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--status-success-bg)",
+            border: "2px solid var(--border-hard)",
           }}
         >
           <Shield size={16} className="mt-0.5 text-[#16A34A] shrink-0" />
-          <p className="text-xs font-medium text-[#166534]">{config.privacyNote}</p>
+          <p className="text-xs font-medium text-[var(--status-success-text)]">{config.privacyNote}</p>
         </div>
 
         {/* Actions */}
         <div className="p-6 space-y-2">
           <button
             onClick={onConfirm}
-            className="w-full flex items-center justify-center px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white cursor-pointer transition-colors hover:opacity-90"
+            className="w-full flex items-center justify-center px-5 py-3 text-sm font-extrabold uppercase tracking-wide cursor-pointer transition-colors hover:opacity-90"
             style={{
               backgroundColor: config.color,
-              border: "2px solid #0F0F0F",
+              color: "#FFFFFF",
+              border: "2px solid var(--border-hard)",
             }}
           >
             Continue with {config.name}
           </button>
           <button
             onClick={onCancel}
-            className="w-full flex items-center justify-center px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-[#71717A] cursor-pointer hover:text-[#0F0F0F] transition-colors"
+            className="w-full flex items-center justify-center px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] cursor-pointer hover:text-[var(--foreground)] transition-colors"
           >
             Cancel
           </button>

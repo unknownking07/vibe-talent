@@ -38,7 +38,7 @@ export default function ContactPage({
 
   const handleThinkingComplete = useCallback(() => {
     if (user) {
-      const allTech = [...new Set(user.projects.flatMap(p => p.tech_stack))];
+      const allTech = [...new Set((user.projects ?? []).flatMap(p => p.tech_stack ?? []))];
       const draft = generateHireMessage(
         "Your Name",
         user.username,
@@ -67,7 +67,7 @@ export default function ContactPage({
   if (!user) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-        <h1 className="text-2xl font-extrabold uppercase text-[#0F0F0F]">Builder not found</h1>
+        <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Builder not found</h1>
       </div>
     );
   }
@@ -81,8 +81,8 @@ export default function ContactPage({
         <div
           className="p-8 text-center"
           style={{
-            backgroundColor: "#F0FDF4",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--status-success-bg)",
+            border: "2px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
@@ -90,13 +90,13 @@ export default function ContactPage({
             className="w-16 h-16 mx-auto mb-4 flex items-center justify-center"
             style={{
               backgroundColor: "#16A34A",
-              border: "2px solid #0F0F0F",
+              border: "2px solid var(--border-hard)",
             }}
           >
             <Send size={28} className="text-white" />
           </div>
-          <h2 className="text-2xl font-extrabold uppercase text-[#166534]">Request Sent!</h2>
-          <p className="mt-2 text-sm text-[#166534] font-medium">
+          <h2 className="text-2xl font-extrabold uppercase text-[var(--status-success-text)]">Request Sent!</h2>
+          <p className="mt-2 text-sm text-[var(--status-success-text)] font-medium">
             Your hire request to @{username} has been recorded.
           </p>
         </div>
@@ -104,15 +104,15 @@ export default function ContactPage({
         <div
           className="mt-6 p-6"
           style={{
-            backgroundColor: "#FFFFFF",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--bg-surface)",
+            border: "2px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
-          <h3 className="text-sm font-extrabold uppercase text-[#0F0F0F] mb-4">
+          <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)] mb-4">
             Follow Up Directly
           </h3>
-          <p className="text-sm text-[#52525B] font-medium mb-4">
+          <p className="text-sm text-[var(--text-secondary)] font-medium mb-4">
             Reach out to @{username} on their preferred channels for a faster response:
           </p>
           <div className="flex flex-wrap gap-3">
@@ -168,7 +168,7 @@ export default function ContactPage({
     <div className="mx-auto max-w-2xl px-4 sm:px-6 py-12">
       <Link
         href={`/profile/${username}`}
-        className="inline-flex items-center gap-2 text-sm font-bold uppercase text-[#71717A] hover:text-[var(--accent)] mb-6"
+        className="inline-flex items-center gap-2 text-sm font-bold uppercase text-[var(--text-muted)] hover:text-[var(--accent)] mb-6"
       >
         <ArrowLeft size={14} />
         Back to Profile
@@ -178,18 +178,18 @@ export default function ContactPage({
         <div
           className="w-10 h-10 flex items-center justify-center"
           style={{
-            backgroundColor: "#0F0F0F",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--bg-inverted)",
+            border: "2px solid var(--border-hard)",
           }}
         >
           <Bot size={20} className="text-[var(--accent)]" />
         </div>
         <div>
-          <h1 className="text-2xl font-extrabold uppercase text-[#0F0F0F]">
+          <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">
             Contact @{username}
           </h1>
-          <p className="text-sm text-[#52525B] font-medium">
-            AI-drafted hire request
+          <p className="text-sm text-[var(--text-secondary)] font-medium">
+            Bot-drafted hire request
           </p>
         </div>
       </div>
@@ -198,21 +198,21 @@ export default function ContactPage({
       <div
         className="p-4 flex items-center gap-4 mb-6"
         style={{
-          backgroundColor: "#FFFFFF",
-          border: "2px solid #0F0F0F",
+          backgroundColor: "var(--bg-surface)",
+          border: "2px solid var(--border-hard)",
           boxShadow: "var(--shadow-brutal-sm)",
         }}
       >
         <div
           className="flex h-12 w-12 shrink-0 items-center justify-center text-sm font-extrabold text-white"
-          style={{ backgroundColor: "#0F0F0F" }}
+          style={{ backgroundColor: "var(--bg-inverted)" }}
         >
           {initials}
         </div>
         <div>
-          <div className="font-extrabold uppercase text-[#0F0F0F]">@{username}</div>
-          <div className="text-xs font-bold text-[#71717A]">
-            {user.streak} day streak · {user.projects.length} projects · Vibe {user.vibe_score}
+          <div className="font-extrabold uppercase text-[var(--foreground)]">@{username}</div>
+          <div className="text-xs font-bold text-[var(--text-muted)]">
+            {user.streak} day streak · {(user.projects ?? []).length} projects · Vibe {user.vibe_score}
           </div>
         </div>
       </div>
@@ -225,13 +225,13 @@ export default function ContactPage({
         <div
           className="p-6 space-y-4 mt-4"
           style={{
-            backgroundColor: "#FFFFFF",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--bg-surface)",
+            border: "2px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
           <div>
-            <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+            <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
               Your Name
             </label>
             <input
@@ -245,8 +245,8 @@ export default function ContactPage({
           </div>
 
           <div>
-            <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
-              AI-Drafted Message
+            <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
+              Bot-Drafted Message
             </label>
             <textarea
               value={message}
@@ -254,9 +254,9 @@ export default function ContactPage({
               rows={10}
               className="input-brutal resize-none font-mono text-sm"
             />
-            <p className="text-xs text-[#A1A1AA] mt-1 font-medium">
+            <p className="text-xs text-[var(--text-muted-soft)] mt-1 font-medium">
               <Bot size={10} className="inline mr-1" />
-              Message drafted by AI agent. Feel free to edit before sending.
+              Message drafted by VibeFinder Bot. Feel free to edit before sending.
             </p>
           </div>
 

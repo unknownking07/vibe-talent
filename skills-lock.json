@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "skills": {
+    "add-analytics": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "acdcb8a54a3509d89f04650d5211c2ddb1643c21405308e532b7b3b8f603c43b"
+    },
+    "aeo-ready": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "d6bde23d4af895808080b0f4abc35edf20b4009b015d1362df7c867b2303e5b1"
+    },
+    "app-copy": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "a949775fcd4beddebb0eb928fee0937620cbcb4c98386c8c313cb575a76b1f12"
+    },
+    "changelog": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "6143a4acff4bc40649c525287031561d8ae13f67aac3f11dd8ad62077d94ccce"
+    },
+    "cold-email": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "5a9d3e320255047883a5fbf8cda9b524e3f14effdd92efc8da14a8d4edc49ba0"
+    },
+    "cold-outreach-sequence": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "5468235ea645a6a3824ed63311c93ea80a653b6dc9f62982f98b06189bd8cfe0"
+    },
+    "decision-doc": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "b9668d8e64ba7f214f3e20275fc23006dd71eb294e8cc04524baffdb73e829b5"
+    },
+    "deploy-check": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "ad107aa1c6d3201004913f05871eed514a554253f112dfbf1a92f05a38e76ed9"
+    },
+    "dodo-webhook": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "1e6f34c1c1a45d9d3a8b2e982452be62402429e01cf5faaf992bfce1ae1a094e"
+    },
+    "economics": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "e6c008cfe8dffcfb4415499530ed8231826776772dc6132c66ce2f17c087cb51"
+    },
+    "landing-copy": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "54a478b64b65d5cb82b5219ee81c198d0827218c618f96127fac9c8c91731d53"
+    },
+    "make-skill": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "c4992645a5c82439c24b4a05674cf122702fee29f5e5342422c899fb2787bc11"
+    },
+    "model-audit": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "759cb278694180412791e4f97b596b3a6749be5f8bc44b3e33ff74f169e7e7f0"
+    },
+    "mvp-spec": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "2b47158f7316a04667017858b04498d6dc7a44d8e0f89e5f4b7da3299e928064"
+    },
+    "og-image": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "8c83c23c53cca42fba4b1103aee5d75a4f0331940adf51ad6b3f124a239ae22e"
+    },
+    "pricing-page": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "640cddc2079c61821b626ef39d1ad88049a72e750c349beda7be32916dd1256a"
+    },
+    "product-brief": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "a51db4487352e1efe19961f3b7c64cda3d823a8da0d75b7fe43707b336e78ad4"
+    },
+    "readme": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "b52277114260aa9dcbc74728f26ee98a1da61076bf635779f0bf9f731a3f460c"
+    },
+    "remotion-video": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "a6a80ffa7585f71ef36aedf7c370012721c35e84b2f514f1e3f0ec397563b59d"
+    },
+    "segment-users": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "55dcd474454804c47109de594db92baeccfa6af51889a5b2e2df88f9bffcf637"
+    },
+    "seo-ready": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "37937c6b83ec1a91658917c31cad0e6e92434be2c1a864295069a54df988fd43"
+    },
+    "ship-credits": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "64509f16ed198a7b4f426acbd9000cc7e2a441841f4f158e86c8fdd57e40e90f"
+    },
+    "ship-email": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "69c62c84aab594145a800a4f8a3fdaccdd272c77ad5adc207daf9569963a0dff"
+    },
+    "teardown": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "668e5e09b69a124d18b59d541676d4b4337f3432d20ebce386b2ceb4357728dc"
+    },
+    "wire-auth": {
+      "source": "tushaarmehtaa/tushar-skills",
+      "sourceType": "github",
+      "computedHash": "861677bb87713f2e1b021fec8356342e80342b20e153cadccb6b02a6be75ffca"
+    }
+  }
+}

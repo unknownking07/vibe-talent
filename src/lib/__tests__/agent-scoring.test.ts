@@ -1,7 +1,33 @@
 import { describe, it, expect } from "vitest";
 import { evaluateUser, matchUsers, generateHireMessage } from "../agent-scoring";
-import type { UserWithSocials } from "../types/database";
+import type { UserWithSocials, Project } from "../types/database";
 import type { TaskRequest } from "../types/agent";
+
+const projectDefaults: Pick<Project, "quality_score" | "quality_metrics" | "live_url_ok" | "endorsement_count"> = {
+  quality_score: 0,
+  quality_metrics: null,
+  live_url_ok: null,
+  endorsement_count: 0,
+};
+
+function createMockProject(overrides: Partial<Project> = {}): Project {
+  return {
+    id: "p-1",
+    user_id: "user-1",
+    title: "Test Project",
+    description: "A comprehensive test project with many features and good documentation",
+    tech_stack: ["React", "TypeScript", "Node.js"],
+    live_url: "https://test.dev",
+    github_url: "https://github.com/test/project",
+    image_url: null,
+    build_time: "2 weeks",
+    tags: ["web", "fullstack"],
+    verified: true,
+    created_at: "2025-01-01T00:00:00Z",
+    ...projectDefaults,
+    ...overrides,
+  };
+}
 
 function createMockUser(overrides: Partial<UserWithSocials> = {}): UserWithSocials {
   return {
@@ -26,22 +52,7 @@ function createMockUser(overrides: Partial<UserWithSocials> = {}): UserWithSocia
       website: "https://test.dev",
       farcaster: null,
     },
-    projects: [
-      {
-        id: "p-1",
-        user_id: "user-1",
-        title: "Test Project",
-        description: "A comprehensive test project with many features and good documentation",
-        tech_stack: ["React", "TypeScript", "Node.js"],
-        live_url: "https://test.dev",
-        github_url: "https://github.com/test/project",
-        image_url: null,
-        build_time: "2 weeks",
-        tags: ["web", "fullstack"],
-        verified: true,
-        created_at: "2025-01-01T00:00:00Z",
-      },
-    ],
+    projects: [createMockProject()],
     ...overrides,
   };
 }
@@ -93,19 +104,15 @@ describe("evaluateUser", () => {
 
   it("gives higher score to users with more projects", () => {
     const manyProjects = createMockUser({
-      projects: Array.from({ length: 5 }, (_, i) => ({
+      projects: Array.from({ length: 5 }, (_, i) => createMockProject({
         id: `p-${i}`,
-        user_id: "user-1",
         title: `Project ${i}`,
         description: "A well-documented project with comprehensive features",
         tech_stack: ["React", "Node.js"],
         live_url: `https://project${i}.dev`,
         github_url: `https://github.com/test/project${i}`,
-        image_url: null,
         build_time: "1 week",
         tags: ["web"],
-        verified: true,
-        created_at: "2025-01-01T00:00:00Z",
       })),
     });
     const fewProjects = createMockUser({ projects: [] });
@@ -119,11 +126,11 @@ describe("evaluateUser", () => {
   it("flags unverified projects as a risk", () => {
     const user = createMockUser({
       projects: [
-        {
-          id: "p-1", user_id: "user-1", title: "Fake", description: "Unverified project",
-          tech_stack: ["React"], live_url: null, github_url: null, image_url: null,
-          build_time: null, tags: [], verified: false, created_at: "2025-01-01T00:00:00Z",
-        },
+        createMockProject({
+          title: "Fake", description: "Unverified project",
+          tech_stack: ["React"], live_url: null, github_url: null,
+          build_time: null, tags: [], verified: false,
+        }),
       ],
     });
     const result = evaluateUser(user);
@@ -132,19 +139,19 @@ describe("evaluateUser", () => {
 
   it("gives higher project quality score to verified projects", () => {
     const verifiedUser = createMockUser({
-      projects: Array.from({ length: 3 }, (_, i) => ({
-        id: `p-${i}`, user_id: "user-1", title: `Proj ${i}`,
+      projects: Array.from({ length: 3 }, (_, i) => createMockProject({
+        id: `p-${i}`, title: `Proj ${i}`,
         description: "A well-documented project with comprehensive features",
         tech_stack: ["React"], live_url: `https://p${i}.dev`, github_url: `https://github.com/t/p${i}`,
-        image_url: null, build_time: null, tags: [], verified: true, created_at: "2025-01-01T00:00:00Z",
+        build_time: null, tags: [], verified: true,
       })),
     });
     const unverifiedUser = createMockUser({
-      projects: Array.from({ length: 3 }, (_, i) => ({
-        id: `p-${i}`, user_id: "user-1", title: `Proj ${i}`,
+      projects: Array.from({ length: 3 }, (_, i) => createMockProject({
+        id: `p-${i}`, title: `Proj ${i}`,
         description: "A well-documented project with comprehensive features",
         tech_stack: ["React"], live_url: `https://p${i}.dev`, github_url: `https://github.com/t/p${i}`,
-        image_url: null, build_time: null, tags: [], verified: false, created_at: "2025-01-01T00:00:00Z",
+        build_time: null, tags: [], verified: false,
       })),
     });
     const vResult = evaluateUser(verifiedUser);
@@ -181,7 +188,7 @@ describe("matchUsers", () => {
         username: `user${i}`,
         streak: i * 10,
         projects: [
-          {
+          createMockProject({
             id: `p-${i}`,
             user_id: `user-${i}`,
             title: "Test",
@@ -189,12 +196,10 @@ describe("matchUsers", () => {
             tech_stack: i % 2 === 0 ? ["React", "TypeScript"] : ["Python", "Django"],
             live_url: null,
             github_url: null,
-            image_url: null,
             build_time: null,
             tags: ["web"],
             verified: false,
-            created_at: "2025-01-01T00:00:00Z",
-          },
+          }),
         ],
       })
     );
@@ -212,7 +217,7 @@ describe("matchUsers", () => {
       id: "react-dev",
       username: "reactdev",
       projects: [
-        {
+        createMockProject({
           id: "p-react",
           user_id: "react-dev",
           title: "React App",
@@ -220,12 +225,10 @@ describe("matchUsers", () => {
           tech_stack: ["React", "TypeScript", "Node.js"],
           live_url: null,
           github_url: null,
-          image_url: null,
           build_time: null,
           tags: [],
           verified: false,
-          created_at: "2025-01-01T00:00:00Z",
-        },
+        }),
       ],
     });
 
@@ -233,7 +236,7 @@ describe("matchUsers", () => {
       id: "python-dev",
       username: "pythondev",
       projects: [
-        {
+        createMockProject({
           id: "p-python",
           user_id: "python-dev",
           title: "Python App",
@@ -241,12 +244,10 @@ describe("matchUsers", () => {
           tech_stack: ["Python", "Flask"],
           live_url: null,
           github_url: null,
-          image_url: null,
           build_time: null,
           tags: [],
           verified: false,
-          created_at: "2025-01-01T00:00:00Z",
-        },
+        }),
       ],
     });
 
@@ -257,20 +258,16 @@ describe("matchUsers", () => {
   it("returns matched_skills correctly", () => {
     const user = createMockUser({
       projects: [
-        {
-          id: "p-1",
-          user_id: "user-1",
+        createMockProject({
           title: "Test",
           description: "Test",
           tech_stack: ["React", "TypeScript", "Vue"],
           live_url: null,
           github_url: null,
-          image_url: null,
           build_time: null,
           tags: [],
           verified: false,
-          created_at: "2025-01-01T00:00:00Z",
-        },
+        }),
       ],
     });
 

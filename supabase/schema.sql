@@ -165,7 +165,25 @@ BEGIN
       ELSE 'none'::badge_level
     END,
     vibe_score = (v_current_streak * 2) + (
-      (SELECT COUNT(*) FROM projects WHERE projects.user_id = p_user_id) * 5
+      -- Use sum of project quality scores instead of flat count
+      -- Verified projects with quality_score contribute their score / 10 (0-10 pts each)
+      -- Falls back to detailed scoring for projects without quality_score
+      -- Unverified projects contribute only 1 point each
+      COALESCE((
+        SELECT SUM(
+          CASE
+            WHEN verified = true AND quality_score > 0 THEN LEAST(quality_score / 10, 10)
+            WHEN verified = true THEN
+              5
+              + CASE WHEN live_url IS NOT NULL AND live_url != '' THEN 3 ELSE 0 END
+              + CASE WHEN github_url IS NOT NULL AND github_url != '' THEN 2 ELSE 0 END
+              + CASE WHEN length(description) > 50 THEN 2 ELSE 0 END
+              + CASE WHEN image_url IS NOT NULL AND image_url != '' THEN 1 ELSE 0 END
+              + CASE WHEN array_length(tech_stack, 1) >= 3 THEN 2 ELSE 0 END
+            ELSE 1
+          END
+        ) FROM projects WHERE projects.user_id = p_user_id AND NOT COALESCE(flagged, false)
+      ), 0)
     ) + CASE
       WHEN GREATEST(longest_streak, v_longest_streak) >= 365 THEN 40
       WHEN GREATEST(longest_streak, v_longest_streak) >= 180 THEN 30
@@ -206,7 +224,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER on_project_change
-  AFTER INSERT OR DELETE ON projects
+  AFTER INSERT OR UPDATE OR DELETE ON projects
   FOR EACH ROW
   EXECUTE FUNCTION trigger_update_vibe_score_on_project();
 
@@ -271,6 +289,11 @@ CREATE INDEX IF NOT EXISTS idx_projects_flagged ON projects(flagged);
 
 -- Add verified column to projects (GitHub repo ownership verification)
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS verified BOOLEAN DEFAULT false;
+
+-- GitHub quality scoring columns on projects
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS quality_score INTEGER DEFAULT 0;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS quality_metrics JSONB;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS live_url_ok BOOLEAN;
 
 -- Add github_username column to users (populated from GitHub OAuth on login)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS github_username TEXT;
@@ -391,6 +414,48 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER on_streak_milestone
   AFTER UPDATE OF streak ON users
   FOR EACH ROW EXECUTE FUNCTION notify_streak_milestone();
+
+-- ==========================================
+-- PROJECT ENDORSEMENTS (Peer Review)
+-- ==========================================
+-- Authenticated users can endorse other people's projects (not their own).
+-- Each user can endorse a project only once.
+
+CREATE TABLE IF NOT EXISTS project_endorsements (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(project_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_endorsements_project ON project_endorsements(project_id);
+CREATE INDEX IF NOT EXISTS idx_endorsements_user ON project_endorsements(user_id);
+
+ALTER TABLE project_endorsements ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Endorsements are publicly readable"
+  ON project_endorsements FOR SELECT USING (true);
+
+CREATE POLICY "Authenticated users can endorse"
+  ON project_endorsements FOR INSERT WITH CHECK (
+    auth.uid() = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM projects WHERE projects.id = project_id AND projects.user_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can remove own endorsements"
+  ON project_endorsements FOR DELETE USING (auth.uid() = user_id);
+
+-- Add endorsement_count cache column on projects
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS endorsement_count INTEGER DEFAULT 0;
+
+-- Add trust_score to reviews (computed at insert time, detects fake/bot reviews)
+-- Default NULL so legacy rows without a computed score are distinguishable from scored ones
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS trust_score INTEGER;
+-- Constrain to valid range
+ALTER TABLE reviews ADD CONSTRAINT IF NOT EXISTS reviews_trust_score_range CHECK (trust_score IS NULL OR (trust_score >= 0 AND trust_score <= 100));
 
 -- Storage bucket for project images
 -- Create "project-images" bucket in Supabase dashboard with public access

@@ -1,5 +1,15 @@
 import type { BadgeLevel } from "@/lib/types/database";
 
+/** Minimal project shape needed for quality scoring. */
+export interface ProjectScoreInput {
+  verified: boolean;
+  live_url: string | null;
+  github_url: string | null;
+  description: string;
+  image_url: string | null;
+  tech_stack: string[];
+}
+
 /**
  * Calculate current streak from a sorted list of activity dates.
  * Dates must be in "YYYY-MM-DD" format, sorted ascending.
@@ -62,26 +72,28 @@ export function calculateStreak(activityDates: string[]): {
 }
 
 /**
- * Calculate quality score for an individual project.
- * Verified projects earn bonus points for completeness (live URL, description, etc).
- * Max score per verified project: 15 pts.
+ * Score a single project based on quality signals.
+ * Verified projects earn bonus points for completeness;
+ * unverified projects get a flat 1 point.
+ *
+ * Breakdown (verified only):
+ *   Base:              5 pts
+ *   Live URL:         +3 pts
+ *   GitHub URL:       +2 pts
+ *   Description >50c: +2 pts
+ *   Screenshot/image: +1 pt
+ *   Tech stack >=3:    +2 pts
+ *   Max per project:  15 pts
  */
-export function calculateProjectQualityScore(project: {
-  verified?: boolean;
-  live_url?: string | null;
-  github_url?: string | null;
-  description: string;
-  image_url?: string | null;
-  tech_stack: string[];
-}): number {
-  let score = project.verified ? 5 : 1;
-  if (project.verified) {
-    if (project.live_url) score += 3;
-    if (project.github_url) score += 2;
-    if (project.description.length > 50) score += 2;
-    if (project.image_url) score += 1;
-    if (project.tech_stack.length >= 3) score += 2;
-  }
+export function calculateProjectScore(project: ProjectScoreInput): number {
+  if (!project.verified) return 1;
+
+  let score = 5;
+  if (project.live_url) score += 3;
+  if (project.github_url) score += 2;
+  if (project.description && project.description.length > 50) score += 2;
+  if (project.image_url) score += 1;
+  if (project.tech_stack && project.tech_stack.length >= 3) score += 2;
   return score;
 }
 
@@ -96,25 +108,62 @@ export function calculateReviewBonus(avgRating: number, reviewCount: number): nu
 }
 
 /**
- * Calculate vibe score based on streak, projects, badges, and reviews.
- * Formula: (Current Streak × 2) + Σ Project Quality Scores + Badge Bonus + Review Bonus
+ * Calculate vibe score based on streak, projects, badges, reviews, and quality scores.
  *
- * Quality signals ensure that builders who ship polished, verified projects
- * with live demos and client reviews rank higher than pure streak grinders.
+ * New formula uses actual GitHub quality scores instead of flat project count:
+ *   (Current Streak x 2)
+ * + (sum of per-project contribution based on quality_score)
+ * + Badge Bonus
+ * + Review Bonus
+ *
+ * Per-project contribution (when ProjectForScoring[] is provided):
+ *   - Verified with quality_score > 0: min(quality_score / 10, 10) points
+ *   - Verified without quality_score: 5 points
+ *   - Unverified: 1 point
+ *
+ * Accepts either detailed project list (preferred) or legacy count-based params.
  */
+export interface ProjectForScoring {
+  verified: boolean;
+  quality_score?: number;
+  flagged?: boolean;
+}
+
 export function calculateVibeScore(
   currentStreak: number,
-  projectCount: number,
+  projectCountOrProjects: number | ProjectScoreInput[],
   badgeLevel: BadgeLevel,
   verifiedCount?: number,
+  projects?: ProjectForScoring[],
   reviewBonus: number = 0
 ): number {
   const streakPoints = currentStreak * 2;
 
-  // Verified projects get full 5 points, unverified only get 1 point
-  const verified = verifiedCount ?? projectCount;
-  const unverified = projectCount - verified;
-  const projectPoints = verified * 5 + unverified * 1;
+  let projectPoints: number;
+  if (projects && projects.length > 0) {
+    // New quality-based scoring using GitHub quality scores
+    projectPoints = projects
+      .filter((p) => !p.flagged)
+      .reduce((sum, p) => {
+        if (p.verified && p.quality_score && p.quality_score > 0) {
+          return sum + Math.min(Math.floor(p.quality_score / 10), 10);
+        } else if (p.verified) {
+          return sum + 5;
+        }
+        return sum + 1;
+      }, 0);
+  } else if (Array.isArray(projectCountOrProjects)) {
+    // Score each project individually using ProjectScoreInput
+    projectPoints = projectCountOrProjects.reduce(
+      (sum, p) => sum + calculateProjectScore(p),
+      0
+    );
+  } else {
+    // Legacy path: flat scoring for backward compatibility
+    const verified = verifiedCount ?? projectCountOrProjects;
+    const unverified = projectCountOrProjects - verified;
+    projectPoints = verified * 5 + unverified * 1;
+  }
 
   const badgeBonusMap: Record<BadgeLevel, number> = {
     none: 0,

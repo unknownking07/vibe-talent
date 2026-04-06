@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { projectsLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
 
 // GET /api/projects — List projects (public)
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const { success } = await checkRateLimit(projectsLimiter, getIP(request));
+  if (!success) {
+    return NextResponse.json({ projects: [] }, { status: 429 });
+  }
+
   try {
     const supabase = await createServerSupabaseClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from("projects")
-      .select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at")
+      .select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, live_url_ok, endorsement_count, created_at")
       .eq("flagged", false)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(100);
 
     if (error) {
       return NextResponse.json({ projects: [] });
@@ -49,9 +56,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "description must be 2000 characters or less" }, { status: 400 });
     }
 
-    // Validate URLs if provided
-    if (live_url && typeof live_url === "string" && !live_url.match(/^https?:\/\/.+/)) {
-      return NextResponse.json({ error: "live_url must be a valid HTTP URL" }, { status: 400 });
+    // live_url is required and must be HTTPS
+    if (!live_url || typeof live_url !== "string" || !live_url.trim()) {
+      return NextResponse.json({ error: "live_url is required — every project must have a deployed link" }, { status: 400 });
+    }
+    if (!live_url.match(/^https:\/\/.+/)) {
+      return NextResponse.json({ error: "live_url must be a valid HTTPS URL" }, { status: 400 });
     }
     if (github_url && typeof github_url === "string" && !github_url.match(/^https?:\/\/github\.com\/.+/)) {
       return NextResponse.json({ error: "github_url must be a valid GitHub URL" }, { status: 400 });

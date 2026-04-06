@@ -1,30 +1,30 @@
 import type { MetadataRoute } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://vibetalent.dev";
+import { siteUrl } from "@/lib/seo";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const staticPages = [
-    { url: siteUrl, lastModified: new Date(), changeFrequency: "daily" as const, priority: 1 },
-    { url: `${siteUrl}/explore`, lastModified: new Date(), changeFrequency: "daily" as const, priority: 0.9 },
-    { url: `${siteUrl}/leaderboard`, lastModified: new Date(), changeFrequency: "daily" as const, priority: 0.8 },
-    { url: `${siteUrl}/agent`, lastModified: new Date(), changeFrequency: "weekly" as const, priority: 0.8 },
-    { url: `${siteUrl}/agent/find`, lastModified: new Date(), changeFrequency: "weekly" as const, priority: 0.7 },
-    { url: `${siteUrl}/agent/chat`, lastModified: new Date(), changeFrequency: "weekly" as const, priority: 0.7 },
-    { url: `${siteUrl}/dashboard`, lastModified: new Date(), changeFrequency: "weekly" as const, priority: 0.6 },
+  const staticPages: MetadataRoute.Sitemap = [
+    { url: siteUrl, lastModified: new Date("2026-04-06") },
+    { url: `${siteUrl}/explore`, lastModified: new Date("2026-04-01") },
+    { url: `${siteUrl}/leaderboard`, lastModified: new Date("2026-04-01") },
+    { url: `${siteUrl}/feed`, lastModified: new Date("2026-04-01") },
+    { url: `${siteUrl}/agent`, lastModified: new Date("2026-04-06") },
+    { url: `${siteUrl}/about`, lastModified: new Date("2026-04-06") },
+    { url: `${siteUrl}/privacy`, lastModified: new Date("2026-04-06") },
+    { url: `${siteUrl}/terms`, lastModified: new Date("2026-04-06") },
   ];
 
   try {
     const supabase = await createServerSupabaseClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: users } = await (supabase as any).from("users").select("username");
+    const { data: users } = await (supabase as any).from("users").select("username, updated_at");
 
-    const profilePages = (users || []).map((user: { username: string }) => ({
-      url: `${siteUrl}/profile/${user.username}`,
-      lastModified: new Date(),
-      changeFrequency: "daily" as const,
-      priority: 0.7,
-    }));
+    const profilePages: MetadataRoute.Sitemap = (users || []).map(
+      (user: { username: string; updated_at: string }) => ({
+        url: `${siteUrl}/profile/${user.username.trim()}`,
+        lastModified: user.updated_at ? new Date(user.updated_at) : new Date(),
+      })
+    );
 
     return [...staticPages, ...profilePages];
   } catch {

@@ -5,6 +5,25 @@ import { ExternalLink, Github, Clock, Tag, Pencil, Flag, CheckCircle, ShieldChec
 import Link from "next/link";
 import Image from "next/image";
 import type { Project } from "@/lib/types/database";
+import { QualityScoreBadge } from "@/components/ui/quality-score-badge";
+import { EndorseButton } from "@/components/ui/endorse-button";
+import { createClient } from "@/lib/supabase/client";
+import { parseImageCrop } from "@/lib/image-crop";
+
+function ProjectImageBanner({ url, alt }: { url: string; alt: string }) {
+  const crop = parseImageCrop(url);
+  return (
+    <div className="relative w-full h-28 border-b-2 border-[var(--border-hard)] overflow-hidden" style={{ backgroundColor: "#ffffff" }}>
+      <Image
+        src={url}
+        alt={alt}
+        fill
+        className="object-cover"
+        style={{ objectPosition: crop.objectPosition, transform: `scale(${crop.scale})` }}
+      />
+    </div>
+  );
+}
 
 const REPORT_REASONS = [
   "Spam/Fake",
@@ -43,6 +62,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
   const [reported, setReported] = useState(() => !!getReportData(project.id));
   const [reporting, setReporting] = useState(false);
   const [undoing, setUndoing] = useState(false);
+  const [reportError, setReportError] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Check localStorage on mount — initialized via lazy state to avoid setState in effect
@@ -63,6 +83,15 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
     if (reporting || reported) return;
     setReporting(true);
     try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setReportError("Please sign in to report a project.");
+        setReporting(false);
+        setReportOpen(false);
+        setTimeout(() => setReportError(""), 4000);
+        return;
+      }
       const res = await fetch("/api/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -103,34 +132,32 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
 
   return (
     <div
-      className="card-brutal overflow-hidden transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_#0F0F0F]"
+      className="card-brutal h-full flex flex-col transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
     >
-      {project.image_url && (
-        <div className="relative w-full h-40 border-b-2 border-[#0F0F0F]">
-          <Image
-            src={project.image_url}
-            alt={project.title}
-            fill
-            className="object-cover"
-          />
+      {project.image_url ? (
+        <ProjectImageBanner url={project.image_url} alt={project.title} />
+      ) : (
+        <div className="w-full h-28 border-b-2 border-[var(--border-hard)] bg-[var(--bg-surface-light)] flex items-center justify-center">
+          <span className="text-3xl font-extrabold uppercase text-[var(--text-muted-soft)] tracking-widest select-none">{project.title?.charAt(0) ?? "P"}</span>
         </div>
       )}
-      <div className="p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <h3 className="font-extrabold uppercase text-[#0F0F0F]">{project.title}</h3>
+      <div className="px-4 py-3 flex-1 flex flex-col">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)] truncate">{project.title}</h3>
           {verified && (
             <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600" title="Verified owner">
               <CheckCircle size={14} />
               Verified
             </span>
           )}
+          <QualityScoreBadge project={project} />
         </div>
         <div className="flex shrink-0 gap-2">
           {onEdit && (
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(project); }}
-              className="text-[#52525B] hover:text-[var(--accent)] transition-colors"
+              className="text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
               title="Edit project"
             >
               <Pencil size={16} />
@@ -154,14 +181,16 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
                     e.stopPropagation();
                     setReportOpen(!reportOpen);
                   }}
-                  className="text-[#A1A1AA] hover:text-red-500 transition-colors"
-                  title="Report project"
+                  className="text-[var(--text-muted-soft)] hover:text-red-500 transition-colors"
+                  aria-label="Report project"
+                  aria-expanded={reportOpen}
+                  aria-haspopup="true"
                 >
                   <Flag size={14} />
                 </button>
               )}
               {reportOpen && (
-                <div className="absolute right-0 top-6 z-50 w-44 max-h-48 overflow-y-auto border-2 border-[#0F0F0F] bg-white shadow-[4px_4px_0_#0F0F0F]">
+                <div className="absolute right-0 bottom-6 z-50 w-44 border-2 border-[var(--border-hard)] bg-[var(--bg-surface)] shadow-[4px_4px_0_var(--border-hard)]">
                   {REPORT_REASONS.map((reason) => (
                     <button
                       key={reason}
@@ -170,7 +199,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
                         handleReport(reason);
                       }}
                       disabled={reporting}
-                      className="block w-full px-3 py-2 text-left text-xs font-bold uppercase text-[#0F0F0F] hover:bg-[#F5F5F5] transition-colors disabled:opacity-50"
+                      className="block w-full px-3 py-2 text-left text-xs font-bold uppercase text-[var(--foreground)] hover:bg-[var(--bg-surface-light)] transition-colors disabled:opacity-50"
                     >
                       {reason}
                     </button>
@@ -184,7 +213,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
               href={project.live_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#52525B] hover:text-[var(--accent)] transition-colors"
+              className="text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
               onClick={(e) => e.stopPropagation()}
             >
               <ExternalLink size={16} />
@@ -195,7 +224,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
               href={project.github_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#52525B] hover:text-[#0F0F0F] transition-colors"
+              className="text-[var(--text-secondary)] hover:text-[var(--foreground)] transition-colors"
               onClick={(e) => e.stopPropagation()}
             >
               <Github size={16} />
@@ -204,7 +233,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
         </div>
       </div>
 
-      <p className="mt-2 text-sm text-[#52525B] font-medium line-clamp-2">
+      <p className="mt-1.5 flex-1 text-xs text-[var(--text-secondary)] font-medium line-clamp-2">
         {project.description}
       </p>
 
@@ -212,50 +241,57 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
         <Link
           href={`/profile/${authorUsername}`}
           onClick={(e) => e.stopPropagation()}
-          className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-[#71717A] hover:text-[var(--accent)] transition-colors"
+          className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
         >
           <User size={12} />
           @{authorUsername}
         </Link>
       )}
 
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {project.tech_stack.map((tech) => (
+      {(project.tech_stack ?? []).length > 0 && (
+      <div className="mt-2 flex flex-wrap gap-1">
+        {(project.tech_stack ?? []).map((tech) => (
           <span
             key={tech}
-            className="px-2 py-0.5 text-xs font-bold uppercase text-[#0F0F0F]"
+            className="px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--text-tertiary)]"
             style={{
-              backgroundColor: "#F5F5F5",
-              border: "1px solid #0F0F0F",
+              backgroundColor: "var(--bg-surface-light)",
+              border: "1px solid var(--border-hard)",
             }}
           >
             {tech}
           </span>
         ))}
       </div>
+      )}
 
-      <div className="mt-3 flex items-center gap-4 text-xs font-bold text-[#71717A] uppercase">
+      <div className="mt-2 flex items-center gap-3 text-[10px] font-bold text-[var(--text-muted)] uppercase">
+        <EndorseButton projectId={project.id} initialCount={project.endorsement_count} />
         {project.build_time && (
           <span className="flex items-center gap-1">
-            <Clock size={12} />
+            <Clock size={10} />
             {project.build_time}
           </span>
         )}
-        {project.tags.length > 0 && (
+        {(project.tags ?? []).length > 0 && (
           <span className="flex items-center gap-1">
-            <Tag size={12} />
+            <Tag size={10} />
             {project.tags.join(", ")}
           </span>
         )}
       </div>
 
+      {reportError && (
+        <p className="text-[10px] font-bold text-red-600 mt-1" role="alert">{reportError}</p>
+      )}
+
       {!verified && onVerify && (
         <button
           onClick={(e) => { e.stopPropagation(); onVerify(project.id); }}
-          className="mt-3 inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold uppercase text-[#0F0F0F] border-2 border-[#0F0F0F] bg-white hover:bg-[#F5F5F5] transition-colors"
+          className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold uppercase text-[var(--foreground)] border-2 border-[var(--border-hard)] bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-light)] transition-colors"
           title="Verify GitHub ownership"
         >
-          <ShieldCheck size={14} />
+          <ShieldCheck size={12} />
           Verify
         </button>
       )}

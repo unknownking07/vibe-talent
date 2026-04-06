@@ -25,7 +25,7 @@ Set these in the Vercel dashboard under **Settings > Environment Variables**:
 | `UPSTASH_REDIS_REST_URL` | No | Server |
 | `UPSTASH_REDIS_REST_TOKEN` | No | Server |
 | `CRON_SECRET` | Yes | Server |
-| `SUPABASE_SERVICE_ROLE_KEY` | No | Server |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server |
 | `NEXT_PUBLIC_GA_ID` | No | All |
 
 ### Supabase Setup
@@ -38,29 +38,23 @@ Set these in the Vercel dashboard under **Settings > Environment Variables**:
 
 ## Cron Jobs
 
-### Daily Streak Reset
+### Cron Jobs
 
-Configured in `vercel.json`:
+Configured in `vercel.json`. Vercel schedules two cron paths directly, and `/api/cron/daily` fans out to internal job handlers. All cron endpoints require `CRON_SECRET`.
 
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/reset-streaks",
-      "schedule": "0 0 * * *"
-    }
-  ]
-}
-```
+| Scheduled Path | Schedule | Description |
+|---|---|---|
+| `/api/cron/daily` | Daily 06:00 UTC | Orchestrator — fans out to reset-streaks, streak-warning, github-sync, reset-freezes, and digest jobs |
+| `/api/cron/check-live-urls` | Weekly Sun 03:00 UTC | Verify project live URLs are still reachable |
 
-**What it does:**
-- Runs at 00:00 UTC every day
-- Finds users with active streaks
-- Checks if they logged activity yesterday
-- Resets stale streaks to 0
-- Recalculates vibe scores
+**Internal handlers** (called by the daily orchestrator):
 
-**Protection:** Requires `CRON_SECRET` header — Vercel automatically includes this for cron-triggered requests.
+| Handler | Description |
+|---|---|
+| `/api/cron/reset-streaks` | Reset expired streaks, recalculate vibe scores |
+| `/api/cron/streak-warning` | Email + in-app notification for at-risk streaks |
+| `/api/cron/github-sync` | Sync GitHub contribution data for all users |
+| `/api/cron/reset-freezes` | Reset streak freeze allowance to 2 (monthly 1st) |
 
 ## Caching Strategy
 
@@ -86,13 +80,13 @@ This means:
 | Data | TTL | Why |
 |---|---|---|
 | Leaderboard rankings | 60s | Frequently viewed, rarely changes |
-| Builder profiles | 60s | Balance freshness with performance |
+| VibeCoder profiles | 60s | Balance freshness with performance |
 | Project listings | 60s | New projects can wait a minute |
 
 ### What's NOT Cached
 
 - Streak logging (must be real-time)
-- Hire requests (builders need to see new requests immediately)
+- Hire requests (vibecoders need to see new requests immediately)
 - Auth operations (must be fresh)
 
 ## Image Handling
@@ -101,7 +95,7 @@ This means:
 
 - Stored in Supabase Storage (`project-images` bucket)
 - Public read access via CDN
-- Uploaded from the builder dashboard
+- Uploaded from the vibecoder dashboard
 
 ### Allowed Image Domains
 
@@ -137,7 +131,7 @@ Auto-generated at `/sitemap.xml` including:
 - Landing page
 - Explore page
 - Leaderboard
-- All public builder profiles
+- All public vibecoder profiles
 
 ### Robots.txt
 
@@ -147,7 +141,7 @@ Generated at `/robots.txt` to guide search engine crawlers.
 
 - Open Graph tags on all public pages
 - Twitter Card tags for social sharing
-- Dynamic share cards for builder profiles (`/api/share-card/{username}`)
+- Dynamic share cards for vibecoder profiles (`/api/share-card/{username}`)
 
 ## Scaling Considerations
 

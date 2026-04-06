@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createNotification } from "@/lib/notifications";
 import { sendStreakWarningEmail } from "@/lib/email";
 
@@ -21,16 +21,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabase = createAdminClient();
 
   try {
     // Get users with active streaks
     const { data: activeUsers, error: fetchError } = await supabase
       .from("users")
-      .select("id, username, streak")
+      .select("id, username, streak, streak_freezes_remaining")
       .gt("streak", 0);
 
     if (fetchError) {
@@ -67,12 +64,17 @@ export async function GET(req: NextRequest) {
 
     // Check for already-sent warnings today to prevent duplicates
     const atRiskIds = atRiskUsers.map((u) => u.id);
-    const { data: existingWarnings } = await supabase
+    const { data: existingWarnings, error: warningsError } = await supabase
       .from("notifications")
       .select("user_id")
       .in("user_id", atRiskIds)
       .eq("type", "streak_warning")
       .gte("created_at", `${todayStr}T00:00:00Z`);
+
+    if (warningsError) {
+      console.error("Failed to fetch existing warnings:", warningsError);
+      return NextResponse.json({ error: "Failed to check existing warnings" }, { status: 500 });
+    }
 
     const alreadyWarnedIds = new Set((existingWarnings || []).map((n) => n.user_id));
     const usersToWarn = atRiskUsers.filter((u) => !alreadyWarnedIds.has(u.id));
@@ -82,57 +84,67 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch emails from auth.users via admin API
-    const userIds = usersToWarn.map((u) => u.id);
     const emailMap = new Map<string, string>();
-
-    // Fetch emails for at-risk users via parallel getUserById calls
-    await Promise.all(
-      userIds.map(async (uid) => {
-        const { data } = await supabase.auth.admin.getUserById(uid);
-        if (data?.user?.email) {
-          emailMap.set(uid, data.user.email);
-        }
-      })
-    );
-
-    // Send warnings
-    const warnings: Promise<void>[] = [];
-    for (const user of usersToWarn) {
-      // In-app notification
-      warnings.push(
-        createNotification({
-          user_id: user.id,
-          type: "streak_warning",
-          title: "Streak ending soon!",
-          message: `Your ${user.streak}-day streak will reset at midnight. Log activity now to keep it alive!`,
-          metadata: { streak: user.streak },
-        })
-      );
-
-      // Email notification
-      const email = emailMap.get(user.id);
-      if (email) {
-        warnings.push(
-          sendStreakWarningEmail({
-            email,
-            username: user.username,
-            streakDays: user.streak,
-          })
-        );
+    for (const u of usersToWarn) {
+      const { data, error } = await supabase.auth.admin.getUserById(u.id);
+      if (error) {
+        console.error(`Failed to fetch email for user ${u.username}:`, error);
+        continue;
+      }
+      if (data?.user?.email) {
+        emailMap.set(u.id, data.user.email);
       }
     }
 
-    await Promise.allSettled(warnings);
+    // Send warnings per user and track outcomes
+    const results = await Promise.allSettled(
+      usersToWarn.map(async (user) => {
+        // In-app notification
+        await createNotification({
+          user_id: user.id,
+          type: "streak_warning",
+          title: "Streak ending soon!",
+          message: `Your ${user.streak}-day streak will reset at 00:00 UTC. Log activity now to keep it alive! You have ${user.streak_freezes_remaining ?? 0} freeze(s) remaining.`,
+          metadata: { streak: user.streak },
+        });
+
+        // Email notification
+        const email = emailMap.get(user.id);
+        if (email) {
+          await sendStreakWarningEmail({
+            email,
+            username: user.username,
+            streakDays: user.streak,
+          });
+        }
+
+        return user.username;
+      })
+    );
+
+    const succeeded: string[] = [];
+    const failed: string[] = [];
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      const username = usersToWarn[i].username;
+      if (result.status === "fulfilled") {
+        succeeded.push(username);
+      } else {
+        console.error(`Failed to warn ${username}:`, result.reason);
+        failed.push(username);
+      }
+    }
 
     console.log(
-      `Sent streak warnings to ${usersToWarn.length} users:`,
-      usersToWarn.map((u) => u.username)
+      `Streak warnings: ${succeeded.length} succeeded, ${failed.length} failed`,
+      { succeeded, failed }
     );
 
     return NextResponse.json({
-      message: `Warned ${usersToWarn.length} users about expiring streaks`,
-      warned: usersToWarn.length,
-      users: usersToWarn.map((u) => u.username),
+      message: `Warned ${succeeded.length} users about expiring streaks`,
+      warned: succeeded.length,
+      users: succeeded,
+      ...(failed.length > 0 ? { failed } : {}),
     });
   } catch (error) {
     console.error("Streak warning cron error:", error);

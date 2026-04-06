@@ -16,7 +16,7 @@ const evaluationSteps: AgentStep[] = [
   { label: "Analyzing project portfolio and deployments...", duration: 1000 },
   { label: "Evaluating tech stack diversity...", duration: 900 },
   { label: "Computing reputation and badge metrics...", duration: 700 },
-  { label: "Generating AI evaluation report...", duration: 1100 },
+  { label: "Generating evaluation report...", duration: 1100 },
 ];
 
 export default function EvaluatePage({
@@ -56,8 +56,8 @@ export default function EvaluatePage({
   if (!user) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-        <h1 className="text-2xl font-extrabold uppercase text-[#0F0F0F]">Builder not found</h1>
-        <p className="mt-2 text-[#52525B] font-medium">@{username} does not exist on VibeTalent.</p>
+        <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Builder not found</h1>
+        <p className="mt-2 text-[var(--text-secondary)] font-medium">@{username} does not exist on VibeTalent.</p>
       </div>
     );
   }
@@ -66,7 +66,7 @@ export default function EvaluatePage({
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
       <Link
         href={`/profile/${username}`}
-        className="inline-flex items-center gap-2 text-sm font-bold uppercase text-[#71717A] hover:text-[var(--accent)] mb-6"
+        className="inline-flex items-center gap-2 text-sm font-bold uppercase text-[var(--text-muted)] hover:text-[var(--accent)] mb-6"
       >
         <ArrowLeft size={14} />
         Back to Profile
@@ -76,17 +76,17 @@ export default function EvaluatePage({
         <div
           className="w-10 h-10 flex items-center justify-center"
           style={{
-            backgroundColor: "#0F0F0F",
-            border: "2px solid #0F0F0F",
+            backgroundColor: "var(--bg-inverted)",
+            border: "2px solid var(--border-hard)",
           }}
         >
           <Bot size={20} className="text-[var(--accent)]" />
         </div>
         <div>
-          <h1 className="text-2xl font-extrabold uppercase text-[#0F0F0F]">
-            AI Evaluation: @{username}
+          <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">
+            VibeFinder Evaluation: @{username}
           </h1>
-          <p className="text-sm text-[#52525B] font-medium">
+          <p className="text-sm text-[var(--text-secondary)] font-medium">
             Deep analysis of coding activity, project quality, and reputation
           </p>
         </div>
@@ -106,7 +106,7 @@ export default function EvaluatePage({
               className="btn-brutal btn-brutal-primary text-sm flex items-center gap-2"
             >
               <Bot size={14} />
-              Contact via Agent
+              Contact via VibeFinder
             </Link>
             <Link
               href={`/profile/${username}`}

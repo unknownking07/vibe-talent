@@ -19,13 +19,7 @@ const BUDGET_OPTIONS = [
   "Let's discuss",
 ];
 
-// Block disposable/fake email domains
-const BLOCKED_DOMAINS = [
-  "mailinator.com", "tempmail.com", "throwaway.email", "guerrillamail.com",
-  "sharklasers.com", "grr.la", "guerrillamailblock.com", "yopmail.com",
-  "fakeinbox.com", "trashmail.com", "dispostable.com", "maildrop.cc",
-  "10minutemail.com", "temp-mail.org", "tempail.com",
-];
+import { BLOCKED_DOMAINS, EMAIL_REGEX, NAME_REGEX } from "@/lib/validation";
 
 export function HireModal({ builderId, builderName, isOpen, onClose }: HireModalProps) {
   const [form, setForm] = useState({
@@ -81,14 +75,13 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
     }
     // Name validation: min 2 chars, letters and spaces only
     const nameClean = form.sender_name.trim();
-    if (nameClean.length < 2 || !/^[a-zA-Z\s'-]+$/.test(nameClean)) {
+    if (nameClean.length < 2 || !NAME_REGEX.test(nameClean)) {
       setError("Please enter a valid name (letters only, at least 2 characters).");
       return;
     }
     // Email validation - strict
     const emailClean = form.sender_email.trim().toLowerCase();
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(emailClean)) {
+    if (!EMAIL_REGEX.test(emailClean)) {
       setError("Please enter a valid email address.");
       return;
     }
@@ -161,26 +154,26 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
       <div
         className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto"
         style={{
-          backgroundColor: "#FFFFFF",
-          border: "2px solid #0F0F0F",
-          boxShadow: "4px 4px 0 #000",
+          backgroundColor: "var(--bg-surface)",
+          border: "2px solid var(--border-hard)",
+          boxShadow: "var(--shadow-brutal-sm)",
         }}
       >
         {/* Header */}
         <div
           className="flex items-center justify-between p-5"
           style={{
-            borderBottom: "2px solid #0F0F0F",
+            borderBottom: "2px solid var(--border-hard)",
           }}
         >
-          <h2 className="text-lg font-extrabold uppercase tracking-tight text-[#0F0F0F]">
+          <h2 className="text-lg font-extrabold uppercase tracking-tight text-[var(--foreground)]">
             Hire @{builderName}
           </h2>
           <button
             onClick={handleClose}
-            className="w-8 h-8 flex items-center justify-center text-[#0F0F0F] transition-all hover:bg-[#F4F4F5]"
+            className="w-8 h-8 flex items-center justify-center text-[var(--foreground)] transition-all hover:bg-[var(--bg-surface-light)]"
             style={{
-              border: "2px solid #0F0F0F",
+              border: "2px solid var(--border-hard)",
             }}
           >
             <X size={16} />
@@ -194,33 +187,33 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
               <div
                 className="w-16 h-16 flex items-center justify-center"
                 style={{
-                  backgroundColor: "#D1FAE5",
-                  border: "2px solid #0F0F0F",
-                  boxShadow: "4px 4px 0 #000",
+                  backgroundColor: "var(--status-success-bg)",
+                  border: "2px solid var(--border-hard)",
+                  boxShadow: "var(--shadow-brutal-sm)",
                 }}
               >
-                <CheckCircle size={32} className="text-[#065F46]" />
+                <CheckCircle size={32} className="text-[var(--status-success-text)]" />
               </div>
-              <h3 className="text-xl font-extrabold uppercase text-[#0F0F0F]">Request Sent!</h3>
-              <p className="text-sm text-[#52525B] font-medium">
+              <h3 className="text-xl font-extrabold uppercase text-[var(--foreground)]">Request Sent!</h3>
+              <p className="text-sm text-[var(--text-secondary)] font-medium">
                 Your hire request has been sent to @{builderName}. They will get back to you soon.
               </p>
               {requestId && (
                 <div
                   className="w-full p-3 text-sm"
                   style={{
-                    backgroundColor: "#EFF6FF",
-                    border: "2px solid #0F0F0F",
+                    backgroundColor: "var(--bg-surface-light)",
+                    border: "2px solid var(--border-hard)",
                   }}
                 >
-                  <p className="font-bold text-[#0F0F0F] mb-1">Continue the conversation:</p>
+                  <p className="font-bold text-[var(--foreground)] mb-1">Continue the conversation:</p>
                   <a
                     href={`/hire/chat/${requestId}`}
                     className="text-[var(--accent)] font-extrabold underline underline-offset-2 break-all"
                   >
                     {typeof window !== "undefined" ? window.location.origin : ""}/hire/chat/{requestId}
                   </a>
-                  <p className="text-xs text-[#52525B] mt-1">
+                  <p className="text-xs text-[var(--text-secondary)] mt-1">
                     Bookmark this link to check for replies and continue chatting.
                   </p>
                 </div>
@@ -236,10 +229,10 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
             <div className="space-y-4">
               {error && (
                 <div
-                  className="p-3 text-sm font-bold text-[#991B1B]"
+                  className="p-3 text-sm font-bold text-[var(--status-error-text)]"
                   style={{
-                    backgroundColor: "#FEE2E2",
-                    border: "2px solid #0F0F0F",
+                    backgroundColor: "var(--status-error-border)",
+                    border: "2px solid var(--border-hard)",
                   }}
                 >
                   {error}
@@ -247,7 +240,7 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
               )}
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+                <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
                   Your Name * {loggedInUser && <Lock size={10} className="inline ml-1" />}
                 </label>
                 <input
@@ -257,12 +250,12 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
                   placeholder="John Doe"
                   className="input-brutal"
                   readOnly={!!loggedInUser}
-                  style={loggedInUser ? { backgroundColor: "#F4F4F5", cursor: "not-allowed" } : {}}
+                  style={loggedInUser ? { backgroundColor: "var(--bg-surface-light)", cursor: "not-allowed" } : {}}
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+                <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
                   Your Email * {loggedInUser && <Lock size={10} className="inline ml-1" />}
                 </label>
                 <input
@@ -272,12 +265,12 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
                   placeholder="john@example.com"
                   className="input-brutal"
                   readOnly={!!loggedInUser}
-                  style={loggedInUser ? { backgroundColor: "#F4F4F5", cursor: "not-allowed" } : {}}
+                  style={loggedInUser ? { backgroundColor: "var(--bg-surface-light)", cursor: "not-allowed" } : {}}
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+                <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
                   Budget
                 </label>
                 <select
@@ -295,7 +288,7 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[#71717A] mb-1.5 block">
+                <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
                   Message *
                 </label>
                 <textarea

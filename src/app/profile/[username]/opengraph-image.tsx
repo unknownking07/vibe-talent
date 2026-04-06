@@ -37,15 +37,15 @@ export default async function Image({
     );
   }
 
-  const badgeEmoji =
+  const badgeLabel =
     user.badge_level === "diamond"
-      ? "💎"
+      ? "DIAMOND"
       : user.badge_level === "gold"
-        ? "🥇"
+        ? "GOLD"
         : user.badge_level === "silver"
-          ? "🥈"
+          ? "SILVER"
           : user.badge_level === "bronze"
-            ? "🥉"
+            ? "BRONZE"
             : "";
 
   return new ImageResponse(
@@ -66,23 +66,38 @@ export default async function Image({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 16,
-            marginBottom: 12,
+            gap: 12,
+            marginBottom: 16,
           }}
         >
-          <span style={{ fontSize: 28, fontWeight: 800, color: "#FF3A00" }}>
-            ⚡ VibeTalent
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 32,
+              height: 32,
+              backgroundColor: "#FF3A00",
+              border: "2px solid #0F0F0F",
+              color: "#FFFFFF",
+              fontSize: 16,
+              fontWeight: 800,
+            }}
+          >
+            V
+          </div>
+          <span style={{ fontSize: 24, fontWeight: 800, color: "#FF3A00" }}>
+            VibeTalent
           </span>
         </div>
 
-        {/* Main Card */}
+        {/* Main Card — no boxShadow (unsupported by Satori) */}
         <div
           style={{
             display: "flex",
             flex: 1,
             backgroundColor: "#FFFFFF",
             border: "4px solid #0F0F0F",
-            boxShadow: "12px 12px 0 #0F0F0F",
             padding: 48,
             gap: 48,
           }}
@@ -126,8 +141,20 @@ export default async function Image({
               >
                 @{user.username}
               </span>
-              {badgeEmoji && (
-                <span style={{ fontSize: 36 }}>{badgeEmoji}</span>
+              {badgeLabel && (
+                <span
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 800,
+                    color: "#CA8A04",
+                    backgroundColor: "#FFF7ED",
+                    border: "2px solid #0F0F0F",
+                    padding: "4px 12px",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {badgeLabel}
+                </span>
               )}
             </div>
 
@@ -137,7 +164,6 @@ export default async function Image({
                   fontSize: 22,
                   color: "#52525B",
                   marginTop: 8,
-                  lineClamp: 2,
                 }}
               >
                 {user.bio.slice(0, 100)}
@@ -165,7 +191,7 @@ export default async function Image({
                 <span
                   style={{ fontSize: 36, fontWeight: 800, color: "#FF3A00" }}
                 >
-                  🔥 {user.streak}
+                  {user.streak}
                 </span>
                 <span
                   style={{
@@ -191,7 +217,7 @@ export default async function Image({
                 <span
                   style={{ fontSize: 36, fontWeight: 800, color: "#FF3A00" }}
                 >
-                  ⚡ {user.vibe_score}
+                  {user.vibe_score}
                 </span>
                 <span
                   style={{
@@ -217,7 +243,7 @@ export default async function Image({
                 <span
                   style={{ fontSize: 36, fontWeight: 800, color: "#0F0F0F" }}
                 >
-                  📦 {user.projects.length}
+                  {(user.projects ?? []).length}
                 </span>
                 <span
                   style={{
