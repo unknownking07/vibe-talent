@@ -163,7 +163,7 @@ export function LiveActivityFeed() {
                   fontFamily: "var(--font-space-grotesk, 'Space Grotesk', sans-serif)",
                 }}>
                   {item.avatar_url ? (
-                    <Image src={item.avatar_url} alt={item.username} width={40} height={40} style={{ width: "100%", height: "100%", objectFit: "cover" }} unoptimized />
+                    <Image src={item.avatar_url} alt={item.username} width={40} height={40} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : initials}
                 </div>
 

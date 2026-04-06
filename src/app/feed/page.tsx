@@ -200,7 +200,7 @@ export default function FeedPage() {
                   <Link href={`/profile/${item.username}`} style={{ textDecoration: "none", flexShrink: 0 }}>
                     <div className={`fl-avatar ${isMilestone ? "orange" : ""}`}>
                       {item.avatar_url ? (
-                        <Image src={item.avatar_url} alt={item.username} width={48} height={48} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%", opacity: 1 }} unoptimized />
+                        <Image src={item.avatar_url} alt={item.username} width={48} height={48} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%", opacity: 1 }} />
                       ) : (
                         <span style={{ fontWeight: 600, fontSize: 14, color: isMilestone ? "#0A0A0E" : "var(--text-muted, #8A8B94)" }}>{initials}</span>
                       )}
@@ -300,7 +300,7 @@ export default function FeedPage() {
                   <Link href={`/profile/${topContributor.username}`} style={{ textDecoration: "none" }}>
                     <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#15151A", border: "1px solid #2A2A33", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                       {topContributor.avatar_url ? (
-                        <Image src={topContributor.avatar_url} alt={topContributor.username} width={48} height={48} style={{ width: "100%", height: "100%", objectFit: "cover" }} unoptimized />
+                        <Image src={topContributor.avatar_url} alt={topContributor.username} width={48} height={48} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       ) : (
                         <span style={{ fontWeight: 600, color: "#8A8B94" }}>{topContributor.username.slice(0, 2).toUpperCase()}</span>
                       )}
