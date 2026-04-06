@@ -9,6 +9,9 @@ export interface User {
   longest_streak: number;
   vibe_score: number;
   badge_level: BadgeLevel;
+  streak_freezes_remaining: number;
+  streak_freezes_used: number;
+  referral_count: number;
   created_at: string;
 }
 

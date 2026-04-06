@@ -183,6 +183,9 @@ export const mockUsers: UserWithSocials[] = [
     longest_streak: 127,
     vibe_score: 324,
     badge_level: "silver" as BadgeLevel,
+    streak_freezes_remaining: 2,
+    streak_freezes_used: 0,
+    referral_count: 0,
     created_at: "2025-10-01T00:00:00Z",
     social_links: {
       id: "s1",
@@ -204,6 +207,9 @@ export const mockUsers: UserWithSocials[] = [
     longest_streak: 94,
     vibe_score: 238,
     badge_level: "silver" as BadgeLevel,
+    streak_freezes_remaining: 2,
+    streak_freezes_used: 0,
+    referral_count: 0,
     created_at: "2025-11-15T00:00:00Z",
     social_links: {
       id: "s2",
@@ -225,6 +231,9 @@ export const mockUsers: UserWithSocials[] = [
     longest_streak: 62,
     vibe_score: 155,
     badge_level: "bronze" as BadgeLevel,
+    streak_freezes_remaining: 2,
+    streak_freezes_used: 0,
+    referral_count: 0,
     created_at: "2025-12-01T00:00:00Z",
     social_links: {
       id: "s3",
@@ -246,6 +255,9 @@ export const mockUsers: UserWithSocials[] = [
     longest_streak: 210,
     vibe_score: 490,
     badge_level: "gold" as BadgeLevel,
+    streak_freezes_remaining: 2,
+    streak_freezes_used: 0,
+    referral_count: 0,
     created_at: "2025-08-15T00:00:00Z",
     social_links: {
       id: "s4",
@@ -267,6 +279,9 @@ export const mockUsers: UserWithSocials[] = [
     longest_streak: 380,
     vibe_score: 870,
     badge_level: "diamond" as BadgeLevel,
+    streak_freezes_remaining: 2,
+    streak_freezes_used: 0,
+    referral_count: 0,
     created_at: "2025-03-01T00:00:00Z",
     social_links: {
       id: "s5",
@@ -288,6 +303,9 @@ export const mockUsers: UserWithSocials[] = [
     longest_streak: 28,
     vibe_score: 80,
     badge_level: "none" as BadgeLevel,
+    streak_freezes_remaining: 2,
+    streak_freezes_used: 0,
+    referral_count: 0,
     created_at: "2026-01-15T00:00:00Z",
     social_links: {
       id: "s6",
@@ -309,6 +327,9 @@ export const mockUsers: UserWithSocials[] = [
     longest_streak: 112,
     vibe_score: 195,
     badge_level: "bronze" as BadgeLevel,
+    streak_freezes_remaining: 2,
+    streak_freezes_used: 0,
+    referral_count: 0,
     created_at: "2025-09-20T00:00:00Z",
     social_links: {
       id: "s7",
@@ -330,6 +351,9 @@ export const mockUsers: UserWithSocials[] = [
     longest_streak: 302,
     vibe_score: 710,
     badge_level: "gold" as BadgeLevel,
+    streak_freezes_remaining: 2,
+    streak_freezes_used: 0,
+    referral_count: 0,
     created_at: "2025-05-10T00:00:00Z",
     social_links: {
       id: "s8",
@@ -351,6 +375,9 @@ export const mockUsers: UserWithSocials[] = [
     longest_streak: 45,
     vibe_score: 118,
     badge_level: "none" as BadgeLevel,
+    streak_freezes_remaining: 2,
+    streak_freezes_used: 0,
+    referral_count: 0,
     created_at: "2026-01-02T00:00:00Z",
     social_links: {
       id: "s9",
@@ -372,6 +399,9 @@ export const mockUsers: UserWithSocials[] = [
     longest_streak: 180,
     vibe_score: 410,
     badge_level: "silver" as BadgeLevel,
+    streak_freezes_remaining: 2,
+    streak_freezes_used: 0,
+    referral_count: 0,
     created_at: "2025-07-01T00:00:00Z",
     social_links: {
       id: "s10",
@@ -393,6 +423,9 @@ export const mockUsers: UserWithSocials[] = [
     longest_streak: 35,
     vibe_score: 62,
     badge_level: "none" as BadgeLevel,
+    streak_freezes_remaining: 2,
+    streak_freezes_used: 0,
+    referral_count: 0,
     created_at: "2026-02-01T00:00:00Z",
     social_links: {
       id: "s11",
@@ -414,6 +447,9 @@ export const mockUsers: UserWithSocials[] = [
     longest_streak: 245,
     vibe_score: 580,
     badge_level: "gold" as BadgeLevel,
+    streak_freezes_remaining: 2,
+    streak_freezes_used: 0,
+    referral_count: 0,
     created_at: "2025-06-15T00:00:00Z",
     social_links: {
       id: "s12",
