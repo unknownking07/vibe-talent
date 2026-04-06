@@ -149,6 +149,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Explicit duplicate check before insert (belt and suspenders with DB unique constraint)
+    const { data: existingEndorsement } = await sb
+      .from("project_endorsements")
+      .select("id")
+      .eq("project_id", project_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (existingEndorsement) {
+      return NextResponse.json({ error: "You already endorsed this project" }, { status: 409 });
+    }
+
     // Insert endorsement (unique constraint prevents duplicates)
     const { error } = await sb
       .from("project_endorsements")

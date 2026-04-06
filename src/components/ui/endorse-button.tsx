@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ThumbsUp } from "lucide-react";
 
 interface EndorseButtonProps {
@@ -15,7 +15,26 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
   const [endorsed, setEndorsed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [checkedAuth, setCheckedAuth] = useState(false);
+
+  // Check endorsement state on mount so button shows correct state after refresh
+  const checkEndorsementState = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/endorsements?project_id=${projectId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setEndorsed(data.user_endorsed);
+        setCount(data.count);
+      }
+    } catch {
+      // silent — use initial values
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    if (!isOwner) {
+      checkEndorsementState();
+    }
+  }, [isOwner, checkEndorsementState]);
 
   async function handleToggle() {
     if (loading) return;
@@ -56,7 +75,9 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
           } else if (res.status === 403) {
             setError("Can't endorse own project");
           } else if (res.status === 409) {
+            // Already endorsed — sync state and count
             setEndorsed(true);
+            checkEndorsementState();
           } else {
             setError(data.error || "Failed to endorse");
           }
@@ -66,22 +87,6 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
       setError("Network error");
     }
     setLoading(false);
-  }
-
-  // Check initial endorsement state on first interaction
-  async function checkEndorsementState() {
-    if (checkedAuth) return;
-    setCheckedAuth(true);
-    try {
-      const res = await fetch(`/api/endorsements?project_id=${projectId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setEndorsed(data.user_endorsed);
-        setCount(data.count);
-      }
-    } catch {
-      // silent — use initial values
-    }
   }
 
   if (isOwner) {
