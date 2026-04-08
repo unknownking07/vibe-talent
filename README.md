@@ -1,8 +1,27 @@
 # VibeTalent
 
-A marketplace for vibe coders who actually ship. Build your reputation through coding streaks, shipped projects, GitHub activity, and peer endorsements.
+<p align="center">
+  <img src="./.github/vibetalent-header.jpg" alt="VibeTalent" />
+</p>
 
-**Live:** [vibetalent.work](https://www.vibetalent.work)
+<p align="center">
+  <b>The marketplace for vibe coders who actually ship. No resumes. No portfolios. Just streaks, shipped projects, and vibe scores.</b>
+</p>
+
+<p align="center">
+  <a href="https://www.vibetalent.work">https://www.vibetalent.work</a>
+</p>
+
+## Features
+
+- **Vibe Score** - Reputation built from coding streaks, shipped projects, and badge bonuses
+- **Streak System** - Daily coding streaks with monthly freezes and at-risk warnings
+- **Shipped Projects** - Verified live URLs, weekly health checks, GitHub quality scoring
+- **Endorsements** - Peer endorsements with anti-gaming rate limits
+- **Hire Flow** - Direct hire requests with real-time chat between clients and builders
+- **AI Talent Finder** - Conversational agent that surfaces builders by skill and signal
+- **Public API** - `/api/v1/builders` for programmatic access to the marketplace
+- **Embeddable Badges** - Dynamic SVG badge per builder for READMEs and sites
 
 ## Tech Stack
 
@@ -202,3 +221,7 @@ Configured in `vercel.json`. All protected by `CRON_SECRET`.
 4. Deploy
 
 Cron jobs are auto-configured via `vercel.json`.
+
+## License
+
+MIT
