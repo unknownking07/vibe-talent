@@ -346,3 +346,20 @@ body:has(.chat-page-wrapper) main {
   transform: none !important;
   box-shadow: var(--shadow-brutal) !important;
 }
+
+/* Settings "New" field pulse — used when landing on /settings?complete=name */
+@keyframes settings-highlight-pulse {
+  0%, 100% { outline-color: var(--accent); }
+  50% { outline-color: transparent; }
+}
+.settings-highlight-pulse {
+  animation: settings-highlight-pulse 1.6s ease-in-out infinite;
+}
+
+/* Respect users who prefer reduced motion — show a static highlight instead */
+@media (prefers-reduced-motion: reduce) {
+  .settings-highlight-pulse {
+    animation: none;
+    outline: 3px solid var(--accent);
+  }
+}

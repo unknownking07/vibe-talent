@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Flame, Menu, X, LogOut, Settings, User, Users } from "lucide-react";
+import { Flame, Menu, X, LogOut, Settings, User, Users, BadgeCheck } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { NotificationBell } from "@/components/ui/notification-bell";
@@ -51,7 +51,7 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState<{ username: string; avatar_url: string | null } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ username: string; avatar_url: string | null; github_username: string | null; display_name: string | null } | null>(null);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -75,20 +75,25 @@ export function Navbar() {
       try {
         const { data: profile, error } = await sb
           .from("users")
-          .select("username, avatar_url")
+          .select("username, avatar_url, github_username, display_name")
           .eq("id", userId)
           .single();
         if (error) console.error("Navbar profile fetch error:", error);
         if (profile && profile.username) {
-          setUserProfile({ username: profile.username, avatar_url: profile.avatar_url });
+          setUserProfile({
+            username: profile.username,
+            avatar_url: profile.avatar_url,
+            github_username: profile.github_username || null,
+            display_name: profile.display_name || null,
+          });
         } else if (email) {
           // Fallback: use email prefix as display name
-          setUserProfile({ username: email.split("@")[0], avatar_url: null });
+          setUserProfile({ username: email.split("@")[0], avatar_url: null, github_username: null, display_name: null });
         }
       } catch (err) {
         console.error("Navbar profile fetch failed:", err);
         if (email) {
-          setUserProfile({ username: email.split("@")[0], avatar_url: null });
+          setUserProfile({ username: email.split("@")[0], avatar_url: null, github_username: null, display_name: null });
         }
       }
     }
@@ -111,7 +116,19 @@ export function Navbar() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Refetch the profile whenever something in the app saves it (e.g. the
+    // settings page saves a display name). Without this, the onboarding dot
+    // would only clear on a full reload.
+    const handleProfileUpdated = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) fetchProfile(user.id, user.email);
+    };
+    window.addEventListener("profile-updated", handleProfileUpdated);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener("profile-updated", handleProfileUpdated);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkUnread]);
 
@@ -233,6 +250,29 @@ export function Navbar() {
                   size={48}
                 />
               </button>
+              {userProfile?.github_username && (
+                <BadgeCheck
+                  size={18}
+                  strokeWidth={2.5}
+                  className="text-white fill-[#1D9BF0] absolute -bottom-0.5 -right-0.5 pointer-events-none"
+                  style={{ filter: "drop-shadow(0 0 2px var(--bg-base))" }}
+                  aria-label="GitHub verified"
+                />
+              )}
+              {userProfile && !userProfile.display_name && (
+                <span
+                  className="absolute -top-0.5 -right-0.5 pointer-events-none"
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: "50%",
+                    backgroundColor: "var(--accent)",
+                    border: "2px solid var(--bg-base)",
+                  }}
+                  aria-label="Profile needs completion"
+                  title="Complete your profile"
+                />
+              )}
               {profileDropdownOpen && (
                 <div
                   role="menu"
@@ -253,13 +293,30 @@ export function Navbar() {
                     My Profile
                   </Link>
                   <Link
-                    href="/settings"
+                    href={userProfile && !userProfile.display_name ? "/settings?complete=name" : "/settings"}
                     onClick={() => setProfileDropdownOpen(false)}
                     className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors"
                     style={{ color: "var(--foreground)" }}
                   >
                     <Settings size={16} />
-                    Settings
+                    <span>Settings</span>
+                    {userProfile && !userProfile.display_name && (
+                      <span
+                        className="ml-auto flex items-center gap-1 text-[10px] font-extrabold uppercase"
+                        style={{ color: "var(--accent)" }}
+                      >
+                        <span
+                          style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            backgroundColor: "var(--accent)",
+                            display: "inline-block",
+                          }}
+                        />
+                        1 to do
+                      </span>
+                    )}
                   </Link>
                   <Link
                     href="/settings#referral"
@@ -358,7 +415,17 @@ export function Navbar() {
                   size={36}
                 />
               </div>
-              <span className="text-sm font-extrabold text-[var(--foreground)]">{userProfile.username}</span>
+              <span className="text-sm font-extrabold text-[var(--foreground)] flex items-center gap-1">
+                {userProfile.username}
+                {userProfile.github_username && (
+                  <BadgeCheck
+                    size={14}
+                    strokeWidth={2.5}
+                    className="text-white fill-[#1D9BF0] shrink-0"
+                    aria-label="GitHub verified"
+                  />
+                )}
+              </span>
             </div>
           )}
 

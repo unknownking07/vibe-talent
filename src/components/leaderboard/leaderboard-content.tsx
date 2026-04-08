@@ -5,7 +5,7 @@ import { BadgeDisplay } from "@/components/ui/badge-display";
 import type { UserWithSocials } from "@/lib/types/database";
 import { StreakCounter } from "@/components/ui/streak-counter";
 import { VibeScore } from "@/components/ui/vibe-score";
-import { Trophy, Flame, Code2, Zap, ChevronLeft, ChevronRight } from "lucide-react";
+import { Trophy, Flame, Code2, Zap, ChevronLeft, ChevronRight, BadgeCheck } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -123,7 +123,20 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                 )}
               </div>
               <div className="text-xs font-extrabold text-[var(--text-muted)] mb-1 uppercase">#{rank}</div>
-              <div className="font-extrabold text-[var(--foreground)] text-sm uppercase">@{user.username}</div>
+              <div className="font-extrabold text-[var(--foreground)] text-sm uppercase flex items-center justify-center gap-1">
+                {user.display_name || `@${user.username}`}
+                {user.github_username && (
+                  <BadgeCheck
+                    size={14}
+                    className="text-white fill-[#1D9BF0] shrink-0"
+                    strokeWidth={2.5}
+                    aria-label="GitHub verified"
+                  />
+                )}
+              </div>
+              {user.display_name && (
+                <div className="text-xs font-medium text-[var(--text-muted)]">@{user.username}</div>
+              )}
               <div className="mt-2">
                 <BadgeDisplay level={user.badge_level} size="sm" />
               </div>
@@ -181,7 +194,22 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                           initials
                         )}
                       </div>
-                      <span className="font-bold text-sm uppercase">@{user.username}</span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold text-sm uppercase flex items-center gap-1 truncate">
+                          {user.display_name || `@${user.username}`}
+                          {user.github_username && (
+                            <BadgeCheck
+                              size={14}
+                              className="text-white fill-[#1D9BF0] shrink-0"
+                              strokeWidth={2.5}
+                              aria-label="GitHub verified"
+                            />
+                          )}
+                        </span>
+                        {user.display_name && (
+                          <span className="text-xs font-medium text-[var(--text-muted)] normal-case truncate">@{user.username}</span>
+                        )}
+                      </div>
                     </Link>
                   </td>
                   <td className="px-3 sm:px-4 py-3 text-right">

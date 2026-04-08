@@ -33,8 +33,10 @@ function createMockUser(overrides: Partial<UserWithSocials> = {}): UserWithSocia
   return {
     id: "user-1",
     username: "testuser",
+    display_name: null,
     bio: "Full stack developer",
     avatar_url: null,
+    github_username: null,
     streak: 30,
     longest_streak: 60,
     vibe_score: 100,

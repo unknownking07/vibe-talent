@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { UserWithSocials } from "@/lib/types/database";
 import { EmailPreferences } from "@/components/dashboard/email-preferences";
@@ -9,18 +10,19 @@ import {
   Save,
   Camera,
   Users,
+  Github,
+  CheckCircle2,
 } from "lucide-react";
 
 /**
  * Extract a bare username from a value that might be a full URL or @-prefixed handle.
  */
-function extractUsername(value: string, platform: "twitter" | "github" | "telegram"): string {
+function extractUsername(value: string, platform: "twitter" | "telegram"): string {
   let v = value.trim();
   if (!v) return "";
   v = v.replace(/\/+$/, "");
   const patterns: Record<string, RegExp[]> = {
     twitter: [/^https?:\/\/(www\.)?(twitter|x)\.com\//i],
-    github: [/^https?:\/\/(www\.)?github\.com\//i],
     telegram: [/^https?:\/\/(www\.)?(t\.me|telegram\.me)\//i],
   };
   for (const re of patterns[platform]) {
@@ -34,6 +36,7 @@ function extractUsername(value: string, platform: "twitter" | "github" | "telegr
 }
 
 export default function SettingsPage() {
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<UserWithSocials | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -43,13 +46,16 @@ export default function SettingsPage() {
 
   const [profileForm, setProfileForm] = useState({
     username: "",
+    display_name: "",
     bio: "",
     twitter: "",
-    github: "",
     telegram: "",
     website: "",
     ide: "",
   });
+  const [connectingGithub, setConnectingGithub] = useState(false);
+  const [highlightName, setHighlightName] = useState(false);
+  const displayNameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,15 +126,29 @@ export default function SettingsPage() {
     if (user) {
       setProfileForm({
         username: user.username,
+        display_name: user.display_name || "",
         bio: user.bio || "",
         twitter: user.social_links?.twitter || "",
-        github: user.social_links?.github || "",
         telegram: user.social_links?.telegram || "",
         website: user.social_links?.website || "",
         ide: user.social_links?.farcaster || "",
       });
     }
   }, [user]);
+
+  // When arriving via ?complete=name (e.g. from the navbar onboarding dot),
+  // scroll to the display name field and pulse it until the user starts typing.
+  useEffect(() => {
+    if (!user) return;
+    if (searchParams.get("complete") === "name" && !user.display_name) {
+      setHighlightName(true);
+      // Defer until after the form fields have mounted
+      setTimeout(() => {
+        displayNameRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        displayNameRef.current?.focus();
+      }, 120);
+    }
+  }, [user, searchParams]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -186,15 +206,24 @@ export default function SettingsPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
 
+    const trimmedDisplayName = profileForm.display_name.trim();
     await sb
       .from("users")
-      .update({ username: profileForm.username.trim(), bio: profileForm.bio.trim() })
+      .update({
+        username: profileForm.username.trim(),
+        display_name: trimmedDisplayName || null,
+        bio: profileForm.bio.trim(),
+      })
       .eq("id", user.id);
+
+    // Preserve the verified GitHub handle — it's only set via OAuth linking,
+    // never from a free-text field on this page.
+    const verifiedGithub = user.github_username || user.social_links?.github || null;
 
     await sb.from("social_links").upsert({
       user_id: user.id,
       twitter: twitter || null,
-      github: profileForm.github.trim() || null,
+      github: verifiedGithub,
       telegram: telegram || null,
       website: profileForm.website.trim() || null,
       farcaster: profileForm.ide || null,
@@ -203,18 +232,42 @@ export default function SettingsPage() {
     setUser({
       ...user,
       username: profileForm.username,
+      display_name: trimmedDisplayName || null,
       bio: profileForm.bio,
       social_links: {
         id: user.social_links?.id || "",
         user_id: user.id,
         twitter: profileForm.twitter || null,
-        github: profileForm.github || null,
+        github: verifiedGithub,
         telegram: profileForm.telegram || null,
         website: profileForm.website || null,
         farcaster: profileForm.ide || null,
       },
     });
+    // Let other parts of the app (navbar onboarding dot, etc.) react to the
+    // profile change without requiring a page reload.
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("profile-updated", {
+          detail: { display_name: trimmedDisplayName || null },
+        })
+      );
+    }
     setSaving(false);
+  };
+
+  const handleConnectGithub = async () => {
+    setConnectingGithub(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.linkIdentity({
+      provider: "github",
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=/settings` },
+    });
+    if (error) {
+      alert(`Couldn't connect GitHub: ${error.message}`);
+      setConnectingGithub(false);
+    }
+    // On success the browser redirects to GitHub, so no further UI update needed.
   };
 
   if (loading) {
@@ -296,6 +349,37 @@ export default function SettingsPage() {
             />
           </div>
           <div>
+            <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 flex items-center gap-2">
+              Display Name
+              {highlightName && (
+                <span
+                  className="px-1.5 py-0.5 text-[10px] font-extrabold text-white uppercase"
+                  style={{ backgroundColor: "var(--accent)", border: "1px solid var(--border-hard)" }}
+                >
+                  New
+                </span>
+              )}
+            </label>
+            <input
+              ref={displayNameRef}
+              type="text"
+              value={profileForm.display_name}
+              onChange={(e) => {
+                setProfileForm({ ...profileForm, display_name: e.target.value });
+                if (highlightName) setHighlightName(false);
+              }}
+              placeholder="Your full name (e.g. Abhinav Kumar)"
+              maxLength={50}
+              className={`input-brutal ${highlightName ? "settings-highlight-pulse" : ""}`}
+              style={highlightName ? { outline: "3px solid var(--accent)", outlineOffset: 2 } : undefined}
+            />
+            <p className="mt-1.5 text-xs font-medium text-[var(--text-muted)]">
+              {highlightName
+                ? "Add your full name so employers know who you are."
+                : "Shown above your @username on your profile and in search results."}
+            </p>
+          </div>
+          <div>
             <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Bio</label>
             <textarea
               value={profileForm.bio}
@@ -321,17 +405,38 @@ export default function SettingsPage() {
             </div>
             <div>
               <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">GitHub</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted-soft)] font-bold text-sm select-none">@</span>
-                <input
-                  type="text"
-                  value={profileForm.github}
-                  onChange={(e) => setProfileForm({ ...profileForm, github: extractUsername(e.target.value, "github") })}
-                  placeholder="username"
-                  className="input-brutal"
-                  style={{ paddingLeft: "1.75rem" }}
-                />
-              </div>
+              {user.github_username ? (
+                <div
+                  className="flex items-center gap-2 px-3 py-2.5 text-sm"
+                  style={{
+                    backgroundColor: "var(--status-success-bg)",
+                    border: "2px solid var(--border-hard)",
+                  }}
+                >
+                  <CheckCircle2 size={16} className="text-[var(--status-success-text)] flex-shrink-0" />
+                  <span className="font-bold text-[var(--status-success-text)]">@{user.github_username}</span>
+                  <span className="text-xs font-bold uppercase text-[var(--status-success-text)] opacity-70 ml-auto">Verified</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleConnectGithub}
+                  disabled={connectingGithub}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-extrabold uppercase tracking-wide text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-[var(--bg-pill-hover)]"
+                  style={{
+                    backgroundColor: "var(--bg-inverted)",
+                    border: "2px solid var(--border-hard)",
+                  }}
+                >
+                  <Github size={16} />
+                  {connectingGithub ? "Connecting..." : "Connect GitHub"}
+                </button>
+              )}
+              <p className="mt-1.5 text-xs font-medium text-[var(--text-muted)]">
+                {user.github_username
+                  ? "Ownership verified via GitHub OAuth."
+                  : "Verify ownership to enable streak sync."}
+              </p>
             </div>
             <div>
               <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Telegram</label>

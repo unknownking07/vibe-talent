@@ -20,6 +20,7 @@ import {
 
 interface ProfileData {
   username: string;
+  display_name: string;
   bio: string;
 }
 
@@ -52,11 +53,14 @@ export default function ProfileSetupPage() {
   const [error, setError] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [oauthAvatarUrl, setOauthAvatarUrl] = useState<string | null>(null);
+  const [verifiedGithub, setVerifiedGithub] = useState<string | null>(null);
+  const [connectingGithub, setConnectingGithub] = useState(false);
   const [streakLogged, setStreakLogged] = useState(false);
 
   // Step 1
   const [profile, setProfile] = useState<ProfileData>({
     username: "",
+    display_name: "",
     bio: "",
   });
 
@@ -95,6 +99,30 @@ export default function ProfileSetupPage() {
         user.user_metadata?.picture ||
         null;
       setOauthAvatarUrl(avatar);
+
+      // Pre-fill display_name from OAuth metadata if available.
+      const oauthFullName =
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        "";
+      if (oauthFullName) {
+        setProfile((p) => (p.display_name ? p : { ...p, display_name: oauthFullName }));
+      }
+
+      // Check if GitHub ownership has already been verified (via OAuth signup
+      // or a prior linkIdentity flow). This is the only trusted source.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: userRow } = await (supabase.from("users") as any)
+        .select("display_name, github_username")
+        .eq("id", user.id)
+        .single();
+      if (userRow?.display_name) {
+        setProfile((p) => ({ ...p, display_name: userRow.display_name }));
+      }
+      if (userRow?.github_username) {
+        setVerifiedGithub(userRow.github_username);
+        setSocials((s) => ({ ...s, github: userRow.github_username }));
+      }
 
       // If returning user redirected to step 2, pre-fill existing socials
       if (initialStep === 2) {
@@ -146,6 +174,7 @@ export default function ProfileSetupPage() {
         {
           id: userId,
           username: profile.username,
+          display_name: profile.display_name.trim() || null,
           bio: profile.bio || null,
           ...(oauthAvatarUrl ? { avatar_url: oauthAvatarUrl } : {}),
         },
@@ -163,12 +192,27 @@ export default function ProfileSetupPage() {
     }
   };
 
+  const handleConnectGithub = async () => {
+    setConnectingGithub(true);
+    setError("");
+    const { error: linkError } = await supabase.auth.linkIdentity({
+      provider: "github",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=/auth/profile-setup?step=2`,
+      },
+    });
+    if (linkError) {
+      setError(`Couldn't connect GitHub: ${linkError.message}`);
+      setConnectingGithub(false);
+    }
+    // Success → browser redirects to GitHub OAuth.
+  };
+
   const handleStep2Next = async () => {
-    const github = socials.github.trim();
     const twitter = socials.twitter.trim();
     const telegram = socials.telegram.trim();
-    if (!github) {
-      setError("GitHub username is required so we can verify your work.");
+    if (!verifiedGithub) {
+      setError("Connect your GitHub account to verify ownership before continuing.");
       return;
     }
     if (!twitter && !telegram) {
@@ -180,7 +224,8 @@ export default function ProfileSetupPage() {
     setLoading(true);
 
     try {
-      const github = socials.github.trim();
+      // Always use the verified handle, never a free-text value.
+      const github = verifiedGithub;
       const website = socials.website.trim();
       const hasLinks = github || twitter || website || telegram;
 
@@ -373,6 +418,23 @@ export default function ProfileSetupPage() {
 
       <div>
         <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5 block">
+          Display Name
+        </label>
+        <input
+          type="text"
+          value={profile.display_name}
+          onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
+          placeholder="Your full name (e.g. Abhinav Kumar)"
+          maxLength={50}
+          className="input-brutal w-full"
+        />
+        <p className="text-[10px] text-[var(--text-secondary)] mt-1">
+          Shown above your @username on your profile. Optional but recommended.
+        </p>
+      </div>
+
+      <div>
+        <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5 block">
           Bio
         </label>
         <textarea
@@ -422,17 +484,40 @@ export default function ProfileSetupPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <Github size={18} className="text-[var(--text-secondary)] shrink-0" />
-        <input
-          type="text"
-          value={socials.github}
-          onChange={(e) => setSocials({ ...socials, github: e.target.value })}
-          placeholder="GitHub username *"
-          className="input-brutal w-full"
-          required
-        />
-      </div>
+      {verifiedGithub ? (
+        <div
+          className="flex items-center gap-3 px-4 py-3"
+          style={{
+            backgroundColor: "var(--status-success-bg)",
+            border: "2px solid var(--border-hard)",
+          }}
+        >
+          <Github size={18} className="text-[var(--status-success-text)] shrink-0" />
+          <span className="font-bold text-[var(--status-success-text)]">@{verifiedGithub}</span>
+          <span className="text-xs font-bold uppercase text-[var(--status-success-text)] opacity-70 ml-auto">
+            Verified ✓
+          </span>
+        </div>
+      ) : (
+        <div>
+          <button
+            type="button"
+            onClick={handleConnectGithub}
+            disabled={connectingGithub}
+            className="w-full flex items-center justify-center gap-2 px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-[var(--bg-pill-hover)]"
+            style={{
+              backgroundColor: "var(--bg-inverted)",
+              border: "2px solid var(--border-hard)",
+            }}
+          >
+            <Github size={18} />
+            {connectingGithub ? "Connecting..." : "Connect GitHub to verify *"}
+          </button>
+          <p className="mt-1.5 text-xs font-medium text-[var(--text-muted)]">
+            We verify ownership via GitHub OAuth so employers can trust your contributions.
+          </p>
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         <svg

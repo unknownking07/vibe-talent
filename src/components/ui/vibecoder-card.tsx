@@ -5,7 +5,7 @@ import Image from "next/image";
 import { BadgeDisplay } from "./badge-display";
 import { StreakCounter } from "./streak-counter";
 import { VibeScore } from "./vibe-score";
-import { Code2, ExternalLink, Activity } from "lucide-react";
+import { Code2, ExternalLink, Activity, BadgeCheck } from "lucide-react";
 import type { UserWithSocials } from "@/lib/types/database";
 
 interface VibecoderCardProps {
@@ -68,10 +68,23 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-extrabold uppercase text-[var(--foreground)] group-hover:text-[var(--accent)] transition-colors">
-                @{user.username}
-              </h3>
+            <div className="flex items-start gap-2 flex-wrap">
+              <div className="min-w-0">
+                <h3 className="font-extrabold uppercase text-[var(--foreground)] group-hover:text-[var(--accent)] transition-colors flex items-center gap-1 truncate">
+                  {user.display_name || `@${user.username}`}
+                  {user.github_username && (
+                    <BadgeCheck
+                      size={16}
+                      className="text-white fill-[#1D9BF0] shrink-0"
+                      strokeWidth={2.5}
+                      aria-label={`GitHub verified as @${user.github_username}`}
+                    />
+                  )}
+                </h3>
+                {user.display_name && (
+                  <p className="text-xs font-medium text-[var(--text-muted)] truncate">@{user.username}</p>
+                )}
+              </div>
               <BadgeDisplay level={user.badge_level} size="sm" />
             </div>
 

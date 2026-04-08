@@ -43,7 +43,16 @@ export async function GET(request: Request) {
           user.user_metadata?.picture ||
           null;
 
+        // Find the GitHub identity in the user's linked identities.
+        // This handles both initial GitHub OAuth signup AND linkIdentity
+        // flows where a Google/email user links their GitHub account later.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const githubIdentity = user.identities?.find((i: any) => i.provider === "github");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const ghData = (githubIdentity?.identity_data ?? {}) as any;
         const githubUsername =
+          ghData.user_name ||
+          ghData.preferred_username ||
           user.user_metadata?.user_name ||
           user.user_metadata?.preferred_username ||
           null;
@@ -53,7 +62,7 @@ export async function GET(request: Request) {
 
         const { data: profile } = await adminSb
           .from("users")
-          .select("avatar_url, github_username")
+          .select("username, avatar_url, github_username")
           .eq("id", user.id)
           .single();
 
@@ -69,12 +78,40 @@ export async function GET(request: Request) {
             updates.github_username = githubUsername;
           }
 
+          // NOTE: display_name is intentionally NOT touched here. Profile-setup
+          // step 1 already pre-fills it from user_metadata.full_name for new
+          // users, so first-time signups still get a nice default to accept
+          // or edit. Leaving the callback out of display_name means users who
+          // intentionally clear the field in settings won't have it restored
+          // on their next OAuth login.
+
           if (Object.keys(updates).length > 0) {
             await adminSb
               .from("users")
               .update(updates)
               .eq("id", user.id);
           }
+        }
+
+        // Auto-populate the public social link to the verified GitHub handle
+        // so profiles display GitHub without requiring manual entry.
+        if (githubUsername) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (adminSb.from("social_links") as any).upsert(
+            { user_id: user.id, github: githubUsername },
+            { onConflict: "user_id" }
+          );
+        }
+
+        // Send first-time users (email confirm or OAuth) to profile setup
+        // unless the caller explicitly asked for a specific destination
+        const hasExplicitNext = searchParams.get("next") !== null;
+        if (!profile?.username && !hasExplicitNext) {
+          const setupResponse = NextResponse.redirect(`${origin}/auth/profile-setup`);
+          forwardedResponse.cookies.getAll().forEach((c) => {
+            setupResponse.cookies.set(c);
+          });
+          return setupResponse;
         }
       }
 

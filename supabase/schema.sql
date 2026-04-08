@@ -298,6 +298,11 @@ ALTER TABLE projects ADD COLUMN IF NOT EXISTS live_url_ok BOOLEAN;
 -- Add github_username column to users (populated from GitHub OAuth on login)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS github_username TEXT;
 
+-- Add display_name column to users (Twitter-style "real name" above @username).
+-- Nullable — optional field. Auto-populated from OAuth metadata on first signup
+-- via the profile-setup flow, editable in settings afterwards.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name TEXT;
+
 -- Project reports table (spam prevention)
 CREATE TABLE project_reports (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
