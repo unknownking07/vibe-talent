@@ -19,6 +19,32 @@ const navLinks = [
 
 const DOCS_URL = "https://vibe-talent.gitbook.io/untitled";
 
+function ProfileAvatar({
+  avatarUrl,
+  username,
+  initials,
+  size,
+}: {
+  avatarUrl: string | null | undefined;
+  username: string | undefined;
+  initials: string;
+  size: number;
+}) {
+  const textClass = size >= 48 ? "text-sm" : "text-xs";
+  return avatarUrl ? (
+    <Image
+      src={avatarUrl}
+      alt={username || "Profile"}
+      width={size}
+      height={size}
+      className="w-full h-full object-cover"
+      style={{ borderRadius: "50%" }}
+    />
+  ) : (
+    <span className={`${textClass} font-extrabold text-white`}>{initials}</span>
+  );
+}
+
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -200,18 +226,12 @@ export function Navbar() {
                   cursor: "pointer",
                 }}
               >
-                {userProfile?.avatar_url ? (
-                  <Image
-                    src={userProfile.avatar_url}
-                    alt={userProfile.username}
-                    width={48}
-                    height={48}
-                    className="w-full h-full object-cover"
-                    style={{ borderRadius: "50%" }}
-                  />
-                ) : (
-                  <span className="text-sm font-extrabold text-white">{initials}</span>
-                )}
+                <ProfileAvatar
+                  avatarUrl={userProfile?.avatar_url}
+                  username={userProfile?.username}
+                  initials={initials}
+                  size={48}
+                />
               </button>
               {profileDropdownOpen && (
                 <div
@@ -276,6 +296,28 @@ export function Navbar() {
         {/* Mobile toggle */}
         <div className="flex items-center gap-2 sm:hidden">
           <ThemeToggle />
+          {isLoggedIn && <NotificationBell />}
+          {isLoggedIn && userProfile && (
+            <Link
+              href={`/profile/${userProfile.username}`}
+              aria-label="Profile"
+              className="flex items-center justify-center overflow-hidden"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                border: "2px solid var(--border-hard)",
+                backgroundColor: "var(--bg-inverted)",
+              }}
+            >
+              <ProfileAvatar
+                avatarUrl={userProfile.avatar_url}
+                username={userProfile.username}
+                initials={initials}
+                size={36}
+              />
+            </Link>
+          )}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             style={{ color: "var(--foreground)" }}
@@ -309,18 +351,12 @@ export function Navbar() {
                   backgroundColor: "var(--bg-inverted)",
                 }}
               >
-                {userProfile.avatar_url ? (
-                  <Image
-                    src={userProfile.avatar_url}
-                    alt={userProfile.username}
-                    width={36}
-                    height={36}
-                    className="w-full h-full object-cover"
-                    style={{ borderRadius: "50%" }}
-                  />
-                ) : (
-                  <span className="text-xs font-extrabold text-white">{initials}</span>
-                )}
+                <ProfileAvatar
+                  avatarUrl={userProfile.avatar_url}
+                  username={userProfile.username}
+                  initials={initials}
+                  size={36}
+                />
               </div>
               <span className="text-sm font-extrabold text-[var(--foreground)]">{userProfile.username}</span>
             </div>
@@ -357,10 +393,6 @@ export function Navbar() {
           </a>
           {isLoggedIn ? (
             <>
-            <div className="mt-2 flex items-center gap-3">
-              <NotificationBell />
-              <span className="text-sm font-bold uppercase tracking-wide text-[var(--foreground)]">Notifications</span>
-            </div>
             {userProfile && (
               <>
                 <Link
