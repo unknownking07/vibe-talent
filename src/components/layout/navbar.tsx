@@ -277,6 +277,37 @@ export function Navbar() {
         {/* Mobile toggle */}
         <div className="flex items-center gap-2 sm:hidden">
           <ThemeToggle />
+          {isLoggedIn && (
+            <>
+              <NotificationBell />
+              <Link
+                href={userProfile?.username ? `/profile/${userProfile.username}` : "/dashboard"}
+                aria-label="Profile"
+                className="flex items-center justify-center overflow-hidden"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: "50%",
+                  border: "2px solid var(--border-hard)",
+                  backgroundColor: "var(--bg-inverted)",
+                }}
+              >
+                {userProfile?.avatar_url ? (
+                  <Image
+                    src={userProfile.avatar_url}
+                    alt={userProfile.username}
+                    width={36}
+                    height={36}
+                    className="w-full h-full object-cover"
+                    style={{ borderRadius: "50%" }}
+                    unoptimized
+                  />
+                ) : (
+                  <span className="text-xs font-extrabold text-white">{initials}</span>
+                )}
+              </Link>
+            </>
+          )}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             style={{ color: "var(--foreground)" }}
@@ -359,10 +390,6 @@ export function Navbar() {
           </a>
           {isLoggedIn ? (
             <>
-            <div className="mt-2 flex items-center gap-3">
-              <NotificationBell />
-              <span className="text-sm font-bold uppercase tracking-wide text-[var(--foreground)]">Notifications</span>
-            </div>
             {userProfile && (
               <>
                 <Link
