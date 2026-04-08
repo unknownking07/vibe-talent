@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { UserWithSocials } from "@/lib/types/database";
 import { EmailPreferences } from "@/components/dashboard/email-preferences";
@@ -35,6 +36,7 @@ function extractUsername(value: string, platform: "twitter" | "telegram"): strin
 }
 
 export default function SettingsPage() {
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<UserWithSocials | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -138,8 +140,7 @@ export default function SettingsPage() {
   // scroll to the display name field and pulse it until the user starts typing.
   useEffect(() => {
     if (!user) return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("complete") === "name" && !user.display_name) {
+    if (searchParams.get("complete") === "name" && !user.display_name) {
       setHighlightName(true);
       // Defer until after the form fields have mounted
       setTimeout(() => {
@@ -147,7 +148,7 @@ export default function SettingsPage() {
         displayNameRef.current?.focus();
       }, 120);
     }
-  }, [user]);
+  }, [user, searchParams]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -243,6 +244,15 @@ export default function SettingsPage() {
         farcaster: profileForm.ide || null,
       },
     });
+    // Let other parts of the app (navbar onboarding dot, etc.) react to the
+    // profile change without requiring a page reload.
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("profile-updated", {
+          detail: { display_name: trimmedDisplayName || null },
+        })
+      );
+    }
     setSaving(false);
   };
 

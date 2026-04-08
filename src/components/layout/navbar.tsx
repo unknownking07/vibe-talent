@@ -116,7 +116,19 @@ export function Navbar() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Refetch the profile whenever something in the app saves it (e.g. the
+    // settings page saves a display name). Without this, the onboarding dot
+    // would only clear on a full reload.
+    const handleProfileUpdated = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) fetchProfile(user.id, user.email);
+    };
+    window.addEventListener("profile-updated", handleProfileUpdated);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener("profile-updated", handleProfileUpdated);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkUnread]);
 

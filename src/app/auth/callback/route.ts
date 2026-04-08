@@ -57,27 +57,12 @@ export async function GET(request: Request) {
           user.user_metadata?.preferred_username ||
           null;
 
-        // Pull display name from any OAuth provider (GitHub, Google).
-        // Order of preference: github full_name > any identity full_name/name > user_metadata.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const googleIdentity = user.identities?.find((i: any) => i.provider === "google");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const googleData = (googleIdentity?.identity_data ?? {}) as any;
-        const oauthDisplayName =
-          ghData.full_name ||
-          ghData.name ||
-          googleData.full_name ||
-          googleData.name ||
-          user.user_metadata?.full_name ||
-          user.user_metadata?.name ||
-          null;
-
         // Use service role client for DB operations to bypass RLS
         const adminSb = createAdminClient();
 
         const { data: profile } = await adminSb
           .from("users")
-          .select("username, display_name, avatar_url, github_username")
+          .select("username, avatar_url, github_username")
           .eq("id", user.id)
           .single();
 
@@ -93,11 +78,12 @@ export async function GET(request: Request) {
             updates.github_username = githubUsername;
           }
 
-          // Only set display_name if we don't already have one — never overwrite
-          // a user's manually-edited name with the OAuth-provided one on re-login.
-          if (oauthDisplayName && !profile.display_name) {
-            updates.display_name = oauthDisplayName;
-          }
+          // NOTE: display_name is intentionally NOT touched here. Profile-setup
+          // step 1 already pre-fills it from user_metadata.full_name for new
+          // users, so first-time signups still get a nice default to accept
+          // or edit. Leaving the callback out of display_name means users who
+          // intentionally clear the field in settings won't have it restored
+          // on their next OAuth login.
 
           if (Object.keys(updates).length > 0) {
             await adminSb

@@ -355,3 +355,11 @@ body:has(.chat-page-wrapper) main {
 .settings-highlight-pulse {
   animation: settings-highlight-pulse 1.6s ease-in-out infinite;
 }
+
+/* Respect users who prefer reduced motion — show a static highlight instead */
+@media (prefers-reduced-motion: reduce) {
+  .settings-highlight-pulse {
+    animation: none;
+    outline: 3px solid var(--accent);
+  }
+}
