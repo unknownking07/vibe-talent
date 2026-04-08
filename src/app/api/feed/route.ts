@@ -13,9 +13,11 @@ type FeedItem = {
   id: string;
   type: "push" | "pr" | "create" | "issue" | "project" | "streak" | "joined";
   username: string;
+  display_name: string | null;
   avatar_url: string | null;
   badge_level: string;
   streak: number;
+  github_verified: boolean;
   date: string;
   repo_name?: string;
   message?: string;
@@ -43,20 +45,20 @@ export async function GET(request: NextRequest) {
     // Run all queries in parallel instead of sequentially
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [usersResult, eventsResult, streakResult, projectsResult, recentUsersResult] = await Promise.all([
-      supabase.from("users").select("id, username, avatar_url, badge_level, streak").order("vibe_score", { ascending: false }).limit(200),
+      supabase.from("users").select("id, username, display_name, avatar_url, badge_level, streak, github_username").order("vibe_score", { ascending: false }).limit(200),
       supabase.from("feed_events").select("id, event_type, repo_name, message, github_url, created_at, user_id").order("created_at", { ascending: false }).limit(200).then(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (r: any) => r, () => ({ data: null, error: "feed_events not available" })
       ),
       supabase.from("streak_logs").select("id, activity_date, user_id").order("activity_date", { ascending: false }).limit(100),
       supabase.from("projects").select("id, title, description, tech_stack, live_url, github_url, created_at, user_id").eq("flagged", false).order("created_at", { ascending: false }).limit(30),
-      supabase.from("users").select("id, username, avatar_url, badge_level, streak, created_at").order("created_at", { ascending: false }).limit(50),
+      supabase.from("users").select("id, username, display_name, avatar_url, badge_level, streak, created_at, github_username").order("created_at", { ascending: false }).limit(50),
     ]);
 
     // Build user lookup map
-    const userMap = new Map<string, { username: string; avatar_url: string | null; badge_level: string; streak: number }>();
+    const userMap = new Map<string, { username: string; display_name: string | null; avatar_url: string | null; badge_level: string; streak: number; github_verified: boolean }>();
     for (const u of (usersResult.data || [])) {
-      userMap.set(u.id, { username: u.username, avatar_url: u.avatar_url, badge_level: u.badge_level || "none", streak: u.streak || 0 });
+      userMap.set(u.id, { username: u.username, display_name: u.display_name || null, avatar_url: u.avatar_url, badge_level: u.badge_level || "none", streak: u.streak || 0, github_verified: Boolean(u.github_username) });
     }
 
     // 1. Process GitHub events
@@ -68,9 +70,11 @@ export async function GET(request: NextRequest) {
           id: `event-${event.id}`,
           type: event.event_type || "push",
           username: user.username,
+          display_name: user.display_name,
           avatar_url: user.avatar_url,
           badge_level: user.badge_level,
           streak: user.streak,
+          github_verified: user.github_verified,
           date: event.created_at,
           repo_name: event.repo_name,
           message: event.message,
@@ -94,9 +98,11 @@ export async function GET(request: NextRequest) {
         id: `streak-${log.id}`,
         type: "streak",
         username: user.username,
+        display_name: user.display_name,
         avatar_url: user.avatar_url,
         badge_level: user.badge_level,
         streak: user.streak,
+        github_verified: user.github_verified,
         date: log.activity_date,
         message: "logged a day of coding",
       });
@@ -110,9 +116,11 @@ export async function GET(request: NextRequest) {
         id: `project-${project.id}`,
         type: "project",
         username: user.username,
+        display_name: user.display_name,
         avatar_url: user.avatar_url,
         badge_level: user.badge_level,
         streak: user.streak,
+        github_verified: user.github_verified,
         date: project.created_at,
         project_title: project.title,
         project_description: project.description,
@@ -128,9 +136,11 @@ export async function GET(request: NextRequest) {
         id: `joined-${user.id}`,
         type: "joined",
         username: user.username,
+        display_name: user.display_name || null,
         avatar_url: user.avatar_url,
         badge_level: user.badge_level || "none",
         streak: user.streak || 0,
+        github_verified: Boolean(user.github_username),
         date: user.created_at,
         message: "joined VibeTalent",
       });

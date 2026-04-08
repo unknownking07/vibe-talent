@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get GitHub username from user profile or social_links
+    // Only use OAuth-verified github_username. Never trust social_links.github
+    // for streak sync — it's a free-text field and could be spoofed.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profile } = await (supabase as any)
       .from("users")
@@ -27,18 +28,11 @@ export async function POST(req: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: socialLinks } = await (supabase as any)
-      .from("social_links")
-      .select("github")
-      .eq("user_id", user.id)
-      .single();
-
-    const githubUsername = profile?.github_username || socialLinks?.github;
+    const githubUsername = profile?.github_username;
 
     if (!githubUsername) {
       return NextResponse.json(
-        { error: "No GitHub username configured. Add your GitHub username in your profile settings." },
+        { error: "GitHub ownership not verified. Connect your GitHub account in settings to enable streak sync." },
         { status: 400 }
       );
     }

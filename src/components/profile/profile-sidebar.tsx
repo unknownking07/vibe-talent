@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Github, Globe, Bot, Code2, Share2, Link2 as LinkIcon, Check, Send } from "lucide-react";
+import { Github, Globe, Bot, Code2, Share2, Link2 as LinkIcon, Check, Send, BadgeCheck } from "lucide-react";
 import Link from "next/link";
 import type { UserWithSocials, BadgeLevel } from "@/lib/types/database";
 import { HireModal } from "@/components/ui/hire-modal";
@@ -143,9 +143,27 @@ export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
           )}
         </div>
 
-        {/* Name + role */}
+        {/* Name + handle + role */}
         <div className="mt-2">
-          <h1 className="text-xl font-extrabold uppercase tracking-tight text-[var(--foreground)]">@{user.username}</h1>
+          <h1 className="text-xl font-extrabold uppercase tracking-tight text-[var(--foreground)] flex items-center justify-center gap-1.5">
+            <span>{user.display_name || `@${user.username}`}</span>
+            {user.github_username && (
+              <span
+                className="inline-flex items-center"
+                title={`GitHub ownership verified: @${user.github_username}`}
+                aria-label={`GitHub verified as @${user.github_username}`}
+              >
+                <BadgeCheck
+                  size={20}
+                  className="text-white fill-[#1D9BF0]"
+                  strokeWidth={2.5}
+                />
+              </span>
+            )}
+          </h1>
+          {user.display_name && (
+            <p className="text-sm font-medium text-[var(--text-muted)] mt-0.5">@{user.username}</p>
+          )}
           <p className="text-sm font-bold text-[var(--text-muted)] uppercase mt-0.5">{deriveRole(user.projects)}</p>
         </div>
 

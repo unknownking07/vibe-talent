@@ -3,14 +3,17 @@
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { BadgeCheck } from "lucide-react";
 
 type FeedItem = {
   id: string;
   type: "push" | "pr" | "create" | "issue" | "project" | "streak" | "joined";
   username: string;
+  display_name?: string | null;
   avatar_url: string | null;
   badge_level: string;
   streak: number;
+  github_verified?: boolean;
   date: string;
   repo_name?: string;
   message?: string;
@@ -209,7 +212,22 @@ export default function FeedPage() {
 
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, paddingTop: 4 }}>
                     <div style={{ fontSize: 15, color: "var(--text-secondary)" }}>
-                      <Link href={`/profile/${item.username}`} style={{ color: "var(--foreground)", fontWeight: 600, textDecoration: "none" }}>{item.username}</Link>
+                      <Link href={`/profile/${item.username}`} style={{ color: "var(--foreground)", fontWeight: 600, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        {item.display_name || item.username}
+                        {item.github_verified && (
+                          <BadgeCheck
+                            size={14}
+                            className="text-white fill-[#1D9BF0] shrink-0"
+                            strokeWidth={2.5}
+                            aria-label="GitHub verified"
+                          />
+                        )}
+                      </Link>
+                      {item.display_name && (
+                        <span style={{ color: "var(--text-muted)", fontWeight: 500, marginLeft: 6 }}>
+                          @{item.username}
+                        </span>
+                      )}
                       {" "}{actionText(item)}
                       {item.repo_name && item.type !== "project" && item.type !== "streak" && (
                         <span className="fl-tag fl-tag-dark">{item.repo_name}</span>

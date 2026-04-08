@@ -225,19 +225,49 @@ export async function GET(
               </div>
 
               {/* Name + badge */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <span
-                  style={{
-                    fontSize: 42,
-                    fontWeight: 300,
-                    color: TEXT,
-                    textTransform: "uppercase",
-                    letterSpacing: "4px",
-                    lineHeight: 1,
-                  }}
-                >
-                  @{user.username}
-                </span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <span
+                    style={{
+                      fontSize: 42,
+                      fontWeight: 300,
+                      color: TEXT,
+                      textTransform: "uppercase",
+                      letterSpacing: "4px",
+                      lineHeight: 1,
+                    }}
+                  >
+                    {user.display_name || `@${user.username}`}
+                  </span>
+                  {user.github_username && (
+                    <svg
+                      width="36"
+                      height="36"
+                      viewBox="0 0 24 24"
+                      fill="#1D9BF0"
+                      stroke="#FFFFFF"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
+                      <path d="m9 12 2 2 4-4" stroke="#FFFFFF" />
+                    </svg>
+                  )}
+                </div>
+                {user.display_name && (
+                  <span
+                    style={{
+                      display: "flex",
+                      fontSize: 18,
+                      fontWeight: 500,
+                      color: "rgba(28,28,28,0.6)",
+                      letterSpacing: "2px",
+                    }}
+                  >
+                    @{user.username}
+                  </span>
+                )}
                 <div
                   style={{
                     display: "flex",
