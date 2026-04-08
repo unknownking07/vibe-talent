@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
     { name: "profile-view-digest", path: "/api/cron/profile-view-digest" },
     { name: "milestone-check", path: "/api/cron/milestone-check" },
     { name: "weekly-digest", path: "/api/cron/weekly-digest" },
+    { name: "re-engagement", path: "/api/cron/re-engagement" },
   ];
 
   const results: Record<string, { status: number; data?: unknown; error?: string }> = {};

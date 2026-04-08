@@ -589,6 +589,17 @@ export default function DashboardPage() {
       streak: newStreak,
       longest_streak: newLongest,
     }).eq("id", user.id);
+
+    // Mark streak warning notifications as read and refresh the bell
+    fetch("/api/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "streak_warning" }),
+    }).then((res) => {
+      if (res.ok) {
+        window.dispatchEvent(new Event("notifications-updated"));
+      }
+    }).catch(() => {});
   };
 
   const handleAddProject = async () => {

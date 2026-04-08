@@ -44,7 +44,7 @@ export function MatchCard({ match, rank }: MatchCardProps) {
             style={{ backgroundColor: "var(--bg-inverted)", border: "2px solid var(--border-hard)" }}
           >
             {user.avatar_url ? (
-              <Image src={user.avatar_url} alt={user.username} width={48} height={48} className="w-full h-full object-cover" unoptimized />
+              <Image src={user.avatar_url} alt={user.username} width={48} height={48} className="w-full h-full object-cover" />
             ) : (
               initials
             )}

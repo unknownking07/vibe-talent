@@ -46,6 +46,11 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
       price: "0",
       priceCurrency: "USD",
     },
+    author: {
+      "@type": "Organization",
+      name: "VibeTalent",
+      url: siteUrl,
+    },
   };
 
   return (

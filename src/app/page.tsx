@@ -33,7 +33,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Is VibeTalent free to use?",
-    a: "Yes, VibeTalent is completely free for developers. Creating a profile, connecting your GitHub account, building your streak, earning badges, adding projects, and getting discovered by clients costs nothing. The platform is designed as a marketplace where your work speaks for itself — the better your streak, the higher your vibe score, and the more visible you become to potential clients. There are no premium tiers, hidden fees, or pay-to-rank features for developers. VibeTalent believes that the best developers should rise to the top based on merit and consistency, not marketing budgets. Simply sign up, start coding every day, add your best projects, and let your proof of work attract opportunities.",
+    a: "Yes, VibeTalent is free for developers. Creating a profile, connecting your GitHub account, building your streak, earning badges, adding projects, and getting discovered by clients costs nothing. Rankings are based entirely on merit — your vibe score, streak, and project quality determine your visibility. The one optional paid feature is Featured Projects: developers can pay with USDC (on Base network) to pin a project to the homepage carousel for extra visibility. This is purely optional and does not affect your vibe score, badge level, or search ranking. Simply sign up, start coding every day, add your best projects, and let your proof of work attract opportunities.",
   },
 ];
 
@@ -65,10 +65,12 @@ export default async function HomePage() {
             "@graph": [
               {
                 "@type": "WebSite",
+                "@id": "https://www.vibetalent.work/#website",
                 name: "VibeTalent",
                 url: "https://www.vibetalent.work",
                 description:
                   "The marketplace for vibe coders who ship consistently. Find developers based on streaks, shipped projects, and vibe scores.",
+                publisher: { "@id": "https://www.vibetalent.work/#organization" },
                 potentialAction: {
                   "@type": "SearchAction",
                   target: "https://www.vibetalent.work/explore?q={search_term_string}",
@@ -77,13 +79,19 @@ export default async function HomePage() {
               },
               {
                 "@type": "Organization",
+                "@id": "https://www.vibetalent.work/#organization",
                 name: "VibeTalent",
                 url: "https://www.vibetalent.work",
                 logo: {
                   "@type": "ImageObject",
-                  url: "https://www.vibetalent.work/logo.png",
-                  width: 512,
-                  height: 512,
+                  url: "https://www.vibetalent.work/og-image.jpg",
+                  width: 1200,
+                  height: 630,
+                },
+                contactPoint: {
+                  "@type": "ContactPoint",
+                  email: "vibetalentwork@gmail.com",
+                  contactType: "customer service",
                 },
                 sameAs: [
                   "https://x.com/abhiontwt",

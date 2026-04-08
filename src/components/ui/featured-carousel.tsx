@@ -414,7 +414,7 @@ export function FeaturedCarousel() {
 type UserProject = { id: string; title: string };
 
 function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLoggedIn: boolean }) {
-  const { login: privyLogin, authenticated: privyAuthenticated, ready: privyReady } = usePrivy();
+  const { login: privyLogin, logout: privyLogout, connectWallet, authenticated: privyAuthenticated, ready: privyReady } = usePrivy();
   const { wallets } = useWallets();
   const connectedWallet = wallets[0];
 
@@ -470,7 +470,17 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
       window.location.href = "/auth/login?redirect=/&reason=promote";
       return;
     }
-    privyLogin();
+    // If already authenticated with Privy but no wallet connected,
+    // use connectWallet() instead of login() to avoid "already logged in" error
+    if (privyAuthenticated) {
+      connectWallet();
+    } else {
+      privyLogin();
+    }
+  }
+
+  async function handleDisconnectWallet() {
+    await privyLogout();
   }
 
   async function handlePromote() {
@@ -571,9 +581,17 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
         </button>
       ) : (
         <div className="space-y-4">
-          <p className="text-xs font-bold text-[var(--text-muted)] font-mono">
-            Connected: {shortAddr(connectedWallet.address)}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-[var(--text-muted)] font-mono">
+              Connected: {shortAddr(connectedWallet.address)}
+            </p>
+            <button
+              onClick={handleDisconnectWallet}
+              className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors"
+            >
+              Disconnect
+            </button>
+          </div>
 
           {/* Project dropdown */}
           <div>
