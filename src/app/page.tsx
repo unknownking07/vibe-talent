@@ -288,9 +288,11 @@ export default async function HomePage() {
         </div>
 
         {topVibecoders.length > 0 ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
+          <div className="-mx-4 px-4 sm:mx-0 sm:px-0 flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-6 sm:overflow-visible sm:pb-0 sm:snap-none stagger-children">
             {topVibecoders.map((user, i) => (
-              <VibecoderCard key={user.id} user={user} rank={i + 1} />
+              <div key={user.id} className="min-w-[280px] flex-shrink-0 snap-start sm:min-w-0 sm:flex-shrink">
+                <VibecoderCard user={user} rank={i + 1} />
+              </div>
             ))}
           </div>
         ) : (
@@ -322,10 +324,12 @@ export default async function HomePage() {
           </div>
 
           {featuredProjects.length > 0 ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
+            <div className="-mx-4 px-4 sm:mx-0 sm:px-0 flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-6 sm:overflow-visible sm:pb-0 sm:snap-none stagger-children">
               {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               {featuredProjects.map((project: any) => (
-                <ProjectCard key={project.id} project={project} verified={!!project.verified} authorUsername={project.users?.username} />
+                <div key={project.id} className="min-w-[280px] flex-shrink-0 snap-start sm:min-w-0 sm:flex-shrink">
+                  <ProjectCard project={project} verified={!!project.verified} authorUsername={project.users?.username} />
+                </div>
               ))}
             </div>
           ) : (
