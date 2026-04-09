@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { VibecoderCard } from "@/components/ui/vibecoder-card";
-import { Search, SlidersHorizontal, Bot, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, SlidersHorizontal, Bot } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
 import Link from "next/link";
 import type { BadgeLevel, UserWithSocials } from "@/lib/types/database";
 
@@ -345,49 +346,9 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-10">
-              <button
-                onClick={() => goToPage(activePage - 1)}
-                disabled={activePage === 1}
-                className="flex items-center justify-center w-10 h-10 font-extrabold uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: "var(--bg-surface)",
-                  border: "2px solid var(--border-hard)",
-                  boxShadow: "var(--shadow-brutal-sm)",
-                }}
-              >
-                <ChevronLeft size={16} />
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => goToPage(page)}
-                  className="flex items-center justify-center w-10 h-10 text-sm font-extrabold uppercase transition-all"
-                  style={{
-                    backgroundColor: activePage === page ? "var(--accent)" : "var(--bg-surface)",
-                    color: activePage === page ? "#FFFFFF" : "var(--foreground)",
-                    border: "2px solid var(--border-hard)",
-                    boxShadow: activePage === page ? "none" : "var(--shadow-brutal-sm)",
-                  }}
-                >
-                  {page}
-                </button>
-              ))}
-              <button
-                onClick={() => goToPage(activePage + 1)}
-                disabled={activePage === totalPages}
-                className="flex items-center justify-center w-10 h-10 font-extrabold uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: "var(--bg-surface)",
-                  border: "2px solid var(--border-hard)",
-                  boxShadow: "var(--shadow-brutal-sm)",
-                }}
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          )}
+          <div className="mt-10">
+            <Pagination currentPage={activePage} totalPages={totalPages} onPageChange={goToPage} />
+          </div>
         </>
       ) : (
         <div
