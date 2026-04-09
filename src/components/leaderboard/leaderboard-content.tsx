@@ -5,7 +5,8 @@ import { BadgeDisplay } from "@/components/ui/badge-display";
 import type { UserWithSocials } from "@/lib/types/database";
 import { StreakCounter } from "@/components/ui/streak-counter";
 import { VibeScore } from "@/components/ui/vibe-score";
-import { Trophy, Flame, Code2, Zap, ChevronLeft, ChevronRight, BadgeCheck } from "lucide-react";
+import { Trophy, Flame, Code2, Zap, BadgeCheck } from "lucide-react";
+import { Pagination } from "@/components/ui/pagination";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -237,49 +238,7 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
           <p className="mt-4 text-sm font-bold uppercase tracking-wide text-[var(--text-muted)] text-center">
             Showing {(activePage - 1) * PAGE_SIZE + 1}–{Math.min(activePage * PAGE_SIZE, sortedUsers.length)} of {sortedUsers.length} builders
           </p>
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-4">
-              <button
-                onClick={() => goToPage(activePage - 1)}
-                disabled={activePage === 1}
-                className="flex items-center justify-center w-10 h-10 font-extrabold uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: "var(--bg-surface)",
-                  border: "2px solid var(--border-hard)",
-                  boxShadow: "var(--shadow-brutal-sm)",
-                }}
-              >
-                <ChevronLeft size={16} />
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => goToPage(page)}
-                  className="flex items-center justify-center w-10 h-10 text-sm font-extrabold uppercase transition-all"
-                  style={{
-                    backgroundColor: activePage === page ? "var(--accent)" : "var(--bg-surface)",
-                    color: activePage === page ? "#FFFFFF" : "var(--foreground)",
-                    border: "2px solid var(--border-hard)",
-                    boxShadow: activePage === page ? "none" : "var(--shadow-brutal-sm)",
-                  }}
-                >
-                  {page}
-                </button>
-              ))}
-              <button
-                onClick={() => goToPage(activePage + 1)}
-                disabled={activePage === totalPages}
-                className="flex items-center justify-center w-10 h-10 font-extrabold uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: "var(--bg-surface)",
-                  border: "2px solid var(--border-hard)",
-                  boxShadow: "var(--shadow-brutal-sm)",
-                }}
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          )}
+          <Pagination currentPage={activePage} totalPages={totalPages} onPageChange={goToPage} />
         </>
       )}
     </>
