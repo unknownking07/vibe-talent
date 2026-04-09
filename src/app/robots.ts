@@ -8,6 +8,7 @@ const privateDisallow = [
   "/admin",
   "/auth/",
   "/hire/chat/",
+  "/*/opengraph-image",
 ];
 
 export default function robots(): MetadataRoute.Robots {
