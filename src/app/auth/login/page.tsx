@@ -17,6 +17,12 @@ export default function LoginPage() {
   const reason = searchParams.get("reason");
   const redirectTo = searchParams.get("redirect") || "/dashboard";
 
+  // Show OAuth errors forwarded from the auth callback
+  useEffect(() => {
+    const urlError = searchParams.get("error");
+    if (urlError) setError(urlError);
+  }, [searchParams]);
+
   // Redirect already-authenticated users to dashboard
   useEffect(() => {
     const supabase = createClient();

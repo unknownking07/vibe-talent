@@ -3,10 +3,28 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
+// Map Supabase error codes to user-friendly messages
+const ERROR_MESSAGES: Record<string, string> = {
+  identity_already_exists:
+    "This GitHub account is already linked to another VibeTalent account. Please sign in with that account instead, or use a different GitHub account.",
+};
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/dashboard";
+
+  // Handle OAuth errors returned by Supabase (no code param present)
+  const errorCode = searchParams.get("error_code");
+  if (errorCode) {
+    const message =
+      ERROR_MESSAGES[errorCode] ||
+      searchParams.get("error_description")?.replace(/\+/g, " ") ||
+      "Authentication failed. Please try again.";
+    return NextResponse.redirect(
+      `${origin}/auth/login?error=${encodeURIComponent(message)}`
+    );
+  }
 
   if (code) {
     const cookieStore = await cookies();
@@ -119,5 +137,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/auth/login?error=auth_failed`);
+  return NextResponse.redirect(`${origin}/auth/login?error=${encodeURIComponent("Authentication failed. Please try again.")}`);
 }
