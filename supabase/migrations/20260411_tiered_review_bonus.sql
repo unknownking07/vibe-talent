@@ -101,7 +101,7 @@ BEGIN
         )
         FROM reviews
         WHERE builder_id = p_user_id
-          AND trust_score >= 30
+          AND COALESCE(trust_score, 100) >= 30
       ), 0)
   WHERE id = p_user_id;
 END;

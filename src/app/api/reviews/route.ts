@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     const sb = createAdminClient();
     const { data, error } = await sb
       .from("reviews")
-      .select("id, builder_id, reviewer_name, rating, comment, trust_score, created_at")
+      .select("id, builder_id, reviewer_name, reviewer_email, rating, comment, trust_score, created_at")
       .eq("builder_id", builderId)
       .order("created_at", { ascending: false });
 
