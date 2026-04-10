@@ -269,6 +269,21 @@ html {
   100% { background-position: 200% 0; }
 }
 
+@keyframes blink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.85); }
+}
+
+.live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: #22c55e;
+  border-radius: 50%;
+  animation: blink 1.5s ease-in-out infinite;
+  box-shadow: 0 0 6px #22c55e;
+}
+
 .animate-fade-in-up {
   animation: fadeInUp 0.25s ease-out both;
 }
