@@ -6,50 +6,24 @@ You can't buy it. You can only earn it — through quality output and consistent
 
 ## How It's Calculated
 
-Your Vibe Score is made up of four components:
+Your Vibe Score is made up of six components:
 
 ```
-Vibe Score = Project Quality Score + Streak Points + Badge Bonus + Review Bonus
+Vibe Score = 10 (baseline) + Project Score + Streak Points + Endorsements + Badge Bonus + Review Bonus
 ```
 
-### 1. Project Quality Score (Primary Driver)
+### 1. Project Score
 
-**Project quality is the most important factor in your Vibe Score.** How your project scores depends on whether it has a GitHub quality analysis:
+Every project you add earns points:
 
-#### Verified projects with GitHub quality score
-
-When you verify a project that has a GitHub URL, VibeTalent analyzes the repo and computes a **Quality Score (0-100)** based on three dimensions:
-
-| Dimension | Weight | What it measures |
+| Signal | Points | How to Earn |
 |---|---|---|
-| **Community** | 35% | Stars, forks, contributors, issues |
-| **Substance** | 35% | Code size, languages, tests, CI/CD, README quality |
-| **Maintenance** | 30% | Commit frequency, recency, sustained activity |
+| **Upload a project** | 2 pts | Add any project to your profile |
+| **Live URL** | +2 pts | Deploy your project and add the link |
+| **GitHub repo** | +2 pts | Link your source code |
+| **GitHub Quality Bonus** | up to +100 pts | Stars, forks, contributors, README, tests, CI/CD |
 
-The quality score is displayed on your project card with an info button showing the full breakdown. Your Vibe Score contribution is `quality_score / 10` (max 10 points per project).
-
-A hello-world repo scores near 0. A real project with tests, CI, and community engagement scores 70+.
-
-#### Verified projects without GitHub quality score
-
-If a verified project doesn't have a GitHub URL (or hasn't been analyzed yet), it uses the completeness scoring:
-
-| Quality Signal | Points | How to Earn |
-|---|---|---|
-| **Base (verified project)** | 5 pts | Verify your GitHub ownership |
-| **Live URL** | +3 pts | Deploy your project and add the link |
-| **GitHub URL** | +2 pts | Link your source code |
-| **Detailed description** | +2 pts | Write 50+ characters describing what it does |
-| **Screenshot** | +1 pt | Upload a preview image |
-| **Tech stack (3+)** | +2 pts | List at least 3 technologies |
-
-**Max per verified project: 15 points**
-
-#### Unverified projects
-
-Unverified projects earn just **1 point** each. Verify to unlock full scoring.
-
-**The takeaway: verified projects with real GitHub repos, live URLs, and quality code earn significantly more than raw streak points.** If you want a high Vibe Score, focus on shipping quality projects first.
+**Max per project: 106 points.** Every project counts — just uploading one earns 2 points. Projects with a GitHub repo are automatically analyzed for quality (stars, forks, contributors, README, tests, CI/CD, commit activity) and scored 0-100. That full score is added directly to your Vibe Score.
 
 ### 2. Streak Points
 
@@ -75,15 +49,19 @@ Permanent bonus points based on your highest badge:
 
 ### 4. Review Bonus
 
-Client reviews directly impact your score:
+Each client review awards points based on the star rating:
 
-```
-Review Bonus = avg_rating × number_of_reviews × 2 (capped at 50)
-```
+| Rating | Points |
+|---|---|
+| 5-star | +20 pts |
+| 4-star | +15 pts |
+| 3-star | +10 pts |
+| 2-star | +5 pts |
+| 1-star | +0 pts |
 
-Three 5-star reviews = `5 × 3 × 2 = 30` bonus points. This rewards vibecoders who actually deliver quality work.
+Three 5-star reviews = `3 × 20 = 60` bonus points. There's no cap — every trusted review counts.
 
-Reviews are also scored for **trust** (0-100) to detect fake/bot reviews. Reviews from disposable emails, burst submissions, or accounts with no hire history get lower trust scores. Reviews with trust_score < 30 are excluded from your average rating.
+Reviews are also scored for **trust** (0-100) to detect fake/bot reviews. Reviews from disposable emails, burst submissions, or accounts with no hire history get lower trust scores. Only reviews with trust_score >= 30 contribute to your Vibe Score.
 
 ## Quality vs Consistency
 
@@ -93,27 +71,25 @@ VibeTalent rewards both — but project quality is the primary driver of a stron
 
 | VibeCoder | Streak | Projects | Details | Reviews | Vibe Score |
 |---|---|---|---|---|---|
-| **Streak-only** | 100 days | 2 unverified, no live URLs | Minimal | None | (2×1) + (100×2) + 0 + 0 = **202** |
-| **Quality-focused** | 30 days | 5 verified, full details | Live demos, screenshots | 3 five-star reviews | (5×15) + (30×2) + 10 + 30 = **175** |
+| **Streak-only** | 100 days | 2 projects, no URLs | Minimal | None | 10 + (2×2) + (100×2) + 0 + 0 + 0 = **214** |
+| **Quality-focused** | 30 days | 5 projects, full URLs + quality 60 avg | Live demos, GitHub repos | 3 five-star reviews | 10 + (5×106) + (30×2) + 0 + 10 + 60 = **610** |
 
-The streak-only vibecoder is ahead — but as soon as their streak breaks, they drop to just **2 points** from projects. The quality-focused vibecoder's score is **resilient**: even if their streak resets, they still have **105 points** from projects, badges, and reviews. That's the power of building on quality.
+The streak-only vibecoder looks decent — but as soon as their streak breaks, they drop to just **14 points**. The quality-focused vibecoder's score is **resilient**: even if their streak resets, they still have **550 points** from projects, badges, and reviews. That's the power of shipping quality code.
 
 ## How to Increase Your Vibe Score
 
-### High-impact (project quality)
-1. **Verify your projects** — unlocks full quality scoring
-2. **Write tests and set up CI** — directly boosts your substance score
-3. **Add live URLs** — shows your project is deployed and working
-4. **Maintain your repos** — recent commits and sustained activity boost maintenance score
-5. **Build community** — stars, forks, and contributors boost community score
-6. **Ship more projects** — each verified project contributes up to 10 points
+### Quick wins
+1. **Add projects** — every project earns 2 points just for uploading
+2. **Add live URLs** — +2 points per project
+3. **Link GitHub repos** — +2 points per project
 
-### Steady growth (consistency + reputation)
-7. **Maintain your streak** — log activity daily for steady point growth
-8. **Earn badges** — permanent bonus that never goes away
-9. **Get client reviews** — deliver great work and ask clients to review you
-10. **Connect GitHub** — auto-log activity so you never miss a day
-11. **Endorse others** — build community trust (must have an active account)
+### Long-term growth
+4. **Maintain your streak** — log activity daily for steady point growth
+5. **Ship more projects** — each project with full URLs earns 6 points
+6. **Earn badges** — permanent bonus that never goes away
+7. **Get client reviews** — a 5-star review is worth 20 points
+8. **Get endorsements** — each endorsement on your projects adds 5 points
+9. **Connect GitHub** — auto-log activity so you never miss a day
 
 ## Peer Endorsements
 

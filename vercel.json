@@ -20,6 +20,10 @@
     {
       "path": "/api/cron/check-live-urls",
       "schedule": "0 3 * * 0"
+    },
+    {
+      "path": "/api/cron/quality-rescore",
+      "schedule": "0 4 * * *"
     }
   ]
 }

@@ -276,7 +276,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
               <span className="text-[var(--text-muted)] text-sm">({reviews.length})</span>
             </div>
           )}
-          {!isOwner && !showForm && (
+          {!isOwner && !showForm && !(isLoggedIn && reviews.some((r) => r.reviewer_name === formName)) && (
             <button
               onClick={() => setShowForm(true)}
               className="btn-brutal text-xs py-1.5 px-3"
@@ -422,7 +422,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
                   <span className="text-[var(--text-muted-soft)] text-xs font-mono">
                     {timeAgo(review.created_at)}
                   </span>
-                  {!isOwner && (
+                  {isLoggedIn && formName === review.reviewer_name && (
                     <button
                       onClick={() => { setDeleteId(review.id); setDeleteEmail(""); setDeleteError(""); }}
                       className="text-[var(--text-muted-soft)] hover:text-red-500 transition-colors"

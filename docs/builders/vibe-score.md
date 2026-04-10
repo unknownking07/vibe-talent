@@ -6,10 +6,10 @@ You can't buy it. You can only earn it — through consistent work and quality o
 
 ## How It's Calculated
 
-Your Vibe Score is made up of four components:
+Your Vibe Score is made up of six components:
 
 ```text
-Vibe Score = Streak Points + Project Quality Score + Badge Bonus + Review Bonus
+Vibe Score = 10 (baseline) + Streak Points + Project Score + Endorsements + Badge Bonus + Review Bonus
 ```
 
 ### 1. Streak Points
@@ -20,21 +20,18 @@ Current Streak × 2
 
 Every day you log coding activity adds 2 points. A 30-day streak = 60 streak points. If your streak resets, these points go to zero — but you can rebuild.
 
-### 2. Project Quality Score
+### 2. Project Score
 
-Each project you add earns points based on how complete and polished it is:
+Each project you add earns points:
 
-| Quality Signal | Points | How to Earn |
+| Signal | Points | How to Earn |
 |---|---|---|
-| **Base (verified project)** | 5 pts | Verify your GitHub ownership |
-| **Base (unverified project)** | 1 pt | Add any project |
-| **Live URL** | +3 pts | Deploy your project and add the link |
-| **GitHub URL** | +2 pts | Link your source code |
-| **Detailed description** | +2 pts | Write 50+ characters describing what it does |
-| **Screenshot** | +1 pt | Upload a preview image |
-| **Tech stack (3+)** | +2 pts | List at least 3 technologies |
+| **Upload a project** | 2 pts | Add any project to your profile |
+| **Live URL** | +2 pts | Deploy your project and add the link |
+| **GitHub repo** | +2 pts | Link your source code |
+| **GitHub Quality Bonus** | up to +100 pts | Stars, forks, contributors, README, tests, CI/CD |
 
-**Max per verified project: 15 detail points.** When GitHub quality analysis runs, the Vibe Score contribution is capped at **10 points** per project (based on quality_score). Verified projects without quality data contribute **5 points**. Unverified projects earn **1 point**.
+**Max per project: 106 points.** Every project counts — just uploading one earns 2 points. Projects with a GitHub repo are automatically analyzed for quality (stars, forks, contributors, README, tests, CI/CD, commit activity) and scored 0-100. That full score is added directly to your Vibe Score.
 
 ### 3. Badge Bonus
 
@@ -50,13 +47,17 @@ Permanent bonus points based on your highest badge:
 
 ### 4. Review Bonus
 
-Client reviews directly impact your score:
+Each client review awards points based on the star rating:
 
-```text
-Review Bonus = avg_rating × number_of_reviews × 2 (capped at 50)
-```
+| Rating | Points |
+|---|---|
+| 5-star | +20 pts |
+| 4-star | +15 pts |
+| 3-star | +10 pts |
+| 2-star | +5 pts |
+| 1-star | +0 pts |
 
-Three 5-star reviews = `5 × 3 × 2 = 30` bonus points. This rewards builders who actually deliver quality work.
+Three 5-star reviews = `3 × 20 = 60` bonus points. There's no cap — every trusted review counts. Only reviews with a trust score of 30+ contribute to your Vibe Score (spam and bot reviews are filtered out).
 
 ## Quality vs Consistency
 
@@ -66,8 +67,8 @@ VibeTalent rewards both — but quality signals carry serious weight. Here's a r
 
 | Builder | Streak | Projects | Details | Reviews | Vibe Score |
 |---|---|---|---|---|---|
-| **Streak-focused** | 100 days | 2 unverified, no live URLs | Minimal | None | (100×2) + (2×1) + 0 + 0 = **202** |
-| **Quality-focused** | 30 days | 5 verified, full details | Live demos, screenshots | 3 five-star reviews | (30×2) + (5×15) + 10 + 30 = **175** |
+| **Streak-focused** | 100 days | 2 projects, no URLs | Minimal | None | 10 + (100×2) + (2×2) + 0 + 0 + 0 = **214** |
+| **Quality-focused** | 30 days | 5 projects, full URLs + quality 60 avg | Live demos, GitHub repos | 3 five-star reviews | 10 + (30×2) + (5×106) + 0 + 10 + 60 = **610** |
 
 The streak builder is ahead — but as soon as their streak breaks, they drop. The quality builder's score is **resilient**: projects and reviews don't go away.
 
@@ -77,19 +78,18 @@ And when a client is choosing who to hire? They're looking at live demos, verifi
 
 ### Quick wins
 
-1. **Verify your projects** — 5x the points vs unverified
-2. **Add live URLs** — +3 points per project, and clients love seeing live demos
-3. **Write detailed descriptions** — 50+ characters earns +2 per project
-4. **Add screenshots** — +1 point and makes your profile look professional
-5. **List your full tech stack** — 3+ technologies earns +2 per project
+1. **Add projects** — every project earns 2 points just for uploading
+2. **Add live URLs** — +2 points per project, and clients love seeing live demos
+3. **Link GitHub repos** — +2 points per project
 
 ### Long-term growth
 
 1. **Maintain your streak** — log activity daily for steady point growth
-2. **Ship more projects** — each verified project contributes up to 10 Vibe Score points
+2. **Ship more projects** — each project with full URLs earns 6 points
 3. **Earn badges** — permanent bonus that never goes away
-4. **Get client reviews** — deliver great work and ask clients to review you
-5. **Connect GitHub** — auto-log activity so you never miss a day
+4. **Get client reviews** — a 5-star review is worth 20 points
+5. **Get endorsements** — each endorsement on your projects adds 5 points
+6. **Connect GitHub** — auto-log activity so you never miss a day
 
 ## Where Your Score Appears
 
