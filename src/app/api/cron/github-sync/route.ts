@@ -18,65 +18,6 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Recalculate streak and longest_streak for a user based on their streak_logs.
- * Walks backward from most recent date counting consecutive days.
- */
-function calculateStreaks(dates: string[]): { streak: number; longest_streak: number } {
-  if (dates.length === 0) return { streak: 0, longest_streak: 0 };
-
-  // Sort ascending
-  const sorted = [...dates].sort();
-
-  // Calculate longest streak by walking through all dates
-  let longest = 1;
-  let currentRun = 1;
-
-  for (let i = 1; i < sorted.length; i++) {
-    const prev = new Date(sorted[i - 1]);
-    const curr = new Date(sorted[i]);
-    const diffDays = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
-
-    if (diffDays === 1) {
-      currentRun++;
-      if (currentRun > longest) longest = currentRun;
-    } else if (diffDays > 1) {
-      currentRun = 1;
-    }
-    // diffDays === 0 means duplicate date, skip
-  }
-
-  // Calculate current streak: walk backward from most recent date
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  const mostRecent = new Date(sorted[sorted.length - 1]);
-  mostRecent.setHours(0, 0, 0, 0);
-
-  // Current streak only counts if most recent activity is today or yesterday
-  if (mostRecent < yesterday) {
-    return { streak: 0, longest_streak: longest };
-  }
-
-  let streak = 1;
-  for (let i = sorted.length - 2; i >= 0; i--) {
-    const curr = new Date(sorted[i + 1]);
-    const prev = new Date(sorted[i]);
-    const diffDays = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
-
-    if (diffDays === 1) {
-      streak++;
-    } else if (diffDays > 1) {
-      break;
-    }
-    // Skip duplicates (diffDays === 0)
-  }
-
-  return { streak, longest_streak: Math.max(longest, streak) };
-}
-
-/**
  * Cron job: Sync GitHub activity for all users with a GitHub username configured.
  * Runs every 6 hours via Vercel Cron.
  *
@@ -276,24 +217,9 @@ export async function GET(req: NextRequest) {
               if (!error) loggedCount++;
             }
 
-            // Recalculate streak after syncing logs
+            // Recalculate streak + vibe_score via DB function (handles everything)
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { data: allLogs, error: logsError } = await (supabase as any)
-              .from("streak_logs")
-              .select("activity_date")
-              .eq("user_id", userInfo.userId)
-              .order("activity_date", { ascending: true });
-
-            if (!logsError && allLogs && allLogs.length > 0) {
-              const dates = allLogs.map((log: { activity_date: string }) => log.activity_date);
-              const { streak, longest_streak } = calculateStreaks(dates);
-
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              await (supabase as any)
-                .from("users")
-                .update({ streak, longest_streak })
-                .eq("id", userInfo.userId);
-            }
+            await (supabase as any).rpc("update_user_streak", { p_user_id: userInfo.userId });
 
             return { userInfo, status: "synced", loggedCount };
           } catch (err) {
