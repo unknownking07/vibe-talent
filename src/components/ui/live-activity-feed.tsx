@@ -87,6 +87,7 @@ export function LiveActivityFeed() {
   );
   if (grouped.length === 0) return null;
 
+  // v2: white text + green blinking dot
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
       <article style={{
@@ -101,7 +102,7 @@ export function LiveActivityFeed() {
       }}>
         <header style={{
           backgroundColor: "var(--accent, #ff4400)",
-          color: "#000",
+          color: "#fff",
           padding: "1rem 1.25rem",
           display: "flex",
           justifyContent: "space-between",
@@ -118,7 +119,7 @@ export function LiveActivityFeed() {
             gap: 8,
             fontFamily: "var(--font-space-grotesk, 'Space Grotesk', sans-serif)",
           }}>
-            <div style={{ width: 8, height: 8, backgroundColor: "#000", borderRadius: "50%", animation: "pulse 2s infinite" }} />
+            <span aria-hidden="true" className="live-dot" />
             Live Activity
           </div>
           <Link href="/feed" style={{
@@ -193,7 +194,7 @@ export function LiveActivityFeed() {
           })}
         </div>
       </article>
-      <style>{`@keyframes pulse { 0% { transform: scale(0.95); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.5; } 100% { transform: scale(0.95); opacity: 1; } }`}</style>
+      {/* blink keyframe defined in globals.css */}
     </section>
   );
 }
