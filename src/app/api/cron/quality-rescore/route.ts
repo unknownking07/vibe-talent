@@ -31,13 +31,16 @@ export async function GET(req: NextRequest) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
-    const { data: projects, error: projectsError } = await sb
+
+    // Query projects that need rescoring: never analyzed OR analyzed_at older than 7 days
+    const { data: needsRescore, error: projectsError } = await sb
       .from("projects")
       .select("id, user_id, github_url, live_url, quality_metrics")
       .eq("verified", true)
       .not("github_url", "is", null)
       .neq("github_url", "")
       .eq("flagged", false)
+      .or(`quality_metrics.is.null,quality_metrics->>analyzed_at.is.null,quality_metrics->>analyzed_at.lt.${sevenDaysAgo}`)
       .order("created_at", { ascending: true })
       .limit(50);
 
@@ -45,13 +48,6 @@ export async function GET(req: NextRequest) {
       console.error("Failed to fetch projects for rescore:", projectsError);
       return NextResponse.json({ error: "Failed to fetch projects" }, { status: 500 });
     }
-
-    // Filter to projects that need rescoring (analyzed_at > 7 days ago or never analyzed)
-    const needsRescore = (projects || []).filter((p: { quality_metrics: { analyzed_at?: string } | null }) => {
-      const analyzedAt = p.quality_metrics?.analyzed_at;
-      if (!analyzedAt) return true;
-      return new Date(analyzedAt) < new Date(sevenDaysAgo);
-    });
 
     if (needsRescore.length === 0) {
       return NextResponse.json({ message: "No projects need rescoring", rescored: 0 });
@@ -97,11 +93,15 @@ export async function GET(req: NextRequest) {
             }
 
             // Update triggers on_project_change which recalculates vibe_score
-            await sb.from("projects").update({
+            const { error: updateError } = await sb.from("projects").update({
               quality_score: qualityScore,
               quality_metrics: qualityMetrics,
               live_url_ok,
             }).eq("id", project.id);
+
+            if (updateError) {
+              throw updateError;
+            }
 
             rescored++;
           } catch (err) {

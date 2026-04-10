@@ -15,7 +15,7 @@ CREATE TABLE users (
   avatar_url TEXT,
   streak INTEGER DEFAULT 0,
   longest_streak INTEGER DEFAULT 0,
-  vibe_score INTEGER DEFAULT 0,
+  vibe_score INTEGER DEFAULT 10,
   badge_level badge_level DEFAULT 'none',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );

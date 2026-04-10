@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { projectsLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
 import { analyzeRepository, checkLiveUrl } from "@/lib/github-quality";
@@ -98,8 +99,8 @@ export async function POST(request: NextRequest) {
         const repoOwner = match[1];
         const repoName = match[2].replace(/\.git$/, "");
 
-        // Run quality analysis + live URL check in background (don't block response)
-        (async () => {
+        // Run quality analysis + live URL check after response (guaranteed by Next.js after())
+        after(async () => {
           try {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const sb = supabase as any;
@@ -127,24 +128,28 @@ export async function POST(request: NextRequest) {
               live_url_ok = await checkLiveUrl(live_url);
             }
 
-            await sb.from("projects").update({
+            const { error: updateError } = await sb.from("projects").update({
               verified: true,
               quality_score: qualityScore,
               quality_metrics: qualityMetrics,
               live_url_ok,
             }).eq("id", data.id);
 
-            createNotification({
-              user_id: user.id,
-              type: "project_verified",
-              title: "Project auto-verified",
-              message: `Your project "${data.title}" was auto-verified. Quality score: ${qualityScore}/100.`,
-              metadata: { project_id: data.id, quality_score: qualityScore },
-            }).catch(console.error);
+            if (!updateError) {
+              createNotification({
+                user_id: user.id,
+                type: "project_verified",
+                title: "Project auto-verified",
+                message: `Your project "${data.title}" was auto-verified. Quality score: ${qualityScore}/100.`,
+                metadata: { project_id: data.id, quality_score: qualityScore },
+              }).catch(console.error);
+            } else {
+              console.error("Auto-verify update failed for project", data.id, updateError);
+            }
           } catch (err) {
             console.error("Auto-verify failed for project", data.id, err);
           }
-        })();
+        });
       }
     }
 

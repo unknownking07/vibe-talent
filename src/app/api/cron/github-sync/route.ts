@@ -219,7 +219,16 @@ export async function GET(req: NextRequest) {
 
             // Recalculate streak + vibe_score via DB function (handles everything)
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (supabase as any).rpc("update_user_streak", { p_user_id: userInfo.userId });
+            const { error: recalcError } = await (supabase as any).rpc("update_user_streak", {
+              p_user_id: userInfo.userId,
+            });
+            if (recalcError) {
+              return {
+                userInfo,
+                status: "error",
+                reason: `Failed to recalculate vibe score: ${recalcError.message}`,
+              };
+            }
 
             return { userInfo, status: "synced", loggedCount };
           } catch (err) {

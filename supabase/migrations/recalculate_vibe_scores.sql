@@ -129,7 +129,10 @@ WHERE p.user_id = u.id
   AND LOWER(split_part(replace(replace(p.github_url, 'https://github.com/', ''), 'http://github.com/', ''), '/', 1))
     = LOWER(u.github_username);
 
--- Step 4: Recalculate vibe score for ALL users
+-- Step 4: Ensure new signups start with baseline 10 (not 0)
+ALTER TABLE users ALTER COLUMN vibe_score SET DEFAULT 10;
+
+-- Step 5: Recalculate vibe score for ALL users
 DO $$
 DECLARE
   u RECORD;
