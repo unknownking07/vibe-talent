@@ -101,6 +101,7 @@ export async function POST(request: NextRequest) {
         // Run quality analysis + live URL check in background (don't block response)
         (async () => {
           try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const sb = supabase as any;
             const qualityResult = await analyzeRepository(repoOwner, repoName);
             const qualityScore = qualityResult.success ? (qualityResult.metrics?.quality_score ?? 0) : 0;
