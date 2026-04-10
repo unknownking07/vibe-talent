@@ -284,6 +284,12 @@ html {
   box-shadow: 0 0 6px #22c55e;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .live-dot {
+    animation: none;
+  }
+}
+
 .animate-fade-in-up {
   animation: fadeInUp 0.25s ease-out both;
 }

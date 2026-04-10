@@ -26,7 +26,6 @@ export async function GET(req: NextRequest) {
     { name: "streak-warning", path: "/api/cron/streak-warning" },
     { name: "profile-view-digest", path: "/api/cron/profile-view-digest" },
     { name: "milestone-check", path: "/api/cron/milestone-check" },
-    { name: "quality-rescore", path: "/api/cron/quality-rescore" },
     { name: "weekly-digest", path: "/api/cron/weekly-digest" },
     { name: "re-engagement", path: "/api/cron/re-engagement" },
   ];
