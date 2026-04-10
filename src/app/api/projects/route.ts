@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { projectsLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
+import { analyzeRepository, checkLiveUrl } from "@/lib/github-quality";
+import { createNotification } from "@/lib/notifications";
 
 // GET /api/projects — List projects (public)
 export async function GET(request: NextRequest) {
@@ -82,6 +85,72 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       return NextResponse.json({ error: "Failed to create project" }, { status: 500 });
+    }
+
+    // Auto-verify if GitHub URL owner matches authenticated user's GitHub username
+    if (data && github_url) {
+      const githubUsername =
+        user.user_metadata?.user_name ||
+        user.user_metadata?.preferred_username ||
+        null;
+
+      const match = github_url.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/?$/);
+      if (githubUsername && match && match[1].toLowerCase() === githubUsername.toLowerCase()) {
+        const repoOwner = match[1];
+        const repoName = match[2].replace(/\.git$/, "");
+
+        // Run quality analysis + live URL check after response (guaranteed by Next.js after())
+        after(async () => {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const sb = supabase as any;
+            const qualityResult = await analyzeRepository(repoOwner, repoName);
+            const qualityScore = qualityResult.success ? (qualityResult.metrics?.quality_score ?? 0) : 0;
+            const qualityMetrics = (qualityResult.success && qualityResult.metrics)
+              ? {
+                  stars: qualityResult.metrics.stars,
+                  forks: qualityResult.metrics.forks,
+                  contributors: qualityResult.metrics.contributors,
+                  total_commits: qualityResult.metrics.total_commits,
+                  has_tests: qualityResult.metrics.has_tests,
+                  has_ci: qualityResult.metrics.has_ci,
+                  has_readme: qualityResult.metrics.has_readme,
+                  community_score: qualityResult.metrics.community_score,
+                  substance_score: qualityResult.metrics.substance_score,
+                  maintenance_score: qualityResult.metrics.maintenance_score,
+                  quality_score: qualityResult.metrics.quality_score,
+                  analyzed_at: new Date().toISOString(),
+                }
+              : null;
+
+            let live_url_ok: boolean | null = null;
+            if (live_url) {
+              live_url_ok = await checkLiveUrl(live_url);
+            }
+
+            const { error: updateError } = await sb.from("projects").update({
+              verified: true,
+              quality_score: qualityScore,
+              quality_metrics: qualityMetrics,
+              live_url_ok,
+            }).eq("id", data.id);
+
+            if (!updateError) {
+              createNotification({
+                user_id: user.id,
+                type: "project_verified",
+                title: "Project auto-verified",
+                message: `Your project "${data.title}" was auto-verified. Quality score: ${qualityScore}/100.`,
+                metadata: { project_id: data.id, quality_score: qualityScore },
+              }).catch(console.error);
+            } else {
+              console.error("Auto-verify update failed for project", data.id, updateError);
+            }
+          } catch (err) {
+            console.error("Auto-verify failed for project", data.id, err);
+          }
+        });
+      }
     }
 
     return NextResponse.json({ project: data }, { status: 201 });

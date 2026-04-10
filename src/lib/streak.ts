@@ -135,8 +135,11 @@ export function calculateVibeScore(
   badgeLevel: BadgeLevel,
   verifiedCount?: number,
   projects?: ProjectForScoring[],
-  reviewBonus: number = 0
+  reviewBonus: number = 0,
+  endorsementCount: number = 0
 ): number {
+  // Baseline: every verified GitHub user starts with 10 points
+  const baseline = 10;
   const streakPoints = currentStreak * 2;
 
   let projectPoints: number;
@@ -173,7 +176,10 @@ export function calculateVibeScore(
     diamond: 40,
   };
 
-  return streakPoints + projectPoints + badgeBonusMap[badgeLevel] + reviewBonus;
+  // +5 per endorsement received on user's projects
+  const endorsementPoints = endorsementCount * 5;
+
+  return baseline + streakPoints + projectPoints + badgeBonusMap[badgeLevel] + reviewBonus + endorsementPoints;
 }
 
 /**

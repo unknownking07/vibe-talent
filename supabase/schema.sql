@@ -15,7 +15,7 @@ CREATE TABLE users (
   avatar_url TEXT,
   streak INTEGER DEFAULT 0,
   longest_streak INTEGER DEFAULT 0,
-  vibe_score INTEGER DEFAULT 0,
+  vibe_score INTEGER DEFAULT 10,
   badge_level badge_level DEFAULT 'none',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -164,8 +164,8 @@ BEGIN
       WHEN GREATEST(longest_streak, v_longest_streak) >= 30 THEN 'bronze'::badge_level
       ELSE 'none'::badge_level
     END,
-    vibe_score = (v_current_streak * 2) + (
-      -- Use sum of project quality scores instead of flat count
+    vibe_score = 10 + (v_current_streak * 2) + (
+      -- Project quality points
       -- Verified projects with quality_score contribute their score / 10 (0-10 pts each)
       -- Falls back to detailed scoring for projects without quality_score
       -- Unverified projects contribute only 1 point each
@@ -183,6 +183,14 @@ BEGIN
             ELSE 1
           END
         ) FROM projects WHERE projects.user_id = p_user_id AND NOT COALESCE(flagged, false)
+      ), 0)
+    ) + (
+      -- Endorsement points: +5 per endorsement received on user's projects
+      COALESCE((
+        SELECT COUNT(*) * 5
+        FROM project_endorsements pe
+        JOIN projects p ON p.id = pe.project_id
+        WHERE p.user_id = p_user_id AND NOT COALESCE(p.flagged, false)
       ), 0)
     ) + CASE
       WHEN GREATEST(longest_streak, v_longest_streak) >= 365 THEN 40
@@ -452,6 +460,34 @@ CREATE POLICY "Authenticated users can endorse"
 
 CREATE POLICY "Users can remove own endorsements"
   ON project_endorsements FOR DELETE USING (auth.uid() = user_id);
+
+-- Trigger: update vibe score when endorsement is added/removed
+CREATE OR REPLACE FUNCTION trigger_update_vibe_score_on_endorsement()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_project_owner UUID;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    SELECT user_id INTO v_project_owner FROM projects WHERE id = OLD.project_id;
+  ELSE
+    SELECT user_id INTO v_project_owner FROM projects WHERE id = NEW.project_id;
+  END IF;
+
+  IF v_project_owner IS NOT NULL THEN
+    PERFORM update_user_streak(v_project_owner);
+  END IF;
+
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER on_endorsement_change
+  AFTER INSERT OR DELETE ON project_endorsements
+  FOR EACH ROW
+  EXECUTE FUNCTION trigger_update_vibe_score_on_endorsement();
 
 -- Add endorsement_count cache column on projects
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS endorsement_count INTEGER DEFAULT 0;
