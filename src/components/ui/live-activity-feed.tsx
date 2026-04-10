@@ -102,7 +102,7 @@ export function LiveActivityFeed() {
       }}>
         <header style={{
           backgroundColor: "var(--accent, #ff4400)",
-          color: "#fff",
+          color: "var(--text-on-inverted, #0F0F0F)",
           padding: "1rem 1.25rem",
           display: "flex",
           justifyContent: "space-between",

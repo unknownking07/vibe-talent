@@ -68,9 +68,9 @@ VibeTalent rewards both — but quality signals carry serious weight. Here's a r
 | Builder | Streak | Projects | Details | Reviews | Vibe Score |
 |---|---|---|---|---|---|
 | **Streak-focused** | 100 days | 2 projects, no URLs | Minimal | None | 10 + (100×2) + (2×2) + 0 + 0 + 0 = **214** |
-| **Quality-focused** | 30 days | 5 projects, full URLs + quality 60 avg | Live demos, GitHub repos | 3 five-star reviews | 10 + (30×2) + (5×106) + 0 + 10 + 60 = **610** |
+| **Quality-focused** | 30 days | 5 projects, full URLs + quality 60 avg | Live demos, GitHub repos | 3 five-star reviews | 10 + (30×2) + (5×66) + 0 + 10 + 60 = **470** |
 
-The streak builder is ahead — but as soon as their streak breaks, they drop. The quality builder's score is **resilient**: projects and reviews don't go away.
+The quality builder is ahead — and their score is **resilient**: projects and reviews don't go away when a streak breaks.
 
 And when a client is choosing who to hire? They're looking at live demos, verified projects, and reviews — not just a streak number.
 

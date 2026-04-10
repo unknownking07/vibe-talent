@@ -72,9 +72,9 @@ VibeTalent rewards both — but project quality is the primary driver of a stron
 | VibeCoder | Streak | Projects | Details | Reviews | Vibe Score |
 |---|---|---|---|---|---|
 | **Streak-only** | 100 days | 2 projects, no URLs | Minimal | None | 10 + (2×2) + (100×2) + 0 + 0 + 0 = **214** |
-| **Quality-focused** | 30 days | 5 projects, full URLs + quality 60 avg | Live demos, GitHub repos | 3 five-star reviews | 10 + (5×106) + (30×2) + 0 + 10 + 60 = **610** |
+| **Quality-focused** | 30 days | 5 projects, full URLs + quality 60 avg | Live demos, GitHub repos | 3 five-star reviews | 10 + (5×66) + (30×2) + 0 + 10 + 60 = **470** |
 
-The streak-only vibecoder looks decent — but as soon as their streak breaks, they drop to just **14 points**. The quality-focused vibecoder's score is **resilient**: even if their streak resets, they still have **550 points** from projects, badges, and reviews. That's the power of shipping quality code.
+The quality builder is ahead — and their score is **resilient**: even if their streak resets, they still have **400 points** from projects, badges, and reviews. That's the power of shipping quality code.
 
 ## How to Increase Your Vibe Score
 
@@ -84,12 +84,13 @@ The streak-only vibecoder looks decent — but as soon as their streak breaks, t
 3. **Link GitHub repos** — +2 points per project
 
 ### Long-term growth
-4. **Maintain your streak** — log activity daily for steady point growth
-5. **Ship more projects** — each project with full URLs earns 6 points
-6. **Earn badges** — permanent bonus that never goes away
-7. **Get client reviews** — a 5-star review is worth 20 points
-8. **Get endorsements** — each endorsement on your projects adds 5 points
-9. **Connect GitHub** — auto-log activity so you never miss a day
+
+1. **Maintain your streak** — log activity daily for steady point growth
+2. **Ship more projects** — each project with full URLs earns 6 points
+3. **Earn badges** — permanent bonus that never goes away
+4. **Get client reviews** — a 5-star review is worth 20 points
+5. **Get endorsements** — each endorsement on your projects adds 5 points
+6. **Connect GitHub** — auto-log activity so you never miss a day
 
 ## Peer Endorsements
 
