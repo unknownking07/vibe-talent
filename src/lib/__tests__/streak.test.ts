@@ -116,41 +116,45 @@ describe("getBadgeLevel", () => {
 });
 
 describe("calculateVibeScore", () => {
-  it("returns 0 for no activity", () => {
-    expect(calculateVibeScore(0, 0, "none")).toBe(0);
+  it("returns baseline 10 for no activity", () => {
+    expect(calculateVibeScore(0, 0, "none")).toBe(10);
   });
 
   it("applies streak multiplier correctly", () => {
-    expect(calculateVibeScore(10, 0, "none")).toBe(20); // 10 * 2
+    expect(calculateVibeScore(10, 0, "none")).toBe(30); // 10 + 10*2
   });
 
   it("applies project multiplier correctly", () => {
-    expect(calculateVibeScore(0, 3, "none")).toBe(15); // 3 * 5
+    expect(calculateVibeScore(0, 3, "none")).toBe(25); // 10 + 3*5
   });
 
   it("applies badge bonus correctly", () => {
-    expect(calculateVibeScore(0, 0, "bronze")).toBe(10);
-    expect(calculateVibeScore(0, 0, "silver")).toBe(20);
-    expect(calculateVibeScore(0, 0, "gold")).toBe(30);
-    expect(calculateVibeScore(0, 0, "diamond")).toBe(40);
+    expect(calculateVibeScore(0, 0, "bronze")).toBe(20);  // 10 + 10
+    expect(calculateVibeScore(0, 0, "silver")).toBe(30);  // 10 + 20
+    expect(calculateVibeScore(0, 0, "gold")).toBe(40);    // 10 + 30
+    expect(calculateVibeScore(0, 0, "diamond")).toBe(50); // 10 + 40
   });
 
   it("combines all factors correctly (backward compatible)", () => {
-    // Without verifiedCount: treats all as verified
-    // 10*2 + 3*5 + 20 = 20 + 15 + 20 = 55
-    expect(calculateVibeScore(10, 3, "silver")).toBe(55);
+    // 10 + 10*2 + 3*5 + 20 = 10 + 20 + 15 + 20 = 65
+    expect(calculateVibeScore(10, 3, "silver")).toBe(65);
   });
 
   it("gives full points only to verified projects", () => {
-    // 0*2 + (2 verified * 5) + (1 unverified * 1) + 0 = 11
-    expect(calculateVibeScore(0, 3, "none", 2)).toBe(11);
+    // 10 + 0*2 + (2 verified * 5) + (1 unverified * 1) + 0 = 21
+    expect(calculateVibeScore(0, 3, "none", 2)).toBe(21);
   });
 
   it("penalizes all-unverified projects", () => {
-    // 0*2 + (0 verified * 5) + (5 unverified * 1) + 0 = 5
-    expect(calculateVibeScore(0, 5, "none", 0)).toBe(5);
-    // vs all verified: 0*2 + 5*5 + 0 = 25
-    expect(calculateVibeScore(0, 5, "none", 5)).toBe(25);
+    // 10 + 0*2 + (0 verified * 5) + (5 unverified * 1) + 0 = 15
+    expect(calculateVibeScore(0, 5, "none", 0)).toBe(15);
+    // vs all verified: 10 + 0*2 + 5*5 + 0 = 35
+    expect(calculateVibeScore(0, 5, "none", 5)).toBe(35);
+  });
+
+  it("applies endorsement points correctly", () => {
+    // 10 + 0 + 0 + 0 + 3*5 = 25
+    expect(calculateVibeScore(0, 0, "none", undefined, undefined, 0, 3)).toBe(25);
   });
 });
 
@@ -226,20 +230,20 @@ describe("calculateVibeScore with project details", () => {
   };
 
   it("scores project array correctly", () => {
-    // 0*2 + 15 (quality) + 5 (bare) + 0 (badge) = 20
-    expect(calculateVibeScore(0, [qualityProject, bareProject], "none")).toBe(20);
+    // 10 + 0*2 + 15 (quality) + 5 (bare) + 0 (badge) = 30
+    expect(calculateVibeScore(0, [qualityProject, bareProject], "none")).toBe(30);
   });
 
   it("quality projects outweigh streaks", () => {
-    // 3 quality projects: 0*2 + 45 + 0 = 45
+    // 3 quality projects: 10 + 0*2 + 45 + 0 = 55
     const qualityScore = calculateVibeScore(0, [qualityProject, qualityProject, qualityProject], "none");
-    // 20-day streak, no projects: 20*2 + 0 + 0 = 40
+    // 20-day streak, no projects: 10 + 20*2 + 0 + 0 = 50
     const streakScore = calculateVibeScore(20, [], "none");
     expect(qualityScore).toBeGreaterThan(streakScore);
   });
 
-  it("empty project array gives 0 project points", () => {
-    expect(calculateVibeScore(5, [], "none")).toBe(10); // 5*2 + 0 + 0
+  it("empty project array gives baseline + streak points only", () => {
+    expect(calculateVibeScore(5, [], "none")).toBe(20); // 10 + 5*2 + 0 + 0
   });
 });
 
