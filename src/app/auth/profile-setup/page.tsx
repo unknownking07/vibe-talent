@@ -463,7 +463,7 @@ export default function ProfileSetupPage() {
           value={profile.display_name}
           onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
           placeholder="Your full name (e.g. Abhinav Kumar)"
-          maxLength={50}
+          maxLength={30}
           className="input-brutal w-full"
         />
         <p className="text-[10px] text-[var(--text-secondary)] mt-1">
