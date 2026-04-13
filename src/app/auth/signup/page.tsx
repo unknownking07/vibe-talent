@@ -145,15 +145,19 @@ export default function SignUpPage() {
         <div className="space-y-3">
           <button
             onClick={() => setConsentProvider("github")}
-            className="w-full flex items-center justify-center gap-2 px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white cursor-pointer transition-colors hover:bg-[var(--bg-pill-hover)]"
+            className="w-full flex items-center justify-center gap-2 px-5 py-4 text-sm font-extrabold uppercase tracking-wide text-white cursor-pointer transition-colors hover:bg-[#E03300]"
             style={{
-              backgroundColor: "var(--bg-inverted)",
+              backgroundColor: "var(--accent)",
               border: "2px solid var(--border-hard)",
+              boxShadow: "var(--shadow-brutal-sm)",
             }}
           >
             <Github size={18} />
             Continue with GitHub
           </button>
+          <p className="text-[10px] font-bold uppercase text-center text-[var(--text-muted)] tracking-wide">
+            Recommended — auto-verifies your GitHub and syncs your streak
+          </p>
 
           <button
             onClick={() => setConsentProvider("google")}
