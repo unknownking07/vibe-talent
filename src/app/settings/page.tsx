@@ -403,7 +403,7 @@ export default function SettingsPage() {
                 setProfileForm({ ...profileForm, display_name: e.target.value });
                 if (highlightName) setHighlightName(false);
               }}
-              placeholder="Your full name (e.g. Abhinav Kumar)"
+              placeholder="Your display name"
               maxLength={30}
               className={`input-brutal ${highlightName ? "settings-highlight-pulse" : ""}`}
               style={highlightName ? { outline: "3px solid var(--accent)", outlineOffset: 2 } : undefined}
