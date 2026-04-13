@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     const supabase = await createServerSupabaseClient();
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase as any).from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level");
+    let query = (supabase as any).from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level").not("github_username", "is", null);
 
     if (minStreak) {
       const parsed = parseInt(minStreak, 10);
