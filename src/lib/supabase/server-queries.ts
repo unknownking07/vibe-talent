@@ -21,7 +21,7 @@ async function _fetchAllUsers(): Promise<UserWithSocials[]> {
   const { data: users, error } = await sb
     .from("users")
     .select(USER_FIELDS)
-    .not("github_username", "is", null)
+    .not("username", "is", null)
     .order("vibe_score", { ascending: false });
 
   // Throw on error so unstable_cache does NOT cache empty results
@@ -124,11 +124,11 @@ async function _fetchHomepageData() {
   const sb = getPublicClient() as any;
 
   const [usersResult, projectsResult, builderCountResult, projectCountResult, streakResult] = await Promise.all([
-    sb.from("users").select(USER_FIELDS).not("github_username", "is", null).order("vibe_score", { ascending: false }).limit(20),
+    sb.from("users").select(USER_FIELDS).not("username", "is", null).order("vibe_score", { ascending: false }).limit(20),
     sb.from("projects").select(`${PROJECT_FIELDS}, users!projects_user_id_fkey(username)`).not("live_url", "is", null).order("created_at", { ascending: false }).limit(3),
-    sb.from("users").select("id", { count: "exact", head: true }).not("github_username", "is", null),
+    sb.from("users").select("id", { count: "exact", head: true }).not("username", "is", null),
     sb.from("projects").select("id", { count: "exact", head: true }),
-    sb.from("users").select("streak").not("github_username", "is", null),
+    sb.from("users").select("streak").not("username", "is", null),
   ]);
 
   // If critical queries failed, throw so unstable_cache does NOT cache zeros
