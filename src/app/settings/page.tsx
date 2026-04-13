@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { validateDisplayName, containsProfanity } from "@/lib/profanity";
 import type { UserWithSocials } from "@/lib/types/database";
 import { EmailPreferences } from "@/components/dashboard/email-preferences";
 import {
@@ -220,6 +221,15 @@ export default function SettingsPage() {
 
   const handleSaveProfile = async () => {
     if (!user || saving) return;
+    const displayNameError = validateDisplayName(profileForm.display_name);
+    if (displayNameError) {
+      alert(displayNameError);
+      return;
+    }
+    if (containsProfanity(profileForm.username)) {
+      alert("Username contains inappropriate language");
+      return;
+    }
     const twitter = profileForm.twitter.trim();
     const telegram = profileForm.telegram.trim();
     if (!twitter && !telegram) {
