@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Megaphone, ChevronLeft, ChevronRight, ExternalLink, Clock, Sparkles, Wallet, Loader2, Check } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Megaphone, ChevronLeft, ChevronRight, ExternalLink, Sparkles, Wallet, Loader2, Check, Github, Crown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { encodeFunctionData, parseAbi } from "viem";
+import Image from "next/image";
+import Link from "next/link";
+import { VibeScore } from "@/components/ui/vibe-score";
+import { BadgeDisplay } from "@/components/ui/badge-display";
+
+import type { BadgeLevel } from "@/lib/types/database";
 
 const CONTRACT_ADDR = "0x2cDB438f418f5cb53e8Ea87cFD981397FDe3d0da";
 const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -32,6 +38,73 @@ type Promotion = {
   expiresAt: number;
   paidAmount: number;
 };
+
+type EnrichedProject = {
+  id: string;
+  title: string;
+  description: string;
+  tech_stack: string[];
+  live_url: string | null;
+  github_url: string | null;
+  image_url: string | null;
+  verified: boolean;
+  quality_score: number;
+  endorsement_count: number;
+};
+
+type EnrichedAuthor = {
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  vibe_score: number;
+  streak: number;
+  badge_level: BadgeLevel;
+};
+
+type EnrichedPromotion = Promotion & {
+  project: EnrichedProject | null;
+  author: EnrichedAuthor | null;
+};
+
+async function enrichPromotions(promotions: Promotion[]): Promise<EnrichedPromotion[]> {
+  if (promotions.length === 0) return [];
+  try {
+    const supabase = createClient();
+    const projectIds = [...new Set(promotions.map((p) => p.projectId))];
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: projects } = await (supabase as any)
+      .from("projects")
+      .select("id, title, description, tech_stack, live_url, github_url, image_url, verified, quality_score, endorsement_count, user_id")
+      .in("id", projectIds);
+
+    const projectMap = new Map<string, EnrichedProject & { user_id: string }>();
+    for (const p of projects || []) {
+      projectMap.set(p.id, p);
+    }
+
+    const userIds = [...new Set((projects || []).map((p: { user_id: string }) => p.user_id))];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: users } = await (supabase as any)
+      .from("users")
+      .select("id, username, display_name, avatar_url, vibe_score, streak, badge_level")
+      .in("id", userIds);
+
+    const userMap = new Map<string, EnrichedAuthor>();
+    for (const u of users || []) {
+      userMap.set(u.id, u);
+    }
+
+    return promotions.map((promo) => {
+      const proj = projectMap.get(promo.projectId) || null;
+      const author = proj ? userMap.get(proj.user_id) || null : null;
+      return { ...promo, project: proj, author };
+    });
+  } catch {
+    // Graceful fallback — show basic promotion data
+    return promotions.map((promo) => ({ ...promo, project: null, author: null }));
+  }
+}
 
 function decodeAddress(hex: string): string {
   return "0x" + hex.slice(24);
@@ -176,23 +249,14 @@ function shortAddr(addr: string): string {
   return addr.slice(0, 6) + "..." + addr.slice(-4);
 }
 
-function timeLeft(expiresAt: number): string {
-  if (expiresAt === 0) return "Lifetime";
-  const now = Math.floor(Date.now() / 1000);
-  const diff = expiresAt - now;
-  if (diff <= 0) return "Expired";
-  const days = Math.floor(diff / 86400);
-  const hours = Math.floor((diff % 86400) / 3600);
-  if (days > 0) return `${days}d ${hours}h left`;
-  return `${hours}h left`;
-}
 
 export function FeaturedCarousel() {
-  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [promotions, setPromotions] = useState<EnrichedPromotion[]>([]);
   const [current, setCurrent] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const pausedRef = useRef(false);
   const { ready: privyReady } = usePrivy();
 
   // Check if user is logged in (Supabase auth, not Privy)
@@ -205,13 +269,16 @@ export function FeaturedCarousel() {
   }, []);
 
   const refreshPromotions = useCallback(() => {
-    fetchPromotions().then((p) => {
-      setPromotions(p);
-      setLoading(false);
-    }).catch(() => {
-      setPromotions([]);
-      setLoading(false);
-    });
+    fetchPromotions()
+      .then((raw) => enrichPromotions(raw))
+      .then((enriched) => {
+        setPromotions(enriched);
+        setLoading(false);
+      })
+      .catch(() => {
+        setPromotions([]);
+        setLoading(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -219,12 +286,14 @@ export function FeaturedCarousel() {
     refreshPromotions();
   }, [authChecked, refreshPromotions]);
 
-  // Auto-advance every 5s
+  // Auto-advance every 8s, pause on hover
   useEffect(() => {
     if (promotions.length <= 1) return;
     const interval = setInterval(() => {
-      setCurrent((c) => (c + 1) % promotions.length);
-    }, 5000);
+      if (!pausedRef.current) {
+        setCurrent((c) => (c + 1) % promotions.length);
+      }
+    }, 8000);
     return () => clearInterval(interval);
   }, [promotions.length]);
 
@@ -294,13 +363,18 @@ export function FeaturedCarousel() {
         )}
 
         {!loading && promotions.length > 0 && (
-          <div className="relative">
+          <div
+            className="relative"
+            onMouseEnter={() => { pausedRef.current = true; }}
+            onMouseLeave={() => { pausedRef.current = false; }}
+          >
             {/* Carousel container */}
             <div
               className="overflow-hidden"
               style={{
                 border: "2px solid var(--border-hard)",
-                boxShadow: "var(--shadow-brutal)",
+                borderLeft: "4px solid var(--accent)",
+                boxShadow: "var(--shadow-brutal), 0 0 24px rgba(255, 58, 0, 0.08)",
               }}
             >
               <div
@@ -310,13 +384,15 @@ export function FeaturedCarousel() {
                 {promotions.map((promo) => (
                   <div
                     key={promo.id}
-                    className="min-w-full p-6 sm:p-8"
+                    className="min-w-full"
                     style={{ backgroundColor: "var(--bg-surface)" }}
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Sparkles size={16} style={{ color: "var(--accent)" }} />
+                    <div className="flex flex-col sm:flex-row">
+                      {/* Left: Content */}
+                      <div className="flex-1 min-w-0 p-6 sm:p-8 flex flex-col">
+                        {/* Badges row */}
+                        <div className="flex items-center gap-2 mb-3">
+                          <Crown size={14} style={{ color: "var(--accent)" }} />
                           <span
                             className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5"
                             style={{
@@ -329,23 +405,161 @@ export function FeaturedCarousel() {
                             {promo.expiresAt === 0 ? "Lifetime" : "Featured"}
                           </span>
                         </div>
-                        <h3 className="text-2xl sm:text-3xl font-extrabold uppercase text-[var(--foreground)] truncate">
-                          {promo.projectName}
+
+                        {/* Title */}
+                        <h3 className="text-xl sm:text-2xl font-extrabold uppercase text-[var(--foreground)] line-clamp-2 leading-tight">
+                          {promo.project?.title || promo.projectName}
                         </h3>
-                        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs font-bold uppercase text-[var(--text-muted)]">
-                          <span className="font-mono">{shortAddr(promo.promoter)}</span>
-                          <span className="flex items-center gap-1">
-                            <Clock size={10} />
-                            {timeLeft(promo.expiresAt)}
-                          </span>
+
+                        {/* Description */}
+                        {promo.project?.description && (
+                          <p className="mt-2 text-sm font-medium text-[var(--text-secondary)] line-clamp-2">
+                            {promo.project.description}
+                          </p>
+                        )}
+
+                        {/* Tech stack */}
+                        {(promo.project?.tech_stack ?? []).length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-1.5">
+                            {promo.project!.tech_stack.slice(0, 5).map((tech) => (
+                              <span
+                                key={tech}
+                                className="px-2 py-0.5 text-[10px] font-bold uppercase text-[var(--text-tertiary)]"
+                                style={{
+                                  backgroundColor: "var(--bg-surface-light)",
+                                  border: "1px solid var(--border-hard)",
+                                }}
+                              >
+                                {tech}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Spacer */}
+                        <div className="flex-1 min-h-3" />
+
+                        {/* Author row */}
+                        {promo.author && (
+                          <Link
+                            href={`/profile/${promo.author.username}`}
+                            className="mt-3 flex items-center gap-2.5 group"
+                          >
+                            {promo.author.avatar_url ? (
+                              <Image
+                                src={promo.author.avatar_url}
+                                alt={promo.author.display_name || promo.author.username}
+                                width={28}
+                                height={28}
+                                className="object-cover"
+                                style={{ border: "2px solid var(--border-hard)" }}
+                              />
+                            ) : (
+                              <div
+                                className="w-7 h-7 flex items-center justify-center text-xs font-extrabold uppercase text-[var(--text-muted)]"
+                                style={{
+                                  backgroundColor: "var(--bg-surface-light)",
+                                  border: "2px solid var(--border-hard)",
+                                }}
+                              >
+                                {(promo.author.display_name || promo.author.username).charAt(0)}
+                              </div>
+                            )}
+                            <span className="text-xs font-bold text-[var(--text-secondary)] group-hover:text-[var(--accent)] transition-colors truncate">
+                              {promo.author.display_name || `@${promo.author.username}`}
+                            </span>
+                            <VibeScore score={promo.author.vibe_score} size="sm" />
+                            <BadgeDisplay level={promo.author.badge_level} size="sm" showLabel={false} />
+                          </Link>
+                        )}
+
+                        {/* Action row */}
+                        <div className="mt-4 flex items-center gap-3">
+                          {promo.project?.live_url ? (
+                            <a
+                              href={promo.project.live_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn-brutal btn-brutal-primary text-xs whitespace-nowrap flex items-center gap-2"
+                            >
+                              View Live <ExternalLink size={12} />
+                            </a>
+                          ) : promo.author ? (
+                            <Link
+                              href={`/profile/${promo.author.username}`}
+                              className="btn-brutal btn-brutal-primary text-xs whitespace-nowrap flex items-center gap-2"
+                            >
+                              View Profile <ExternalLink size={12} />
+                            </Link>
+                          ) : (
+                            <a
+                              href={`/explore?q=${encodeURIComponent(promo.projectName)}`}
+                              className="btn-brutal btn-brutal-primary text-xs whitespace-nowrap flex items-center gap-2"
+                            >
+                              View Project <ExternalLink size={12} />
+                            </a>
+                          )}
+                          {promo.project?.github_url && (
+                            <a
+                              href={promo.project.github_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 text-[var(--text-secondary)] hover:text-[var(--foreground)] transition-colors"
+                              style={{
+                                border: "2px solid var(--border-hard)",
+                                backgroundColor: "var(--bg-surface)",
+                              }}
+                              aria-label="View on GitHub"
+                            >
+                              <Github size={14} />
+                            </a>
+                          )}
+                          {promo.project?.endorsement_count ? (
+                            <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] flex items-center gap-1">
+                              <Sparkles size={10} style={{ color: "var(--accent)" }} />
+                              {promo.project.endorsement_count} endorsement{promo.project.endorsement_count !== 1 ? "s" : ""}
+                            </span>
+                          ) : null}
                         </div>
                       </div>
-                      <a
-                        href={`/explore?q=${encodeURIComponent(promo.projectName)}`}
-                        className="btn-brutal btn-brutal-primary text-sm whitespace-nowrap flex items-center gap-2"
+
+                      {/* Right: Project image in browser mockup */}
+                      <div
+                        className="hidden sm:flex sm:w-[320px] md:w-[420px] shrink-0 flex-col border-l-2 border-[var(--border-hard)]"
+                        style={{ backgroundColor: "hsl(14, 6%, 12%)" }}
                       >
-                        View Project <ExternalLink size={14} />
-                      </a>
+                        {promo.project?.image_url ? (
+                          <>
+                            {/* Browser chrome bar */}
+                            <div className="flex items-center gap-2 px-3 py-2" style={{ backgroundColor: "hsl(14, 6%, 14%)", borderBottom: "1px solid hsl(14, 6%, 20%)" }}>
+                              <div className="flex gap-1.5">
+                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#FF5F56" }} />
+                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#FFBD2E" }} />
+                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#27C93F" }} />
+                              </div>
+                              <div className="flex-1 mx-2 px-2 py-0.5 text-[9px] font-mono truncate" style={{ backgroundColor: "hsl(14, 6%, 18%)", borderRadius: "3px", color: "hsl(14, 6%, 50%)" }}>
+                                {promo.project.live_url || promo.project.title.toLowerCase().replace(/\s+/g, "") + ".com"}
+                              </div>
+                            </div>
+                            {/* Screenshot fills remaining space */}
+                            <div className="relative flex-1 min-h-0">
+                              <Image
+                                src={promo.project.image_url}
+                                alt={promo.project.title}
+                                fill
+                                className="object-cover object-top"
+                                sizes="(max-width: 768px) 320px, 420px"
+                              />
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex-1 flex items-center justify-center">
+                            <span className="text-6xl font-extrabold uppercase opacity-20 select-none tracking-widest" style={{ color: "hsl(14, 6%, 30%)" }}>
+                              {(promo.project?.title || promo.projectName).charAt(0)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
