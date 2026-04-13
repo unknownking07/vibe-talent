@@ -168,16 +168,7 @@ export function Navbar() {
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5">
-          <div
-            className="flex h-9 w-9 items-center justify-center"
-            style={{
-              backgroundColor: "var(--accent)",
-              border: "2px solid var(--border-hard)",
-              boxShadow: "3px 3px 0 var(--shadow-brutal-sm)",
-            }}
-          >
-            <Flame size={18} className="text-white" />
-          </div>
+          <Image src="/logo.png" alt="VibeTalent" width={36} height={36} className="object-contain" />
           <span className="text-lg font-extrabold uppercase tracking-tight" style={{ color: "var(--foreground)" }}>
             VibeTalent
           </span>

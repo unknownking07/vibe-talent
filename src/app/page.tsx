@@ -114,7 +114,6 @@ export default async function HomePage() {
               boxShadow: "var(--shadow-brutal-sm)",
             }}
           >
-            <Flame size={14} className="text-[var(--accent)]" />
             <span>The vibecoders marketplace</span>
           </div>
 
