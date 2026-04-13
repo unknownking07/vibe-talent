@@ -16,6 +16,8 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const reason = searchParams.get("reason");
   const redirectTo = searchParams.get("redirect") || "/dashboard";
+  const authErrorCode = searchParams.get("error_code");
+  const authErrorDescription = searchParams.get("error_description");
 
   // Redirect already-authenticated users to dashboard
   useEffect(() => {
@@ -78,6 +80,42 @@ export default function LoginPage() {
           Sign in to your VibeTalent account
         </p>
       </div>
+
+      {authErrorCode === "identity_already_exists" && (
+        <div
+          className="mb-4 p-4 flex items-start gap-3"
+          style={{
+            backgroundColor: "var(--status-error-bg)",
+            border: "2px solid var(--border-hard)",
+            boxShadow: "var(--shadow-brutal-sm)",
+          }}
+        >
+          <Mail size={18} className="mt-0.5 shrink-0" style={{ color: "var(--status-error-text)" }} />
+          <div className="text-sm font-bold text-[var(--foreground)]">
+            <p>An account with this email already exists.</p>
+            <p className="mt-1 font-medium text-[var(--text-secondary)]">
+              Sign in with your original method (email/password or Google), then connect GitHub from{" "}
+              <Link href="/settings" className="text-[var(--accent)] hover:underline">Settings</Link>.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {authErrorCode && authErrorCode !== "identity_already_exists" && (
+        <div
+          className="mb-4 p-4 flex items-start gap-3"
+          style={{
+            backgroundColor: "var(--status-error-bg)",
+            border: "2px solid var(--border-hard)",
+            boxShadow: "var(--shadow-brutal-sm)",
+          }}
+        >
+          <Mail size={18} className="mt-0.5 shrink-0" style={{ color: "var(--status-error-text)" }} />
+          <p className="text-sm font-bold text-[var(--foreground)]">
+            {authErrorDescription || "Authentication failed. Please try again."}
+          </p>
+        </div>
+      )}
 
       {reason === "promote" && (
         <div

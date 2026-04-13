@@ -119,5 +119,16 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/auth/login?error=auth_failed`);
+  // Pass through the specific Supabase error if available
+  const errorCode = searchParams.get("error_code");
+  const errorDescription = searchParams.get("error_description");
+  const loginUrl = new URL("/auth/login", origin);
+  if (errorCode) {
+    loginUrl.searchParams.set("error_code", errorCode);
+    loginUrl.searchParams.set("error_description", errorDescription || "Authentication failed");
+  } else {
+    loginUrl.searchParams.set("error_code", "auth_failed");
+    loginUrl.searchParams.set("error_description", "Authentication failed. Please try again.");
+  }
+  return NextResponse.redirect(loginUrl.toString());
 }

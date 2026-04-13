@@ -84,6 +84,31 @@ export default function SettingsPage() {
           return;
         }
 
+        // GitHub might be linked in Supabase auth but not yet synced to the
+        // users table (happens when linkIdentity succeeds but the redirect
+        // back to /auth/callback fails). Detect and sync it now.
+        if (!profile.github_username) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const ghIdentity = authUser.identities?.find((i: any) => i.provider === "github");
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const ghData = (ghIdentity?.identity_data ?? {}) as any;
+          const ghUsername =
+            ghData.user_name ||
+            ghData.preferred_username ||
+            authUser.user_metadata?.user_name ||
+            authUser.user_metadata?.preferred_username ||
+            null;
+          if (ghUsername) {
+            profile.github_username = ghUsername;
+            // Sync to DB in the background
+            sb.from("users").update({ github_username: ghUsername }).eq("id", authUser.id);
+            sb.from("social_links").upsert(
+              { user_id: authUser.id, github: ghUsername },
+              { onConflict: "user_id" }
+            );
+          }
+        }
+
         setUser({
           ...profile,
           projects: projects || [],
@@ -405,6 +430,34 @@ export default function SettingsPage() {
             </div>
             <div>
               <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">GitHub</label>
+              {searchParams.get("error_code") === "identity_already_exists" && user.github_username && (
+                <div
+                  className="mb-2 p-3 flex items-start gap-2 text-sm"
+                  style={{
+                    backgroundColor: "var(--status-success-bg)",
+                    border: "2px solid var(--border-hard)",
+                  }}
+                >
+                  <CheckCircle2 size={16} className="mt-0.5 shrink-0" style={{ color: "var(--status-success-text)" }} />
+                  <span className="font-bold text-[var(--status-success-text)]">
+                    GitHub connected successfully!
+                  </span>
+                </div>
+              )}
+              {searchParams.get("error_code") === "identity_already_exists" && !user.github_username && (
+                <div
+                  className="mb-2 p-3 flex items-start gap-2 text-sm"
+                  style={{
+                    backgroundColor: "var(--status-error-bg)",
+                    border: "2px solid var(--border-hard)",
+                  }}
+                >
+                  <Github size={16} className="mt-0.5 shrink-0" style={{ color: "var(--status-error-text)" }} />
+                  <span className="font-bold text-[var(--foreground)]">
+                    This GitHub account is already linked to another user. Use a different GitHub account or contact support.
+                  </span>
+                </div>
+              )}
               {user.github_username ? (
                 <div
                   className="flex items-center gap-2 px-3 py-2.5 text-sm"
