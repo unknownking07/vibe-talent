@@ -5,7 +5,7 @@ import type { UserWithSocials, HireRequest } from "@/lib/types/database";
 const supabase = () => createClient() as any;
 
 const USER_FIELDS = "id, username, display_name, bio, avatar_url, github_username, vibe_score, streak, longest_streak, badge_level, created_at";
-const PROJECT_FIELDS = "id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at";
+const PROJECT_FIELDS = "id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, endorsement_count, created_at";
 const SOCIAL_FIELDS = "id, user_id, twitter, telegram, github, website, farcaster";
 
 export async function fetchUsers(): Promise<UserWithSocials[]> {
