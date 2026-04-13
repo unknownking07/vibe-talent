@@ -122,6 +122,34 @@ export default function ProfileSetupPage() {
       if (userRow?.github_username) {
         setVerifiedGithub(userRow.github_username);
         setSocials((s) => ({ ...s, github: userRow.github_username }));
+      } else {
+        // GitHub might be linked in Supabase auth but not yet synced to the
+        // users table (happens when linkIdentity succeeds but the redirect
+        // back to /auth/callback fails). Detect and sync it now.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const ghIdentity = user.identities?.find((i: any) => i.provider === "github");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const ghData = (ghIdentity?.identity_data ?? {}) as any;
+        const ghUsername =
+          ghData.user_name ||
+          ghData.preferred_username ||
+          user.user_metadata?.user_name ||
+          user.user_metadata?.preferred_username ||
+          null;
+        if (ghUsername) {
+          setVerifiedGithub(ghUsername);
+          setSocials((s) => ({ ...s, github: ghUsername }));
+          // Sync to DB so the rest of the app sees it
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.from("users") as any)
+            .update({ github_username: ghUsername })
+            .eq("id", user.id);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.from("social_links") as any).upsert(
+            { user_id: user.id, github: ghUsername },
+            { onConflict: "user_id" }
+          );
+        }
       }
 
       // If returning user redirected to step 2, pre-fill existing socials
@@ -500,6 +528,20 @@ export default function ProfileSetupPage() {
         </div>
       ) : (
         <div>
+          {searchParams.get("error_code") === "identity_already_exists" && (
+            <div
+              className="mb-2 p-3 flex items-start gap-2 text-sm"
+              style={{
+                backgroundColor: "var(--status-error-bg)",
+                border: "2px solid var(--border-hard)",
+              }}
+            >
+              <Github size={16} className="mt-0.5 shrink-0" style={{ color: "var(--status-error-text)" }} />
+              <span className="font-bold text-[var(--foreground)]">
+                This GitHub account is already linked to another user. Try a different GitHub account or contact support.
+              </span>
+            </div>
+          )}
           <button
             type="button"
             onClick={handleConnectGithub}
