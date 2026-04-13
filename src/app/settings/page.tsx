@@ -404,7 +404,7 @@ export default function SettingsPage() {
                 if (highlightName) setHighlightName(false);
               }}
               placeholder="Your full name (e.g. Abhinav Kumar)"
-              maxLength={50}
+              maxLength={30}
               className={`input-brutal ${highlightName ? "settings-highlight-pulse" : ""}`}
               style={highlightName ? { outline: "3px solid var(--accent)", outlineOffset: 2 } : undefined}
             />
