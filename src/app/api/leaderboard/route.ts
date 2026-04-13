@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     const { data: users, error } = await sb
       .from("users")
       .select("id, username, avatar_url, vibe_score, streak, longest_streak, badge_level")
+      .not("username", "is", null)
       .order(orderColumn, { ascending: false })
       .limit(limit);
 

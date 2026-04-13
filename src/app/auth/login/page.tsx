@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Flame, Github, Mail, Lock, Megaphone } from "lucide-react";
+import { Github, Mail, Lock, Megaphone } from "lucide-react";
+import Image from "next/image";
 import OAuthConsentModal from "@/components/auth/oauth-consent-modal";
 
 export default function LoginPage() {
@@ -65,16 +66,7 @@ export default function LoginPage() {
   return (
     <div className="mx-auto max-w-md px-4 sm:px-6 py-20">
       <div className="text-center mb-8">
-        <div
-          className="inline-flex items-center justify-center w-14 h-14 mb-4"
-          style={{
-            backgroundColor: "var(--accent)",
-            border: "2px solid var(--border-hard)",
-            boxShadow: "var(--shadow-brutal-sm)",
-          }}
-        >
-          <Flame size={28} className="text-white" />
-        </div>
+        <Image src="/logo.png" alt="VibeTalent" width={56} height={56} className="mx-auto mb-4 object-contain" />
         <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">Welcome Back</h1>
         <p className="mt-2 text-sm text-[var(--text-secondary)] font-medium">
           Sign in to your VibeTalent account
@@ -144,15 +136,19 @@ export default function LoginPage() {
         <div className="space-y-3">
           <button
             onClick={() => setConsentProvider("github")}
-            className="w-full flex items-center justify-center gap-2 px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white cursor-pointer transition-colors hover:bg-[var(--bg-pill-hover)]"
+            className="w-full flex items-center justify-center gap-2 px-5 py-4 text-sm font-extrabold uppercase tracking-wide text-white cursor-pointer transition-colors hover:bg-[#E03300]"
             style={{
-              backgroundColor: "var(--bg-inverted)",
+              backgroundColor: "var(--accent)",
               border: "2px solid var(--border-hard)",
+              boxShadow: "var(--shadow-brutal-sm)",
             }}
           >
             <Github size={18} />
             Continue with GitHub
           </button>
+          <p className="text-[10px] font-bold uppercase text-center text-[var(--text-muted)] tracking-wide">
+            Recommended — auto-verifies your GitHub and syncs your streak
+          </p>
 
           <button
             onClick={() => setConsentProvider("google")}

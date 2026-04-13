@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Flame } from "lucide-react";
+import Image from "next/image";
 
 export function Footer() {
   return (
@@ -13,16 +13,7 @@ export function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-8">
           <div className="sm:col-span-2">
             <div className="flex items-center gap-2.5 mb-3">
-              <div
-                className="flex h-9 w-9 items-center justify-center"
-                style={{
-                  backgroundColor: "var(--accent)",
-                  border: "2px solid var(--border-hard)",
-                  boxShadow: "var(--shadow-brutal-sm)",
-                }}
-              >
-                <Flame size={18} className="text-white" />
-              </div>
+              <Image src="/logo.png" alt="VibeTalent" width={36} height={36} className="object-contain" />
               <span className="text-lg font-extrabold uppercase tracking-tight" style={{ color: "var(--foreground)" }}>
                 VibeTalent
               </span>

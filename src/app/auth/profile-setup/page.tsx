@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
+import { validateDisplayName, containsProfanity } from "@/lib/profanity";
 import {
   Flame,
   Github,
@@ -190,6 +191,15 @@ export default function ProfileSetupPage() {
     const usernameError = validateUsername(profile.username);
     if (usernameError) {
       setError(usernameError);
+      return;
+    }
+    if (containsProfanity(profile.username)) {
+      setError("Username contains inappropriate language");
+      return;
+    }
+    const displayNameError = validateDisplayName(profile.display_name);
+    if (displayNameError) {
+      setError(displayNameError);
       return;
     }
 
@@ -452,8 +462,8 @@ export default function ProfileSetupPage() {
           type="text"
           value={profile.display_name}
           onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
-          placeholder="Your full name (e.g. Abhinav Kumar)"
-          maxLength={50}
+          placeholder="Your display name"
+          maxLength={30}
           className="input-brutal w-full"
         />
         <p className="text-[10px] text-[var(--text-secondary)] mt-1">
