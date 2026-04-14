@@ -173,7 +173,7 @@ export function Navbar() {
         <Link href="/" className="flex items-center gap-2.5">
           <Image src="/logo.png" alt="VibeTalent" width={36} height={36} className="object-contain" />
           <span className="text-lg font-extrabold uppercase tracking-tight" style={{ color: "var(--foreground)" }}>
-            VibeTalent
+            Vibe Talent
           </span>
         </Link>
 

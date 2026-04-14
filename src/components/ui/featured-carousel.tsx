@@ -693,8 +693,29 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
       window.location.href = "/auth/login?redirect=/&reason=promote";
       return;
     }
-    // If already authenticated with Privy but no wallet connected,
-    // use connectWallet() instead of login() to avoid "already logged in" error
+
+    const chainConfig = getChainConfig(selectedChain);
+
+    // Solana: connect directly via Phantom/Solflare/Backpack browser extension
+    if (isSolanaChain(chainConfig)) {
+      const win = window as unknown as Record<string, unknown>;
+      // Phantom injects as window.phantom?.solana, older versions as window.solana
+      const solana = (win.phantom as Record<string, unknown>)?.solana || win.solana;
+      if (!solana || typeof (solana as Record<string, unknown>).connect !== "function") {
+        setStatus({ msg: "No Solana wallet found. Install Phantom (phantom.app) or Solflare.", type: "error" });
+        return;
+      }
+      try {
+        const provider = solana as { connect: () => Promise<{ publicKey: { toString: () => string } }> };
+        const resp = await provider.connect();
+        setStatus({ msg: `Solana wallet connected: ${resp.publicKey.toString().slice(0, 6)}...`, type: "info" });
+      } catch {
+        setStatus({ msg: "Solana wallet connection cancelled", type: "error" });
+      }
+      return;
+    }
+
+    // EVM: use Privy wallet connect
     if (privyAuthenticated) {
       connectWallet();
     } else {
@@ -774,9 +795,11 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
 
     setStatus({ msg: `Sending $${(Number(price) / 1e6).toFixed(2)} USDC on Solana...`, type: "info" });
 
-    // Use window.solana (Phantom/Solflare) provider directly
-    const solanaProvider = (window as unknown as { solana?: { signAndSendTransaction: (tx: unknown) => Promise<{ signature: string }> } }).solana;
-    if (!solanaProvider) throw new Error("No Solana wallet extension found. Install Phantom or Solflare.");
+    // Use Phantom/Solflare provider directly (window.phantom.solana or window.solana)
+    const win = window as unknown as Record<string, unknown>;
+    const solanaProvider = ((win.phantom as Record<string, unknown>)?.solana || win.solana) as
+      { signAndSendTransaction: (tx: unknown) => Promise<{ signature: string }> } | undefined;
+    if (!solanaProvider) throw new Error("No Solana wallet found. Install Phantom (phantom.app) or Solflare.");
 
     const { Transaction } = await import("@solana/web3.js");
     const tx = Transaction.from(serializedTx);
@@ -832,9 +855,13 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
   const hasProject = selectedProject !== "";
   const chainConfig = getChainConfig(selectedChain);
   const isSol = isSolanaChain(chainConfig);
-  const hasWallet = isSol ? !!connectedSolanaWallet : !!connectedWallet;
+  const solanaProvider = typeof window !== "undefined"
+    ? ((window as unknown as Record<string, unknown>).phantom as Record<string, unknown>)?.solana || (window as unknown as Record<string, unknown>).solana
+    : null;
+  const solProv = solanaProvider as { isConnected?: boolean; publicKey?: { toString: () => string } } | null;
+  const hasWallet = isSol ? !!(solProv?.isConnected) : !!connectedWallet;
   const walletDisplay = isSol
-    ? connectedSolanaWallet ? shortAddr(connectedSolanaWallet.address) : ""
+    ? solProv?.publicKey ? shortAddr(solProv.publicKey.toString()) : ""
     : connectedWallet ? shortAddr(connectedWallet.address) : "";
 
   return (

@@ -38,23 +38,8 @@ export function TestimonialScroll() {
             }}
           >
             <div className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`https://unavatar.io/x/${t.handle.replace("@", "")}`}
-                alt={t.name}
-                width={48}
-                height={48}
-                className="w-[48px] h-[48px] shrink-0 object-cover rounded-sm"
-                style={{ border: "2px solid var(--border-hard)" }}
-                onError={(e) => {
-                  const el = e.currentTarget;
-                  el.style.display = "none";
-                  const fallback = el.nextElementSibling as HTMLElement;
-                  if (fallback) fallback.style.display = "flex";
-                }}
-              />
               <div
-                className="w-[48px] h-[48px] items-center justify-center text-sm font-extrabold text-white shrink-0 rounded-sm hidden"
+                className="w-[48px] h-[48px] flex items-center justify-center text-sm font-extrabold text-white shrink-0 rounded-sm"
                 style={{ backgroundColor: "var(--bg-inverted)", border: "2px solid var(--border-hard)" }}
               >
                 {t.name.slice(0, 2).toUpperCase()}
