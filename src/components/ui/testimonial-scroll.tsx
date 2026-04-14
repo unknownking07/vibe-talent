@@ -40,7 +40,7 @@ export function TestimonialScroll() {
             <div className="flex items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={`https://unavatar.io/x/${t.handle.replace("@", "")}?fallback=https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(t.name)}`}
+                src={t.avatar}
                 alt={t.name}
                 width={48}
                 height={48}
