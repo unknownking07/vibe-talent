@@ -9,12 +9,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { VibeScore } from "@/components/ui/vibe-score";
 import { BadgeDisplay } from "@/components/ui/badge-display";
+import { CHAIN_CONFIGS, SUPPORTED_CHAINS, DEFAULT_CHAIN, getChainConfig, isEVMChain, isSolanaChain } from "@/lib/chains-config";
+import { buildSolanaUSDCTransfer, confirmSolanaTransaction } from "@/lib/solana-payment";
 
 import type { BadgeLevel } from "@/lib/types/database";
 
-const CONTRACT_ADDR = "0x2cDB438f418f5cb53e8Ea87cFD981397FDe3d0da";
-const USDC_ADDR = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const BASE_RPC = "https://mainnet.base.org";
+// Base chain defaults (for fetching promotions — always read from Base contract)
+const BASE_CONFIG = CHAIN_CONFIGS.base;
+const CONTRACT_ADDR = isEVMChain(BASE_CONFIG) ? BASE_CONFIG.contractAddr : "";
+const BASE_RPC = isEVMChain(BASE_CONFIG) ? BASE_CONFIG.rpc : "";
 
 // Function selectors (keccak256 of signature, first 4 bytes) — read-only calls
 const SEL = {
@@ -626,10 +629,16 @@ export function FeaturedCarousel() {
 
 type UserProject = { id: string; title: string };
 
+const CHAIN_LABELS: Record<string, string> = { base: "Base", solana: "Solana" };
+
 function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLoggedIn: boolean }) {
-  const { login: privyLogin, logout: privyLogout, connectWallet, authenticated: privyAuthenticated, ready: privyReady } = usePrivy();
+  const { login: privyLogin, logout: privyLogout, connectWallet, authenticated: privyAuthenticated, ready: privyReady, user: privyUser } = usePrivy();
   const { wallets } = useWallets();
   const connectedWallet = wallets[0];
+  // Solana wallet from Privy linked accounts (avoids hook crash in dev without Privy Solana context)
+  const connectedSolanaWallet = privyUser?.linkedAccounts?.find(
+    (a) => a.type === "wallet" && "chainType" in a && (a as unknown as { chainType: string }).chainType === "solana"
+  ) as { address: string } | undefined || null;
 
   const [prices, setPrices] = useState<bigint[]>(FALLBACK_PRICES);
   const [selectedPkg, setSelectedPkg] = useState(2); // default 7 days
@@ -638,6 +647,7 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [status, setStatus] = useState<{ msg: string; type: "info" | "error" | "success" } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [selectedChain, setSelectedChain] = useState(DEFAULT_CHAIN);
 
   // Load prices on mount
   useEffect(() => {
@@ -696,10 +706,103 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
     await privyLogout();
   }
 
+  async function handlePromoteEVM(project: UserProject, price: bigint, chainConfig: import("@/lib/chains-config").EVMChainConfig) {
+    if (!connectedWallet) throw new Error("No EVM wallet connected");
+
+    const provider = await connectedWallet.getEthereumProvider() as EthereumProvider;
+    const walletAddr = connectedWallet.address.toLowerCase();
+
+    setStatus({ msg: "Checking USDC allowance...", type: "info" });
+    const allowanceData = encodeFunctionData({
+      abi: ERC20_ABI,
+      functionName: "allowance",
+      args: [walletAddr as `0x${string}`, chainConfig.contractAddr as `0x${string}`],
+    });
+    const allowanceRes = await fetch(chainConfig.rpc, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0", id: 1, method: "eth_call",
+        params: [{ to: chainConfig.usdcAddr, data: allowanceData }, "latest"],
+      }),
+    });
+    const allowanceJson = await allowanceRes.json();
+    const currentAllowance = BigInt(allowanceJson.result || "0x0");
+
+    if (currentAllowance < price) {
+      setStatus({ msg: `Approving $${(Number(price) / 1e6).toFixed(2)} USDC on ${chainConfig.name}...`, type: "info" });
+      const approveData = encodeFunctionData({
+        abi: ERC20_ABI,
+        functionName: "approve",
+        args: [chainConfig.contractAddr as `0x${string}`, price],
+      });
+      const approveTxHash = await provider.request({
+        method: "eth_sendTransaction",
+        params: [{ from: walletAddr, to: chainConfig.usdcAddr, data: approveData }],
+      });
+      setStatus({ msg: "Waiting for approval...", type: "info" });
+      await waitForTx(approveTxHash as string, chainConfig.rpc);
+    }
+
+    setStatus({ msg: `Promoting "${project.title}" on ${chainConfig.name}...`, type: "info" });
+    const promoteData = encodeFunctionData({
+      abi: PROMOTE_ABI,
+      functionName: "promote",
+      args: [project.id, project.title, selectedPkg, price],
+    });
+    const txHash = await provider.request({
+      method: "eth_sendTransaction",
+      params: [{ from: walletAddr, to: chainConfig.contractAddr, data: promoteData }],
+    });
+    setStatus({ msg: "Waiting for confirmation...", type: "info" });
+    await waitForTx(txHash as string, chainConfig.rpc);
+  }
+
+  async function handlePromoteSolana(project: UserProject, price: bigint, chainConfig: import("@/lib/chains-config").SolanaChainConfig) {
+    if (!connectedSolanaWallet) throw new Error("No Solana wallet connected");
+
+    setStatus({ msg: `Building USDC transfer on Solana...`, type: "info" });
+    void project;
+
+    const serializedTx = await buildSolanaUSDCTransfer({
+      senderAddress: connectedSolanaWallet.address,
+      rpcUrl: chainConfig.rpc,
+      usdcMint: chainConfig.usdcMint,
+      receivingWallet: chainConfig.receivingWallet,
+      amount: price,
+    });
+
+    setStatus({ msg: `Sending $${(Number(price) / 1e6).toFixed(2)} USDC on Solana...`, type: "info" });
+
+    // Use window.solana (Phantom/Solflare) provider directly
+    const solanaProvider = (window as unknown as { solana?: { signAndSendTransaction: (tx: unknown) => Promise<{ signature: string }> } }).solana;
+    if (!solanaProvider) throw new Error("No Solana wallet extension found. Install Phantom or Solflare.");
+
+    const { Transaction } = await import("@solana/web3.js");
+    const tx = Transaction.from(serializedTx);
+    const { signature } = await solanaProvider.signAndSendTransaction(tx);
+
+    setStatus({ msg: `Confirming transaction...`, type: "info" });
+    await confirmSolanaTransaction(chainConfig.rpc, signature);
+  }
+
   async function handlePromote() {
     const project = projects.find((p) => p.id === selectedProject);
-    if (!connectedWallet || !project) {
+    if (!project) {
       setStatus({ msg: "Select a project first", type: "error" });
+      return;
+    }
+
+    const chainConfig = getChainConfig(selectedChain);
+    const isEVM = isEVMChain(chainConfig);
+    const isSol = isSolanaChain(chainConfig);
+
+    if (isEVM && !connectedWallet) {
+      setStatus({ msg: "Connect an EVM wallet first", type: "error" });
+      return;
+    }
+    if (isSol && !connectedSolanaWallet) {
+      setStatus({ msg: "Connect a Solana wallet first", type: "error" });
       return;
     }
 
@@ -707,53 +810,11 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
     setBusy(true);
 
     try {
-      const provider = await connectedWallet.getEthereumProvider() as EthereumProvider;
-      const walletAddr = connectedWallet.address.toLowerCase();
-
-      setStatus({ msg: "Checking USDC allowance...", type: "info" });
-      const allowanceData = encodeFunctionData({
-        abi: ERC20_ABI,
-        functionName: "allowance",
-        args: [walletAddr as `0x${string}`, CONTRACT_ADDR as `0x${string}`],
-      });
-      const allowanceRes = await fetch(BASE_RPC, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jsonrpc: "2.0", id: 1, method: "eth_call",
-          params: [{ to: USDC_ADDR, data: allowanceData }, "latest"],
-        }),
-      });
-      const allowanceJson = await allowanceRes.json();
-      const currentAllowance = BigInt(allowanceJson.result || "0x0");
-
-      if (currentAllowance < price) {
-        setStatus({ msg: `Approving $${(Number(price) / 1e6).toFixed(2)} USDC...`, type: "info" });
-        const approveData = encodeFunctionData({
-          abi: ERC20_ABI,
-          functionName: "approve",
-          args: [CONTRACT_ADDR as `0x${string}`, price],
-        });
-        const approveTxHash = await provider.request({
-          method: "eth_sendTransaction",
-          params: [{ from: walletAddr, to: USDC_ADDR, data: approveData }],
-        });
-        setStatus({ msg: "Waiting for approval...", type: "info" });
-        await waitForTx(approveTxHash as string);
+      if (isEVM) {
+        await handlePromoteEVM(project, price, chainConfig);
+      } else if (isSol) {
+        await handlePromoteSolana(project, price, chainConfig);
       }
-
-      setStatus({ msg: `Promoting "${project.title}"...`, type: "info" });
-      const promoteData = encodeFunctionData({
-        abi: PROMOTE_ABI,
-        functionName: "promote",
-        args: [project.id, project.title, selectedPkg, price],
-      });
-      const txHash = await provider.request({
-        method: "eth_sendTransaction",
-        params: [{ from: walletAddr, to: CONTRACT_ADDR, data: promoteData }],
-      });
-      setStatus({ msg: "Waiting for confirmation...", type: "info" });
-      await waitForTx(txHash as string);
 
       setStatus({ msg: `"${project.title}" is now featured!`, type: "success" });
       setSelectedProject("");
@@ -769,6 +830,12 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
   const currentPrice = prices[selectedPkg];
   const priceStr = `$${(Number(currentPrice) / 1e6).toFixed(2)}`;
   const hasProject = selectedProject !== "";
+  const chainConfig = getChainConfig(selectedChain);
+  const isSol = isSolanaChain(chainConfig);
+  const hasWallet = isSol ? !!connectedSolanaWallet : !!connectedWallet;
+  const walletDisplay = isSol
+    ? connectedSolanaWallet ? shortAddr(connectedSolanaWallet.address) : ""
+    : connectedWallet ? shortAddr(connectedWallet.address) : "";
 
   return (
     <div
@@ -783,20 +850,44 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
         Feature Your Project
       </h3>
 
+      {/* Chain selector */}
+      <div className="mb-4">
+        <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">
+          Pay with USDC on
+        </label>
+        <div className="flex gap-2">
+          {SUPPORTED_CHAINS.map(key => (
+            <button
+              key={key}
+              onClick={() => setSelectedChain(key)}
+              className="px-4 py-2 text-xs font-extrabold uppercase transition-all"
+              style={{
+                border: `2px solid ${selectedChain === key ? "var(--accent)" : "var(--border-hard)"}`,
+                backgroundColor: selectedChain === key ? "var(--accent)" : "var(--bg-surface)",
+                color: selectedChain === key ? "white" : "var(--foreground)",
+                boxShadow: selectedChain === key ? "var(--shadow-brutal-xs)" : "none",
+              }}
+            >
+              {CHAIN_LABELS[key] || key}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {!privyReady ? (
         <p className="text-sm font-bold text-[var(--text-muted)] animate-pulse">Loading wallet...</p>
-      ) : !isLoggedIn || !privyAuthenticated || !connectedWallet ? (
+      ) : !isLoggedIn || !privyAuthenticated || !hasWallet ? (
         <button
           onClick={handleConnectWallet}
           className="btn-brutal btn-brutal-primary text-sm flex items-center gap-2"
         >
-          <Wallet size={16} /> Pay with USDC
+          <Wallet size={16} /> Connect {isSol ? "Solana" : "EVM"} Wallet
         </button>
       ) : (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold text-[var(--text-muted)] font-mono">
-              Connected: {shortAddr(connectedWallet.address)}
+              Connected: {walletDisplay}
             </p>
             <button
               onClick={handleDisconnectWallet}
@@ -912,10 +1003,10 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
 
 // ── Wait for tx confirmation ──
 
-async function waitForTx(txHash: string, timeout = 60000): Promise<void> {
+async function waitForTx(txHash: string, rpcUrl: string = BASE_RPC, timeout = 60000): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    const res = await fetch(BASE_RPC, {
+    const res = await fetch(rpcUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

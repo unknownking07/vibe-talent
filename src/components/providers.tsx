@@ -1,7 +1,7 @@
 "use client";
 
 import { PrivyProvider } from "@privy-io/react-auth";
-import { base } from "viem/chains";
+import { base, mainnet, arbitrum } from "viem/chains";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
@@ -17,10 +17,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       config={{
         loginMethods: ["wallet", "email"],
         defaultChain: base,
-        supportedChains: [base],
+        supportedChains: [base, mainnet, arbitrum],
         appearance: {
-          walletList: ["rabby_wallet", "metamask", "coinbase_wallet", "rainbow", "wallet_connect"],
-          walletChainType: "ethereum-only",
+          walletList: ["rabby_wallet", "metamask", "coinbase_wallet", "rainbow", "wallet_connect", "phantom"],
+          walletChainType: "ethereum-and-solana",
         },
         embeddedWallets: {
           ethereum: {
