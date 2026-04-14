@@ -140,7 +140,7 @@ export default async function ProfilePage({
       />
       <div className="w-full max-w-[1200px] grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 items-start">
         {/* Sidebar */}
-        <ProfileSidebar user={user} isOwner={isOwner} />
+        <ProfileSidebar user={user} />
 
         {/* Main Content */}
         <div className="flex flex-col gap-6">

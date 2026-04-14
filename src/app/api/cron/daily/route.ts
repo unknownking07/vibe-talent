@@ -43,7 +43,8 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  console.log("Daily cron results:", JSON.stringify(results, null, 2));
+  const summary = Object.entries(results).map(([name, r]: [string, { status: number }]) => `${name}:${r.status}`).join(", ");
+  console.log(`Daily cron completed: ${summary}`);
 
   return NextResponse.json({
     message: "Daily cron completed",

@@ -43,7 +43,6 @@ export async function GET(request: NextRequest) {
     const feed: FeedItem[] = [];
 
     // Run all queries in parallel instead of sequentially
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [usersResult, eventsResult, streakResult, projectsResult, recentUsersResult] = await Promise.all([
       supabase.from("users").select("id, username, display_name, avatar_url, badge_level, streak, github_username").order("vibe_score", { ascending: false }).limit(200),
       supabase.from("feed_events").select("id, event_type, repo_name, message, github_url, created_at, user_id").order("created_at", { ascending: false }).limit(200).then(

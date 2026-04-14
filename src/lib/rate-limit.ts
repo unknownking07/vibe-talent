@@ -51,7 +51,10 @@ export async function checkRateLimit(
   limiter: Ratelimit | null,
   identifier: string
 ): Promise<{ success: boolean }> {
-  if (!limiter) return { success: true };
+  if (!limiter) {
+    console.warn("Rate limiter unavailable (Redis not configured) — allowing request");
+    return { success: true };
+  }
   try {
     const result = await limiter.limit(identifier);
     return { success: result.success };

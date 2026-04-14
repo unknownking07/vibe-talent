@@ -10,7 +10,6 @@ import { ShareCardModal } from "@/components/profile/share-card-modal";
 
 interface ProfileSidebarProps {
   user: UserWithSocials;
-  isOwner?: boolean;
 }
 
 function getBadgeLabel(level: BadgeLevel): string | null {
@@ -63,7 +62,7 @@ function deriveRole(projects: { tech_stack: string[] }[]): string {
   return "Builder";
 }
 
-export function ProfileSidebar({ user, isOwner = false }: ProfileSidebarProps) {
+export function ProfileSidebar({ user }: ProfileSidebarProps) {
   const [hireModalOpen, setHireModalOpen] = useState(false);
   const [shareCardOpen, setShareCardOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
