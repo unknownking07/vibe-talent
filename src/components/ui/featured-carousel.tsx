@@ -20,6 +20,10 @@ const BASE_CONFIG = CHAIN_CONFIGS.base;
 const CONTRACT_ADDR = isEVMChain(BASE_CONFIG) ? BASE_CONFIG.contractAddr : "";
 const BASE_RPC = isEVMChain(BASE_CONFIG) ? BASE_CONFIG.rpc : "";
 
+// Privy must be configured for PromoteForm to mount — its hooks require PrivyProvider.
+// Providers.tsx bails out when this is unset, so rendering PromoteForm would crash.
+const PRIVY_CONFIGURED = !!process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+
 // Function selectors (keccak256 of signature, first 4 bytes) — read-only calls
 const SEL = {
   getActivePromotions: "0x5fd2d522",
@@ -619,8 +623,24 @@ export function FeaturedCarousel() {
           </div>
         )}
 
-        {/* Promote Form */}
-        <PromoteForm onSuccess={refreshPromotions} isLoggedIn={isLoggedIn} />
+        {/* Promote Form — gated on Privy config; PromoteForm's hooks require PrivyProvider */}
+        {PRIVY_CONFIGURED ? (
+          <PromoteForm onSuccess={refreshPromotions} isLoggedIn={isLoggedIn} />
+        ) : process.env.NODE_ENV !== "production" ? (
+          <div
+            className="mt-6 p-4 text-sm font-medium"
+            style={{
+              backgroundColor: "var(--bg-surface)",
+              border: "2px dashed var(--border-hard)",
+              color: "var(--text-secondary)",
+            }}
+          >
+            <strong className="uppercase text-[var(--foreground)]">Promote form disabled</strong>
+            <span className="ml-2">
+              Set <code>NEXT_PUBLIC_PRIVY_APP_ID</code> in <code>.env.local</code> to enable wallet-based promotions.
+            </span>
+          </div>
+        ) : null}
       </div>
     </section>
   );
