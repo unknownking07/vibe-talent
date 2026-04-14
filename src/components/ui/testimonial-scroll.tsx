@@ -40,25 +40,13 @@ export function TestimonialScroll() {
             <div className="flex items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={`https://unavatar.io/x/${t.handle.replace("@", "")}`}
+                src={`https://unavatar.io/x/${t.handle.replace("@", "")}?fallback=https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(t.name)}`}
                 alt={t.name}
                 width={48}
                 height={48}
                 className="w-[48px] h-[48px] shrink-0 object-cover rounded-sm"
                 style={{ border: "2px solid var(--border-hard)" }}
-                onError={(e) => {
-                  const el = e.currentTarget;
-                  el.style.display = "none";
-                  const fallback = el.nextElementSibling as HTMLElement;
-                  if (fallback) fallback.style.display = "flex";
-                }}
               />
-              <div
-                className="w-[48px] h-[48px] items-center justify-center text-sm font-extrabold text-white shrink-0 rounded-sm hidden"
-                style={{ backgroundColor: "var(--bg-inverted)", border: "2px solid var(--border-hard)" }}
-              >
-                {t.name.slice(0, 2).toUpperCase()}
-              </div>
               <div className="min-w-0">
                 <div className="text-sm font-extrabold text-[var(--foreground)] truncate">{t.name}</div>
                 <div className="text-xs font-medium text-[var(--text-muted)] truncate">{t.handle}</div>
