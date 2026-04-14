@@ -315,7 +315,7 @@ export default async function HomePage() {
               <p className="mt-2 text-[var(--text-secondary)] font-medium">Built by vibe coders, shipped fast</p>
             </div>
             <Link
-              href="/explore"
+              href="/projects"
               className="flex items-center gap-1 text-sm font-bold uppercase text-[var(--accent)] hover:underline transition-colors"
             >
               See All <ArrowRight size={14} />
