@@ -4,13 +4,14 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Megaphone, ChevronLeft, ChevronRight, ExternalLink, Sparkles, Wallet, Loader2, Check, Github, Crown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useWallets as useSolanaWallets, useSignAndSendTransaction } from "@privy-io/react-auth/solana";
 import { encodeFunctionData, parseAbi } from "viem";
 import Image from "next/image";
 import Link from "next/link";
 import { VibeScore } from "@/components/ui/vibe-score";
 import { BadgeDisplay } from "@/components/ui/badge-display";
 import { CHAIN_CONFIGS, SUPPORTED_CHAINS, DEFAULT_CHAIN, getChainConfig, isEVMChain, isSolanaChain } from "@/lib/chains-config";
-import { buildSolanaUSDCTransfer, confirmSolanaTransaction } from "@/lib/solana-payment";
+import { buildSolanaUSDCTransfer, confirmSolanaTransaction, signatureToString } from "@/lib/solana-payment";
 
 import type { BadgeLevel } from "@/lib/types/database";
 
@@ -635,10 +636,10 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
   const { login: privyLogin, logout: privyLogout, connectWallet, authenticated: privyAuthenticated, ready: privyReady, user: privyUser } = usePrivy();
   const { wallets } = useWallets();
   const connectedWallet = wallets[0];
-  // Solana wallet from Privy linked accounts (avoids hook crash in dev without Privy Solana context)
-  const connectedSolanaWallet = privyUser?.linkedAccounts?.find(
-    (a) => a.type === "wallet" && "chainType" in a && (a as unknown as { chainType: string }).chainType === "solana"
-  ) as { address: string } | undefined || null;
+  // Solana wallets via Privy's standard wallet interface (detects Phantom, Backpack, etc.)
+  const { wallets: solanaWallets } = useSolanaWallets();
+  const { signAndSendTransaction: privySignAndSend } = useSignAndSendTransaction();
+  const connectedSolanaWallet = solanaWallets[0] ?? null;
 
   const [prices, setPrices] = useState<bigint[]>(FALLBACK_PRICES);
   const [selectedPkg, setSelectedPkg] = useState(2); // default 7 days
@@ -696,7 +697,8 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
     // If already authenticated with Privy but no wallet connected,
     // use connectWallet() instead of login() to avoid "already logged in" error
     if (privyAuthenticated) {
-      connectWallet();
+      const wantsSolana = isSolanaChain(getChainConfig(selectedChain));
+      connectWallet(wantsSolana ? { walletChainType: "solana-only" } : undefined);
     } else {
       privyLogin();
     }
@@ -774,16 +776,15 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
 
     setStatus({ msg: `Sending $${(Number(price) / 1e6).toFixed(2)} USDC on Solana...`, type: "info" });
 
-    // Use window.solana (Phantom/Solflare) provider directly
-    const solanaProvider = (window as unknown as { solana?: { signAndSendTransaction: (tx: unknown) => Promise<{ signature: string }> } }).solana;
-    if (!solanaProvider) throw new Error("No Solana wallet extension found. Install Phantom or Solflare.");
-
-    const { Transaction } = await import("@solana/web3.js");
-    const tx = Transaction.from(serializedTx);
-    const { signature } = await solanaProvider.signAndSendTransaction(tx);
+    // Use Privy's standard wallet interface (works with Phantom, Backpack, Solflare, etc.)
+    const { signature } = await privySignAndSend({
+      transaction: serializedTx,
+      wallet: connectedSolanaWallet,
+      chain: "solana:mainnet",
+    });
 
     setStatus({ msg: `Confirming transaction...`, type: "info" });
-    await confirmSolanaTransaction(chainConfig.rpc, signature);
+    await confirmSolanaTransaction(chainConfig.rpc, signatureToString(signature));
   }
 
   async function handlePromote() {

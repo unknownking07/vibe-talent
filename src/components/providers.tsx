@@ -19,7 +19,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         defaultChain: base,
         supportedChains: [base, mainnet, arbitrum],
         appearance: {
-          walletList: ["rabby_wallet", "metamask", "coinbase_wallet", "rainbow", "wallet_connect", "phantom"],
+          walletList: ["rabby_wallet", "metamask", "coinbase_wallet", "rainbow", "wallet_connect", "phantom", "backpack"],
           walletChainType: "ethereum-and-solana",
         },
         embeddedWallets: {
