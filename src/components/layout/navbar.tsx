@@ -3,14 +3,18 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, LogOut, Settings, User, Users, BadgeCheck } from "lucide-react";
+import { Menu, X, LogOut, Settings, User, Users, BadgeCheck, ChevronDown } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { NotificationBell } from "@/components/ui/notification-bell";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
+const exploreSubLinks = [
+  { href: "/explore", label: "Talent" },
+  { href: "/projects", label: "Projects" },
+];
+
 const navLinks = [
-  { href: "/explore", label: "Explore" },
   { href: "/feed", label: "Feed" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/agent", label: "AI Agents" },
@@ -175,6 +179,39 @@ export function Navbar() {
 
         {/* Desktop nav */}
         <div className="hidden sm:flex items-center gap-1">
+          {/* Explore dropdown */}
+          <div className="relative group">
+            <button
+              className="flex items-center gap-1 px-4 py-2 text-sm font-bold uppercase tracking-wide transition-colors"
+              style={{
+                color: pathname === "/explore" || pathname === "/projects" ? "var(--accent)" : "var(--foreground)",
+                borderBottom: pathname === "/explore" || pathname === "/projects" ? "2px solid var(--accent)" : "2px solid transparent",
+              }}
+            >
+              Explore <ChevronDown size={12} />
+            </button>
+            <div
+              className="absolute left-0 top-full mt-0 hidden group-hover:flex flex-col min-w-[160px] py-1 z-50"
+              style={{
+                border: "2px solid var(--border-hard)",
+                boxShadow: "var(--shadow-brutal-sm)",
+                backgroundColor: "var(--bg-surface)",
+              }}
+            >
+              {exploreSubLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="px-4 py-2.5 text-sm font-bold uppercase tracking-wide transition-colors hover:bg-[var(--accent)]/10"
+                  style={{
+                    color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
+                  }}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </div>
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -419,6 +456,20 @@ export function Navbar() {
             </div>
           )}
 
+          {/* Explore sub-links in mobile */}
+          {exploreSubLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setMobileOpen(false)}
+              className="relative inline-block px-4 py-3 text-sm font-bold uppercase tracking-wide"
+              style={{
+                color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
+              }}
+            >
+              {link.label === "Talent" ? "Explore Talent" : "Explore Projects"}
+            </Link>
+          ))}
           {navLinks.map((link) => (
             <Link
               key={link.href}
