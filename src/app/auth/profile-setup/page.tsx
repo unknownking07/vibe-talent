@@ -220,9 +220,13 @@ export default function ProfileSetupPage() {
       );
 
       if (dbError) throw dbError;
-      // Ensure baseline vibe score is set for new users
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).rpc("update_user_streak", { p_user_id: userId }).catch(() => {});
+      // Ensure baseline vibe score is set for new users (non-fatal)
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).rpc("update_user_streak", { p_user_id: userId });
+      } catch {
+        // Don't block onboarding if streak RPC fails
+      }
       setStep(2);
     } catch (err: unknown) {
       const message =
