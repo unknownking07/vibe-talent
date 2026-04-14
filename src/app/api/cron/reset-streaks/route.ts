@@ -24,7 +24,6 @@ export async function GET(req: NextRequest) {
 
   try {
     // Find users with active streaks who haven't logged activity today or yesterday
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: staleUsers, error: fetchError } = await supabase
       .from("users")
       .select("id, username, streak, streak_freezes_remaining, streak_freezes_used")

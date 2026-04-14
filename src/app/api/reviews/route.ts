@@ -4,7 +4,7 @@ import { calculateReviewTrust } from "@/lib/review-trust";
 import { createNotification } from "@/lib/notifications";
 import { sendReviewNotificationEmail } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { validateName, validateEmail, validateUUID, BLOCKED_DOMAINS } from "@/lib/validation";
+import { validateName, validateEmail, validateUUID } from "@/lib/validation";
 
 export async function GET(req: NextRequest) {
   try {
@@ -40,7 +40,8 @@ export async function GET(req: NextRequest) {
       : 0;
 
     // Strip trust_score from public response to avoid exposing anti-abuse thresholds
-    const publicReviews = reviews.map(({ trust_score: _ts, ...rest }: { trust_score?: number; [key: string]: unknown }) => rest);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const publicReviews = reviews.map(({ trust_score, ...rest }: { trust_score?: number; [key: string]: unknown }) => rest);
 
     return NextResponse.json({
       reviews: publicReviews,

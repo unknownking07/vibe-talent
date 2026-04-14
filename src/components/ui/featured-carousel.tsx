@@ -257,7 +257,7 @@ export function FeaturedCarousel() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const pausedRef = useRef(false);
-  const { ready: privyReady } = usePrivy();
+  usePrivy();
 
   // Check if user is logged in (Supabase auth, not Privy)
   useEffect(() => {

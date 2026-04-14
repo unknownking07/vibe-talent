@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Flame, Rocket, Zap, ArrowRight, GitPullRequest, GitBranch } from "lucide-react";
+
 
 type FeedItem = {
   id: string;
@@ -45,12 +45,6 @@ function relativeTime(dateStr: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function EventIcon({ type }: { type: string }) {
-  if (type === "pr") return <GitPullRequest size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />;
-  if (type === "create") return <GitBranch size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />;
-  if (type === "project") return <Rocket size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />;
-  return <Flame size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />;
-}
 
 function actionText(item: GroupedItem): string {
   if (item.type === "project") return "shipped";

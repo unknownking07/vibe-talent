@@ -56,10 +56,18 @@ async function _fetchAllUsers(): Promise<UserWithSocials[]> {
     }
   }
 
+  const projectMap = new Map<string, typeof projects>();
+  for (const p of (projects || [])) {
+    const arr = projectMap.get(p.user_id) || [];
+    arr.push(p);
+    projectMap.set(p.user_id, arr);
+  }
+  const socialMap = new Map((socialLinks || []).map((s: { user_id: string }) => [s.user_id, s]));
+
   return users.map((user: UserWithSocials) => ({
     ...user,
-    projects: (projects || []).filter((p: { user_id: string }) => p.user_id === user.id),
-    social_links: (socialLinks || []).find((s: { user_id: string }) => s.user_id === user.id) || null,
+    projects: projectMap.get(user.id) || [],
+    social_links: socialMap.get(user.id) || null,
     last_activity_date: lastActivityMap[user.id] || null,
   }));
 }
@@ -158,14 +166,22 @@ async function _fetchHomepageData() {
       sb.from("social_links").select(SOCIAL_FIELDS).in("user_id", allUserIds),
     ]);
 
+    const projectsByUser = new Map<string, typeof allProjects>();
+    for (const p of (allProjects || [])) {
+      const arr = projectsByUser.get(p.user_id) || [];
+      arr.push(p);
+      projectsByUser.set(p.user_id, arr);
+    }
+    const socialsByUser = new Map((socials || []).map((s: { user_id: string }) => [s.user_id, s]));
+
     const usersWithProjects = allUsers
-      .filter((u: { id: string }) => (allProjects || []).some((p: { user_id: string }) => p.user_id === u.id))
+      .filter((u: { id: string }) => projectsByUser.has(u.id))
       .slice(0, 3);
 
     topVibecoders = usersWithProjects.map((u: import("@/lib/types/database").User) => ({
       ...u,
-      projects: (allProjects || []).filter((p: { user_id: string }) => p.user_id === u.id),
-      social_links: (socials || []).find((s: { user_id: string }) => s.user_id === u.id) || null,
+      projects: projectsByUser.get(u.id) || [],
+      social_links: socialsByUser.get(u.id) || null,
     }));
   }
 

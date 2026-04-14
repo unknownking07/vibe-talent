@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Flame, Menu, X, LogOut, Settings, User, Users, BadgeCheck } from "lucide-react";
+import { Menu, X, LogOut, Settings, User, Users, BadgeCheck } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { NotificationBell } from "@/components/ui/notification-bell";
@@ -129,7 +129,6 @@ export function Navbar() {
       subscription.unsubscribe();
       window.removeEventListener("profile-updated", handleProfileUpdated);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkUnread]);
 
   // Close dropdown when clicking outside
