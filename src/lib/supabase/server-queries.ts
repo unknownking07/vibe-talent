@@ -194,6 +194,30 @@ export const fetchHomepageDataCached = unstable_cache(
   { revalidate: 60 }
 );
 
+// All projects with author info for /projects page
+async function _fetchAllProjects() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = getPublicClient() as any;
+
+  const { data: projects, error } = await sb
+    .from("projects")
+    .select(`${PROJECT_FIELDS}, users!projects_user_id_fkey(username, display_name, avatar_url, badge_level)`)
+    .eq("flagged", false)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to fetch projects: ${error.message}`);
+  }
+
+  return projects || [];
+}
+
+export const fetchAllProjectsCached = unstable_cache(
+  _fetchAllProjects,
+  ["all-projects"],
+  { revalidate: 60 }
+);
+
 // Cached versions — revalidate every 60 seconds
 export const fetchAllUsersCached = unstable_cache(
   _fetchAllUsers,
