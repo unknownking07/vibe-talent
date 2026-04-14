@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 
     // Strip trust_score from public response to avoid exposing anti-abuse thresholds
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const publicReviews = reviews.map(({ trust_score, ...rest }: { trust_score?: number; [key: string]: unknown }) => rest);
+    const publicReviews = reviews.map(({ trust_score: _ts, ...rest }: { trust_score?: number; [key: string]: unknown }) => rest);
 
     return NextResponse.json({
       reviews: publicReviews,
