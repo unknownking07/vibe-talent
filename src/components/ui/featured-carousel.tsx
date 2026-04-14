@@ -774,11 +774,7 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
 
     setStatus({ msg: `Sending $${(Number(price) / 1e6).toFixed(2)} USDC on Solana...`, type: "info" });
 
-    // Dynamic import to avoid crash when Solana context isn't available
-    const { useWallets: getSolWallets } = await import("@privy-io/react-auth/solana");
-    void getSolWallets; // Hook can't be called dynamically — use window.solana provider instead
-
-    // Use window.solana (Phantom/Solflare) directly as fallback
+    // Use window.solana (Phantom/Solflare) provider directly
     const solanaProvider = (window as unknown as { solana?: { signAndSendTransaction: (tx: unknown) => Promise<{ signature: string }> } }).solana;
     if (!solanaProvider) throw new Error("No Solana wallet extension found. Install Phantom or Solflare.");
 
