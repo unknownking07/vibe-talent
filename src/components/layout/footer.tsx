@@ -15,7 +15,7 @@ export function Footer() {
             <div className="flex items-center gap-2.5 mb-3">
               <Image src="/logo.png" alt="VibeTalent" width={36} height={36} className="object-contain" />
               <span className="text-lg font-extrabold uppercase tracking-tight" style={{ color: "var(--foreground)" }}>
-                VibeTalent
+                Vibe Talent
               </span>
             </div>
             <p className="text-sm max-w-md font-medium" style={{ color: "var(--text-muted)" }}>
