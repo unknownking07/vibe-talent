@@ -93,6 +93,9 @@ export async function GET(request: NextRequest) {
       const key = user.username + "|" + log.activity_date;
       if (coveredDates.has(key)) continue;
       coveredDates.add(key);
+      // No `message` — the UI derives the label ("vibed") from `type === "streak"`.
+      // Keeping this field empty avoids coupling the client-side grouping
+      // sentinels (src/app/feed/page.tsx) to a specific user-visible string.
       feed.push({
         id: `streak-${log.id}`,
         type: "streak",
@@ -103,7 +106,6 @@ export async function GET(request: NextRequest) {
         streak: user.streak,
         github_verified: user.github_verified,
         date: log.activity_date,
-        message: "logged a day of coding",
       });
     }
 
