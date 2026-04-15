@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
+import { PromoBillboard } from "@/components/ui/promo-billboard";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import Providers from "@/components/providers";
 import { siteUrl } from "@/lib/seo";
@@ -103,6 +104,7 @@ export default function RootLayout({
         className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} antialiased`}
       >
         <Providers>
+          <PromoBillboard />
           <Navbar />
           <ErrorBoundary>
             <main className="min-h-screen">{children}</main>

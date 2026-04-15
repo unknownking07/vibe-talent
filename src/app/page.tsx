@@ -105,9 +105,9 @@ export default async function HomePage() {
 
       {/* Hero */}
       <section className="relative">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-24 pb-20 text-center">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-14 pb-10 text-center">
           <div
-            className="inline-flex items-center gap-2 px-4 py-1.5 text-sm font-bold uppercase tracking-wide text-[var(--foreground)] mb-8"
+            className="inline-flex items-center gap-2 px-4 py-1.5 text-sm font-bold uppercase tracking-wide text-[var(--foreground)] mb-6"
             style={{
               backgroundColor: "var(--bg-surface)",
               border: "2px solid var(--border-hard)",
@@ -125,12 +125,12 @@ export default async function HomePage() {
             </span>
           </h1>
 
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-[var(--text-secondary)] font-medium">
+          <p className="mx-auto mt-5 max-w-2xl text-lg text-[var(--text-secondary)] font-medium">
             A marketplace built on consistency and proof of work. No resumes. No portfolios.
             Just streaks, shipped projects, and vibe scores.
           </p>
 
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <HeroCTA />
             <Link
               href="/explore"
@@ -141,7 +141,7 @@ export default async function HomePage() {
           </div>
 
           {/* Stats */}
-          <div className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto stagger-children">
+          <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto stagger-children">
             {[
               { label: "Active Builders", value: String(totalBuilders), icon: Users },
               { label: "Projects Shipped", value: String(totalProjects), icon: Code2 },
@@ -150,16 +150,16 @@ export default async function HomePage() {
             ].map((stat) => (
               <div
                 key={stat.label}
-                className="text-center p-4"
+                className="text-center p-3"
                 style={{
                   backgroundColor: "var(--bg-surface)",
                   border: "2px solid var(--border-hard)",
                   boxShadow: "var(--shadow-brutal-sm)",
                 }}
               >
-                <stat.icon size={20} className="mx-auto text-[var(--accent)] mb-2" />
-                <div className="text-2xl font-extrabold text-[var(--foreground)] font-mono">{stat.value}</div>
-                <div className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mt-1">{stat.label}</div>
+                <stat.icon size={18} className="mx-auto text-[var(--accent)] mb-1.5" />
+                <div className="text-xl font-extrabold text-[var(--foreground)] font-mono">{stat.value}</div>
+                <div className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mt-0.5">{stat.label}</div>
               </div>
             ))}
           </div>

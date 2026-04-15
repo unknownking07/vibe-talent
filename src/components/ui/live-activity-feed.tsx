@@ -50,7 +50,7 @@ function actionText(item: GroupedItem): string {
   if (item.type === "project") return "shipped";
   if (item.type === "pr") return item.count > 1 ? `${item.count} PRs` : "PR";
   if (item.type === "create") return "created";
-  if (item.type === "streak") return "coded";
+  if (item.type === "streak") return "vibed";
   return item.count > 1 ? `${item.count} commits` : "pushed";
 }
 
