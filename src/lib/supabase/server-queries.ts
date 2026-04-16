@@ -229,7 +229,7 @@ export const fetchUserByUsernameCached = (username: string) =>
   unstable_cache(
     () => _fetchUserByUsername(username),
     [`user-${username}`],
-    { revalidate: 60 }
+    { revalidate: 60, tags: [`user-${username}`] }
   )();
 
 export const fetchStreakLogsCached = (userId: string) =>
