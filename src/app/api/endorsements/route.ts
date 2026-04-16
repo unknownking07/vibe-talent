@@ -1,7 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { endorsementsLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
+
+// Bust cached profile data for the project owner so their new vibe_score
+// shows up immediately instead of waiting for the 60s/1h cache to expire.
+async function revalidateOwnerProfile(ownerId: string) {
+  try {
+    const adminSb = createAdminClient();
+    const { data: owner } = await adminSb
+      .from("users")
+      .select("username")
+      .eq("id", ownerId)
+      .single();
+
+    if (owner?.username) {
+      revalidateTag(`user-${owner.username}`, { expire: 0 });
+      revalidatePath(`/profile/${owner.username}`);
+    }
+  } catch (err) {
+    console.error("Failed to revalidate owner profile:", err);
+  }
+}
 
 /**
  * Project Endorsements API
@@ -207,6 +228,9 @@ export async function POST(req: NextRequest) {
         console.error("Failed to update endorsement cache:", updateErr);
       }
 
+      // Invalidate the owner's profile cache so the +5 vibe_score shows up right away
+      await revalidateOwnerProfile(project.user_id);
+
       return NextResponse.json({ success: true, count: count || 0 });
     }
   } catch {
@@ -253,6 +277,17 @@ export async function DELETE(req: NextRequest) {
 
       if (updateErr) {
         console.error("Failed to update endorsement cache:", updateErr);
+      }
+
+      // Look up the project owner so we can bust their profile cache
+      const { data: project } = await adminSb
+        .from("projects")
+        .select("user_id")
+        .eq("id", project_id)
+        .single();
+
+      if (project?.user_id) {
+        await revalidateOwnerProfile(project.user_id);
       }
 
       return NextResponse.json({ success: true, count: count || 0 });
