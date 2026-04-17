@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
     if (title.length > 100) {
       return NextResponse.json({ error: "title must be 100 characters or less" }, { status: 400 });
     }
-    if (description.length > 2000) {
-      return NextResponse.json({ error: "description must be 2000 characters or less" }, { status: 400 });
+    if (description.length > 500) {
+      return NextResponse.json({ error: "description must be 500 characters or less" }, { status: 400 });
     }
 
     // live_url is required and must be HTTPS
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await (supabase as any).from("projects").insert({
       user_id: user.id,
       title: title.trim().slice(0, 100),
-      description: description.trim().slice(0, 2000),
+      description: description.trim().slice(0, 500),
       tech_stack: Array.isArray(tech_stack) ? tech_stack.slice(0, 20).map((t: string) => String(t).trim().slice(0, 50)) : [],
       live_url: live_url || null,
       github_url: github_url || null,
