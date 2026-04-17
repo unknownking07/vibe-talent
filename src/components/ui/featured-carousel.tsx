@@ -12,7 +12,7 @@ import { VibeScore } from "@/components/ui/vibe-score";
 import { BadgeDisplay } from "@/components/ui/badge-display";
 import { CHAIN_CONFIGS, SUPPORTED_CHAINS, DEFAULT_CHAIN, getChainConfig, isEVMChain, isSolanaChain } from "@/lib/chains-config";
 import { buildSolanaUSDCTransfer, confirmSolanaTransaction, signatureToString } from "@/lib/solana-payment";
-import { fetchPromotions, enrichPromotions, type EnrichedPromotion } from "@/lib/featured-promotions";
+import { fetchPromotions, enrichPromotions, msUntilNextExpiry, type EnrichedPromotion } from "@/lib/featured-promotions";
 
 // Base chain defaults (for fetching promotions — always read from Base contract)
 const BASE_CONFIG = CHAIN_CONFIGS.base;
@@ -126,6 +126,15 @@ export function FeaturedCarousel() {
     if (!authChecked) return;
     refreshPromotions();
   }, [authChecked, refreshPromotions]);
+
+  // Re-fetch at the moment the soonest promotion expires so the carousel
+  // drops back to its empty state without a manual refresh.
+  useEffect(() => {
+    const delay = msUntilNextExpiry(promotions);
+    if (delay === null) return;
+    const timer = setTimeout(refreshPromotions, delay);
+    return () => clearTimeout(timer);
+  }, [promotions, refreshPromotions]);
 
   // Auto-advance every 8s, pause on hover
   useEffect(() => {
@@ -548,13 +557,19 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
       window.location.href = "/auth/login?redirect=/&reason=promote";
       return;
     }
-    // If already authenticated with Privy but no wallet connected,
-    // use connectWallet() instead of login() to avoid "already logged in" error
+    // Filter the Privy wallet modal to the chain the user has selected, so
+    // picking SOLANA surfaces Phantom/Backpack/Solflare first (and ONLY),
+    // and picking BASE surfaces EVM wallets only. Both login() and
+    // connectWallet() accept walletChainType for this purpose.
+    const wantsSolana = isSolanaChain(getChainConfig(selectedChain));
+    const walletChainType = wantsSolana ? "solana-only" : "ethereum-only";
+
     if (privyAuthenticated) {
-      const wantsSolana = isSolanaChain(getChainConfig(selectedChain));
-      connectWallet(wantsSolana ? { walletChainType: "solana-only" } : undefined);
+      // Already have a Privy session but no wallet connected — use
+      // connectWallet() instead of login() to avoid "already logged in" error.
+      connectWallet({ walletChainType });
     } else {
-      privyLogin();
+      privyLogin({ walletChainType });
     }
   }
 

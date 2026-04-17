@@ -130,17 +130,38 @@ export async function fetchPromotions(): Promise<Promotion[]> {
     const expiresAts = decodeUint256Array(data, 4);
     const paidAmounts = decodeUint256Array(data, 5);
 
-    return ids.map((id, i) => ({
-      id,
-      promoter: promoters[i],
-      projectId: projectIds[i],
-      projectName: projectNames[i],
-      expiresAt: expiresAts[i],
-      paidAmount: paidAmounts[i],
-    }));
+    // Drop anything the contract still lists but that has already expired.
+    // expiresAt === 0 means lifetime; otherwise it's a Unix timestamp in seconds.
+    const nowSec = Math.floor(Date.now() / 1000);
+
+    return ids
+      .map((id, i) => ({
+        id,
+        promoter: promoters[i],
+        projectId: projectIds[i],
+        projectName: projectNames[i],
+        expiresAt: expiresAts[i],
+        paidAmount: paidAmounts[i],
+      }))
+      .filter((p) => p.expiresAt === 0 || p.expiresAt > nowSec);
   } catch {
     return [];
   }
+}
+
+// Milliseconds until the earliest non-lifetime promotion expires, plus a 1s
+// buffer so the re-fetch runs *after* the expiry clock has rolled over.
+// Returns null if every promotion is lifetime or already expired.
+// Capped at ~23 days to stay well under setTimeout's 2^31-1 ms ceiling —
+// callers that outlive the cap will simply re-schedule on the next tick.
+export function msUntilNextExpiry(promos: Pick<Promotion, "expiresAt">[]): number | null {
+  const nowMs = Date.now();
+  const future = promos
+    .filter((p) => p.expiresAt !== 0)
+    .map((p) => p.expiresAt * 1000)
+    .filter((ms) => ms > nowMs);
+  if (future.length === 0) return null;
+  return Math.min(Math.min(...future) - nowMs + 1000, 2_000_000_000);
 }
 
 export async function enrichPromotions(promotions: Promotion[]): Promise<EnrichedPromotion[]> {
