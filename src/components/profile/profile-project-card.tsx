@@ -37,7 +37,9 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
   const [showReportMenu, setShowReportMenu] = useState(false);
   const [reported, setReported] = useState(() => !!getReportData(project.id));
   const [undoing, setUndoing] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
+  const isLongDescription = (project.description?.length ?? 0) > 280;
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -188,7 +190,20 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
         </div>
       </div>
 
-      <p className="text-[0.9rem] text-[var(--text-secondary)] font-medium flex-grow">{project.description}</p>
+      <div className="flex-grow">
+        <p className={`text-[0.9rem] text-[var(--text-secondary)] font-medium ${isLongDescription && !expanded ? "line-clamp-4" : ""}`}>
+          {project.description}
+        </p>
+        {isLongDescription && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+            className="mt-1 text-xs font-bold uppercase text-[var(--accent)] hover:underline"
+          >
+            {expanded ? "Show less" : "Show more"}
+          </button>
+        )}
+      </div>
 
       <div className="mt-2">
         <EndorseButton projectId={project.id} initialCount={project.endorsement_count} isOwner={isOwner} />

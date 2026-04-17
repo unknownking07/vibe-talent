@@ -610,6 +610,10 @@ export default function DashboardPage() {
       setProjectError("Description must be at least 10 characters.");
       return;
     }
+    if (projectForm.description.length > 500) {
+      setProjectError("Description must be 500 characters or less.");
+      return;
+    }
     if (!projectForm.live_url || !projectForm.live_url.trim()) {
       setProjectError("Live URL is required. Every project must have a deployed link.");
       return;
@@ -725,6 +729,10 @@ export default function DashboardPage() {
 
     if (projectForm.description.length < 10) {
       setProjectError("Description must be at least 10 characters.");
+      return;
+    }
+    if (projectForm.description.length > 500) {
+      setProjectError("Description must be 500 characters or less.");
       return;
     }
     if (!projectForm.live_url || !projectForm.live_url.trim()) {
@@ -1079,13 +1087,19 @@ export default function DashboardPage() {
                 onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })}
                 className="input-brutal"
               />
-              <textarea
-                placeholder="Description"
-                value={projectForm.description}
-                onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
-                rows={2}
-                className="input-brutal resize-none"
-              />
+              <div>
+                <textarea
+                  placeholder="Description"
+                  value={projectForm.description}
+                  onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
+                  rows={2}
+                  maxLength={500}
+                  className="input-brutal resize-none"
+                />
+                <div className="mt-1 text-right text-xs font-bold text-[var(--text-muted)]">
+                  {projectForm.description.length}/500
+                </div>
+              </div>
               <input
                 type="text"
                 placeholder="Tech stack (comma separated)"
