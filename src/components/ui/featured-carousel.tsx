@@ -548,13 +548,19 @@ function PromoteForm({ onSuccess, isLoggedIn }: { onSuccess: () => void; isLogge
       window.location.href = "/auth/login?redirect=/&reason=promote";
       return;
     }
-    // If already authenticated with Privy but no wallet connected,
-    // use connectWallet() instead of login() to avoid "already logged in" error
+    // Filter the Privy wallet modal to the chain the user has selected, so
+    // picking SOLANA surfaces Phantom/Backpack/Solflare first (and ONLY),
+    // and picking BASE surfaces EVM wallets only. Both login() and
+    // connectWallet() accept walletChainType for this purpose.
+    const wantsSolana = isSolanaChain(getChainConfig(selectedChain));
+    const walletChainType = wantsSolana ? "solana-only" : "ethereum-only";
+
     if (privyAuthenticated) {
-      const wantsSolana = isSolanaChain(getChainConfig(selectedChain));
-      connectWallet(wantsSolana ? { walletChainType: "solana-only" } : undefined);
+      // Already have a Privy session but no wallet connected — use
+      // connectWallet() instead of login() to avoid "already logged in" error.
+      connectWallet({ walletChainType });
     } else {
-      privyLogin();
+      privyLogin({ walletChainType });
     }
   }
 
