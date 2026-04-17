@@ -109,19 +109,12 @@ export function FeaturedCarousel() {
     });
   }, []);
 
-  const expiryTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
   const refreshPromotions = useCallback(() => {
     fetchPromotions()
       .then((raw) => enrichPromotions(raw))
       .then((enriched) => {
         setPromotions(enriched);
         setLoading(false);
-        // Re-fetch when the soonest promotion expires so the carousel drops
-        // back to its empty state without a manual refresh.
-        if (expiryTimerRef.current) clearTimeout(expiryTimerRef.current);
-        const delay = msUntilNextExpiry(enriched);
-        if (delay !== null) expiryTimerRef.current = setTimeout(refreshPromotions, delay);
       })
       .catch(() => {
         setPromotions([]);
@@ -132,10 +125,16 @@ export function FeaturedCarousel() {
   useEffect(() => {
     if (!authChecked) return;
     refreshPromotions();
-    return () => {
-      if (expiryTimerRef.current) clearTimeout(expiryTimerRef.current);
-    };
   }, [authChecked, refreshPromotions]);
+
+  // Re-fetch at the moment the soonest promotion expires so the carousel
+  // drops back to its empty state without a manual refresh.
+  useEffect(() => {
+    const delay = msUntilNextExpiry(promotions);
+    if (delay === null) return;
+    const timer = setTimeout(refreshPromotions, delay);
+    return () => clearTimeout(timer);
+  }, [promotions, refreshPromotions]);
 
   // Auto-advance every 8s, pause on hover
   useEffect(() => {
