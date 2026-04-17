@@ -11,7 +11,7 @@
 
 import { useState, useEffect } from "react";
 import { Flame, ExternalLink } from "lucide-react";
-import { fetchPromotions, enrichPromotions, type EnrichedPromotion } from "@/lib/featured-promotions";
+import { fetchPromotions, enrichPromotions, msUntilNextExpiry, type EnrichedPromotion } from "@/lib/featured-promotions";
 
 // Pad the promo list up to this count so the marquee row feels full even when
 // only 1-2 projects are currently promoted. Each copy is rendered once per
@@ -48,15 +48,28 @@ export function PromoBillboard() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchPromotions()
-      .then(enrichPromotions)
-      .then((enriched) => {
-        if (cancelled) return;
-        setPromos(sortPromos(enriched));
-        setLoaded(true);
-      })
-      .catch(() => { if (!cancelled) setLoaded(true); });
-    return () => { cancelled = true; };
+    let expiryTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const load = () => {
+      fetchPromotions()
+        .then(enrichPromotions)
+        .then((enriched) => {
+          if (cancelled) return;
+          setPromos(sortPromos(enriched));
+          setLoaded(true);
+          // Re-fetch the moment the soonest promotion expires so the marquee
+          // disappears without requiring a page refresh.
+          const delay = msUntilNextExpiry(enriched);
+          if (delay !== null) expiryTimer = setTimeout(load, delay);
+        })
+        .catch(() => { if (!cancelled) setLoaded(true); });
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+      if (expiryTimer) clearTimeout(expiryTimer);
+    };
   }, []);
 
   // Reserve the 36px of vertical space even while promos are loading so the

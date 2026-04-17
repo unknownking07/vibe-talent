@@ -12,7 +12,7 @@ import { VibeScore } from "@/components/ui/vibe-score";
 import { BadgeDisplay } from "@/components/ui/badge-display";
 import { CHAIN_CONFIGS, SUPPORTED_CHAINS, DEFAULT_CHAIN, getChainConfig, isEVMChain, isSolanaChain } from "@/lib/chains-config";
 import { buildSolanaUSDCTransfer, confirmSolanaTransaction, signatureToString } from "@/lib/solana-payment";
-import { fetchPromotions, enrichPromotions, type EnrichedPromotion } from "@/lib/featured-promotions";
+import { fetchPromotions, enrichPromotions, msUntilNextExpiry, type EnrichedPromotion } from "@/lib/featured-promotions";
 
 // Base chain defaults (for fetching promotions — always read from Base contract)
 const BASE_CONFIG = CHAIN_CONFIGS.base;
@@ -109,12 +109,19 @@ export function FeaturedCarousel() {
     });
   }, []);
 
+  const expiryTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
   const refreshPromotions = useCallback(() => {
     fetchPromotions()
       .then((raw) => enrichPromotions(raw))
       .then((enriched) => {
         setPromotions(enriched);
         setLoading(false);
+        // Re-fetch when the soonest promotion expires so the carousel drops
+        // back to its empty state without a manual refresh.
+        if (expiryTimerRef.current) clearTimeout(expiryTimerRef.current);
+        const delay = msUntilNextExpiry(enriched);
+        if (delay !== null) expiryTimerRef.current = setTimeout(refreshPromotions, delay);
       })
       .catch(() => {
         setPromotions([]);
@@ -125,6 +132,9 @@ export function FeaturedCarousel() {
   useEffect(() => {
     if (!authChecked) return;
     refreshPromotions();
+    return () => {
+      if (expiryTimerRef.current) clearTimeout(expiryTimerRef.current);
+    };
   }, [authChecked, refreshPromotions]);
 
   // Auto-advance every 8s, pause on hover
