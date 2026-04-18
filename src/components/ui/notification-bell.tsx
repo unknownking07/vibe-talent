@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Bell, Flame, Trophy, CheckCircle, AlertTriangle, Mail, Star, Eye, BarChart3, Zap } from "lucide-react";
+import { Bell, Flame, Trophy, CheckCircle, AlertTriangle, Mail, Star, Eye, BarChart3, Zap, LinkIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Notification } from "@/lib/types/database";
 
@@ -16,6 +16,7 @@ const typeIcons: Record<string, typeof Bell> = {
   profile_view_summary: Eye,
   weekly_digest: BarChart3,
   vibe_score_milestone: Zap,
+  project_missing_links: LinkIcon,
 };
 
 const typeColors: Record<string, string> = {
@@ -29,6 +30,7 @@ const typeColors: Record<string, string> = {
   profile_view_summary: "#3B82F6",
   weekly_digest: "#6366F1",
   vibe_score_milestone: "#FF3A00",
+  project_missing_links: "#F59E0B",
 };
 
 function timeAgo(dateStr: string): string {

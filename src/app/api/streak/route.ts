@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { calculateStreak, getBadgeLevel, calculateVibeScore } from "@/lib/streak";
 import { messagesLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
 
@@ -21,9 +22,12 @@ export async function POST(request: NextRequest) {
 
     const today = new Date().toISOString().split("T")[0];
 
+    // Use admin client for the insert: user is already authenticated above, and
+    // we pin user_id to user.id so there's no privilege escalation. Admin client
+    // avoids anon-key/RLS edge cases where the PostgREST INSERT silently 404s.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = supabase as any;
-    const { error } = await sb
+    const admin = createAdminClient() as any;
+    const { error } = await admin
       .from("streak_logs")
       .upsert({ user_id: user.id, activity_date: today }, { onConflict: "user_id,activity_date" });
 
@@ -37,7 +41,8 @@ export async function POST(request: NextRequest) {
       activity_date: today,
       message: "Activity logged successfully",
     });
-  } catch {
+  } catch (err) {
+    console.error("Streak API error:", err);
     return NextResponse.json({ error: "Failed to log activity" }, { status: 500 });
   }
 }

@@ -246,7 +246,6 @@ export default function DashboardPage() {
 
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [projectError, setProjectError] = useState("");
-  const [githubSkipped, setGithubSkipped] = useState(false);
   const [projectForm, setProjectForm] = useState({
     title: "",
     description: "",
@@ -259,6 +258,7 @@ export default function DashboardPage() {
 
   const [todayLogged, setTodayLogged] = useState(false);
   const [logging, setLogging] = useState(false);
+  const [logError, setLogError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState("");
   const [addingProject, setAddingProject] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
@@ -558,19 +558,35 @@ export default function DashboardPage() {
   const handleLogActivity = async () => {
     if (!user || todayLogged || logging) return;
     setLogging(true);
-    const supabase = createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = supabase as any;
+    setLogError(null);
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
-    const { error: insertError } = await sb.from("streak_logs").insert({
-      user_id: user.id,
-      activity_date: today,
-    });
+    // Route through the server API (admin client, upsert-safe). Previously this
+    // page inserted via the browser Supabase client, which 404'd in production
+    // due to RLS/JWT edge cases and left the user clicking with no feedback.
+    let res: Response;
+    try {
+      res = await fetch("/api/streak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (err) {
+      console.error("Failed to log activity (network):", err);
+      setLogError("Network error — check your connection and try again.");
+      setLogging(false);
+      return;
+    }
 
-    if (insertError) {
-      console.error("Failed to log activity:", insertError);
+    if (!res.ok) {
+      let message = "Couldn't log your activity. Try again in a moment.";
+      try {
+        const body = await res.json();
+        if (body?.error && typeof body.error === "string") message = body.error;
+      } catch {}
+      if (res.status === 401) message = "Your session expired — refresh and sign in again.";
+      console.error("Failed to log activity:", res.status, message);
+      setLogError(message);
       setLogging(false);
       return;
     }
@@ -582,13 +598,6 @@ export default function DashboardPage() {
     setHeatmapData({ ...heatmapData, [today]: (heatmapData[today] || 0) + 1 });
     setTodayLogged(true);
     setLogging(false);
-
-    // Also update DB directly in case trigger doesn't exist
-    // Don't write vibe_score — the DB trigger is the single source of truth
-    await sb.from("users").update({
-      streak: newStreak,
-      longest_streak: newLongest,
-    }).eq("id", user.id);
 
     // Mark streak warning notifications as read and refresh the bell
     fetch("/api/notifications", {
@@ -614,27 +623,27 @@ export default function DashboardPage() {
       setProjectError("Description must be 500 characters or less.");
       return;
     }
-    if (!projectForm.live_url || !projectForm.live_url.trim()) {
-      setProjectError("Live URL is required. Every project must have a deployed link.");
+    const liveUrlTrim = projectForm.live_url.trim();
+    const githubUrlTrim = projectForm.github_url.trim();
+    if (!liveUrlTrim && !githubUrlTrim) {
+      setProjectError("Add a live URL or a GitHub repo — at least one is required so clients can verify your work.");
       return;
     }
-    try {
-      const url = new URL(projectForm.live_url.trim());
-      if (url.protocol !== "https:") throw new Error();
-    } catch {
-      setProjectError("Live URL must be a valid URL starting with https://");
-      return;
+    if (liveUrlTrim) {
+      try {
+        const url = new URL(liveUrlTrim);
+        if (url.protocol !== "https:") throw new Error();
+      } catch {
+        setProjectError("Live URL must be a valid URL starting with https://");
+        return;
+      }
     }
-    if (projectForm.github_url) {
+    if (githubUrlTrim) {
       const ghPattern = /^https:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+\/?$/;
-      if (!ghPattern.test(projectForm.github_url.trim())) {
+      if (!ghPattern.test(githubUrlTrim)) {
         setProjectError("GitHub URL must be in the format: https://github.com/username/repo");
         return;
       }
-    } else if (!githubSkipped) {
-      setProjectError("Adding a GitHub URL helps verify your project and boosts your quality score. Click submit again to skip.");
-      setGithubSkipped(true);
-      return;
     }
 
     setAddingProject(true);
@@ -684,7 +693,6 @@ export default function DashboardPage() {
     setImageZoom(1);
     setShowProjectForm(false);
     setAddingProject(false);
-    setGithubSkipped(false);
 
     // Auto-verify if project has a GitHub URL
     if (projectForm.github_url && insertedProject?.id) {
@@ -735,27 +743,27 @@ export default function DashboardPage() {
       setProjectError("Description must be 500 characters or less.");
       return;
     }
-    if (!projectForm.live_url || !projectForm.live_url.trim()) {
-      setProjectError("Live URL is required. Every project must have a deployed link.");
+    const liveUrlTrim = projectForm.live_url.trim();
+    const githubUrlTrim = projectForm.github_url.trim();
+    if (!liveUrlTrim && !githubUrlTrim) {
+      setProjectError("Add a live URL or a GitHub repo — at least one is required so clients can verify your work.");
       return;
     }
-    try {
-      const url = new URL(projectForm.live_url.trim());
-      if (url.protocol !== "https:") throw new Error();
-    } catch {
-      setProjectError("Live URL must be a valid URL starting with https://");
-      return;
+    if (liveUrlTrim) {
+      try {
+        const url = new URL(liveUrlTrim);
+        if (url.protocol !== "https:") throw new Error();
+      } catch {
+        setProjectError("Live URL must be a valid URL starting with https://");
+        return;
+      }
     }
-    if (projectForm.github_url) {
+    if (githubUrlTrim) {
       const ghPattern = /^https:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+\/?$/;
-      if (!ghPattern.test(projectForm.github_url.trim())) {
+      if (!ghPattern.test(githubUrlTrim)) {
         setProjectError("GitHub URL must be in the format: https://github.com/username/repo");
         return;
       }
-    } else if (!githubSkipped) {
-      setProjectError("Adding a GitHub URL helps verify your project and boosts your quality score. Click save again to skip.");
-      setGithubSkipped(true);
-      return;
     }
 
     setSavingEdit(true);
@@ -809,7 +817,6 @@ export default function DashboardPage() {
     setEditingProjectId(null);
     setEditingOriginalGithubUrl("");
     setSavingEdit(false);
-    setGithubSkipped(false);
 
     if (githubUrlChanged && projectForm.github_url && savedEditingId) {
       verifyProject(savedEditingId);
@@ -1021,7 +1028,6 @@ export default function DashboardPage() {
                 setProjectImagePreview(null);
                 setImageOffsetY(50);
                 setImageZoom(1);
-                setGithubSkipped(false);
               } else {
                 setShowProjectForm(true);
               }
@@ -1107,18 +1113,20 @@ export default function DashboardPage() {
                 onChange={(e) => setProjectForm({ ...projectForm, tech_stack: e.target.value })}
                 className="input-brutal"
               />
+              <p className="text-xs font-semibold text-[var(--text-secondary)]">
+                Add a live URL or a GitHub repo — at least one is required.
+              </p>
               <div className="grid grid-cols-2 gap-3">
                 <input
                   type="text"
-                  placeholder="Live URL (required) *"
+                  placeholder="Live URL (https://…)"
                   value={projectForm.live_url}
                   onChange={(e) => setProjectForm({ ...projectForm, live_url: e.target.value })}
                   className="input-brutal"
-                  required
                 />
                 <input
                   type="text"
-                  placeholder="GitHub URL (recommended)"
+                  placeholder="GitHub URL (https://github.com/…)"
                   value={projectForm.github_url}
                   onChange={(e) => setProjectForm({ ...projectForm, github_url: e.target.value })}
                   className="input-brutal"
@@ -1310,17 +1318,28 @@ export default function DashboardPage() {
               </div>
             </div>
           ) : (
-            <button
-              onClick={handleLogActivity}
-              disabled={logging}
-              className="btn-brutal text-sm w-full"
-              style={{
-                backgroundColor: "var(--accent)",
-                color: "var(--text-on-inverted)",
-              }}
-            >
-              {logging ? "Logging..." : "Log Activity"}
-            </button>
+            <>
+              <button
+                onClick={handleLogActivity}
+                disabled={logging}
+                className="btn-brutal text-sm w-full"
+                style={{
+                  backgroundColor: "var(--accent)",
+                  color: "var(--text-on-inverted)",
+                }}
+              >
+                {logging ? "Logging..." : "Log Activity"}
+              </button>
+              {logError && (
+                <p
+                  role="alert"
+                  className="text-xs font-semibold mt-1"
+                  style={{ color: "var(--status-error-text, #dc2626)" }}
+                >
+                  {logError}
+                </p>
+              )}
+            </>
           )}
         </div>
         <div className="mt-4 flex items-center gap-3">
