@@ -59,14 +59,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "description must be 500 characters or less" }, { status: 400 });
     }
 
-    // live_url is required and must be HTTPS
-    if (!live_url || typeof live_url !== "string" || !live_url.trim()) {
-      return NextResponse.json({ error: "live_url is required — every project must have a deployed link" }, { status: 400 });
+    // At least one of live_url or github_url is required so the project is verifiable.
+    const liveUrlTrim = typeof live_url === "string" ? live_url.trim() : "";
+    const githubUrlTrim = typeof github_url === "string" ? github_url.trim() : "";
+    if (!liveUrlTrim && !githubUrlTrim) {
+      return NextResponse.json(
+        { error: "Add a live URL or a GitHub repo — at least one is required." },
+        { status: 400 }
+      );
     }
-    if (!live_url.match(/^https:\/\/.+/)) {
+    if (liveUrlTrim && !liveUrlTrim.match(/^https:\/\/.+/)) {
       return NextResponse.json({ error: "live_url must be a valid HTTPS URL" }, { status: 400 });
     }
-    if (github_url && typeof github_url === "string" && !github_url.match(/^https?:\/\/github\.com\/.+/)) {
+    if (githubUrlTrim && !githubUrlTrim.match(/^https?:\/\/github\.com\/.+/)) {
       return NextResponse.json({ error: "github_url must be a valid GitHub URL" }, { status: 400 });
     }
 
@@ -77,8 +82,8 @@ export async function POST(request: NextRequest) {
       title: title.trim().slice(0, 100),
       description: description.trim().slice(0, 500),
       tech_stack: Array.isArray(tech_stack) ? tech_stack.slice(0, 20).map((t: string) => String(t).trim().slice(0, 50)) : [],
-      live_url: live_url || null,
-      github_url: github_url || null,
+      live_url: liveUrlTrim || null,
+      github_url: githubUrlTrim || null,
       build_time: build_time ? String(build_time).trim().slice(0, 50) : null,
       tags: Array.isArray(tags) ? tags.slice(0, 10).map((t: string) => String(t).trim().slice(0, 30)) : [],
     }).select().single();
@@ -88,13 +93,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Auto-verify if GitHub URL owner matches authenticated user's GitHub username
-    if (data && github_url) {
+    if (data && githubUrlTrim) {
       const githubUsername =
         user.user_metadata?.user_name ||
         user.user_metadata?.preferred_username ||
         null;
 
-      const match = github_url.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/?$/);
+      const match = githubUrlTrim.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/?$/);
       if (githubUsername && match && match[1].toLowerCase() === githubUsername.toLowerCase()) {
         const repoOwner = match[1];
         const repoName = match[2].replace(/\.git$/, "");
@@ -124,8 +129,8 @@ export async function POST(request: NextRequest) {
               : null;
 
             let live_url_ok: boolean | null = null;
-            if (live_url) {
-              live_url_ok = await checkLiveUrl(live_url);
+            if (liveUrlTrim) {
+              live_url_ok = await checkLiveUrl(liveUrlTrim);
             }
 
             const { error: updateError } = await sb.from("projects").update({
