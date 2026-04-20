@@ -5,15 +5,37 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * Cron job: Reset streak freezes for all users on the 1st of every month.
  * Restores each user's freeze allowance to 2 and resets the used counter.
  *
+ * This route is pulled in by the daily orchestrator, so we gate it to the 1st
+ * of the month here. Without the gate, freezes would reset every day and the
+ * "2 per month" allowance would effectively be unlimited.
+ *
+ * Override the date check with ?force=1 for one-off manual resets.
+ *
  * Protected by CRON_SECRET to prevent unauthorized access.
  */
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
+  // Fail closed: in production a missing CRON_SECRET would otherwise make this
+  // route unauthenticated and any caller could wipe everyone's freeze counters
+  // (especially via ?force=1).
+  if (!cronSecret && process.env.NODE_ENV === "production") {
+    console.error("CRON_SECRET is not configured");
+    return NextResponse.json({ error: "Cron secret not configured" }, { status: 500 });
+  }
   if (cronSecret) {
     const authHeader = req.headers.get("authorization");
     if (authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+  }
+
+  const force = req.nextUrl.searchParams.get("force") === "1";
+  const dayOfMonth = new Date().getUTCDate();
+  if (!force && dayOfMonth !== 1) {
+    return NextResponse.json({
+      message: `Skipped — freezes only reset on the 1st of the month (today is day ${dayOfMonth}). Pass ?force=1 to override.`,
+      count: 0,
+    });
   }
 
   const supabase = createAdminClient();
