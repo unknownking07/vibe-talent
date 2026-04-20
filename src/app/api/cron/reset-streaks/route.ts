@@ -73,13 +73,35 @@ export async function GET(req: NextRequest) {
       (u: { streak_freezes_remaining: number }) => (u.streak_freezes_remaining ?? 0) <= 0
     );
 
-    // Consume a freeze for users who have freezes remaining
+    // Consume a freeze for users who have freezes remaining.
+    // CRITICAL: the user's `streak` column is recomputed from `streak_logs` by
+    // the AFTER INSERT trigger on that table. Decrementing the freeze counter
+    // alone doesn't preserve the streak — the chain still has a gap, and the
+    // very next streak_log insert (or project add) will recompute streak to
+    // the broken value. So we also upsert a synthetic streak_log for yesterday
+    // so `update_user_streak()` sees an unbroken chain.
     if (usersToFreeze.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const syntheticLogs = usersToFreeze.map((u: any) => ({
+        user_id: u.id,
+        activity_date: yesterdayStr,
+      }));
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: logsInsertError } = await (supabase as any)
+        .from("streak_logs")
+        .upsert(syntheticLogs, { onConflict: "user_id,activity_date", ignoreDuplicates: true });
+
+      if (logsInsertError) {
+        console.error("Failed to insert synthetic freeze logs:", logsInsertError);
+        return NextResponse.json({ error: "Failed to preserve streak chain" }, { status: 500 });
+      }
+
       for (const u of usersToFreeze) {
         const { error: freezeError } = await supabase
           .from("users")
           .update({
-            streak_freezes_remaining: (u.streak_freezes_remaining ?? 2) - 1,
+            streak_freezes_remaining: Math.max(0, (u.streak_freezes_remaining ?? 2) - 1),
             streak_freezes_used: (u.streak_freezes_used ?? 0) + 1,
           })
           .eq("id", u.id);
