@@ -11,8 +11,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * Protected by CRON_SECRET to prevent unauthorized access.
  */
 export async function GET(req: NextRequest) {
-  // Verify cron secret (skip in development)
+  // Verify cron secret (skip in development). Fail closed in production so a
+  // missing CRON_SECRET doesn't leave this route unauthenticated — it mutates
+  // streak state and returns usernames.
   const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret && process.env.NODE_ENV === "production") {
+    console.error("CRON_SECRET is not configured");
+    return NextResponse.json({ error: "Cron secret not configured" }, { status: 500 });
+  }
   if (cronSecret) {
     const authHeader = req.headers.get("authorization");
     if (authHeader !== `Bearer ${cronSecret}`) {
@@ -80,6 +86,14 @@ export async function GET(req: NextRequest) {
     // very next streak_log insert (or project add) will recompute streak to
     // the broken value. So we also upsert a synthetic streak_log for yesterday
     // so `update_user_streak()` sees an unbroken chain.
+    //
+    // We only want to consume a freeze for users who actually needed the
+    // synthetic log — if a user logged activity in the race window between the
+    // SELECT and the upsert, the insert would be ignored and we'd still burn
+    // their freeze for nothing. Using .select() on the upsert returns only the
+    // rows that were actually inserted (ignoreDuplicates skips the rest), so
+    // we use that as the authoritative set to decrement.
+    const frozenUsernames: string[] = [];
     if (usersToFreeze.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const syntheticLogs = usersToFreeze.map((u: any) => ({
@@ -88,16 +102,22 @@ export async function GET(req: NextRequest) {
       }));
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: logsInsertError } = await (supabase as any)
+      const { data: insertedLogs, error: logsInsertError } = await (supabase as any)
         .from("streak_logs")
-        .upsert(syntheticLogs, { onConflict: "user_id,activity_date", ignoreDuplicates: true });
+        .upsert(syntheticLogs, { onConflict: "user_id,activity_date", ignoreDuplicates: true })
+        .select("user_id");
 
       if (logsInsertError) {
         console.error("Failed to insert synthetic freeze logs:", logsInsertError);
         return NextResponse.json({ error: "Failed to preserve streak chain" }, { status: 500 });
       }
 
+      const actuallyFrozenIds = new Set(
+        (insertedLogs || []).map((l: { user_id: string }) => l.user_id)
+      );
+
       for (const u of usersToFreeze) {
+        if (!actuallyFrozenIds.has(u.id)) continue;
         const { error: freezeError } = await supabase
           .from("users")
           .update({
@@ -108,12 +128,13 @@ export async function GET(req: NextRequest) {
 
         if (freezeError) {
           console.error(`Failed to consume freeze for ${u.username}:`, freezeError);
+          continue;
         }
+        frozenUsernames.push(u.username);
       }
-      console.log(
-        `Consumed streak freezes for ${usersToFreeze.length} users:`,
-        usersToFreeze.map((u: { username: string }) => u.username)
-      );
+      if (frozenUsernames.length > 0) {
+        console.log(`Consumed streak freezes for ${frozenUsernames.length} users:`, frozenUsernames);
+      }
     }
 
     // Reset streaks to 0 for users without freezes
@@ -136,11 +157,11 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      message: `Reset ${usersToReset.length} stale streaks, froze ${usersToFreeze.length} streaks`,
+      message: `Reset ${usersToReset.length} stale streaks, froze ${frozenUsernames.length} streaks`,
       reset: usersToReset.length,
-      froze: usersToFreeze.length,
+      froze: frozenUsernames.length,
       resetUsers: usersToReset.map((u: { username: string }) => u.username),
-      frozeUsers: usersToFreeze.map((u: { username: string }) => u.username),
+      frozeUsers: frozenUsernames,
     });
   } catch (error) {
     console.error("Cron job error:", error);

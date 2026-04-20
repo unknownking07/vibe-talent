@@ -15,6 +15,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
+  // Fail closed: in production a missing CRON_SECRET would otherwise make this
+  // route unauthenticated and any caller could wipe everyone's freeze counters
+  // (especially via ?force=1).
+  if (!cronSecret && process.env.NODE_ENV === "production") {
+    console.error("CRON_SECRET is not configured");
+    return NextResponse.json({ error: "Cron secret not configured" }, { status: 500 });
+  }
   if (cronSecret) {
     const authHeader = req.headers.get("authorization");
     if (authHeader !== `Bearer ${cronSecret}`) {
