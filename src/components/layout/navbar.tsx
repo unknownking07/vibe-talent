@@ -170,7 +170,18 @@ export function Navbar() {
       }}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-2.5">
+        <Link
+          href="/"
+          className="flex items-center gap-2.5"
+          onClick={(e) => {
+            // Next's <Link> is a no-op when the href matches the current
+            // route, so clicking the logo on "/" wouldn't scroll back up.
+            if (pathname === "/") {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          }}
+        >
           <Image src="/logo.png" alt="VibeTalent" width={36} height={36} className="object-contain" />
           <span className="text-lg font-extrabold uppercase tracking-tight" style={{ color: "var(--foreground)" }}>
             Vibe Talent
