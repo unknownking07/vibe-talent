@@ -27,7 +27,7 @@
     },
     {
       "path": "/api/cron/verify-backfill",
-      "schedule": "30 4 * * *"
+      "schedule": "30 5 * * *"
     }
   ]
 }

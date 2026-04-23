@@ -71,8 +71,11 @@ export async function POST(request: NextRequest) {
     if (liveUrlTrim && !liveUrlTrim.match(/^https:\/\/.+/)) {
       return NextResponse.json({ error: "live_url must be a valid HTTPS URL" }, { status: 400 });
     }
-    if (githubUrlTrim && !githubUrlTrim.match(/^https?:\/\/github\.com\/.+/)) {
-      return NextResponse.json({ error: "github_url must be a valid GitHub URL" }, { status: 400 });
+    // Delegate to parseGithubRepoUrl so validation tolerates the same shapes
+    // the parser does (www., .git, subpaths) and rejects non-repo URLs like
+    // /login/oauth consistently across the app.
+    if (githubUrlTrim && !parseGithubRepoUrl(githubUrlTrim)) {
+      return NextResponse.json({ error: "github_url must be a valid GitHub repo URL" }, { status: 400 });
     }
 
     // Use authenticated user's ID, NOT client-supplied user_id

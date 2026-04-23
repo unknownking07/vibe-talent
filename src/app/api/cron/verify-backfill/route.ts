@@ -6,6 +6,10 @@ import { createNotification } from "@/lib/notifications";
 const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 2500;
 const MAX_PROJECTS_PER_RUN = 200;
+// How long to wait before re-attempting a project that we couldn't verify
+// (owner mismatch, missing github_username, unparseable URL). Transient
+// GitHub API failures don't bump this timestamp so they retry next run.
+const RETRY_WINDOW_DAYS = 7;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -27,6 +31,13 @@ function sleep(ms: number): Promise<void> {
  */
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
+  // Fail closed: in production a missing CRON_SECRET would otherwise leave this
+  // endpoint open to anonymous callers who could spam 200 GitHub API requests,
+  // DB updates, and notifications per hit.
+  if (!cronSecret && process.env.NODE_ENV === "production") {
+    console.error("verify-backfill: CRON_SECRET is not configured");
+    return NextResponse.json({ error: "Cron secret not configured" }, { status: 500 });
+  }
   if (cronSecret) {
     const authHeader = req.headers.get("authorization");
     if (authHeader !== `Bearer ${cronSecret}`) {
@@ -39,6 +50,12 @@ export async function GET(req: NextRequest) {
   const sb = supabase as any;
 
   try {
+    // Only consider projects whose last attempt is old (or never tried). Without
+    // this gate the query would keep returning the same permanently-unprocessable
+    // rows (owner mismatch, missing github_username) every run and starve newer
+    // projects once the stuck backlog exceeds MAX_PROJECTS_PER_RUN.
+    const retryWindow = new Date(Date.now() - RETRY_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
     const { data: candidates, error: projectsError } = await sb
       .from("projects")
       .select("id, user_id, github_url, live_url, title")
@@ -46,6 +63,7 @@ export async function GET(req: NextRequest) {
       .eq("flagged", false)
       .not("github_url", "is", null)
       .neq("github_url", "")
+      .or(`last_verify_attempt_at.is.null,last_verify_attempt_at.lt.${retryWindow}`)
       .order("created_at", { ascending: true })
       .limit(MAX_PROJECTS_PER_RUN);
 
@@ -60,7 +78,9 @@ export async function GET(req: NextRequest) {
 
     // Resolve each candidate's GitHub handle from the authoritative DB column.
     // One query for all users referenced by the batch avoids per-project lookups.
-    const userIds = Array.from(new Set(candidates.map((p: { user_id: string }) => p.user_id)));
+    const userIds: string[] = Array.from(
+      new Set(candidates.map((p: { user_id: string }) => p.user_id))
+    );
     const { data: userRows } = await sb
       .from("users")
       .select("id, github_username")
@@ -70,6 +90,15 @@ export async function GET(req: NextRequest) {
     const usernameById = new Map<string, string>();
     for (const row of (userRows ?? []) as { id: string; github_username: string }[]) {
       if (row.github_username) usernameById.set(row.id, row.github_username);
+    }
+
+    // Stamp non-verifiable-via-owner-match projects so the next run skips them
+    // for RETRY_WINDOW_DAYS and works through the rest of the backlog instead.
+    async function markAttempted(projectId: string) {
+      await sb
+        .from("projects")
+        .update({ last_verify_attempt_at: new Date().toISOString() })
+        .eq("id", projectId);
     }
 
     let verified = 0;
@@ -92,25 +121,29 @@ export async function GET(req: NextRequest) {
               const parsed = parseGithubRepoUrl(project.github_url);
               if (!parsed) {
                 skipped++;
+                await markAttempted(project.id);
                 return;
               }
 
               const githubUsername = usernameById.get(project.user_id);
               if (!githubUsername) {
                 skipped++;
+                await markAttempted(project.id);
                 return;
               }
 
               if (parsed.owner.toLowerCase() !== githubUsername.toLowerCase()) {
                 skipped++;
+                await markAttempted(project.id);
                 return;
               }
 
               const { owner: repoOwner, repo: repoName } = parsed;
               const qualityResult = await analyzeRepository(repoOwner, repoName);
 
-              // If GitHub API fails entirely, skip — leave unverified so a
-              // future run retries. Don't mark verified without a valid check.
+              // If GitHub API fails entirely, skip WITHOUT stamping — leave it
+              // for a future run to retry. Don't mark verified without a valid
+              // check, and don't push it into the retry-window deadzone.
               if (!qualityResult.success) {
                 errors++;
                 return;
@@ -146,6 +179,7 @@ export async function GET(req: NextRequest) {
                   quality_score: qualityScore,
                   quality_metrics: qualityMetrics,
                   live_url_ok,
+                  last_verify_attempt_at: new Date().toISOString(),
                 })
                 .eq("id", project.id);
 
