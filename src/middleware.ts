@@ -28,6 +28,11 @@ export async function middleware(request: NextRequest) {
   return await updateSession(request);
 }
 
+// Run middleware on every non-static route so Supabase can refresh the auth
+// cookie on each navigation. Restricting this to "/" and "/dashboard/*"
+// caused sessions to silently expire on other pages.
 export const config = {
-  matcher: ["/", "/dashboard/:path*"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+  ],
 };
