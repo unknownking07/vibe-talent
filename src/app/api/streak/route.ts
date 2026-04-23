@@ -20,7 +20,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const today = new Date().toISOString().split("T")[0];
+    // Accept the client's local YYYY-MM-DD so the stored date matches what
+    // the dashboard queries (also local). Defaulting to UTC here caused
+    // evening-timezone users to log for tomorrow's UTC date, and on refresh
+    // the dashboard's local-date query wouldn't find the row — the UI would
+    // revert to "Log Activity" even though the row was in the DB.
+    const body = await request.json().catch(() => ({}));
+    const clientDate =
+      typeof (body as { date?: unknown })?.date === "string"
+        ? (body as { date: string }).date
+        : null;
+
+    let activityDate = new Date().toISOString().split("T")[0];
+    if (clientDate && /^\d{4}-\d{2}-\d{2}$/.test(clientDate)) {
+      const clientMs = new Date(`${clientDate}T00:00:00Z`).getTime();
+      const utcMidnight = new Date();
+      utcMidnight.setUTCHours(0, 0, 0, 0);
+      const dayDiff = Math.abs(clientMs - utcMidnight.getTime()) / 86_400_000;
+      // Accept only when within 1 day of server UTC — that window covers
+      // every real-world timezone (UTC-12 to UTC+14) and caps clock-spoofing
+      // backfill to a single adjacent day.
+      if (!Number.isNaN(dayDiff) && dayDiff <= 1) {
+        activityDate = clientDate;
+      }
+    }
 
     // Use admin client for the insert: user is already authenticated above, and
     // we pin user_id to user.id so there's no privilege escalation. Admin client
@@ -29,7 +52,7 @@ export async function POST(request: NextRequest) {
     const admin = createAdminClient() as any;
     const { error } = await admin
       .from("streak_logs")
-      .upsert({ user_id: user.id, activity_date: today }, { onConflict: "user_id,activity_date" });
+      .upsert({ user_id: user.id, activity_date: activityDate }, { onConflict: "user_id,activity_date" });
 
     if (error) {
       console.error("Failed to log streak:", error);
@@ -38,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      activity_date: today,
+      activity_date: activityDate,
       message: "Activity logged successfully",
     });
   } catch (err) {

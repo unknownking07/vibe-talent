@@ -570,6 +570,7 @@ export default function DashboardPage() {
       res = await fetch("/api/streak", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: today }),
       });
     } catch (err) {
       console.error("Failed to log activity (network):", err);
