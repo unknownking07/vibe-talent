@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { analyzeRepository, checkLiveUrl } from "@/lib/github-quality";
+import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl } from "@/lib/github-quality";
 
 const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 2500;
@@ -62,11 +62,10 @@ export async function GET(req: NextRequest) {
       await Promise.allSettled(
         batch.map(async (project: { id: string; user_id: string; github_url: string; live_url: string | null }) => {
           try {
-            const match = project.github_url.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/?$/);
-            if (!match) return;
+            const parsed = parseGithubRepoUrl(project.github_url);
+            if (!parsed) return;
 
-            const repoOwner = match[1];
-            const repoName = match[2].replace(/\.git$/, "");
+            const { owner: repoOwner, repo: repoName } = parsed;
 
             const qualityResult = await analyzeRepository(repoOwner, repoName);
             const qualityScore = qualityResult.success ? (qualityResult.metrics?.quality_score ?? 0) : 0;

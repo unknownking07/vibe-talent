@@ -60,6 +60,27 @@ async function githubFetch(url: string, token?: string): Promise<Response> {
 }
 
 /**
+ * Parse a GitHub repo URL into { owner, repo }. Tolerates trailing slashes,
+ * `.git` suffix, subpaths (`/tree/main`, `/blob/...`), query strings, and
+ * hash fragments so user-pasted URLs don't silently fail owner-match checks.
+ */
+export function parseGithubRepoUrl(
+  url: string | null | undefined
+): { owner: string; repo: string } | null {
+  if (typeof url !== "string") return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+  const match = trimmed.match(
+    /^https?:\/\/(?:www\.)?github\.com\/([^/\s?#]+)\/([^/\s?#]+)/i
+  );
+  if (!match) return null;
+  const owner = match[1];
+  const repo = match[2].replace(/\.git$/i, "");
+  if (!owner || !repo) return null;
+  return { owner, repo };
+}
+
+/**
  * Analyze a GitHub repository and return quality metrics.
  * Uses only public API endpoints — no extra OAuth scopes needed.
  */

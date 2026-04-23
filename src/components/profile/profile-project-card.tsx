@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ExternalLink, Flag, CheckCircle, Undo2 } from "lucide-react";
+import { ExternalLink, Flag, CheckCircle, Undo2, Github } from "lucide-react";
 import Image from "next/image";
 import type { Project } from "@/lib/types/database";
 import { QualityScoreBadge } from "@/components/ui/quality-score-badge";
@@ -127,27 +127,33 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
         );
       })()}
       <div className="flex flex-col gap-2 p-4 flex-grow">
-      <div className="flex justify-between items-start">
-        <div className="flex items-center gap-2">
-          <span className="text-[1.1rem] font-extrabold uppercase text-[var(--foreground)]">{project.title}</span>
-          {verified && (
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600" title="Verified owner">
-              <CheckCircle size={14} />
-              Verified
-            </span>
-          )}
-          <QualityScoreBadge project={project} />
-        </div>
+      <div className="flex justify-between items-start gap-3">
+        <span className="text-[1.1rem] font-extrabold uppercase text-[var(--foreground)] min-w-0 break-words">{project.title}</span>
         <div className="flex items-center gap-2 shrink-0">
-          {(project.live_url || project.github_url) && (
+          {project.live_url && (
             <a
-              href={project.live_url || project.github_url || "#"}
+              href={project.live_url}
               target="_blank"
               rel="noopener noreferrer"
               className="text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
               onClick={(e) => e.stopPropagation()}
+              title="Open live site"
+              aria-label="Open live site"
             >
               <ExternalLink size={16} />
+            </a>
+          )}
+          {project.github_url && (
+            <a
+              href={project.github_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+              onClick={(e) => e.stopPropagation()}
+              title="Open GitHub repo"
+              aria-label="Open GitHub repo"
+            >
+              <Github size={16} />
             </a>
           )}
           <div className="relative" ref={reportRef}>
@@ -189,6 +195,18 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
           </div>
         </div>
       </div>
+
+      {(verified || project.quality_score > 0) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {verified && (
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600" title="Verified owner">
+              <CheckCircle size={14} />
+              Verified
+            </span>
+          )}
+          <QualityScoreBadge project={project} />
+        </div>
+      )}
 
       <div className="flex-grow">
         <p className={`text-[0.9rem] text-[var(--text-secondary)] font-medium ${isLongDescription && !expanded ? "line-clamp-4" : ""}`}>
