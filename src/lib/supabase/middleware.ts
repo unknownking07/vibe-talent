@@ -10,12 +10,6 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
-  // Only run the expensive auth check on protected routes
-  const isProtectedRoute = request.nextUrl.pathname.startsWith("/dashboard");
-  if (!isProtectedRoute) {
-    return NextResponse.next({ request });
-  }
-
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -39,16 +33,21 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Try getUser() first (validates JWT, refreshes token if needed).
-  // Fall back to getSession() (local cookie read) if the network call fails,
-  // so we don't redirect authenticated users to login on transient errors.
+  // getUser() must run on every route so Supabase can refresh the auth cookie
+  // before it expires. Gating this on /dashboard/* used to leave the cookie
+  // stale whenever users sat on /projects, /feed, /profile, etc., and they'd
+  // get bounced to login on the next refresh.
   const {
     data: { user },
     error,
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    // If getUser() failed due to a network/server error, check session locally
+  // Only protected routes redirect to login; other routes still benefit from
+  // the cookie refresh above.
+  const isProtectedRoute = request.nextUrl.pathname.startsWith("/dashboard");
+  if (isProtectedRoute && !user) {
+    // Fall back to getSession() (local cookie read) on transient network
+    // errors so we don't bounce authenticated users on flakiness.
     if (error) {
       const {
         data: { session },
