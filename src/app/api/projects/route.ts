@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { after } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { projectsLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
-import { analyzeRepository, checkLiveUrl } from "@/lib/github-quality";
+import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl } from "@/lib/github-quality";
 import { createNotification } from "@/lib/notifications";
 
 // GET /api/projects — List projects (public)
@@ -71,8 +71,11 @@ export async function POST(request: NextRequest) {
     if (liveUrlTrim && !liveUrlTrim.match(/^https:\/\/.+/)) {
       return NextResponse.json({ error: "live_url must be a valid HTTPS URL" }, { status: 400 });
     }
-    if (githubUrlTrim && !githubUrlTrim.match(/^https?:\/\/github\.com\/.+/)) {
-      return NextResponse.json({ error: "github_url must be a valid GitHub URL" }, { status: 400 });
+    // Delegate to parseGithubRepoUrl so validation tolerates the same shapes
+    // the parser does (www., .git, subpaths) and rejects non-repo URLs like
+    // /login/oauth consistently across the app.
+    if (githubUrlTrim && !parseGithubRepoUrl(githubUrlTrim)) {
+      return NextResponse.json({ error: "github_url must be a valid GitHub repo URL" }, { status: 400 });
     }
 
     // Use authenticated user's ID, NOT client-supplied user_id
@@ -92,17 +95,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create project" }, { status: 500 });
     }
 
-    // Auto-verify if GitHub URL owner matches authenticated user's GitHub username
+    // Auto-verify if GitHub URL owner matches authenticated user's GitHub username.
+    // Source of truth for the handle is users.github_username (synced from the
+    // GitHub identity on every OAuth callback, covering linked-later accounts
+    // whose user_metadata doesn't hold the GitHub handle). OAuth metadata is a
+    // fallback for the first-login edge case before the callback has written.
     if (data && githubUrlTrim) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: userRow } = await (supabase as any)
+        .from("users")
+        .select("github_username")
+        .eq("id", user.id)
+        .single();
+
       const githubUsername =
+        userRow?.github_username ||
         user.user_metadata?.user_name ||
         user.user_metadata?.preferred_username ||
         null;
 
-      const match = githubUrlTrim.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/?$/);
-      if (githubUsername && match && match[1].toLowerCase() === githubUsername.toLowerCase()) {
-        const repoOwner = match[1];
-        const repoName = match[2].replace(/\.git$/, "");
+      const parsed = parseGithubRepoUrl(githubUrlTrim);
+      if (githubUsername && parsed && parsed.owner.toLowerCase() === githubUsername.toLowerCase()) {
+        const { owner: repoOwner, repo: repoName } = parsed;
 
         // Run quality analysis + live URL check after response (guaranteed by Next.js after())
         after(async () => {

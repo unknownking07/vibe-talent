@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createNotification } from "@/lib/notifications";
-import { analyzeRepository, checkLiveUrl } from "@/lib/github-quality";
+import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl } from "@/lib/github-quality";
 
 export async function POST(request: Request) {
   try {
@@ -25,8 +25,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get GitHub username from auth metadata
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
+
+    // Resolve GitHub handle from users.github_username (authoritative; synced
+    // from the GitHub identity on every OAuth callback). Fall back to OAuth
+    // metadata only for the first-login edge case before the callback wrote.
+    const { data: userRow } = await sb
+      .from("users")
+      .select("github_username")
+      .eq("id", user.id)
+      .single();
+
     const githubUsername =
+      userRow?.github_username ||
       user.user_metadata?.user_name ||
       user.user_metadata?.preferred_username ||
       null;
@@ -43,8 +55,6 @@ export async function POST(request: Request) {
     }
 
     // Fetch the project
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = supabase as any;
     const { data: project, error: projectError } = await sb
       .from("projects")
       .select("id, user_id, github_url")
@@ -76,13 +86,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Parse repo owner and name from GitHub URL
-    // e.g., https://github.com/unknownking07/vibe-talent -> owner=unknownking07, repo=vibe-talent
-    const githubUrlMatch = project.github_url.match(
-      /^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/?$/
-    );
+    // Parse repo owner and name from the stored GitHub URL. Tolerates .git
+    // suffix, trailing slashes, and subpaths like /tree/main so a legitimate
+    // URL doesn't fail verification on a regex technicality.
+    const parsed = parseGithubRepoUrl(project.github_url);
 
-    if (!githubUrlMatch) {
+    if (!parsed) {
       return NextResponse.json(
         {
           verified: false,
@@ -93,8 +102,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const repoOwner = githubUrlMatch[1];
-    const repoName = githubUrlMatch[2].replace(/\.git$/, "");
+    const { owner: repoOwner, repo: repoName } = parsed;
 
     // Method 1: Owner match
     if (repoOwner.toLowerCase() === githubUsername.toLowerCase()) {

@@ -303,6 +303,11 @@ ALTER TABLE projects ADD COLUMN IF NOT EXISTS quality_score INTEGER DEFAULT 0;
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS quality_metrics JSONB;
 ALTER TABLE projects ADD COLUMN IF NOT EXISTS live_url_ok BOOLEAN;
 
+-- Stamp set by the verify-backfill cron so permanently-unprocessable rows
+-- (owner mismatch, missing github_username) don't monopolize the oldest-first
+-- query window and starve newer unverified projects from being retried.
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS last_verify_attempt_at TIMESTAMPTZ;
+
 -- Add github_username column to users (populated from GitHub OAuth on login)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS github_username TEXT;
 
