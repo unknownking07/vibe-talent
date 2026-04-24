@@ -368,7 +368,7 @@ export default function DashboardPage() {
   };
 
   const handleGithubSync = async () => {
-    if (syncingGithub) return;
+    if (syncingGithub || !user) return;
     setSyncingGithub(true);
     setGithubSyncResult(null);
     try {
@@ -380,7 +380,7 @@ export default function DashboardPage() {
         setGithubSyncResult(`\u2713 Synced! Found ${data.events_found} events, logged ${data.dates_logged} day(s).`);
         await reloadUser();
         // Update heatmap
-        const streakData = await fetchStreakLogs(user!.id);
+        const streakData = await fetchStreakLogs(user.id);
         setHeatmapData(streakData);
       } else if (data.error) {
         setGithubSyncResult(`\u26A0 ${data.error}`);

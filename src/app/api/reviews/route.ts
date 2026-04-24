@@ -298,22 +298,22 @@ export async function POST(req: NextRequest) {
     // Fire-and-forget: email notification to the builder
     const adminSb = createAdminClient();
     adminSb.auth.admin.getUserById(builder_id).then(({ data: userData }) => {
-      if (userData?.user?.email) {
-        adminSb
-          .from("users")
-          .select("username")
-          .eq("id", builder_id)
-          .single()
-          .then(({ data: builderData }) => {
-            sendReviewNotificationEmail({
-              email: userData.user!.email!,
-              username: builderData?.username || "builder",
-              reviewerName: nameClean,
-              rating: ratingNum,
-              comment: commentClean,
-            }).catch(console.error);
-          });
-      }
+      const builderEmail = userData?.user?.email;
+      if (!builderEmail) return;
+      adminSb
+        .from("users")
+        .select("username")
+        .eq("id", builder_id)
+        .single()
+        .then(({ data: builderData }) => {
+          sendReviewNotificationEmail({
+            email: builderEmail,
+            username: builderData?.username || "builder",
+            reviewerName: nameClean,
+            rating: ratingNum,
+            comment: commentClean,
+          }).catch(console.error);
+        });
     }).catch(console.error);
 
     return NextResponse.json({ success: true, id: data.id });

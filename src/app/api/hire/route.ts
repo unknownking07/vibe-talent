@@ -78,23 +78,23 @@ export async function POST(req: NextRequest) {
     // Fire-and-forget: send email notification to builder
     const serviceClient = createAdminClient();
     serviceClient.auth.admin.getUserById(builder_id).then(({ data: userData }) => {
-      if (userData?.user?.email) {
-        // Look up the builder's username
-        serviceClient
-          .from("users")
-          .select("username")
-          .eq("id", builder_id)
-          .single()
-          .then(({ data: builderData }) => {
-            sendHireNotification({
-              builderEmail: userData.user!.email!,
-              builderUsername: builderData?.username || "builder",
-              senderName: nameClean,
-              message: msgClean,
-              requestId: data.id,
-            }).catch(console.error);
-          });
-      }
+      const builderEmail = userData?.user?.email;
+      if (!builderEmail) return;
+      // Look up the builder's username
+      serviceClient
+        .from("users")
+        .select("username")
+        .eq("id", builder_id)
+        .single()
+        .then(({ data: builderData }) => {
+          sendHireNotification({
+            builderEmail,
+            builderUsername: builderData?.username || "builder",
+            senderName: nameClean,
+            message: msgClean,
+            requestId: data.id,
+          }).catch(console.error);
+        });
     }).catch(console.error);
 
     return NextResponse.json({ success: true, id: data.id });
