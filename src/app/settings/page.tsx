@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { validateDisplayName, containsProfanity } from "@/lib/profanity";
+import { siteUrl } from "@/lib/seo";
 import type { UserWithSocials } from "@/lib/types/database";
 import { EmailPreferences } from "@/components/dashboard/email-preferences";
 import {
@@ -585,7 +586,7 @@ export default function SettingsPage() {
           <input
             type="text"
             readOnly
-            value={`${typeof window !== "undefined" ? window.location.origin : "https://www.vibetalent.work"}/auth/signup?ref=${user.username}`}
+            value={`${typeof window !== "undefined" ? window.location.origin : siteUrl}/auth/signup?ref=${user.username}`}
             className="input-brutal flex-1 text-sm font-mono"
           />
           <button

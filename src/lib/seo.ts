@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
 
-// Always use www — Vercel redirects non-www with 307 which breaks social media crawlers
+// Canonical site URL — always use www; Vercel redirects non-www with 307 which breaks social media crawlers
 export const siteUrl = "https://www.vibetalent.work";
 const siteName = "VibeTalent";
+
+/**
+ * Env-overridable site URL for server code (emails, API manifests, cron fan-out)
+ * that may run under a preview/staging origin. Falls back to the canonical siteUrl.
+ */
+export function getSiteUrl(): string {
+  return process.env.NEXT_PUBLIC_SITE_URL || siteUrl;
+}
 
 export function createMetadata(options: {
   title: string;

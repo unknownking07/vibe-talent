@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { siteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
   description: "VibeTalent terms of service — rules and guidelines for using the platform.",
-  alternates: { canonical: "https://www.vibetalent.work/terms" },
+  alternates: { canonical: `${siteUrl}/terms` },
 };
 
 export default function TermsOfServicePage() {
@@ -11,8 +12,8 @@ export default function TermsOfServicePage() {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://www.vibetalent.work" },
-      { "@type": "ListItem", position: 2, name: "Terms of Service", item: "https://www.vibetalent.work/terms" },
+      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 2, name: "Terms of Service", item: `${siteUrl}/terms` },
     ],
   };
 

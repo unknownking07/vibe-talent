@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { fetchStreakLogs } from "@/lib/supabase/queries";
+import { siteUrl } from "@/lib/seo";
 import { BadgeDisplay } from "@/components/ui/badge-display";
 import type { UserWithSocials } from "@/lib/types/database";
 import { StreakCounter } from "@/components/ui/streak-counter";
@@ -1416,7 +1417,6 @@ export default function DashboardPage() {
 
         <div className="flex flex-col gap-2">
           {(() => {
-            const siteUrl = "https://www.vibetalent.work";
             const encodedName = encodeURIComponent(user.username);
             const badgeImgUrl = `${siteUrl}/api/badge/${encodedName}`;
             const profileUrl = `${siteUrl}/profile/${encodedName}`;

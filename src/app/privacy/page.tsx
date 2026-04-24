@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { siteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description: "VibeTalent privacy policy — how we collect, use, and protect your data.",
-  alternates: { canonical: "https://www.vibetalent.work/privacy" },
+  alternates: { canonical: `${siteUrl}/privacy` },
 };
 
 export default function PrivacyPolicyPage() {
@@ -11,8 +12,8 @@ export default function PrivacyPolicyPage() {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://www.vibetalent.work" },
-      { "@type": "ListItem", position: 2, name: "Privacy Policy", item: "https://www.vibetalent.work/privacy" },
+      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 2, name: "Privacy Policy", item: `${siteUrl}/privacy` },
     ],
   };
 

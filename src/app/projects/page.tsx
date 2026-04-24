@@ -1,5 +1,6 @@
 import { fetchAllProjectsCached } from "@/lib/supabase/server-queries";
 import { ProjectsContent } from "@/components/projects/projects-content";
+import { siteUrl } from "@/lib/seo";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -7,12 +8,12 @@ export const metadata: Metadata = {
   description:
     "Browse all projects shipped by vibe coders. Filter by tech stack, quality score, and more to discover what builders are shipping.",
   alternates: {
-    canonical: "https://www.vibetalent.work/projects",
+    canonical: `${siteUrl}/projects`,
   },
   openGraph: {
     title: "All Projects — VibeTalent",
     description: "Browse all projects shipped by vibe coders. Discover what builders are shipping.",
-    url: "https://www.vibetalent.work/projects",
+    url: `${siteUrl}/projects`,
     siteName: "VibeTalent",
     type: "website",
   },
@@ -37,8 +38,8 @@ export default async function ProjectsPage() {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://www.vibetalent.work" },
-      { "@type": "ListItem", position: 2, name: "Projects", item: "https://www.vibetalent.work/projects" },
+      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 2, name: "Projects", item: `${siteUrl}/projects` },
     ],
   };
 
