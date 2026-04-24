@@ -152,6 +152,9 @@ export default function DashboardPage() {
                   const todayStr = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, "0")}-${String(nowLocal.getDate()).padStart(2, "0")}`;
                   if (newStreakData[todayStr]) {
                     setTodayLogged(true);
+                    // Tell navbar the dot can drop — GitHub activity filled
+                    // today's slot without a manual log.
+                    window.dispatchEvent(new Event("streak-updated"));
                   }
                   // Recalculate streak from new data
                   const newDates = Object.keys(newStreakData).sort().reverse();
@@ -382,6 +385,13 @@ export default function DashboardPage() {
         // Update heatmap
         const streakData = await fetchStreakLogs(user.id);
         setHeatmapData(streakData);
+        // If today is now in streak_logs, clear the dot without a reload.
+        const nowLocal = new Date();
+        const todayStr = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, "0")}-${String(nowLocal.getDate()).padStart(2, "0")}`;
+        if (streakData[todayStr]) {
+          setTodayLogged(true);
+        }
+        window.dispatchEvent(new Event("streak-updated"));
       } else if (data.error) {
         setGithubSyncResult(`\u26A0 ${data.error}`);
       } else {
@@ -543,6 +553,8 @@ export default function DashboardPage() {
         // Midnight passed — reset so user can log again
         setTodayLogged(false);
         setCountdown("");
+        // Tell navbar the dot should reappear for the new day.
+        window.dispatchEvent(new Event("streak-updated"));
         reloadUser();
         return;
       }
@@ -600,6 +612,9 @@ export default function DashboardPage() {
     setHeatmapData({ ...heatmapData, [today]: (heatmapData[today] || 0) + 1 });
     setTodayLogged(true);
     setLogging(false);
+
+    // Drop the navbar "unlogged activity" dot without a reload.
+    window.dispatchEvent(new Event("streak-updated"));
 
     // Mark streak warning notifications as read and refresh the bell
     fetch("/api/notifications", {

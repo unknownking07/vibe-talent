@@ -56,17 +56,19 @@ export function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<{ username: string; avatar_url: string | null; github_username: string | null; display_name: string | null } | null>(null);
-  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
+  const [hasUnloggedActivity, setHasUnloggedActivity] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const checkUnread = useCallback(async () => {
+  const checkTodayLogged = useCallback(async () => {
     try {
-      const res = await fetch("/api/notifications");
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      const res = await fetch(`/api/streak/today-logged?date=${today}`);
       if (!res.ok) return;
       const data = await res.json();
-      setHasUnreadNotifications((data.unread_count || 0) > 0);
+      setHasUnloggedActivity(data.loggedToday === false);
     } catch {
-      // Silently fail
+      // Silently fail — dot simply won't show
     }
   }, []);
 
@@ -107,7 +109,9 @@ export function Navbar() {
       setIsLoggedIn(!!user);
       if (user) {
         fetchProfile(user.id, user.email);
-        checkUnread();
+        checkTodayLogged();
+      } else {
+        setHasUnloggedActivity(false);
       }
     });
 
@@ -115,8 +119,10 @@ export function Navbar() {
       setIsLoggedIn(!!session?.user);
       if (session?.user) {
         fetchProfile(session.user.id, session.user.email);
+        checkTodayLogged();
       } else {
         setUserProfile(null);
+        setHasUnloggedActivity(false);
       }
     });
 
@@ -129,17 +135,27 @@ export function Navbar() {
     };
     window.addEventListener("profile-updated", handleProfileUpdated);
 
-    // Refresh the Dashboard-link dot when notifications change (e.g. after
-    // the user logs activity, which marks streak_warning notifications read).
-    // Without this, the dot only clears on a hard refresh.
-    window.addEventListener("notifications-updated", checkUnread);
+    // The dashboard dispatches this after manual Log Activity, successful
+    // GitHub sync, and midnight rollover. Refetch so the dot updates without
+    // a full page reload.
+    window.addEventListener("streak-updated", checkTodayLogged);
+
+    // Catch the "pushed to GitHub in another tab/terminal, came back" case:
+    // when the tab regains focus, re-check. GitHub auto-sync is scheduled
+    // server-side, so by the time the user comes back, streak_logs may have
+    // been updated and the dot should clear.
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") checkTodayLogged();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
       subscription.unsubscribe();
       window.removeEventListener("profile-updated", handleProfileUpdated);
-      window.removeEventListener("notifications-updated", checkUnread);
+      window.removeEventListener("streak-updated", checkTodayLogged);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [checkUnread]);
+  }, [checkTodayLogged]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -240,7 +256,7 @@ export function Navbar() {
               }}
             >
               {link.label}
-              {link.href === "/dashboard" && hasUnreadNotifications && (
+              {link.href === "/dashboard" && hasUnloggedActivity && (
                 <span
                   className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
                   style={{ backgroundColor: "var(--accent)" }}
@@ -498,7 +514,7 @@ export function Navbar() {
               }}
             >
               {link.label}
-              {link.href === "/dashboard" && hasUnreadNotifications && (
+              {link.href === "/dashboard" && hasUnloggedActivity && (
                 <span
                   className="inline-block w-2 h-2 rounded-full ml-1.5 align-middle"
                   style={{ backgroundColor: "var(--accent)" }}
