@@ -8,8 +8,12 @@ import { cookies } from "next/headers";
 //   - protocol-relative URLs ("//evil.com")
 //   - backslash tricks browsers may normalize to "/" ("/\evil.com")
 //   - embedded schemes
-function sanitizeNext(raw: string | null): string {
+//   - any ASCII control chars (U+0000–U+001F, U+007F) including CR/LF — blocks
+//     header-injection shapes like "/dashboard\r\nLocation: https://evil.com"
+const CONTROL_CHARS = /[\x00-\x1F\x7F]/;
+export function sanitizeNext(raw: string | null): string {
   if (!raw) return "/dashboard";
+  if (CONTROL_CHARS.test(raw)) return "/dashboard";
   if (!raw.startsWith("/")) return "/dashboard";
   if (raw.startsWith("//") || raw.startsWith("/\\")) return "/dashboard";
   if (raw.includes("\\")) return "/dashboard";

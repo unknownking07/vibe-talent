@@ -305,15 +305,18 @@ export async function POST(req: NextRequest) {
         .select("username")
         .eq("id", builder_id)
         .single()
-        .then(({ data: builderData }) => {
-          sendReviewNotificationEmail({
-            email: builderEmail,
-            username: builderData?.username || "builder",
-            reviewerName: nameClean,
-            rating: ratingNum,
-            comment: commentClean,
-          }).catch(console.error);
-        });
+        .then(
+          ({ data: builderData }) => {
+            sendReviewNotificationEmail({
+              email: builderEmail,
+              username: builderData?.username || "builder",
+              reviewerName: nameClean,
+              rating: ratingNum,
+              comment: commentClean,
+            }).catch(console.error);
+          },
+          console.error
+        );
     }).catch(console.error);
 
     return NextResponse.json({ success: true, id: data.id });

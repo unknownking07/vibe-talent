@@ -31,17 +31,23 @@ export type BreadcrumbItem = { name: string; path: string };
 /**
  * Build a Schema.org BreadcrumbList JSON-LD object. Use standalone with
  * `"@context": "https://schema.org"`, or embed inside an "@graph" array.
- * `path` of "/" resolves to the bare siteUrl (no trailing slash).
+ * `path` of "/" resolves to the bare siteUrl (no trailing slash). Paths without
+ * a leading slash get one prepended, so callers can't accidentally produce
+ * malformed URLs like "https://www.vibetalent.workprivacy".
  */
 export function buildBreadcrumbList(items: BreadcrumbItem[]) {
   return {
     "@type": "BreadcrumbList",
-    itemListElement: items.map((item, i) => ({
-      "@type": "ListItem",
-      position: i + 1,
-      name: item.name,
-      item: item.path === "/" ? siteUrl : `${siteUrl}${item.path}`,
-    })),
+    itemListElement: items.map((item, i) => {
+      const path = item.path.trim();
+      const normalized = path === "/" || path === "" ? "" : path.startsWith("/") ? path : `/${path}`;
+      return {
+        "@type": "ListItem",
+        position: i + 1,
+        name: item.name,
+        item: normalized ? `${siteUrl}${normalized}` : siteUrl,
+      };
+    }),
   };
 }
 

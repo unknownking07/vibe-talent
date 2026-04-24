@@ -86,15 +86,18 @@ export async function POST(req: NextRequest) {
         .select("username")
         .eq("id", builder_id)
         .single()
-        .then(({ data: builderData }) => {
-          sendHireNotification({
-            builderEmail,
-            builderUsername: builderData?.username || "builder",
-            senderName: nameClean,
-            message: msgClean,
-            requestId: data.id,
-          }).catch(console.error);
-        });
+        .then(
+          ({ data: builderData }) => {
+            sendHireNotification({
+              builderEmail,
+              builderUsername: builderData?.username || "builder",
+              senderName: nameClean,
+              message: msgClean,
+              requestId: data.id,
+            }).catch(console.error);
+          },
+          console.error
+        );
     }).catch(console.error);
 
     return NextResponse.json({ success: true, id: data.id });

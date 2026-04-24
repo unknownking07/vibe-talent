@@ -94,4 +94,19 @@ describe("buildBreadcrumbList", () => {
   it("returns an empty itemListElement array for empty input", () => {
     expect(buildBreadcrumbList([]).itemListElement).toEqual([]);
   });
+
+  it("prepends a leading slash when a caller passes path without one", () => {
+    const result = buildBreadcrumbList([{ name: "Privacy", path: "privacy" }]);
+    expect(result.itemListElement[0].item).toBe(`${siteUrl}/privacy`);
+  });
+
+  it("treats empty path as root siteUrl", () => {
+    const result = buildBreadcrumbList([{ name: "Home", path: "" }]);
+    expect(result.itemListElement[0].item).toBe(siteUrl);
+  });
+
+  it("trims surrounding whitespace in path", () => {
+    const result = buildBreadcrumbList([{ name: "Privacy", path: "  /privacy  " }]);
+    expect(result.itemListElement[0].item).toBe(`${siteUrl}/privacy`);
+  });
 });
