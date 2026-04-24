@@ -1,4 +1,10 @@
 {
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  },
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- src public package.json package-lock.json next.config.ts next.config.js next.config.mjs tsconfig.json vercel.json",
   "redirects": [
     {
       "source": "/(.*)",
