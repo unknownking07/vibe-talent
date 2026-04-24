@@ -1,6 +1,6 @@
 import { fetchAllProjectsCached } from "@/lib/supabase/server-queries";
 import { ProjectsContent } from "@/components/projects/projects-content";
-import { siteUrl } from "@/lib/seo";
+import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -36,11 +36,10 @@ export default async function ProjectsPage() {
 
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
-      { "@type": "ListItem", position: 2, name: "Projects", item: `${siteUrl}/projects` },
-    ],
+    ...buildBreadcrumbList([
+      { name: "Home", path: "/" },
+      { name: "Projects", path: "/projects" },
+    ]),
   };
 
   return (

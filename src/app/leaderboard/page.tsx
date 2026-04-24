@@ -1,6 +1,6 @@
 import { fetchAllUsersCached } from "@/lib/supabase/server-queries";
 import { LeaderboardContent } from "@/components/leaderboard/leaderboard-content";
-import { siteUrl } from "@/lib/seo";
+import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
 import { Trophy } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -38,13 +38,10 @@ export default async function LeaderboardPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
-          { "@type": "ListItem", position: 2, name: "Leaderboard", item: `${siteUrl}/leaderboard` },
-        ],
-      },
+      buildBreadcrumbList([
+        { name: "Home", path: "/" },
+        { name: "Leaderboard", path: "/leaderboard" },
+      ]),
       {
         "@type": "ItemList",
         name: "VibeTalent Leaderboard",

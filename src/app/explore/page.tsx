@@ -1,6 +1,6 @@
 import { fetchAllUsersCached } from "@/lib/supabase/server-queries";
 import { ExploreContent } from "@/components/explore/explore-content";
-import { siteUrl } from "@/lib/seo";
+import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -37,13 +37,10 @@ export default async function ExplorePage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
-          { "@type": "ListItem", position: 2, name: "Explore Talent", item: `${siteUrl}/explore` },
-        ],
-      },
+      buildBreadcrumbList([
+        { name: "Home", path: "/" },
+        { name: "Explore Talent", path: "/explore" },
+      ]),
       {
         "@type": "ItemList",
         name: "VibeTalent Builders",

@@ -12,6 +12,25 @@ export function getSiteUrl(): string {
   return process.env.NEXT_PUBLIC_SITE_URL || siteUrl;
 }
 
+export type BreadcrumbItem = { name: string; path: string };
+
+/**
+ * Build a Schema.org BreadcrumbList JSON-LD object. Use standalone with
+ * `"@context": "https://schema.org"`, or embed inside an "@graph" array.
+ * `path` of "/" resolves to the bare siteUrl (no trailing slash).
+ */
+export function buildBreadcrumbList(items: BreadcrumbItem[]) {
+  return {
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: item.name,
+      item: item.path === "/" ? siteUrl : `${siteUrl}${item.path}`,
+    })),
+  };
+}
+
 export function createMetadata(options: {
   title: string;
   description: string;

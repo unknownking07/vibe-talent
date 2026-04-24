@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { siteUrl } from "@/lib/seo";
+import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
@@ -10,11 +10,10 @@ export const metadata: Metadata = {
 export default function TermsOfServicePage() {
   const breadcrumbLd = {
     "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
-      { "@type": "ListItem", position: 2, name: "Terms of Service", item: `${siteUrl}/terms` },
-    ],
+    ...buildBreadcrumbList([
+      { name: "Home", path: "/" },
+      { name: "Terms of Service", path: "/terms" },
+    ]),
   };
 
   return (
