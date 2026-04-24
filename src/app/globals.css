@@ -303,8 +303,11 @@ html {
 }
 
 /* Stagger children */
+/* Why: `backwards` (not `both`) clears the transform after the animation ends, so
+   cards don't retain `translateY(0)` — which would create a stacking context and
+   trap popovers (e.g. quality-score info) behind later siblings. */
 .stagger-children > * {
-  animation: fadeInUp 0.25s ease-out both;
+  animation: fadeInUp 0.25s ease-out backwards;
 }
 .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
 .stagger-children > *:nth-child(2) { animation-delay: 30ms; }

@@ -129,9 +129,15 @@ export function Navbar() {
     };
     window.addEventListener("profile-updated", handleProfileUpdated);
 
+    // Refresh the Dashboard-link dot when notifications change (e.g. after
+    // the user logs activity, which marks streak_warning notifications read).
+    // Without this, the dot only clears on a hard refresh.
+    window.addEventListener("notifications-updated", checkUnread);
+
     return () => {
       subscription.unsubscribe();
       window.removeEventListener("profile-updated", handleProfileUpdated);
+      window.removeEventListener("notifications-updated", checkUnread);
     };
   }, [checkUnread]);
 
