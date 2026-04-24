@@ -6,10 +6,24 @@ const siteName = "VibeTalent";
 
 /**
  * Env-overridable site URL for server code (emails, API manifests, cron fan-out)
- * that may run under a preview/staging origin. Falls back to the canonical siteUrl.
+ * that may run under a preview/staging origin.
+ *
+ * Validates NEXT_PUBLIC_SITE_URL: trims whitespace, requires http(s) protocol
+ * and a hostname, and returns .origin (strips trailing slash/path). Falls back
+ * to the canonical siteUrl on any parse failure or invalid input, so a mis-set
+ * env var can never leak garbage into outbound emails or JSON manifests.
  */
 export function getSiteUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL || siteUrl;
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (!envUrl) return siteUrl;
+  try {
+    const parsed = new URL(envUrl);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return siteUrl;
+    if (!parsed.hostname) return siteUrl;
+    return parsed.origin;
+  } catch {
+    return siteUrl;
+  }
 }
 
 export type BreadcrumbItem = { name: string; path: string };
