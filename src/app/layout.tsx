@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     images: [
       {
-        url: `${siteUrl}/og-image.jpg`,
+        url: `${siteUrl}/og-image-v2.jpg`,
         width: 1200,
         height: 630,
         alt: "VibeTalent — Find Vibe Coders Who Actually Ship",
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "VibeTalent — Find Vibe Coders Who Actually Ship",
     description: "The marketplace for vibe coders who ship consistently.",
-    images: [`${siteUrl}/og-image.jpg`],
+    images: [`${siteUrl}/og-image-v2.jpg`],
   },
   alternates: {
     canonical: siteUrl,

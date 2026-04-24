@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: `${siteUrl}/og-image.jpg`,
+        url: `${siteUrl}/og-image-v2.jpg`,
         width: 1200,
         height: 630,
         alt: "VibeTalent Live Feed",

@@ -84,7 +84,7 @@ export default async function HomePage() {
                 url: "https://www.vibetalent.work",
                 logo: {
                   "@type": "ImageObject",
-                  url: "https://www.vibetalent.work/og-image.jpg",
+                  url: "https://www.vibetalent.work/og-image-v2.jpg",
                   width: 1200,
                   height: 630,
                 },
