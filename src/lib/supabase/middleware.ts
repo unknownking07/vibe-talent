@@ -10,25 +10,6 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
-  // Short-circuit unauthenticated traffic: no auth cookie means getUser() would
-  // round-trip to Supabase just to return null. Skipping that fetch eliminates
-  // the hot-path cost for bots, crawlers, and logged-out visitors — the bulk of
-  // public traffic — without changing behavior (protected routes still redirect
-  // to login, unprotected routes still render anonymously).
-  const hasAuthCookie = request.cookies
-    .getAll()
-    .some((c) => c.name.startsWith("sb-") && c.name.endsWith("-auth-token"));
-
-  if (!hasAuthCookie) {
-    const isProtectedRoute = request.nextUrl.pathname.startsWith("/dashboard");
-    if (isProtectedRoute) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/auth/login";
-      return NextResponse.redirect(url);
-    }
-    return NextResponse.next({ request });
-  }
-
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
