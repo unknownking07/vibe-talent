@@ -83,6 +83,12 @@ export async function GET(request: Request) {
           .eq("id", user.id)
           .single();
 
+        // UPDATE-only: we can't INSERT here because users.username is NOT NULL
+        // and we don't have one yet. Brand-new GitHub OAuth signups land on
+        // profile-setup, whose step 1 upsert is responsible for creating the
+        // row with github_username already set (from user.identities). This
+        // branch only fires for returning users whose row already exists —
+        // e.g. avatar refresh or Google→GitHub linkIdentity recovery.
         if (profile) {
           const updates: Record<string, string> = {};
 

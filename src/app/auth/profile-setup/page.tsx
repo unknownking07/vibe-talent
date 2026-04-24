@@ -207,6 +207,9 @@ export default function ProfileSetupPage() {
     setLoading(true);
 
     try {
+      // github_username must be written here because this is the first INSERT
+      // for GitHub-first OAuth signups — users.username is NOT NULL, so no
+      // row exists when /auth/callback runs, and its UPDATE silently no-ops.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: dbError } = await (supabase.from("users") as any).upsert(
         {
@@ -215,6 +218,7 @@ export default function ProfileSetupPage() {
           display_name: profile.display_name.trim() || null,
           bio: profile.bio || null,
           ...(oauthAvatarUrl ? { avatar_url: oauthAvatarUrl } : {}),
+          ...(verifiedGithub ? { github_username: verifiedGithub } : {}),
         },
         { onConflict: "id" }
       );
