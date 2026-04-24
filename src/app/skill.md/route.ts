@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { getSiteUrl } from "@/lib/seo";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.vibetalent.work";
+const SITE_URL = getSiteUrl();
 
 const SKILL_MD = `# VibeTalent Skill
 

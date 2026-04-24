@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { fetchStreakLogs } from "@/lib/supabase/queries";
+import { siteUrl } from "@/lib/seo";
 import { BadgeDisplay } from "@/components/ui/badge-display";
 import type { UserWithSocials } from "@/lib/types/database";
 import { StreakCounter } from "@/components/ui/streak-counter";
@@ -367,7 +368,7 @@ export default function DashboardPage() {
   };
 
   const handleGithubSync = async () => {
-    if (syncingGithub) return;
+    if (syncingGithub || !user) return;
     setSyncingGithub(true);
     setGithubSyncResult(null);
     try {
@@ -379,7 +380,7 @@ export default function DashboardPage() {
         setGithubSyncResult(`\u2713 Synced! Found ${data.events_found} events, logged ${data.dates_logged} day(s).`);
         await reloadUser();
         // Update heatmap
-        const streakData = await fetchStreakLogs(user!.id);
+        const streakData = await fetchStreakLogs(user.id);
         setHeatmapData(streakData);
       } else if (data.error) {
         setGithubSyncResult(`\u26A0 ${data.error}`);
@@ -1416,7 +1417,6 @@ export default function DashboardPage() {
 
         <div className="flex flex-col gap-2">
           {(() => {
-            const siteUrl = "https://www.vibetalent.work";
             const encodedName = encodeURIComponent(user.username);
             const badgeImgUrl = `${siteUrl}/api/badge/${encodedName}`;
             const profileUrl = `${siteUrl}/profile/${encodedName}`;

@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { getSiteUrl } from "@/lib/seo";
 
 let resend: Resend | null = null;
 
@@ -21,10 +22,6 @@ function getResend(): Resend | null {
 
 const FROM = "VibeTalent <notifications@vibetalent.work>";
 const REPLY_TO = "hello@vibetalent.work";
-
-function getSiteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL || "https://www.vibetalent.work";
-}
 
 function unsubUrl(email: string) {
   return `${getSiteUrl()}/settings?tab=emails&ref=unsubscribe&email=${encodeURIComponent(email)}`;

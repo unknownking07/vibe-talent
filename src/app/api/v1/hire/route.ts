@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getSiteUrl } from "@/lib/seo";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -121,9 +122,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL || "https://www.vibetalent.work";
-    const chatUrl = `${siteUrl}/hire/${data.id}/chat`;
+    const chatUrl = `${getSiteUrl()}/hire/${data.id}/chat`;
 
     return NextResponse.json(
       {

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getSiteUrl } from "@/lib/seo";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,8 +8,7 @@ const corsHeaders = {
 };
 
 export async function GET() {
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || "https://www.vibetalent.work";
+  const siteUrl = getSiteUrl();
 
   const spec = {
     openapi: "3.0.0",

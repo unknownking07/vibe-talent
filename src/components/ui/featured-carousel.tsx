@@ -269,9 +269,9 @@ export function FeaturedCarousel() {
                         )}
 
                         {/* Tech stack */}
-                        {(promo.project?.tech_stack ?? []).length > 0 && (
+                        {promo.project?.tech_stack && promo.project.tech_stack.length > 0 && (
                           <div className="mt-3 flex flex-wrap gap-1.5">
-                            {promo.project!.tech_stack.slice(0, 5).map((tech) => (
+                            {promo.project.tech_stack.slice(0, 5).map((tech) => (
                               <span
                                 key={tech}
                                 className="px-2 py-0.5 text-[10px] font-bold uppercase text-[var(--text-tertiary)]"

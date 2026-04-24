@@ -6,6 +6,7 @@ import { ProjectCard } from "@/components/ui/project-card";
 import { HeroCTA } from "@/components/ui/hero-cta";
 import { TestimonialScroll } from "@/components/ui/testimonial-scroll";
 import { fetchHomepageDataCached } from "@/lib/supabase/server-queries";
+import { siteUrl } from "@/lib/seo";
 import { Flame, TrendingUp, Award, Zap, ArrowRight, Code2, Target, Users } from "lucide-react";
 
 export const revalidate = 60;
@@ -65,26 +66,26 @@ export default async function HomePage() {
             "@graph": [
               {
                 "@type": "WebSite",
-                "@id": "https://www.vibetalent.work/#website",
+                "@id": `${siteUrl}/#website`,
                 name: "VibeTalent",
-                url: "https://www.vibetalent.work",
+                url: siteUrl,
                 description:
                   "The marketplace for vibe coders who ship consistently. Find developers based on streaks, shipped projects, and vibe scores.",
-                publisher: { "@id": "https://www.vibetalent.work/#organization" },
+                publisher: { "@id": `${siteUrl}/#organization` },
                 potentialAction: {
                   "@type": "SearchAction",
-                  target: "https://www.vibetalent.work/explore?q={search_term_string}",
+                  target: `${siteUrl}/explore?q={search_term_string}`,
                   "query-input": "required name=search_term_string",
                 },
               },
               {
                 "@type": "Organization",
-                "@id": "https://www.vibetalent.work/#organization",
+                "@id": `${siteUrl}/#organization`,
                 name: "VibeTalent",
-                url: "https://www.vibetalent.work",
+                url: siteUrl,
                 logo: {
                   "@type": "ImageObject",
-                  url: "https://www.vibetalent.work/og-image-v2.jpg",
+                  url: `${siteUrl}/og-image-v2.jpg`,
                   width: 1200,
                   height: 630,
                 },

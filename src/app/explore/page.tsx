@@ -1,5 +1,6 @@
 import { fetchAllUsersCached } from "@/lib/supabase/server-queries";
 import { ExploreContent } from "@/components/explore/explore-content";
+import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -7,12 +8,12 @@ export const metadata: Metadata = {
   description:
     "Discover talented vibe coders. Filter by badge level, streak, tech stack, and more to find the perfect builder for your project.",
   alternates: {
-    canonical: "https://www.vibetalent.work/explore",
+    canonical: `${siteUrl}/explore`,
   },
   openGraph: {
     title: "Explore Vibe Coders — VibeTalent",
     description: "Browse developers by streak, skills, and vibe score. Find the perfect builder for your project.",
-    url: "https://www.vibetalent.work/explore",
+    url: `${siteUrl}/explore`,
     siteName: "VibeTalent",
     type: "website",
   },
@@ -36,13 +37,10 @@ export default async function ExplorePage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Home", item: "https://www.vibetalent.work" },
-          { "@type": "ListItem", position: 2, name: "Explore Talent", item: "https://www.vibetalent.work/explore" },
-        ],
-      },
+      buildBreadcrumbList([
+        { name: "Home", path: "/" },
+        { name: "Explore Talent", path: "/explore" },
+      ]),
       {
         "@type": "ItemList",
         name: "VibeTalent Builders",
@@ -52,7 +50,7 @@ export default async function ExplorePage() {
           "@type": "ListItem",
           position: i + 1,
           name: user.username,
-          url: `https://www.vibetalent.work/profile/${user.username}`,
+          url: `${siteUrl}/profile/${user.username}`,
         })),
       },
     ],

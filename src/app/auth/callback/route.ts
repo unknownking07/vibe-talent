@@ -3,10 +3,27 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
+// Only allow same-origin relative paths. Rejects:
+//   - missing/empty leading slash ("dashboard", ".evil.com")
+//   - protocol-relative URLs ("//evil.com")
+//   - backslash tricks browsers may normalize to "/" ("/\evil.com")
+//   - embedded schemes
+//   - any ASCII control chars (U+0000–U+001F, U+007F) including CR/LF — blocks
+//     header-injection shapes like "/dashboard\r\nLocation: https://evil.com"
+const CONTROL_CHARS = /[\x00-\x1F\x7F]/;
+export function sanitizeNext(raw: string | null): string {
+  if (!raw) return "/dashboard";
+  if (CONTROL_CHARS.test(raw)) return "/dashboard";
+  if (!raw.startsWith("/")) return "/dashboard";
+  if (raw.startsWith("//") || raw.startsWith("/\\")) return "/dashboard";
+  if (raw.includes("\\")) return "/dashboard";
+  return raw;
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const next = sanitizeNext(searchParams.get("next"));
 
   if (code) {
     const cookieStore = await cookies();

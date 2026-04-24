@@ -1,5 +1,6 @@
 import { fetchAllUsersCached } from "@/lib/supabase/server-queries";
 import { LeaderboardContent } from "@/components/leaderboard/leaderboard-content";
+import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
 import { Trophy } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -8,12 +9,12 @@ export const metadata: Metadata = {
   description:
     "See the top vibe coders ranked by vibe score, streak, and projects shipped. The most consistent builders on the platform.",
   alternates: {
-    canonical: "https://www.vibetalent.work/leaderboard",
+    canonical: `${siteUrl}/leaderboard`,
   },
   openGraph: {
     title: "Top Vibe Coders — VibeTalent Leaderboard",
     description: "See the top developers ranked by vibe score, coding streak, and projects shipped.",
-    url: "https://www.vibetalent.work/leaderboard",
+    url: `${siteUrl}/leaderboard`,
     siteName: "VibeTalent",
     type: "website",
   },
@@ -37,13 +38,10 @@ export default async function LeaderboardPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Home", item: "https://www.vibetalent.work" },
-          { "@type": "ListItem", position: 2, name: "Leaderboard", item: "https://www.vibetalent.work/leaderboard" },
-        ],
-      },
+      buildBreadcrumbList([
+        { name: "Home", path: "/" },
+        { name: "Leaderboard", path: "/leaderboard" },
+      ]),
       {
         "@type": "ItemList",
         name: "VibeTalent Leaderboard",
@@ -53,7 +51,7 @@ export default async function LeaderboardPage() {
           "@type": "ListItem",
           position: i + 1,
           name: user.username,
-          url: `https://www.vibetalent.work/profile/${user.username}`,
+          url: `${siteUrl}/profile/${user.username}`,
         })),
       },
     ],

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSiteUrl } from "@/lib/seo";
 
 /**
  * Daily orchestrator cron — fans out to individual cron job routes.
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.vibetalent.work";
+  const siteUrl = getSiteUrl();
   const headers = { authorization: `Bearer ${cronSecret}` };
 
   const jobs = [
