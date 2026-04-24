@@ -1,0 +1,158 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`calculateVibeScore numeric baseline > beginner — 5 streak, 1 unverified, no badge 1`] = `21`;
+
+exports[`calculateVibeScore numeric baseline > diamond with endorsements + review bonus 1`] = `951`;
+
+exports[`calculateVibeScore numeric baseline > flagged project contributes zero 1`] = `35`;
+
+exports[`calculateVibeScore numeric baseline > high-score — 200 streak, 3 projects with quality scores, gold 1`] = `461`;
+
+exports[`calculateVibeScore numeric baseline > legacy path — count-based scoring, no project detail 1`] = `97`;
+
+exports[`calculateVibeScore numeric baseline > shipper — 45 streak, 3 verified projects, bronze 1`] = `125`;
+
+exports[`evaluateUser numeric baseline (locks before refactor) > beginner persona — low streak, 1 unverified project 1`] = `
+{
+  "badge_level": "none",
+  "dimensions": {
+    "activity_recency": 62,
+    "client_outcomes": 0,
+    "consistency": 19,
+    "project_quality": 2,
+    "reputation": 3,
+    "tech_breadth": 36,
+  },
+  "overall_score": 15,
+  "risks_count": 4,
+  "strengths_count": 2,
+  "username": "beginner",
+}
+`;
+
+exports[`evaluateUser numeric baseline (locks before refactor) > diamond persona — top-tier across all dimensions 1`] = `
+{
+  "badge_level": "diamond",
+  "dimensions": {
+    "activity_recency": 100,
+    "client_outcomes": 0,
+    "consistency": 100,
+    "project_quality": 100,
+    "reputation": 100,
+    "tech_breadth": 36,
+  },
+  "overall_score": 70,
+  "risks_count": 1,
+  "strengths_count": 6,
+  "username": "diamond",
+}
+`;
+
+exports[`evaluateUser numeric baseline (locks before refactor) > high-score gold persona — long streak + quality metrics 1`] = `
+{
+  "badge_level": "gold",
+  "dimensions": {
+    "activity_recency": 100,
+    "client_outcomes": 0,
+    "consistency": 100,
+    "project_quality": 93,
+    "reputation": 100,
+    "tech_breadth": 36,
+  },
+  "overall_score": 69,
+  "risks_count": 1,
+  "strengths_count": 6,
+  "username": "highscore",
+}
+`;
+
+exports[`evaluateUser numeric baseline (locks before refactor) > inactive persona — zero current streak but past activity 1`] = `
+{
+  "badge_level": "bronze",
+  "dimensions": {
+    "activity_recency": 20,
+    "client_outcomes": 0,
+    "consistency": 49,
+    "project_quality": 2,
+    "reputation": 27,
+    "tech_breadth": 36,
+  },
+  "overall_score": 19,
+  "risks_count": 4,
+  "strengths_count": 2,
+  "username": "inactive",
+}
+`;
+
+exports[`evaluateUser numeric baseline (locks before refactor) > shipper persona — bronze badge, 3 verified projects 1`] = `
+{
+  "badge_level": "bronze",
+  "dimensions": {
+    "activity_recency": 78,
+    "client_outcomes": 0,
+    "consistency": 100,
+    "project_quality": 100,
+    "reputation": 38,
+    "tech_breadth": 36,
+  },
+  "overall_score": 59,
+  "risks_count": 1,
+  "strengths_count": 4,
+  "username": "shipper",
+}
+`;
+
+exports[`matchUsers numeric baseline > orders and scores across 5 personas deterministically 1`] = `
+[
+  {
+    "match_score": 79,
+    "matched_skills": [
+      "React",
+      "Typescript",
+    ],
+    "reasons_count": 4,
+    "recommended_for": "MVP development",
+    "username": "highscore",
+  },
+  {
+    "match_score": 79,
+    "matched_skills": [
+      "React",
+      "Typescript",
+    ],
+    "reasons_count": 4,
+    "recommended_for": "MVP development",
+    "username": "diamond",
+  },
+  {
+    "match_score": 74,
+    "matched_skills": [
+      "React",
+      "Typescript",
+    ],
+    "reasons_count": 4,
+    "recommended_for": "MVP development",
+    "username": "shipper",
+  },
+  {
+    "match_score": 50,
+    "matched_skills": [
+      "React",
+      "Typescript",
+    ],
+    "reasons_count": 2,
+    "recommended_for": "MVP development",
+    "username": "inactive",
+  },
+  {
+    "match_score": 49,
+    "matched_skills": [
+      "React",
+      "Typescript",
+    ],
+    "reasons_count": 1,
+    "recommended_for": "MVP development",
+    "username": "beginner",
+  },
+]
+`;

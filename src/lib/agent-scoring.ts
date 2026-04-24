@@ -1,14 +1,15 @@
 import type { UserWithSocials } from "./types/database";
 import type { EvaluationResult, EvaluationDimensions, MatchResult, TaskRequest } from "./types/agent";
+import { AGENT_EVAL, MATCH } from "./scoring-config";
 
 function clamp(min: number, max: number, value: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
 function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
-  // Consistency: based on streak and longest_streak
+  const C = AGENT_EVAL.consistency;
   const consistency = clamp(0, 100,
-    (user.streak * 0.6 + user.longest_streak * 0.4) / 3.65 * 10
+    (user.streak * C.streakWeight + user.longest_streak * C.longestStreakWeight) / C.normalizer * C.scale
   );
 
   // Project Quality: use GitHub quality scores when available, fallback to heuristics
@@ -21,48 +22,51 @@ function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
   const scoredProjects = verifiedProjects.filter(p => p.quality_metrics != null);
   let project_quality: number;
   if (scoredProjects.length > 0) {
-    // Average quality score of analyzed projects (weighted heavily)
+    const PQ = AGENT_EVAL.projectQuality;
     const avgQuality = scoredProjects.reduce((sum, p) => sum + p.quality_score, 0) / scoredProjects.length;
-    // Bonus for quantity of quality projects + live URLs
-    const quantityBonus = Math.min(20, scoredProjects.length * 5);
-    const liveBonus = Math.min(15, withLiveUrl * 5);
-    const liveSiteOkBonus = verifiedProjects.filter(p => p.live_url_ok === true).length * 5;
+    const quantityBonus = Math.min(PQ.quantityBonusMax, scoredProjects.length * PQ.quantityBonusPerProject);
+    const liveBonus = Math.min(PQ.liveBonusMax, withLiveUrl * PQ.liveBonusPerProject);
+    const liveSiteOkBonus = verifiedProjects.filter(p => p.live_url_ok === true).length * PQ.liveSiteOkPerProject;
     project_quality = clamp(0, 100,
-      avgQuality * 0.6 + quantityBonus + liveBonus + liveSiteOkBonus + unverifiedProjects.length * 1
+      avgQuality * PQ.avgWeight + quantityBonus + liveBonus + liveSiteOkBonus + unverifiedProjects.length * PQ.unverifiedPointsPer
     );
   } else {
-    // Fallback: original heuristic scoring
+    const PQF = AGENT_EVAL.projectQualityFallback;
     const avgDescLen = verifiedProjects.length > 0
       ? verifiedProjects.reduce((sum, p) => sum + p.description.length, 0) / verifiedProjects.length
       : 0;
     project_quality = clamp(0, 100,
-      verifiedProjects.length * 15 + unverifiedProjects.length * 2 +
-      withLiveUrl * 10 + withGithub * 5 + (avgDescLen > 50 ? 10 : 0)
+      verifiedProjects.length * PQF.verifiedPer + unverifiedProjects.length * PQF.unverifiedPer +
+      withLiveUrl * PQF.liveUrlPer + withGithub * PQF.githubPer + (avgDescLen > PQF.longDescThreshold ? PQF.longDescBonus : 0)
     );
   }
 
   // Tech Breadth: unique technologies
   const allTech = new Set((user.projects ?? []).flatMap(p => (p.tech_stack ?? []).map(t => t.toLowerCase())));
-  const tech_breadth = clamp(0, 100, allTech.size * 12);
+  const tech_breadth = clamp(0, 100, allTech.size * AGENT_EVAL.techBreadth.perUniqueTech);
 
   // Activity Recency: based on active streak
+  const AR = AGENT_EVAL.activityRecency;
   const activity_recency = user.streak > 0
-    ? clamp(0, 100, 60 + Math.min(40, user.streak * 0.4))
-    : 20;
+    ? clamp(0, 100, AR.activeBase + Math.min(AR.activeMaxBonus, user.streak * AR.perStreakDay))
+    : AR.inactiveScore;
 
   // Endorsements bonus: peer-validated projects boost quality
   const totalEndorsements = (user.projects ?? []).reduce((sum, p) => sum + (p.endorsement_count || 0), 0);
-  const endorsementBonus = Math.min(15, totalEndorsements * 3);
+  const endorsementBonus = Math.min(
+    AGENT_EVAL.projectQuality.endorsementBonusMax,
+    totalEndorsements * AGENT_EVAL.projectQuality.endorsementBonusPer
+  );
   project_quality = clamp(0, 100, project_quality + endorsementBonus);
 
   // Reputation: based on vibe_score, badge, and client reviews
-  const badgeBonus = { none: 0, bronze: 10, silver: 20, gold: 35, diamond: 50 };
+  const REP = AGENT_EVAL.reputation;
   const reviews = (user as unknown as Record<string, unknown>).reviews as Array<{ rating: number }> | undefined;
   const reviewBonus = reviews && reviews.length > 0
-    ? Math.min(25, Math.round((reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) * reviews.length * 1.5))
+    ? Math.min(REP.reviewCap, Math.round((reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) * reviews.length * REP.reviewMultiplier))
     : 0;
   const reputation = clamp(0, 100,
-    (user.vibe_score / 9) + (badgeBonus[user.badge_level] || 0) + reviewBonus
+    (user.vibe_score / REP.vibeScoreDivisor) + (AGENT_EVAL.badgeBonuses[user.badge_level] || 0) + reviewBonus
   );
 
   // Client Outcomes: real hire completions, trusted reviews, repeat clients
@@ -132,7 +136,7 @@ function extractStrengths(user: UserWithSocials, dims: EvaluationDimensions): st
   }
   const totalEndorsements = (user.projects ?? []).reduce((sum, p) => sum + (p.endorsement_count || 0), 0);
   if (totalEndorsements >= 5) strengths.push(`${totalEndorsements} peer endorsements across projects`);
-  return strengths.slice(0, 6);
+  return strengths.slice(0, AGENT_EVAL.maxStrengths);
 }
 
 function extractRisks(user: UserWithSocials, dims: EvaluationDimensions): string[] {
@@ -157,7 +161,7 @@ function extractRisks(user: UserWithSocials, dims: EvaluationDimensions): string
       risks.push("Slow to respond (> 3 days avg)");
     }
   }
-  return risks.slice(0, 5);
+  return risks.slice(0, AGENT_EVAL.maxRisks);
 }
 
 export function evaluateUser(user: UserWithSocials): EvaluationResult {
@@ -165,13 +169,14 @@ export function evaluateUser(user: UserWithSocials): EvaluationResult {
 
   // Weights: quality and client outcomes are heaviest (hardest to fake)
   // Consistency is lowest weight (easiest to fake with daily commits)
+  const W = AGENT_EVAL.overallWeights;
   const overall = Math.round(
-    dims.project_quality * 0.25 +
-    dims.client_outcomes * 0.20 +
-    dims.consistency * 0.15 +
-    dims.tech_breadth * 0.15 +
-    dims.activity_recency * 0.10 +
-    dims.reputation * 0.15
+    dims.project_quality * W.projectQuality +
+    dims.client_outcomes * W.clientOutcomes +
+    dims.consistency * W.consistency +
+    dims.tech_breadth * W.techBreadth +
+    dims.activity_recency * W.activityRecency +
+    dims.reputation * W.reputation
   );
 
   return {
@@ -201,29 +206,30 @@ export function matchUsers(users: UserWithSocials[], task: TaskRequest): MatchRe
     const userTechSet = new Set(userTech);
     const userTags = (user.projects ?? []).flatMap(p => (p.tags ?? []).map(t => t.toLowerCase()));
 
-    // Skill overlap (40%)
+    // Skill overlap
     const matchedSkills = requestedTech.filter(t => userTechSet.has(t));
     const skillScore = requestedTech.length > 0
       ? (matchedSkills.length / requestedTech.length) * 100
-      : 50;
+      : MATCH.defaultSkillScore;
 
-    // Evaluation score (30%)
+    // Evaluation score
     const evalResult = evaluateUser(user);
     const evalScore = evalResult.overall_score;
 
-    // Tag relevance (15%)
+    // Tag relevance
     const descWords = task.description.toLowerCase().split(/\s+/);
     const tagMatches = userTags.filter(t => descWords.some(w => t.includes(w) || w.includes(t)));
-    const tagScore = tagMatches.length > 0 ? 80 : 20;
+    const tagScore = tagMatches.length > 0 ? MATCH.tagMatchScore : MATCH.tagNoMatchScore;
 
-    // Availability proxy (15%)
-    const availScore = user.streak > 0 ? Math.min(100, user.streak * 2) : 10;
+    // Availability proxy
+    const A = MATCH.availability;
+    const availScore = user.streak > 0 ? Math.min(A.activeCap, user.streak * A.activeMultiplier) : A.inactiveScore;
 
     const match_score = Math.round(
-      skillScore * 0.40 +
-      evalScore * 0.30 +
-      tagScore * 0.15 +
-      availScore * 0.15
+      skillScore * MATCH.weights.skill +
+      evalScore * MATCH.weights.evaluation +
+      tagScore * MATCH.weights.tag +
+      availScore * MATCH.weights.availability
     );
 
     const match_reasons: string[] = [];
@@ -243,13 +249,13 @@ export function matchUsers(users: UserWithSocials[], task: TaskRequest): MatchRe
     return {
       user,
       match_score,
-      match_reasons: match_reasons.slice(0, 4),
+      match_reasons: match_reasons.slice(0, MATCH.maxReasons),
       matched_skills: matchedSkills.map(s => s.charAt(0).toUpperCase() + s.slice(1)),
       recommended_for: projectTypeLabels[task.project_type] || "General development",
     };
   });
 
-  return results.sort((a, b) => b.match_score - a.match_score).slice(0, 5);
+  return results.sort((a, b) => b.match_score - a.match_score).slice(0, MATCH.maxResults);
 }
 
 export function generateHireMessage(

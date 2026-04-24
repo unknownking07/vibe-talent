@@ -1,4 +1,5 @@
 import type { BadgeLevel } from "@/lib/types/database";
+import { VIBE_SCORE, PROJECT_SCORE, BADGE_THRESHOLDS } from "@/lib/scoring-config";
 
 /** Minimal project shape needed for quality scoring. */
 export interface ProjectScoreInput {
@@ -86,14 +87,18 @@ export function calculateStreak(activityDates: string[]): {
  *   Max per project:  15 pts
  */
 export function calculateProjectScore(project: ProjectScoreInput): number {
-  if (!project.verified) return 1;
+  if (!project.verified) return PROJECT_SCORE.unverifiedFlat;
 
-  let score = 5;
-  if (project.live_url) score += 3;
-  if (project.github_url) score += 2;
-  if (project.description && project.description.length > 50) score += 2;
-  if (project.image_url) score += 1;
-  if (project.tech_stack && project.tech_stack.length >= 3) score += 2;
+  let score = PROJECT_SCORE.verifiedBase;
+  if (project.live_url) score += PROJECT_SCORE.liveUrlBonus;
+  if (project.github_url) score += PROJECT_SCORE.githubBonus;
+  if (project.description && project.description.length > PROJECT_SCORE.longDescThreshold) {
+    score += PROJECT_SCORE.longDescBonus;
+  }
+  if (project.image_url) score += PROJECT_SCORE.imageBonus;
+  if (project.tech_stack && project.tech_stack.length >= PROJECT_SCORE.techStackThreshold) {
+    score += PROJECT_SCORE.techStackBonus;
+  }
   return score;
 }
 
@@ -104,7 +109,7 @@ export function calculateProjectScore(project: ProjectScoreInput): number {
  */
 export function calculateReviewBonus(avgRating: number, reviewCount: number): number {
   if (reviewCount === 0) return 0;
-  return Math.min(50, Math.round(avgRating * reviewCount * 2));
+  return Math.min(VIBE_SCORE.reviewCap, Math.round(avgRating * reviewCount * VIBE_SCORE.reviewMultiplier));
 }
 
 /**
@@ -138,9 +143,8 @@ export function calculateVibeScore(
   reviewBonus: number = 0,
   endorsementCount: number = 0
 ): number {
-  // Baseline: every verified GitHub user starts with 10 points
-  const baseline = 10;
-  const streakPoints = currentStreak * 2;
+  const baseline = VIBE_SCORE.baseline;
+  const streakPoints = currentStreak * VIBE_SCORE.perStreakDay;
 
   let projectPoints: number;
   if (projects && projects.length > 0) {
@@ -149,11 +153,14 @@ export function calculateVibeScore(
       .filter((p) => !p.flagged)
       .reduce((sum, p) => {
         if (p.verified && p.quality_score && p.quality_score > 0) {
-          return sum + Math.min(Math.floor(p.quality_score / 10), 10);
+          return sum + Math.min(
+            Math.floor(p.quality_score / VIBE_SCORE.qualityScoreDivisor),
+            VIBE_SCORE.qualityScoreCapPerProject
+          );
         } else if (p.verified) {
-          return sum + 5;
+          return sum + VIBE_SCORE.verifiedProjectBase;
         }
-        return sum + 1;
+        return sum + VIBE_SCORE.unverifiedProjectPoints;
       }, 0);
   } else if (Array.isArray(projectCountOrProjects)) {
     // Score each project individually using ProjectScoreInput
@@ -165,31 +172,22 @@ export function calculateVibeScore(
     // Legacy path: flat scoring for backward compatibility
     const verified = verifiedCount ?? projectCountOrProjects;
     const unverified = projectCountOrProjects - verified;
-    projectPoints = verified * 5 + unverified * 1;
+    projectPoints = verified * VIBE_SCORE.verifiedProjectBase + unverified * VIBE_SCORE.unverifiedProjectPoints;
   }
 
-  const badgeBonusMap: Record<BadgeLevel, number> = {
-    none: 0,
-    bronze: 10,
-    silver: 20,
-    gold: 30,
-    diamond: 40,
-  };
+  const endorsementPoints = endorsementCount * VIBE_SCORE.perEndorsement;
 
-  // +5 per endorsement received on user's projects
-  const endorsementPoints = endorsementCount * 5;
-
-  return baseline + streakPoints + projectPoints + badgeBonusMap[badgeLevel] + reviewBonus + endorsementPoints;
+  return baseline + streakPoints + projectPoints + VIBE_SCORE.badgeBonuses[badgeLevel] + reviewBonus + endorsementPoints;
 }
 
 /**
  * Determine badge level from longest streak.
  */
 export function getBadgeLevel(longestStreak: number): BadgeLevel {
-  if (longestStreak >= 365) return "diamond";
-  if (longestStreak >= 180) return "gold";
-  if (longestStreak >= 90) return "silver";
-  if (longestStreak >= 30) return "bronze";
+  if (longestStreak >= BADGE_THRESHOLDS.diamond) return "diamond";
+  if (longestStreak >= BADGE_THRESHOLDS.gold) return "gold";
+  if (longestStreak >= BADGE_THRESHOLDS.silver) return "silver";
+  if (longestStreak >= BADGE_THRESHOLDS.bronze) return "bronze";
   return "none";
 }
 
