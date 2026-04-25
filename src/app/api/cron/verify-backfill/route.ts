@@ -56,10 +56,17 @@ export async function GET(req: NextRequest) {
     // projects once the stuck backlog exceeds MAX_PROJECTS_PER_RUN.
     const retryWindow = new Date(Date.now() - RETRY_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
+    // Two classes of candidates:
+    //   1. verified=false — never (successfully) verified yet.
+    //   2. verified=true AND quality_metrics IS NULL — legacy rows from the
+    //      old auto-verify path that marked verified without metrics when
+    //      the GitHub analysis silently failed (e.g. rate limit during
+    //      the after() callback). These need a re-analysis to populate the
+    //      quality_score; otherwise they show "Verified" with score 0 forever.
     const { data: candidates, error: projectsError } = await sb
       .from("projects")
-      .select("id, user_id, github_url, live_url, title")
-      .eq("verified", false)
+      .select("id, user_id, github_url, live_url, title, verified")
+      .or("verified.eq.false,quality_metrics.is.null")
       .eq("flagged", false)
       .not("github_url", "is", null)
       .neq("github_url", "")
@@ -116,6 +123,7 @@ export async function GET(req: NextRequest) {
             github_url: string;
             live_url: string | null;
             title: string;
+            verified: boolean;
           }) => {
             try {
               const parsed = parseGithubRepoUrl(project.github_url);
@@ -189,13 +197,17 @@ export async function GET(req: NextRequest) {
 
               verified++;
 
-              createNotification({
-                user_id: project.user_id,
-                type: "project_verified",
-                title: "Project auto-verified",
-                message: `Your project "${project.title}" was auto-verified. Quality score: ${qualityScore}/100.`,
-                metadata: { project_id: project.id, quality_score: qualityScore },
-              }).catch((err) => console.error("verify-backfill: notification failed:", err));
+              // Only notify on the first verification — projects already
+              // verified are just getting their quality_metrics backfilled.
+              if (!project.verified) {
+                createNotification({
+                  user_id: project.user_id,
+                  type: "project_verified",
+                  title: "Project auto-verified",
+                  message: `Your project "${project.title}" was auto-verified. Quality score: ${qualityScore}/100.`,
+                  metadata: { project_id: project.id, quality_score: qualityScore },
+                }).catch((err) => console.error("verify-backfill: notification failed:", err));
+              }
             } catch (err) {
               console.error(`verify-backfill: failed for project ${project.id}:`, err);
               errors++;
