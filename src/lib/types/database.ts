@@ -132,7 +132,7 @@ export interface Referral {
   created_at: string;
 }
 
-export type NotificationType = "hire_request" | "streak_milestone" | "streak_warning" | "badge_earned" | "project_verified" | "project_flagged" | "new_review" | "profile_view_summary" | "weekly_digest" | "vibe_score_milestone" | "project_missing_links";
+export type NotificationType = "hire_request" | "streak_milestone" | "streak_warning" | "badge_earned" | "project_verified" | "project_flagged" | "new_review" | "profile_view_summary" | "weekly_digest" | "vibe_score_milestone" | "project_missing_links" | "referral_prompt";
 
 export interface ProfileView {
   id: string;
