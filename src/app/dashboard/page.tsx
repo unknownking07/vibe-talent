@@ -52,19 +52,35 @@ function MidnightCountdown({ onMidnight }: { onMidnight: () => void }) {
   }, [onMidnight]);
 
   useEffect(() => {
+    // Detect midnight rollover by comparing the local calendar date
+    // between ticks. We can't use a `diff <= 0` check against the next
+    // midnight: setHours(24, 0, 0, 0) always produces *next* midnight,
+    // so the moment we cross 00:00 the target jumps a full 24h ahead and
+    // diff is never ≤ 0. The previous in-parent implementation had the
+    // same bug — a user who left the dashboard open across midnight
+    // would see the countdown wrap to "21:00:00" instead of resetting.
+    let prevLocalDate: string | null = null;
+
     const tick = () => {
-      // Skip work while the tab is hidden — user can't see the value, and
-      // browsers throttle setInterval anyway, so this just avoids needless
-      // setState + reconciliation while backgrounded.
-      if (typeof document !== "undefined" && document.hidden) return;
+      // Skip while the tab is hidden — the visibilitychange handler
+      // calls tick() the moment the user returns, which both re-syncs
+      // the display and catches a crossed-midnight rollover.
+      if (document.hidden) return;
       const now = new Date();
-      const midnight = new Date(now);
-      midnight.setHours(24, 0, 0, 0);
-      const diff = midnight.getTime() - now.getTime();
-      if (diff <= 0) {
+      const today = now.toDateString();
+      if (prevLocalDate !== null && prevLocalDate !== today) {
+        // Update the ref before firing so a duplicate tick (setInterval
+        // racing with visibilitychange) does not re-trigger onMidnight
+        // before the parent unmounts this component.
+        prevLocalDate = today;
         onMidnightRef.current();
         return;
       }
+      prevLocalDate = today;
+
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0);
+      const diff = midnight.getTime() - now.getTime();
       const hours = Math.floor(diff / 3_600_000);
       const minutes = Math.floor((diff % 3_600_000) / 60_000);
       const seconds = Math.floor((diff % 60_000) / 1000);
@@ -75,7 +91,8 @@ function MidnightCountdown({ onMidnight }: { onMidnight: () => void }) {
     tick();
     const interval = setInterval(tick, 1000);
     // Re-sync immediately when the tab becomes visible after being hidden,
-    // otherwise the displayed value would lag by up to a second.
+    // otherwise the displayed value would lag by up to a second and a
+    // crossed-midnight rollover would wait for the next setInterval tick.
     const onVisibility = () => { if (!document.hidden) tick(); };
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
