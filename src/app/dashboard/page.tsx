@@ -37,6 +37,73 @@ import {
   Zap,
 } from "lucide-react";
 
+// Isolated 1Hz timer so it does not re-render the entire DashboardPage tree
+// (heatmap, project cards, milestone, etc.) every second. With this lifted
+// out, the per-second update only re-renders ~3 DOM nodes; left in the
+// parent, an open dashboard tab built up enough reconciliation work over
+// hours to noticeably slow the browser.
+function MidnightCountdown({ onMidnight }: { onMidnight: () => void }) {
+  const [label, setLabel] = useState("");
+  // Read the latest callback via ref so a changing prop identity does not
+  // restart the interval on every parent re-render.
+  const onMidnightRef = useRef(onMidnight);
+  useEffect(() => {
+    onMidnightRef.current = onMidnight;
+  }, [onMidnight]);
+
+  useEffect(() => {
+    // Detect midnight rollover by comparing the local calendar date
+    // between ticks. We can't use a `diff <= 0` check against the next
+    // midnight: setHours(24, 0, 0, 0) always produces *next* midnight,
+    // so the moment we cross 00:00 the target jumps a full 24h ahead and
+    // diff is never ≤ 0. The previous in-parent implementation had the
+    // same bug — a user who left the dashboard open across midnight
+    // would see the countdown wrap to "21:00:00" instead of resetting.
+    let prevLocalDate: string | null = null;
+
+    const tick = () => {
+      // Skip while the tab is hidden — the visibilitychange handler
+      // calls tick() the moment the user returns, which both re-syncs
+      // the display and catches a crossed-midnight rollover.
+      if (document.hidden) return;
+      const now = new Date();
+      const today = now.toDateString();
+      if (prevLocalDate !== null && prevLocalDate !== today) {
+        // Update the ref before firing so a duplicate tick (setInterval
+        // racing with visibilitychange) does not re-trigger onMidnight
+        // before the parent unmounts this component.
+        prevLocalDate = today;
+        onMidnightRef.current();
+        return;
+      }
+      prevLocalDate = today;
+
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0);
+      const diff = midnight.getTime() - now.getTime();
+      const hours = Math.floor(diff / 3_600_000);
+      const minutes = Math.floor((diff % 3_600_000) / 60_000);
+      const seconds = Math.floor((diff % 60_000) / 1000);
+      setLabel(
+        `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+      );
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    // Re-sync immediately when the tab becomes visible after being hidden,
+    // otherwise the displayed value would lag by up to a second and a
+    // crossed-midnight rollover would wait for the next setInterval tick.
+    const onVisibility = () => { if (!document.hidden) tick(); };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
+
+  return <>{label}</>;
+}
+
 export default function DashboardPage() {
   const [user, setUser] = useState<UserWithSocials | null>(null);
   const [heatmapData, setHeatmapData] = useState<Record<string, number>>({});
@@ -263,7 +330,6 @@ export default function DashboardPage() {
   const [todayLogged, setTodayLogged] = useState(false);
   const [logging, setLogging] = useState(false);
   const [logError, setLogError] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState("");
   const [addingProject, setAddingProject] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingOriginalGithubUrl, setEditingOriginalGithubUrl] = useState<string>("");
@@ -527,9 +593,12 @@ export default function DashboardPage() {
     setSendingReply(false);
   };
 
-  // Check if already logged today on mount
+  // Check if already logged today on mount. Keyed on user.id (not the whole
+  // user object) so the query does not re-run on every setUser call — e.g.
+  // the optimistic streak/longest_streak update after Log Activity used to
+  // re-trigger this effect because setUser swapped the object reference.
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
@@ -539,34 +608,17 @@ export default function DashboardPage() {
       .then(({ data }: { data: { id: string }[] | null }) => {
         if (data && data.length > 0) setTodayLogged(true);
       });
-  }, [user]);
+  }, [user?.id]);
 
-  // Countdown timer until midnight
-  useEffect(() => {
-    if (!todayLogged) return;
-    const updateCountdown = () => {
-      const now = new Date();
-      const midnight = new Date(now);
-      midnight.setHours(24, 0, 0, 0);
-      const diff = midnight.getTime() - now.getTime();
-      if (diff <= 0) {
-        // Midnight passed — reset so user can log again
-        setTodayLogged(false);
-        setCountdown("");
-        // Tell navbar the dot should reappear for the new day.
-        window.dispatchEvent(new Event("streak-updated"));
-        reloadUser();
-        return;
-      }
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-      setCountdown(`${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`);
-    };
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 1000);
-    return () => clearInterval(interval);
-  }, [todayLogged, reloadUser]);
+  // Midnight rollover handler — fires from <MidnightCountdown /> when the
+  // countdown ticks past 00:00. Resets the local state so the user can log
+  // again, tells the navbar to bring the unlogged-today dot back, and
+  // refreshes the profile so streak/badge values reflect the new day.
+  const handleMidnight = useCallback(() => {
+    setTodayLogged(false);
+    window.dispatchEvent(new Event("streak-updated"));
+    reloadUser();
+  }, [reloadUser]);
 
   const handleLogActivity = async () => {
     if (!user || todayLogged || logging) return;
@@ -1331,7 +1383,9 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-center justify-center gap-1.5">
                 <Clock size={12} className="text-[var(--status-success-text)]" />
-                <span className="text-sm font-extrabold font-mono text-[var(--status-success-text)]">{countdown}</span>
+                <span className="text-sm font-extrabold font-mono text-[var(--status-success-text)]">
+                  <MidnightCountdown onMidnight={handleMidnight} />
+                </span>
               </div>
             </div>
           ) : (
