@@ -538,6 +538,7 @@ export default function SettingsPage() {
               <option value="Claude Code (Pro)">Claude Code (Pro)</option>
               <option value="Claude Code (Max 5x)">Claude Code (Max 5x)</option>
               <option value="Claude Code (Max 20x)">Claude Code (Max 20x)</option>
+              <option value="Codex">Codex</option>
               <option value="Cursor">Cursor</option>
               <option value="Windsurf">Windsurf</option>
               <option value="Antigravity">Antigravity</option>
