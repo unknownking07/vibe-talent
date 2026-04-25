@@ -244,14 +244,27 @@ export default function SettingsPage() {
 
     const trimmedDisplayName = profileForm.display_name.trim();
 
-    // Preserve the verified GitHub handle — it's only set via OAuth linking,
-    // never from a free-text field on this page.
-    const verifiedGithub = user.github_username || user.social_links?.github || null;
+    // Source of truth for the verified GitHub handle is the OAuth identity in
+    // the auth session — never social_links.github, which is just a mirror.
+    // This matches loadUserData's lookup so a save always agrees with the
+    // initial sync on page load.
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ghIdentity = authUser?.identities?.find((i: any) => i.provider === "github");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ghData = (ghIdentity?.identity_data ?? {}) as any;
+    const oauthGithub =
+      ghData.user_name ||
+      ghData.preferred_username ||
+      authUser?.user_metadata?.user_name ||
+      authUser?.user_metadata?.preferred_username ||
+      null;
+    const verifiedGithub = user.github_username || oauthGithub;
 
     // Backfill users.github_username for accounts that linked GitHub after
     // initial signup: the OAuth callback sets it, but earlier flows could
-    // leave it null while social_links.github was populated, which kept the
-    // blue verified badge from rendering.
+    // leave it null while the GitHub identity was already attached, which
+    // kept the blue verified badge from rendering.
     await sb
       .from("users")
       .update({

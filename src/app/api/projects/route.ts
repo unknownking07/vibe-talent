@@ -133,7 +133,8 @@ export async function POST(request: NextRequest) {
               console.error(
                 "Auto-verify skipped for project",
                 data.id,
-                "quality analysis failed"
+                "quality analysis failed:",
+                qualityResult.error ?? "unknown error"
               );
               return;
             }
