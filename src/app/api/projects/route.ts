@@ -124,23 +124,35 @@ export async function POST(request: NextRequest) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const sb = supabase as any;
             const qualityResult = await analyzeRepository(repoOwner, repoName);
-            const qualityScore = qualityResult.success ? (qualityResult.metrics?.quality_score ?? 0) : 0;
-            const qualityMetrics = (qualityResult.success && qualityResult.metrics)
-              ? {
-                  stars: qualityResult.metrics.stars,
-                  forks: qualityResult.metrics.forks,
-                  contributors: qualityResult.metrics.contributors,
-                  total_commits: qualityResult.metrics.total_commits,
-                  has_tests: qualityResult.metrics.has_tests,
-                  has_ci: qualityResult.metrics.has_ci,
-                  has_readme: qualityResult.metrics.has_readme,
-                  community_score: qualityResult.metrics.community_score,
-                  substance_score: qualityResult.metrics.substance_score,
-                  maintenance_score: qualityResult.metrics.maintenance_score,
-                  quality_score: qualityResult.metrics.quality_score,
-                  analyzed_at: new Date().toISOString(),
-                }
-              : null;
+
+            // If GitHub analysis fails (rate limit, transient API error, etc.)
+            // leave the project unverified so the cron backfill can retry it.
+            // Marking verified=true with quality_score=0 was hiding silent
+            // failures from users.
+            if (!qualityResult.success || !qualityResult.metrics) {
+              console.error(
+                "Auto-verify skipped for project",
+                data.id,
+                "quality analysis failed"
+              );
+              return;
+            }
+
+            const qualityScore = qualityResult.metrics.quality_score;
+            const qualityMetrics = {
+              stars: qualityResult.metrics.stars,
+              forks: qualityResult.metrics.forks,
+              contributors: qualityResult.metrics.contributors,
+              total_commits: qualityResult.metrics.total_commits,
+              has_tests: qualityResult.metrics.has_tests,
+              has_ci: qualityResult.metrics.has_ci,
+              has_readme: qualityResult.metrics.has_readme,
+              community_score: qualityResult.metrics.community_score,
+              substance_score: qualityResult.metrics.substance_score,
+              maintenance_score: qualityResult.metrics.maintenance_score,
+              quality_score: qualityResult.metrics.quality_score,
+              analyzed_at: new Date().toISOString(),
+            };
 
             let live_url_ok: boolean | null = null;
             if (liveUrlTrim) {

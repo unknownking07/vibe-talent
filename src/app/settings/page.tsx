@@ -243,18 +243,24 @@ export default function SettingsPage() {
     const sb = supabase as any;
 
     const trimmedDisplayName = profileForm.display_name.trim();
+
+    // Preserve the verified GitHub handle — it's only set via OAuth linking,
+    // never from a free-text field on this page.
+    const verifiedGithub = user.github_username || user.social_links?.github || null;
+
+    // Backfill users.github_username for accounts that linked GitHub after
+    // initial signup: the OAuth callback sets it, but earlier flows could
+    // leave it null while social_links.github was populated, which kept the
+    // blue verified badge from rendering.
     await sb
       .from("users")
       .update({
         username: profileForm.username.trim(),
         display_name: trimmedDisplayName || null,
         bio: profileForm.bio.trim(),
+        github_username: verifiedGithub,
       })
       .eq("id", user.id);
-
-    // Preserve the verified GitHub handle — it's only set via OAuth linking,
-    // never from a free-text field on this page.
-    const verifiedGithub = user.github_username || user.social_links?.github || null;
 
     await sb.from("social_links").upsert({
       user_id: user.id,
@@ -270,6 +276,7 @@ export default function SettingsPage() {
       username: profileForm.username,
       display_name: trimmedDisplayName || null,
       bio: profileForm.bio,
+      github_username: verifiedGithub,
       social_links: {
         id: user.social_links?.id || "",
         user_id: user.id,
