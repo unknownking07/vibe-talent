@@ -10,6 +10,7 @@ const ALLOWED_NOTIFICATION_TYPES = [
   "endorsement",
   "review",
   "streak_milestone",
+  "referral_prompt",
 ] as const;
 
 export async function GET() {

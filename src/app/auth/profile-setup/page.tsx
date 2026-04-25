@@ -904,6 +904,8 @@ export default function ProfileSetupPage() {
                 }
                 localStorage.removeItem("referral_code");
               }
+              // Drop a one-time in-app nudge so new builders share their referral link.
+              fetch("/api/notifications/welcome-referral", { method: "POST" }).catch(() => {});
               router.push("/dashboard");
             }}
             className="btn-brutal btn-brutal-primary w-full justify-center text-sm"
