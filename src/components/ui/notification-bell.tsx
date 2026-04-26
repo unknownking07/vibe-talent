@@ -149,7 +149,7 @@ export function NotificationBell() {
 
       {open && (
         <div
-          className="absolute right-0 top-12 z-50 w-80 max-h-96 overflow-y-auto"
+          className="fixed right-2 left-2 top-16 z-50 max-h-[75vh] sm:absolute sm:right-0 sm:left-auto sm:top-12 sm:w-80 sm:max-h-96 overflow-y-auto"
           style={{
             backgroundColor: "var(--bg-surface)",
             border: "2px solid var(--border-hard)",

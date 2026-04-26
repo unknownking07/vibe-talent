@@ -197,7 +197,7 @@ export default function HireChatPage() {
             )}
             <p className="text-xs text-[var(--text-muted-soft)] mt-1">
               Sent{" "}
-              {new Date(hireRequest.created_at).toLocaleDateString("en-US", {
+              {new Date(hireRequest.created_at).toLocaleString("en-US", {
                 year: "numeric",
                 month: "short",
                 day: "numeric",
