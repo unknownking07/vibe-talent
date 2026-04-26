@@ -143,16 +143,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
       )}
       <div className="px-4 py-3 flex-1 flex flex-col">
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)] truncate">{project.title}</h3>
-          {verified && (
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600" title="Verified owner">
-              <CheckCircle size={14} />
-              Verified
-            </span>
-          )}
-          <QualityScoreBadge project={project} />
-        </div>
+        <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)] line-clamp-2 flex-1 min-w-0 leading-tight">{project.title}</h3>
         <div className="flex shrink-0 gap-2">
           {onEdit && (
             <button
@@ -232,6 +223,18 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
           )}
         </div>
       </div>
+
+      {(verified || project.quality_score > 0) && (
+        <div className="mt-1 flex items-center gap-2 flex-wrap">
+          {verified && (
+            <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600" title="Verified owner">
+              <CheckCircle size={14} />
+              Verified
+            </span>
+          )}
+          <QualityScoreBadge project={project} />
+        </div>
+      )}
 
       <p className="mt-1.5 flex-1 text-xs text-[var(--text-secondary)] font-medium line-clamp-2">
         {project.description}

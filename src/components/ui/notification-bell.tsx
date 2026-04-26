@@ -154,7 +154,7 @@ export function NotificationBell() {
         <div
           id="notification-popover"
           role="menu"
-          className="fixed right-2 left-2 top-16 z-50 max-h-[75vh] sm:absolute sm:right-0 sm:left-auto sm:top-12 sm:w-80 sm:max-h-96 overflow-y-auto"
+          className="fixed right-2 top-16 z-50 w-[min(20rem,calc(100vw-1rem))] max-h-[60vh] sm:absolute sm:right-0 sm:top-12 sm:w-80 sm:max-h-96 overflow-y-auto"
           style={{
             backgroundColor: "var(--bg-surface)",
             border: "2px solid var(--border-hard)",
@@ -181,7 +181,7 @@ export function NotificationBell() {
             </div>
           ) : (
             <div>
-              {notifications.map((n) => {
+              {notifications.slice(0, 10).map((n) => {
                 const Icon = typeIcons[n.type] || Bell;
                 const color = typeColors[n.type] || "var(--text-muted)";
                 return (
@@ -211,6 +211,11 @@ export function NotificationBell() {
                   </button>
                 );
               })}
+              {notifications.length > 10 && (
+                <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-center text-[var(--text-muted-soft)] border-t-2 border-[var(--border-hard)]">
+                  Showing 10 of {notifications.length}
+                </p>
+              )}
             </div>
           )}
         </div>
