@@ -35,10 +35,14 @@ export async function GET(req: NextRequest) {
     // Use service client to read hire request (since RLS now blocks anon reads)
     const sb = createAdminClient();
 
-    // Fetch the hire request
+    // Fetch the hire request — include the sender's own data (email, message, budget,
+    // created_at) so the chat page can render the original request. The sender already
+    // knows this data because they typed it; the request ID is the auth token.
     const { data: hireRequest, error: hrError } = await sb
       .from("hire_requests")
-      .select("id, builder_id, sender_name, status")
+      .select(
+        "id, builder_id, sender_name, sender_email, message, budget, status, created_at"
+      )
       .eq("id", hireRequestId)
       .single();
 
@@ -49,9 +53,8 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Authorization: only the builder (authenticated) or the client (via knowing the request ID) can read
-    // The request ID itself acts as a token for the client — it's a UUID they received when they submitted
-    // But we still restrict what fields are returned for non-builders
+    // Authorization: only the builder (authenticated) or the client (via knowing the request ID) can read.
+    // The request ID itself acts as a token for the client — it's a UUID they received when they submitted.
     const isBuilder = user && user.id === hireRequest.builder_id;
 
     // Fetch messages
@@ -69,10 +72,18 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Return limited hire_request info (no email/budget for non-builders)
+    // Strip builder_id for non-builders; everything else is the sender's own data.
     const safeHireRequest = isBuilder
       ? hireRequest
-      : { id: hireRequest.id, sender_name: hireRequest.sender_name, status: hireRequest.status };
+      : {
+          id: hireRequest.id,
+          sender_name: hireRequest.sender_name,
+          sender_email: hireRequest.sender_email,
+          message: hireRequest.message,
+          budget: hireRequest.budget,
+          status: hireRequest.status,
+          created_at: hireRequest.created_at,
+        };
 
     return NextResponse.json({
       hire_request: safeHireRequest,

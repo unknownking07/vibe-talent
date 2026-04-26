@@ -79,6 +79,7 @@ export interface HireRequest {
   builder_id: string;
   sender_name: string;
   sender_email: string;
+  sender_user_id: string | null;
   message: string;
   budget: string | null;
   status: string;

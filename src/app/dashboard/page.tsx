@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { fetchStreakLogs } from "@/lib/supabase/queries";
 import { siteUrl } from "@/lib/seo";
@@ -110,6 +111,7 @@ export default function DashboardPage() {
   const [ghTotal, setGhTotal] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [hireRequests, setHireRequests] = useState<HireRequest[]>([]);
+  const [senderProfiles, setSenderProfiles] = useState<Record<string, { username: string }>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -138,6 +140,35 @@ export default function DashboardPage() {
       const streakData = results[3].status === "fulfilled" ? results[3].value : {};
       const inboxData = results[4].status === "fulfilled" ? results[4].value?.data : [];
       setHireRequests(inboxData || []);
+
+      // Resolve hire request senders → profiles. The server only resolves
+      // requests where sender_user_id was captured at submission time (i.e.,
+      // the sender was logged in and their auth email matched the form email),
+      // so an unauthenticated form spoof can never link to a victim's profile.
+      // Fire-and-forget; failures keep names as plain text.
+      if (inboxData && inboxData.length > 0) {
+        const ids = (inboxData as HireRequest[]).map((r) => r.id).slice(0, 100);
+        fetch("/api/hire/resolve-senders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ hire_request_ids: ids }),
+        })
+          .then((r) => {
+            if (!r.ok) {
+              console.warn("[dashboard] resolve-senders non-ok:", r.status);
+              return null;
+            }
+            return r.json();
+          })
+          .then((data) => {
+            if (!cancelled && data?.resolved) {
+              setSenderProfiles(data.resolved);
+            }
+          })
+          .catch((err) => {
+            console.warn("[dashboard] resolve-senders failed:", err);
+          });
+      }
 
       if (!profile) {
         window.location.href = "/auth/profile-setup";
@@ -1569,7 +1600,18 @@ export default function DashboardPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 flex-wrap">
                         <h3 className="text-base font-extrabold text-[var(--foreground)]">
-                          {request.sender_name}
+                          {senderProfiles[request.id]?.username ? (
+                            <Link
+                              href={`/profile/${encodeURIComponent(senderProfiles[request.id].username)}`}
+                              className="hover:underline"
+                              style={{ color: "var(--accent)" }}
+                              title={`View @${senderProfiles[request.id].username}'s profile`}
+                            >
+                              {request.sender_name}
+                            </Link>
+                          ) : (
+                            request.sender_name
+                          )}
                         </h3>
                         <span
                           className="px-2.5 py-0.5 text-xs font-extrabold uppercase"
