@@ -141,9 +141,11 @@ export default function DashboardPage() {
       const inboxData = results[4].status === "fulfilled" ? results[4].value?.data : [];
       setHireRequests(inboxData || []);
 
-      // Resolve sender emails → usernames so we can link names to profiles for
-      // senders who happen to be registered users. Fire-and-forget; if it fails,
-      // names just stay as plain text.
+      // Resolve hire request senders → profiles. The server only resolves
+      // requests where sender_user_id was captured at submission time (i.e.,
+      // the sender was logged in and their auth email matched the form email),
+      // so an unauthenticated form spoof can never link to a victim's profile.
+      // Fire-and-forget; failures keep names as plain text.
       if (inboxData && inboxData.length > 0) {
         const ids = (inboxData as HireRequest[]).map((r) => r.id).slice(0, 100);
         fetch("/api/hire/resolve-senders", {
@@ -151,13 +153,21 @@ export default function DashboardPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ hire_request_ids: ids }),
         })
-          .then((r) => (r.ok ? r.json() : null))
+          .then((r) => {
+            if (!r.ok) {
+              console.warn("[dashboard] resolve-senders non-ok:", r.status);
+              return null;
+            }
+            return r.json();
+          })
           .then((data) => {
             if (!cancelled && data?.resolved) {
               setSenderProfiles(data.resolved);
             }
           })
-          .catch(() => {});
+          .catch((err) => {
+            console.warn("[dashboard] resolve-senders failed:", err);
+          });
       }
 
       if (!profile) {
@@ -1592,7 +1602,7 @@ export default function DashboardPage() {
                         <h3 className="text-base font-extrabold text-[var(--foreground)]">
                           {senderProfiles[request.id]?.username ? (
                             <Link
-                              href={`/profile/${senderProfiles[request.id].username}`}
+                              href={`/profile/${encodeURIComponent(senderProfiles[request.id].username)}`}
                               className="hover:underline"
                               style={{ color: "var(--accent)" }}
                               title={`View @${senderProfiles[request.id].username}'s profile`}

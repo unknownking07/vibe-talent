@@ -1,20 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { statsLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
+import { statsLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Cap the listUsers scan so we never burn through every user on a heavy build.
-const MAX_AUTH_USERS_SCAN = 5000;
-const PAGE_SIZE = 1000;
-
 export async function POST(req: NextRequest) {
-  const { success } = await checkRateLimit(statsLimiter, getIP(req));
-  if (!success) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
-  }
-
   try {
     const supabase = await createServerSupabaseClient();
     const {
@@ -22,6 +13,16 @@ export async function POST(req: NextRequest) {
     } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Rate-limit by authenticated user id, not IP — multiple builders behind a
+    // shared NAT shouldn't burn each other's quota.
+    const { success } = await checkRateLimit(
+      statsLimiter,
+      `resolve-senders:${user.id}`
+    );
+    if (!success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
     const body = await req.json().catch(() => ({}));
@@ -41,57 +42,44 @@ export async function POST(req: NextRequest) {
 
     const sb = createAdminClient();
 
-    // Only resolve hire requests addressed to the authenticated builder.
+    // Only resolve hire requests addressed to the authenticated builder, AND
+    // only those with a captured sender_user_id (i.e., the sender was logged in
+    // and their auth email matched the form-submitted email — see hire POST).
+    // Requests without a sender_user_id stay unresolved so we never link a
+    // form-submitted email to a profile we haven't proven ownership of.
     const { data: hireRequests, error: hrError } = await sb
       .from("hire_requests")
-      .select("id, sender_email")
+      .select("id, sender_user_id")
       .in("id", requestIds)
-      .eq("builder_id", user.id);
+      .eq("builder_id", user.id)
+      .not("sender_user_id", "is", null);
 
-    if (hrError || !hireRequests || hireRequests.length === 0) {
+    if (hrError) {
+      console.error("[hire/resolve-senders] hire_requests fetch failed:", hrError);
+      return NextResponse.json({ resolved: {} });
+    }
+    if (!hireRequests || hireRequests.length === 0) {
       return NextResponse.json({ resolved: {} });
     }
 
-    const wantedEmails = new Set<string>();
-    for (const r of hireRequests) {
-      if (r.sender_email) wantedEmails.add(r.sender_email.toLowerCase());
-    }
-    if (wantedEmails.size === 0) {
+    const userIds = Array.from(
+      new Set(
+        hireRequests
+          .map((r) => r.sender_user_id as string | null)
+          .filter((v): v is string => !!v)
+      )
+    );
+    if (userIds.length === 0) {
       return NextResponse.json({ resolved: {} });
     }
 
-    // Walk auth.users to map emails → user ids. The JS SDK has no email filter, so we
-    // paginate. Stop early once every wanted email is resolved.
-    const emailToId = new Map<string, string>();
-    const maxPages = Math.ceil(MAX_AUTH_USERS_SCAN / PAGE_SIZE);
-    for (let page = 1; page <= maxPages; page++) {
-      const { data, error } = await sb.auth.admin.listUsers({
-        page,
-        perPage: PAGE_SIZE,
-      });
-      if (error || !data?.users?.length) break;
-      for (const u of data.users) {
-        const email = u.email?.toLowerCase();
-        if (email && wantedEmails.has(email) && !emailToId.has(email)) {
-          emailToId.set(email, u.id);
-          if (emailToId.size === wantedEmails.size) break;
-        }
-      }
-      if (emailToId.size === wantedEmails.size) break;
-      if (data.users.length < PAGE_SIZE) break;
-    }
-
-    if (emailToId.size === 0) {
-      return NextResponse.json({ resolved: {} });
-    }
-
-    // public.users.id == auth.users.id, so we can resolve usernames in one query.
     const { data: usersRows, error: usersErr } = await sb
       .from("users")
       .select("id, username")
-      .in("id", Array.from(emailToId.values()));
+      .in("id", userIds);
 
     if (usersErr) {
+      console.error("[hire/resolve-senders] users fetch failed:", usersErr);
       return NextResponse.json({ resolved: {} });
     }
 
@@ -102,16 +90,14 @@ export async function POST(req: NextRequest) {
 
     const resolved: Record<string, { username: string }> = {};
     for (const r of hireRequests) {
-      const email = r.sender_email?.toLowerCase();
-      if (!email) continue;
-      const id = emailToId.get(email);
-      if (!id) continue;
-      const username = idToUsername.get(id);
+      if (!r.sender_user_id) continue;
+      const username = idToUsername.get(r.sender_user_id);
       if (username) resolved[r.id] = { username };
     }
 
     return NextResponse.json({ resolved });
-  } catch {
+  } catch (err) {
+    console.error("[hire/resolve-senders] unexpected error:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

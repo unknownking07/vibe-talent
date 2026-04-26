@@ -49,6 +49,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Too many requests. Please try again tomorrow." }, { status: 429 });
     }
 
+    // If the sender is logged in AND the submitted email matches their auth
+    // email, record sender_user_id. The dashboard uses this (not the raw email)
+    // to render profile links — so an unauthenticated form submitter cannot
+    // spoof someone else's email and trick the builder into following a link
+    // to the victim's profile.
+    let senderUserId: string | null = null;
+    try {
+      const supabase = await createServerSupabaseClient();
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
+      if (authUser?.email && authUser.email.toLowerCase() === emailClean.toLowerCase()) {
+        senderUserId = authUser.id;
+      }
+    } catch {
+      // No session / cookie parse failure — leave sender_user_id NULL.
+    }
+
     const { data, error } = await adminClient
       .from("hire_requests")
       .insert({
@@ -57,6 +75,7 @@ export async function POST(req: NextRequest) {
         sender_email: emailClean,
         message: msgClean,
         budget: budget || null,
+        sender_user_id: senderUserId,
       })
       .select("id")
       .single();

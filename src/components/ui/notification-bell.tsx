@@ -135,6 +135,9 @@ export function NotificationBell() {
           boxShadow: open ? "var(--shadow-brutal-xs)" : "var(--shadow-brutal-sm)",
         }}
         aria-label="Notifications"
+        aria-expanded={open}
+        aria-controls="notification-popover"
+        aria-haspopup="menu"
       >
         <Bell size={18} className="text-[var(--foreground)]" />
         {unreadCount > 0 && (
@@ -149,6 +152,8 @@ export function NotificationBell() {
 
       {open && (
         <div
+          id="notification-popover"
+          role="menu"
           className="fixed right-2 left-2 top-16 z-50 max-h-[75vh] sm:absolute sm:right-0 sm:left-auto sm:top-12 sm:w-80 sm:max-h-96 overflow-y-auto"
           style={{
             backgroundColor: "var(--bg-surface)",
