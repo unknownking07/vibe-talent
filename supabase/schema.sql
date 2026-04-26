@@ -107,9 +107,14 @@ CREATE POLICY "Social links are viewable by everyone"
 CREATE POLICY "Users can manage own social links"
   ON social_links FOR ALL USING (auth.uid() = user_id);
 
--- Function to calculate and update user streak
-CREATE OR REPLACE FUNCTION update_user_streak(p_user_id UUID)
-RETURNS void AS $$
+-- Function to calculate and update user streak.
+-- search_path is pinned and table references are schema-qualified to survive
+-- Supabase's "Function Search Path Mutable" auto-tightening (which sets
+-- search_path = "" on existing functions and breaks unqualified refs).
+CREATE OR REPLACE FUNCTION public.update_user_streak(p_user_id UUID)
+RETURNS void
+SET search_path = public, pg_temp
+AS $$
 DECLARE
   v_current_streak INTEGER := 0;
   v_longest_streak INTEGER := 0;
@@ -123,7 +128,7 @@ BEGIN
   -- Get all activity dates for user, ordered ascending
   FOR rec IN
     SELECT DISTINCT activity_date
-    FROM streak_logs
+    FROM public.streak_logs
     WHERE user_id = p_user_id
     ORDER BY activity_date ASC
   LOOP
@@ -153,7 +158,7 @@ BEGIN
   END IF;
 
   -- Update user record
-  UPDATE users
+  UPDATE public.users
   SET
     streak = v_current_streak,
     longest_streak = GREATEST(longest_streak, v_longest_streak),
@@ -182,14 +187,14 @@ BEGIN
               + CASE WHEN array_length(tech_stack, 1) >= 3 THEN 2 ELSE 0 END
             ELSE 1
           END
-        ) FROM projects WHERE projects.user_id = p_user_id AND NOT COALESCE(flagged, false)
+        ) FROM public.projects WHERE projects.user_id = p_user_id AND NOT COALESCE(flagged, false)
       ), 0)
     ) + (
       -- Endorsement points: +5 per endorsement received on user's projects
       COALESCE((
         SELECT COUNT(*) * 5
-        FROM project_endorsements pe
-        JOIN projects p ON p.id = pe.project_id
+        FROM public.project_endorsements pe
+        JOIN public.projects p ON p.id = pe.project_id
         WHERE p.user_id = p_user_id AND NOT COALESCE(p.flagged, false)
       ), 0)
     ) + CASE
@@ -204,10 +209,12 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Trigger: auto-update streak when activity is logged
-CREATE OR REPLACE FUNCTION trigger_update_streak()
-RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION public.trigger_update_streak()
+RETURNS TRIGGER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
-  PERFORM update_user_streak(NEW.user_id);
+  PERFORM public.update_user_streak(NEW.user_id);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -218,14 +225,16 @@ CREATE TRIGGER on_streak_log_insert
   EXECUTE FUNCTION trigger_update_streak();
 
 -- Trigger: update vibe score when project is added/removed
-CREATE OR REPLACE FUNCTION trigger_update_vibe_score_on_project()
-RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION public.trigger_update_vibe_score_on_project()
+RETURNS TRIGGER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
-    PERFORM update_user_streak(OLD.user_id);
+    PERFORM public.update_user_streak(OLD.user_id);
     RETURN OLD;
   ELSE
-    PERFORM update_user_streak(NEW.user_id);
+    PERFORM public.update_user_streak(NEW.user_id);
     RETURN NEW;
   END IF;
 END;
@@ -394,11 +403,13 @@ CREATE POLICY "Service can insert notifications"
   ON notifications FOR INSERT WITH CHECK (true);
 
 -- Auto-create notification when badge level changes
-CREATE OR REPLACE FUNCTION notify_badge_change()
-RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION public.notify_badge_change()
+RETURNS TRIGGER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
   IF OLD.badge_level IS DISTINCT FROM NEW.badge_level AND NEW.badge_level != 'none' THEN
-    INSERT INTO notifications (user_id, type, title, message, metadata)
+    INSERT INTO public.notifications (user_id, type, title, message, metadata)
     VALUES (
       NEW.id, 'badge_earned', 'Badge earned!',
       'You earned the ' || NEW.badge_level || ' badge!',
@@ -414,11 +425,13 @@ CREATE TRIGGER on_badge_change
   FOR EACH ROW EXECUTE FUNCTION notify_badge_change();
 
 -- Auto-create notification on streak milestones
-CREATE OR REPLACE FUNCTION notify_streak_milestone()
-RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION public.notify_streak_milestone()
+RETURNS TRIGGER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
   IF NEW.streak IN (7, 30, 90, 180, 365) AND (OLD.streak IS NULL OR OLD.streak < NEW.streak) THEN
-    INSERT INTO notifications (user_id, type, title, message, metadata)
+    INSERT INTO public.notifications (user_id, type, title, message, metadata)
     VALUES (
       NEW.id, 'streak_milestone', NEW.streak || '-day streak!',
       'You hit a ' || NEW.streak || '-day coding streak!',
@@ -467,19 +480,21 @@ CREATE POLICY "Users can remove own endorsements"
   ON project_endorsements FOR DELETE USING (auth.uid() = user_id);
 
 -- Trigger: update vibe score when endorsement is added/removed
-CREATE OR REPLACE FUNCTION trigger_update_vibe_score_on_endorsement()
-RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION public.trigger_update_vibe_score_on_endorsement()
+RETURNS TRIGGER
+SET search_path = public, pg_temp
+AS $$
 DECLARE
   v_project_owner UUID;
 BEGIN
   IF TG_OP = 'DELETE' THEN
-    SELECT user_id INTO v_project_owner FROM projects WHERE id = OLD.project_id;
+    SELECT user_id INTO v_project_owner FROM public.projects WHERE id = OLD.project_id;
   ELSE
-    SELECT user_id INTO v_project_owner FROM projects WHERE id = NEW.project_id;
+    SELECT user_id INTO v_project_owner FROM public.projects WHERE id = NEW.project_id;
   END IF;
 
   IF v_project_owner IS NOT NULL THEN
-    PERFORM update_user_streak(v_project_owner);
+    PERFORM public.update_user_streak(v_project_owner);
   END IF;
 
   IF TG_OP = 'DELETE' THEN
