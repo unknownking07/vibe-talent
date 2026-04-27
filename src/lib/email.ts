@@ -47,6 +47,171 @@ function sendEmail(client: Resend, opts: {
   });
 }
 
+export const BRAND = {
+  ink: "#FAFAFA",
+  paper: "#141414",
+  bg: "#0A0A0A",
+  bgSoft: "#1C1C1C",
+  hairline: "#2A2A2A",
+  textBody: "#B5B5B5",
+  textMuted: "#7A7A7A",
+  accent: "#FF3A00",
+  accentText: "#FFFFFF",
+  warn: "#FF5C5C",
+  star: "#FFB935",
+  fontSans: `'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif`,
+  fontMono: `'JetBrains Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, monospace`,
+};
+
+export function renderEmail(opts: {
+  preheader: string;
+  body: string;
+  footerContext: string;
+  unsubLink: string;
+  logoUrl?: string;
+}): string {
+  const siteUrl = getSiteUrl();
+  const logoUrl = opts.logoUrl ?? `${siteUrl}/logo.png`;
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>VibeTalent</title>
+</head>
+<body style="margin:0;padding:0;background:${BRAND.bg};font-family:${BRAND.fontSans};color:${BRAND.ink};-webkit-font-smoothing:antialiased;">
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:${BRAND.bg};opacity:0;">${escapeHtml(opts.preheader)}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${BRAND.bg}" style="background:${BRAND.bg};">
+<tr><td bgcolor="${BRAND.bg}" align="center" style="padding:48px 16px;background:${BRAND.bg};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;background:${BRAND.paper};">
+<tr><td bgcolor="${BRAND.accent}" style="height:3px;background:${BRAND.accent};font-size:0;line-height:3px;mso-line-height-rule:exactly;">&nbsp;</td></tr>
+<tr><td style="padding:28px 40px 22px;border-bottom:1px solid ${BRAND.hairline};">
+<a href="${siteUrl}" style="text-decoration:none;color:${BRAND.ink};">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+<tr>
+<td valign="middle" style="vertical-align:middle;padding-right:14px;line-height:0;">
+<img src="${escapeHtml(logoUrl)}" width="36" height="36" alt="VibeTalent" style="display:block;width:36px;height:36px;border:0;outline:none;text-decoration:none;border-radius:50%;" />
+</td>
+<td valign="middle" style="vertical-align:middle;font-family:${BRAND.fontSans};font-size:19px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:${BRAND.ink};">VIBE TALENT</td>
+</tr>
+</table>
+</a>
+</td></tr>
+<tr><td style="padding:36px 40px 40px;font-family:${BRAND.fontSans};color:${BRAND.ink};">
+${opts.body}
+</td></tr>
+<tr><td style="padding:22px 40px 26px;border-top:1px solid ${BRAND.hairline};background:${BRAND.bgSoft};font-family:${BRAND.fontSans};">
+<p style="margin:0 0 6px;font-size:12px;line-height:1.6;color:${BRAND.textMuted};">
+${opts.footerContext}
+</p>
+<p style="margin:0;font-size:12px;line-height:1.6;color:${BRAND.textMuted};">
+<a href="${opts.unsubLink}" style="color:${BRAND.textMuted};text-decoration:underline;">Unsubscribe</a>
+&nbsp;·&nbsp;
+<a href="${siteUrl}" style="color:${BRAND.textMuted};text-decoration:underline;">vibetalent.work</a>
+</p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
+
+/** Eyebrow label above a headline. `text` is plain text and is escaped. */
+export function eyebrow(text: string, color: string = BRAND.accent): string {
+  return `<p style="margin:0 0 14px;font-family:${BRAND.fontMono};font-size:11px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:${color};">${escapeHtml(text)}</p>`;
+}
+
+/** Section headline. `html` may contain pre-escaped interpolation; callers
+ *  are responsible for escaping any user-supplied substrings. */
+export function headline(html: string): string {
+  return `<h1 style="margin:0 0 18px;font-family:${BRAND.fontSans};font-size:28px;line-height:1.2;font-weight:600;letter-spacing:-0.02em;color:${BRAND.ink};">${html}</h1>`;
+}
+
+/** Body paragraph. `html` may contain inline tags (e.g. `<strong>`); callers
+ *  are responsible for escaping any user-supplied substrings. */
+export function paragraph(html: string, marginBottom: number = 28): string {
+  return `<p style="margin:0 0 ${marginBottom}px;font-family:${BRAND.fontSans};font-size:16px;line-height:1.65;color:${BRAND.textBody};">${html}</p>`;
+}
+
+/** Primary call-to-action button. `label` is plain text and is escaped. */
+export function cta(href: string, label: string): string {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 0;">
+<tr><td bgcolor="${BRAND.accent}" style="background:${BRAND.accent};">
+<a href="${href}" style="display:inline-block;background:${BRAND.accent};color:${BRAND.accentText};padding:14px 26px;text-decoration:none;font-family:${BRAND.fontSans};font-size:14px;font-weight:600;letter-spacing:-0.005em;mso-padding-alt:0;">
+${escapeHtml(label)}<span style="margin-left:8px;">→</span>
+</a>
+</td></tr>
+</table>`;
+}
+
+/** Inline secondary link below the CTA, e.g. "Or view in dashboard."
+ *  All fields are plain text and are escaped. */
+export function inlineSecondary(opts: {
+  href: string;
+  prefix?: string;
+  linkText: string;
+  suffix?: string;
+}): string {
+  const prefix = opts.prefix ? escapeHtml(opts.prefix) : "";
+  const suffix = opts.suffix ? escapeHtml(opts.suffix) : "";
+  return `<p style="margin:18px 0 0;font-family:${BRAND.fontSans};font-size:14px;line-height:1.5;color:${BRAND.textMuted};">${prefix}<a href="${opts.href}" style="color:${BRAND.ink};text-decoration:underline;">${escapeHtml(opts.linkText)}</a>${suffix}</p>`;
+}
+
+/** Detail / quote card with a kicker label, title, and optional body.
+ *  `kicker` is plain text (escaped); `title` and `body` are HTML and the
+ *  caller is responsible for escaping any user-supplied substrings. */
+export function quoteCard(opts: { kicker: string; title: string; body?: string }): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 28px;background:${BRAND.bgSoft};">
+<tr><td style="padding:18px 22px;border-left:2px solid ${BRAND.accent};">
+<p style="margin:0 0 6px;font-family:${BRAND.fontMono};font-size:10px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:${BRAND.textMuted};">${escapeHtml(opts.kicker)}</p>
+<p style="margin:0${opts.body ? " 0 10px" : ""};font-family:${BRAND.fontSans};font-size:15px;font-weight:600;color:${BRAND.ink};">${opts.title}</p>
+${opts.body ? `<p style="margin:0;font-family:${BRAND.fontSans};font-size:15px;line-height:1.6;color:${BRAND.textBody};">${opts.body}</p>` : ""}
+</td></tr>
+</table>`;
+}
+
+function statCell(opts: {
+  value: string | number;
+  label: string;
+  accent?: boolean;
+  borderRight?: boolean;
+  borderBottom?: boolean;
+  side: "left" | "right";
+}): string {
+  const valueColor = opts.accent ? BRAND.accent : BRAND.ink;
+  const padding = opts.side === "left"
+    ? `${opts.borderBottom ? "22px" : "26px"} 24px ${opts.borderBottom ? "26px" : "0"} 0`
+    : `${opts.borderBottom ? "22px" : "26px"} 0 ${opts.borderBottom ? "26px" : "0"} 24px`;
+  const borders: string[] = [];
+  if (opts.borderRight) borders.push(`border-right:1px solid ${BRAND.hairline}`);
+  if (opts.borderBottom) borders.push(`border-bottom:1px solid ${BRAND.hairline}`);
+  return `<td valign="top" width="50%" style="padding:${padding};${borders.join(";")};">
+<div style="font-family:${BRAND.fontSans};font-size:40px;font-weight:600;letter-spacing:-0.03em;color:${valueColor};line-height:1;">${opts.value}</div>
+<div style="margin-top:10px;font-family:${BRAND.fontMono};font-size:11px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:${BRAND.textMuted};">${opts.label}</div>
+</td>`;
+}
+
+export function renderStatsGrid(stats: {
+  profileViews: number;
+  streakDays: number;
+  vibeScore: number;
+  hireRequests: number;
+}): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 32px;border-top:1px solid ${BRAND.hairline};">
+<tr>
+${statCell({ value: stats.profileViews, label: "Profile views", side: "left", borderRight: true, borderBottom: true })}
+${statCell({ value: stats.streakDays, label: "Day streak", side: "right", accent: stats.streakDays > 0, borderBottom: true })}
+</tr>
+<tr>
+${statCell({ value: stats.vibeScore, label: "Vibe score", side: "left", borderRight: true })}
+${statCell({ value: stats.hireRequests, label: "Hire requests", side: "right" })}
+</tr>
+</table>`;
+}
+
 interface HireNotificationParams {
   builderEmail: string;
   builderUsername: string;
@@ -75,46 +240,33 @@ export async function sendHireNotification({
   const siteUrl = getSiteUrl();
   const dashboardUrl = `${siteUrl}/dashboard`;
   const chatUrl = `${siteUrl}/hire/chat/${requestId}`;
+  const trimmed = message.slice(0, 200);
+  const truncated = message.length > 200 ? "…" : "";
+
+  const body = `
+${eyebrow("Hire request")}
+${headline(`${escapeHtml(senderName)} wants to work with you`)}
+${paragraph(`Hey <strong>@${escapeHtml(builderUsername)}</strong>, you just received a new hire request on VibeTalent.`)}
+${quoteCard({
+  kicker: "Message",
+  title: escapeHtml(senderName),
+  body: `&ldquo;${escapeHtml(trimmed)}${truncated}&rdquo;`,
+})}
+${cta(chatUrl, "Open chat")}
+${inlineSecondary({ href: dashboardUrl, prefix: "Or ", linkText: "view in dashboard", suffix: "." })}
+`;
 
   try {
     await sendEmail(client, {
       to: builderEmail,
-      subject: `New hire request from ${senderName} | VibeTalent`,
-      text: `Hey @${builderUsername}, you've received a new hire request!\n\nFrom: ${senderName}\n"${message.slice(0, 200)}${message.length > 200 ? "..." : ""}"\n\nView in Dashboard: ${dashboardUrl}\nOpen Chat: ${chatUrl}\n\nUnsubscribe: ${unsubUrl(builderEmail)}`,
-      html: `
-        <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #0F0F0F; background: #FFFFFF;">
-          <div style="background: #0F0F0F; color: #FFFFFF; padding: 24px 32px;">
-            <h1 style="margin: 0; font-size: 20px; font-weight: 800;">⚡ VibeTalent</h1>
-          </div>
-          <div style="padding: 32px;">
-            <h2 style="color: #0F0F0F; font-size: 24px; font-weight: 700; margin: 0 0 16px;">
-              New Hire Request
-            </h2>
-            <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-              Hey <strong>@${escapeHtml(builderUsername)}</strong>, you've received a new hire request!
-            </p>
-            <div style="border: 2px solid #0F0F0F; padding: 20px; margin: 0 0 24px;">
-              <p style="color: #0F0F0F; font-size: 14px; margin: 0 0 8px;">
-                <strong>From:</strong> ${escapeHtml(senderName)}
-              </p>
-              <p style="color: #52525B; font-size: 14px; line-height: 1.5; margin: 0;">
-                "${escapeHtml(message.slice(0, 200))}${message.length > 200 ? "..." : ""}"
-              </p>
-            </div>
-            <a href="${dashboardUrl}" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
-              View in Dashboard
-            </a>
-            <a href="${chatUrl}" style="display: inline-block; background: #FFFFFF; color: #0F0F0F; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F; margin-left: 12px;">
-              Open Chat
-            </a>
-          </div>
-          <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #52525B; font-size: 12px; margin: 0;">
-              You received this because someone wants to hire you on VibeTalent. <a href="${unsubUrl(builderEmail)}" style="color: #52525B;">Unsubscribe</a>
-            </p>
-          </div>
-        </div>
-      `,
+      subject: `New hire request from ${senderName}`,
+      text: `Hey @${builderUsername}, you've received a new hire request.\n\nFrom: ${senderName}\n"${trimmed}${truncated}"\n\nOpen chat: ${chatUrl}\nView in dashboard: ${dashboardUrl}\n\nUnsubscribe: ${unsubUrl(builderEmail)}`,
+      html: renderEmail({
+        preheader: `${senderName}: ${trimmed.slice(0, 90)}${trimmed.length > 90 ? "…" : ""}`,
+        body,
+        footerContext: "You received this because someone sent you a hire request on VibeTalent.",
+        unsubLink: unsubUrl(builderEmail),
+      }),
     });
   } catch (error) {
     console.error("Failed to send hire notification email:", error);
@@ -138,34 +290,24 @@ export async function sendStreakMilestoneEmail({
 
   const siteUrl = getSiteUrl();
 
+  const body = `
+${eyebrow("Streak milestone")}
+${headline(`${streakDays} days strong`)}
+${paragraph(`Hey <strong>@${escapeHtml(username)}</strong>, you've shipped on VibeTalent for <strong>${streakDays} consecutive days</strong>. Keep the momentum going.`)}
+${cta(`${siteUrl}/dashboard`, "View dashboard")}
+`;
+
   try {
     await sendEmail(client, {
       to: email,
-      subject: `You hit a ${streakDays}-day streak! | VibeTalent`,
-      text: `Hey @${username}, you've been coding for ${streakDays} consecutive days. Keep the momentum going!\n\nView Dashboard: ${siteUrl}/dashboard\n\nUnsubscribe: ${unsubUrl(email)}`,
-      html: `
-        <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #0F0F0F; background: #FFFFFF;">
-          <div style="background: #0F0F0F; color: #FFFFFF; padding: 24px 32px;">
-            <h1 style="margin: 0; font-size: 20px; font-weight: 800;">⚡ VibeTalent</h1>
-          </div>
-          <div style="padding: 32px;">
-            <h2 style="color: #0F0F0F; font-size: 24px; font-weight: 700; margin: 0 0 16px;">
-              🔥 ${streakDays}-Day Streak!
-            </h2>
-            <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-              Hey <strong>@${escapeHtml(username)}</strong>, you've been coding for <strong>${streakDays} consecutive days</strong>. Keep the momentum going!
-            </p>
-            <a href="${siteUrl}/dashboard" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
-              View Dashboard
-            </a>
-          </div>
-          <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #52525B; font-size: 12px; margin: 0;">
-              You received this because you hit a streak milestone on VibeTalent. <a href="${unsubUrl(email)}" style="color: #52525B;">Unsubscribe</a>
-            </p>
-          </div>
-        </div>
-      `,
+      subject: `${streakDays} days strong`,
+      text: `Hey @${username}, you've shipped on VibeTalent for ${streakDays} consecutive days. Keep the momentum going.\n\nView dashboard: ${siteUrl}/dashboard\n\nUnsubscribe: ${unsubUrl(email)}`,
+      html: renderEmail({
+        preheader: `${streakDays} consecutive days of shipping. That's not luck.`,
+        body,
+        footerContext: "You received this because you hit a streak milestone on VibeTalent.",
+        unsubLink: unsubUrl(email),
+      }),
     });
   } catch (error) {
     console.error("Failed to send streak milestone email:", error);
@@ -188,37 +330,26 @@ export async function sendBadgeEarnedEmail({
   if (!client) return;
 
   const siteUrl = getSiteUrl();
-  const badgeEmoji: Record<string, string> = { bronze: "🥉", silver: "🥈", gold: "🥇", diamond: "💎" };
   const badgeName = badgeLevel.charAt(0).toUpperCase() + badgeLevel.slice(1);
+
+  const body = `
+${eyebrow("Badge unlocked")}
+${headline(`The ${escapeHtml(badgeName)} badge is yours`)}
+${paragraph(`Congrats <strong>@${escapeHtml(username)}</strong>. Your consistency just earned the <strong>${escapeHtml(badgeName)}</strong> badge — it lives on your profile permanently.`)}
+${cta(`${siteUrl}/dashboard`, "View your profile")}
+`;
 
   try {
     await sendEmail(client, {
       to: email,
-      subject: `You earned a ${badgeLevel} badge! | VibeTalent`,
-      text: `Congrats @${username}! Your consistency has earned you the ${badgeLevel} badge. This badge is permanently displayed on your profile.\n\nView Your Profile: ${siteUrl}/dashboard\n\nUnsubscribe: ${unsubUrl(email)}`,
-      html: `
-        <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #0F0F0F; background: #FFFFFF;">
-          <div style="background: #0F0F0F; color: #FFFFFF; padding: 24px 32px;">
-            <h1 style="margin: 0; font-size: 20px; font-weight: 800;">⚡ VibeTalent</h1>
-          </div>
-          <div style="padding: 32px;">
-            <h2 style="color: #0F0F0F; font-size: 24px; font-weight: 700; margin: 0 0 16px;">
-              ${badgeEmoji[badgeLevel] || "🏅"} ${badgeName} Badge Earned!
-            </h2>
-            <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-              Congrats <strong>@${escapeHtml(username)}</strong>! Your consistency has earned you the <strong>${escapeHtml(badgeLevel)}</strong> badge. This badge is permanently displayed on your profile.
-            </p>
-            <a href="${siteUrl}/dashboard" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
-              View Your Profile
-            </a>
-          </div>
-          <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #52525B; font-size: 12px; margin: 0;">
-              You received this because you earned a new badge on VibeTalent. <a href="${unsubUrl(email)}" style="color: #52525B;">Unsubscribe</a>
-            </p>
-          </div>
-        </div>
-      `,
+      subject: `${badgeName} badge unlocked`,
+      text: `Congrats @${username}! Your consistency has earned you the ${badgeName} badge. It now lives on your profile permanently.\n\nView your profile: ${siteUrl}/dashboard\n\nUnsubscribe: ${unsubUrl(email)}`,
+      html: renderEmail({
+        preheader: `The ${badgeName} badge is now permanently on your profile.`,
+        body,
+        footerContext: "You received this because you earned a new badge on VibeTalent.",
+        unsubLink: unsubUrl(email),
+      }),
     });
   } catch (error) {
     console.error("Failed to send badge earned email:", error);
@@ -242,34 +373,24 @@ export async function sendProjectVerifiedEmail({
 
   const siteUrl = getSiteUrl();
 
+  const body = `
+${eyebrow("Project verified")}
+${headline(`${escapeHtml(projectTitle)} is now verified`)}
+${paragraph(`Hey <strong>@${escapeHtml(username)}</strong>, your project is verified and now shows the verified mark across your profile and listings.`)}
+${cta(`${siteUrl}/dashboard`, "View dashboard")}
+`;
+
   try {
     await sendEmail(client, {
       to: email,
-      subject: `Your project "${projectTitle}" is verified! | VibeTalent`,
-      text: `Hey @${username}, your project "${projectTitle}" has been verified. It now shows a verified badge in your profile and listings.\n\nView Dashboard: ${siteUrl}/dashboard\n\nUnsubscribe: ${unsubUrl(email)}`,
-      html: `
-        <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #0F0F0F; background: #FFFFFF;">
-          <div style="background: #0F0F0F; color: #FFFFFF; padding: 24px 32px;">
-            <h1 style="margin: 0; font-size: 20px; font-weight: 800;">⚡ VibeTalent</h1>
-          </div>
-          <div style="padding: 32px;">
-            <h2 style="color: #0F0F0F; font-size: 24px; font-weight: 700; margin: 0 0 16px;">
-              ✅ Project Verified!
-            </h2>
-            <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-              Hey <strong>@${escapeHtml(username)}</strong>, your project <strong>"${escapeHtml(projectTitle)}"</strong> has been verified. It now shows a verified badge in your profile and listings.
-            </p>
-            <a href="${siteUrl}/dashboard" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
-              View Dashboard
-            </a>
-          </div>
-          <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #52525B; font-size: 12px; margin: 0;">
-              You received this because your project was verified on VibeTalent. <a href="${unsubUrl(email)}" style="color: #52525B;">Unsubscribe</a>
-            </p>
-          </div>
-        </div>
-      `,
+      subject: `${projectTitle} is now verified`,
+      text: `Hey @${username}, your project "${projectTitle}" has been verified. It now shows a verified mark across your profile and listings.\n\nView dashboard: ${siteUrl}/dashboard\n\nUnsubscribe: ${unsubUrl(email)}`,
+      html: renderEmail({
+        preheader: `Verified mark now showing on ${projectTitle}.`,
+        body,
+        footerContext: "You received this because your project was verified on VibeTalent.",
+        unsubLink: unsubUrl(email),
+      }),
     });
   } catch (error) {
     console.error("Failed to send project verified email:", error);
@@ -293,36 +414,25 @@ export async function sendStreakWarningEmail({
   if (!client) return;
 
   const siteUrl = getSiteUrl();
-  const safeUsername = escapeHtml(username);
+
+  const body = `
+${eyebrow("Time-sensitive", BRAND.warn)}
+${headline(`Your ${streakDays}-day streak ends today`)}
+${paragraph(`Hey <strong>@${escapeHtml(username)}</strong>, you have less than 6 hours to log activity before your <strong>${streakDays}-day streak</strong> resets to zero. Don't let it slip.`)}
+${cta(`${siteUrl}/dashboard`, "Log activity now")}
+`;
 
   try {
     await sendEmail(client, {
       to: email,
-      subject: `Your ${streakDays}-day streak is about to end! | VibeTalent`,
-      text: `Hey @${username}, your ${streakDays}-day streak will reset within the next 6 hours if you don't log activity today. Don't let it slip!\n\nLog Activity Now: ${siteUrl}/dashboard\n\nUnsubscribe: ${unsubUrl(email)}`,
-      html: `
-        <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #0F0F0F; background: #FFFFFF;">
-          <div style="background: #0F0F0F; color: #FFFFFF; padding: 24px 32px;">
-            <h1 style="margin: 0; font-size: 20px; font-weight: 800;">⚡ VibeTalent</h1>
-          </div>
-          <div style="padding: 32px;">
-            <h2 style="color: #EF4444; font-size: 24px; font-weight: 700; margin: 0 0 16px;">
-              ⚠️ Streak Ending Soon!
-            </h2>
-            <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-              Hey <strong>@${safeUsername}</strong>, your <strong>${streakDays}-day streak</strong> will reset within the next 6 hours if you don't log activity today. Don't let it slip!
-            </p>
-            <a href="${siteUrl}/dashboard" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
-              Log Activity Now
-            </a>
-          </div>
-          <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #52525B; font-size: 12px; margin: 0;">
-              You received this because your streak is about to expire on VibeTalent. <a href="${unsubUrl(email)}" style="color: #52525B;">Unsubscribe</a>
-            </p>
-          </div>
-        </div>
-      `,
+      subject: `Your ${streakDays}-day streak ends today`,
+      text: `Hey @${username}, your ${streakDays}-day streak will reset within the next 6 hours if you don't log activity today. Don't let it slip.\n\nLog activity now: ${siteUrl}/dashboard\n\nUnsubscribe: ${unsubUrl(email)}`,
+      html: renderEmail({
+        preheader: `Less than 6 hours to keep your ${streakDays}-day streak alive.`,
+        body,
+        footerContext: "You received this because your streak is about to expire on VibeTalent.",
+        unsubLink: unsubUrl(email),
+      }),
     });
   } catch (error) {
     console.error("Failed to send streak warning email:", error);
@@ -343,48 +453,44 @@ export async function sendProfileViewDigestEmail({
   viewCount: number;
   viewerNames: string[];
 }): Promise<void> {
+  if (viewCount <= 0) return;
+
   const client = getResend();
   if (!client) return;
 
   const siteUrl = getSiteUrl();
-  const safeUsername = escapeHtml(username);
-  const viewerList = viewerNames.length > 0
+  const anonymousCount = viewCount - viewerNames.length;
+  const viewerHtml = viewerNames.length > 0
     ? viewerNames.map(n => `<strong>@${escapeHtml(n)}</strong>`).join(", ")
     : "";
-  const anonymousCount = viewCount - viewerNames.length;
-  const anonymousText = anonymousCount > 0
-    ? `${viewerNames.length > 0 ? " and " : ""}${anonymousCount} anonymous visitor${anonymousCount !== 1 ? "s" : ""}`
+  const anonymousHtml = anonymousCount > 0
+    ? `${viewerNames.length > 0 ? " plus " : ""}${anonymousCount} anonymous visitor${anonymousCount !== 1 ? "s" : ""}`
     : "";
   const viewerPlain = viewerNames.length > 0 ? viewerNames.map(n => `@${n}`).join(", ") : "";
+  const anonymousPlain = anonymousCount > 0
+    ? `${viewerNames.length > 0 ? " plus " : ""}${anonymousCount} anonymous visitor${anonymousCount !== 1 ? "s" : ""}`
+    : "";
+
+  const body = `
+${eyebrow("Profile activity")}
+${headline(`${viewCount} ${viewCount === 1 ? "person" : "people"} viewed your profile`)}
+${paragraph(`Hey <strong>@${escapeHtml(username)}</strong>, ${viewerHtml}${anonymousHtml} checked out your profile in the last 24 hours.`)}
+${cta(`${siteUrl}/dashboard`, "View dashboard")}
+`;
 
   try {
     await sendEmail(client, {
       to: email,
-      subject: `${viewCount} people viewed your profile today | VibeTalent`,
-      text: `Hey @${username}, ${viewerPlain}${anonymousText} checked out your profile today!\n\nView Dashboard: ${siteUrl}/dashboard\n\nUnsubscribe: ${unsubUrl(email)}`,
-      html: `
-        <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #0F0F0F; background: #FFFFFF;">
-          <div style="background: #0F0F0F; color: #FFFFFF; padding: 24px 32px;">
-            <h1 style="margin: 0; font-size: 20px; font-weight: 800;">⚡ VibeTalent</h1>
-          </div>
-          <div style="padding: 32px;">
-            <h2 style="color: #0F0F0F; font-size: 24px; font-weight: 700; margin: 0 0 16px;">
-              👀 ${viewCount} Profile View${viewCount !== 1 ? "s" : ""} Today
-            </h2>
-            <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-              Hey <strong>@${safeUsername}</strong>, ${viewerList}${anonymousText} checked out your profile today!
-            </p>
-            <a href="${siteUrl}/dashboard" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
-              View Dashboard
-            </a>
-          </div>
-          <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #52525B; font-size: 12px; margin: 0;">
-              You received this because someone viewed your profile on VibeTalent. <a href="${unsubUrl(email)}" style="color: #52525B;">Unsubscribe</a>
-            </p>
-          </div>
-        </div>
-      `,
+      subject: `${viewCount} ${viewCount === 1 ? "person" : "people"} viewed your profile`,
+      text: `Hey @${username}, ${viewerPlain}${anonymousPlain} checked out your profile today.\n\nView dashboard: ${siteUrl}/dashboard\n\nUnsubscribe: ${unsubUrl(email)}`,
+      html: renderEmail({
+        preheader: viewerNames.length > 0
+          ? `${viewerPlain}${anonymousPlain} stopped by your profile.`
+          : `${viewCount} ${viewCount === 1 ? "visitor" : "visitors"} on your profile in the last 24 hours.`,
+        body,
+        footerContext: "You received this daily digest because someone viewed your profile on VibeTalent.",
+        unsubLink: unsubUrl(email),
+      }),
     });
   } catch (error) {
     console.error("Failed to send profile view digest email:", error);
@@ -413,58 +519,31 @@ export async function sendWeeklyDigestEmail({
   if (!client) return;
 
   const siteUrl = getSiteUrl();
-  const safeUsername = escapeHtml(username);
+
+  const body = `
+${eyebrow("Weekly recap")}
+${headline("Your week on VibeTalent")}
+${paragraph(`Hey <strong>@${escapeHtml(username)}</strong>, here's how the past 7 days went.`)}
+${renderStatsGrid({
+  profileViews: stats.profileViews,
+  streakDays: stats.streakDays,
+  vibeScore: stats.vibeScore,
+  hireRequests: stats.hireRequests,
+})}
+${cta(`${siteUrl}/dashboard`, "View dashboard")}
+`;
 
   try {
     await sendEmail(client, {
       to: email,
-      subject: `Your weekly recap | VibeTalent`,
-      text: `Hey @${username}, here's how your week went:\n\nProfile Views: ${stats.profileViews}\nDay Streak: ${stats.streakDays}\nVibe Score: ${stats.vibeScore}\nHire Requests: ${stats.hireRequests}\n\nView Dashboard: ${siteUrl}/dashboard\n\nUnsubscribe: ${unsubUrl(email)}`,
-      html: `
-        <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #0F0F0F; background: #FFFFFF;">
-          <div style="background: #0F0F0F; color: #FFFFFF; padding: 24px 32px;">
-            <h1 style="margin: 0; font-size: 20px; font-weight: 800;">⚡ VibeTalent</h1>
-          </div>
-          <div style="padding: 32px;">
-            <h2 style="color: #0F0F0F; font-size: 24px; font-weight: 700; margin: 0 0 16px;">
-              📊 Your Weekly Recap
-            </h2>
-            <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-              Hey <strong>@${safeUsername}</strong>, here's how your week went:
-            </p>
-            <table style="width: 100%; border-collapse: collapse; margin: 0 0 24px;">
-              <tr>
-                <td style="border: 2px solid #0F0F0F; padding: 16px; text-align: center; width: 50%;">
-                  <div style="font-size: 28px; font-weight: 800; color: #0F0F0F;">${stats.profileViews}</div>
-                  <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #52525B; margin-top: 4px;">Profile Views</div>
-                </td>
-                <td style="border: 2px solid #0F0F0F; padding: 16px; text-align: center; width: 50%;">
-                  <div style="font-size: 28px; font-weight: 800; color: #FF3A00;">🔥 ${stats.streakDays}</div>
-                  <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #52525B; margin-top: 4px;">Day Streak</div>
-                </td>
-              </tr>
-              <tr>
-                <td style="border: 2px solid #0F0F0F; padding: 16px; text-align: center;">
-                  <div style="font-size: 28px; font-weight: 800; color: #0F0F0F;">${stats.vibeScore}</div>
-                  <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #52525B; margin-top: 4px;">Vibe Score</div>
-                </td>
-                <td style="border: 2px solid #0F0F0F; padding: 16px; text-align: center;">
-                  <div style="font-size: 28px; font-weight: 800; color: #0F0F0F;">${stats.hireRequests}</div>
-                  <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #52525B; margin-top: 4px;">Hire Requests</div>
-                </td>
-              </tr>
-            </table>
-            <a href="${siteUrl}/dashboard" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
-              View Dashboard
-            </a>
-          </div>
-          <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #52525B; font-size: 12px; margin: 0;">
-              You received this weekly recap from VibeTalent. <a href="${unsubUrl(email)}" style="color: #52525B;">Unsubscribe</a>
-            </p>
-          </div>
-        </div>
-      `,
+      subject: `Your week on VibeTalent`,
+      text: `Hey @${username}, here's how your week went:\n\nProfile views: ${stats.profileViews}\nDay streak: ${stats.streakDays}\nVibe score: ${stats.vibeScore}\nHire requests: ${stats.hireRequests}\n\nView dashboard: ${siteUrl}/dashboard\n\nUnsubscribe: ${unsubUrl(email)}`,
+      html: renderEmail({
+        preheader: `${stats.profileViews} profile views · ${stats.streakDays}-day streak · ${stats.vibeScore} vibe score`,
+        body,
+        footerContext: "You received this weekly recap from VibeTalent.",
+        unsubLink: unsubUrl(email),
+      }),
     });
   } catch (error) {
     console.error("Failed to send weekly digest email:", error);
@@ -489,45 +568,31 @@ export async function sendVibeScoreMilestoneEmail({
   if (!client) return;
 
   const siteUrl = getSiteUrl();
-  const safeUsername = escapeHtml(username);
+
+  const body = `
+${eyebrow("Score milestone")}
+${headline(`Vibe score ${vibeScore}`)}
+${paragraph(`Congrats <strong>@${escapeHtml(username)}</strong>, your vibe score just crossed <strong>${milestone}</strong>. The work is paying off.`)}
+${cta(`${siteUrl}/profile/${encodeURIComponent(username)}`, "View your profile")}
+`;
 
   try {
     await sendEmail(client, {
       to: email,
-      subject: `You hit ${milestone} vibe score! | VibeTalent`,
-      text: `Congrats @${username}! Your vibe score just hit ${vibeScore}, passing the ${milestone} milestone. Your consistency is paying off!\n\nView Your Profile: ${siteUrl}/profile/${encodeURIComponent(username)}\n\nUnsubscribe: ${unsubUrl(email)}`,
-      html: `
-        <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #0F0F0F; background: #FFFFFF;">
-          <div style="background: #0F0F0F; color: #FFFFFF; padding: 24px 32px;">
-            <h1 style="margin: 0; font-size: 20px; font-weight: 800;">⚡ VibeTalent</h1>
-          </div>
-          <div style="padding: 32px;">
-            <h2 style="color: #0F0F0F; font-size: 24px; font-weight: 700; margin: 0 0 16px;">
-              ⚡ ${milestone} Vibe Score Milestone!
-            </h2>
-            <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-              Congrats <strong>@${safeUsername}</strong>! Your vibe score just hit <strong>${vibeScore}</strong>, passing the <strong>${milestone}</strong> milestone. Your consistency is paying off!
-            </p>
-            <a href="${siteUrl}/profile/${encodeURIComponent(username)}" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
-              View Your Profile
-            </a>
-          </div>
-          <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #52525B; font-size: 12px; margin: 0;">
-              You received this because you hit a milestone on VibeTalent. <a href="${unsubUrl(email)}" style="color: #52525B;">Unsubscribe</a>
-            </p>
-          </div>
-        </div>
-      `,
+      subject: `Vibe score ${vibeScore} — milestone unlocked`,
+      text: `Congrats @${username}! Your vibe score just hit ${vibeScore}, passing the ${milestone} milestone. Your consistency is paying off.\n\nView your profile: ${siteUrl}/profile/${encodeURIComponent(username)}\n\nUnsubscribe: ${unsubUrl(email)}`,
+      html: renderEmail({
+        preheader: `You just crossed the ${milestone} vibe score milestone.`,
+        body,
+        footerContext: "You received this because you hit a vibe score milestone on VibeTalent.",
+        unsubLink: unsubUrl(email),
+      }),
     });
   } catch (error) {
     console.error("Failed to send vibe score milestone email:", error);
   }
 }
 
-/**
- * Send an email when a builder receives a new review. Fire-and-forget.
- */
 /**
  * Send a re-engagement email to inactive users asking for feedback. Fire-and-forget.
  */
@@ -544,55 +609,41 @@ export async function sendReEngagementEmail({
   if (!client) return;
 
   const siteUrl = getSiteUrl();
-  const safeUsername = escapeHtml(username);
   const feedbackUrl = `${siteUrl}/feedback?ref=re-engagement&u=${encodeURIComponent(username)}`;
+
+  const body = `
+${eyebrow("We'd love your input")}
+${headline("What would bring you back?")}
+${paragraph(`Hey <strong>@${escapeHtml(username)}</strong>, you haven't been on VibeTalent for <strong>${daysSinceLastActive} days</strong>. No guilt trip — we just want to understand what happened.`)}
+${paragraph(`Was something missing? Confusing? Not useful? Your honest answer genuinely shapes what we build next.`)}
+${quoteCard({
+  kicker: "Quick question",
+  title: "What's the #1 thing that would bring you back?",
+})}
+${cta(feedbackUrl, "Share feedback (30 sec)")}
+${inlineSecondary({ href: `${siteUrl}/dashboard`, prefix: "Or ", linkText: "head back to your dashboard", suffix: "." })}
+`;
 
   try {
     await sendEmail(client, {
       to: email,
-      subject: `We miss you on VibeTalent — quick question?`,
-      text: `Hey @${username}, we noticed you haven't been active on VibeTalent for ${daysSinceLastActive} days. We'd love to hear what happened — was something missing, confusing, or just not useful?\n\nTake 30 seconds to let us know: ${feedbackUrl}\n\nYour feedback genuinely shapes what we build next.\n\n— The VibeTalent Team\n\nUnsubscribe: ${unsubUrl(email)}`,
-      html: `
-        <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #0F0F0F; background: #FFFFFF;">
-          <div style="background: #0F0F0F; color: #FFFFFF; padding: 24px 32px;">
-            <h1 style="margin: 0; font-size: 20px; font-weight: 800;">⚡ VibeTalent</h1>
-          </div>
-          <div style="padding: 32px;">
-            <h2 style="color: #0F0F0F; font-size: 24px; font-weight: 700; margin: 0 0 16px;">
-              We'd love your honest feedback
-            </h2>
-            <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 16px;">
-              Hey <strong>@${safeUsername}</strong>, we noticed you haven't been on VibeTalent for <strong>${daysSinceLastActive} days</strong>.
-            </p>
-            <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-              No guilt trip — we just want to understand what happened. Was something missing? Confusing? Not useful? Your feedback genuinely shapes what we build next.
-            </p>
-            <div style="border: 2px solid #0F0F0F; padding: 20px; margin: 0 0 24px; background: #FAFAFA;">
-              <p style="color: #0F0F0F; font-size: 14px; font-weight: 700; margin: 0 0 8px;">Quick question:</p>
-              <p style="color: #52525B; font-size: 14px; line-height: 1.5; margin: 0;">
-                What's the #1 thing that would bring you back?
-              </p>
-            </div>
-            <a href="${feedbackUrl}" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
-              Share Feedback (30 sec)
-            </a>
-            <a href="${siteUrl}/dashboard" style="display: inline-block; background: #FFFFFF; color: #0F0F0F; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F; margin-left: 12px;">
-              Back to VibeTalent
-            </a>
-          </div>
-          <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #52525B; font-size: 12px; margin: 0;">
-              You received this because you haven't been active on VibeTalent recently. <a href="${unsubUrl(email)}" style="color: #52525B;">Unsubscribe</a>
-            </p>
-          </div>
-        </div>
-      `,
+      subject: `What would bring you back?`,
+      text: `Hey @${username}, you haven't been on VibeTalent for ${daysSinceLastActive} days. No guilt trip — we just want to understand what happened. Was something missing, confusing, or not useful?\n\nQuick question: What's the #1 thing that would bring you back?\n\nShare feedback (30 sec): ${feedbackUrl}\n\nYour answer genuinely shapes what we build next.\n\n— The VibeTalent team\n\nUnsubscribe: ${unsubUrl(email)}`,
+      html: renderEmail({
+        preheader: `30 seconds of honest feedback genuinely shapes what we build next.`,
+        body,
+        footerContext: "You received this because you haven't been active on VibeTalent recently.",
+        unsubLink: unsubUrl(email),
+      }),
     });
   } catch (error) {
     console.error("Failed to send re-engagement email:", error);
   }
 }
 
+/**
+ * Send an email when a builder receives a new review. Fire-and-forget.
+ */
 export async function sendReviewNotificationEmail({
   email,
   username,
@@ -611,49 +662,300 @@ export async function sendReviewNotificationEmail({
 
   const siteUrl = getSiteUrl();
   const safeReviewer = escapeHtml(reviewerName);
-  const safeComment = comment ? escapeHtml(comment.slice(0, 200)) : null;
+  const trimmed = comment ? comment.slice(0, 200) : "";
+  const truncated = comment && comment.length > 200 ? "…" : "";
+  const safeComment = trimmed ? escapeHtml(trimmed) : null;
   const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
-  const commentPlain = comment ? `"${comment.slice(0, 200)}${comment.length > 200 ? "..." : ""}"` : "";
+  const commentPlain = comment ? `"${trimmed}${truncated}"` : "";
+
+  const reviewBlock = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 28px;background:${BRAND.bgSoft};">
+<tr><td style="padding:18px 22px;border-left:2px solid ${BRAND.accent};">
+<p style="margin:0 0 10px;font-family:${BRAND.fontMono};font-size:18px;letter-spacing:0.18em;color:${BRAND.star};">${escapeHtml(stars)}</p>
+<p style="margin:0${safeComment ? " 0 10px" : ""};font-family:${BRAND.fontSans};font-size:15px;font-weight:600;color:${BRAND.ink};">${safeReviewer}</p>
+${safeComment ? `<p style="margin:0;font-family:${BRAND.fontSans};font-size:15px;line-height:1.6;color:${BRAND.textBody};">&ldquo;${safeComment}${truncated}&rdquo;</p>` : ""}
+</td></tr>
+</table>`;
+
+  const body = `
+${eyebrow("New review")}
+${headline(`${rating}-star review from ${safeReviewer}`)}
+${paragraph(`Hey <strong>@${escapeHtml(username)}</strong>, you just received a new review on your profile.`)}
+${reviewBlock}
+${cta(`${siteUrl}/dashboard`, "View dashboard")}
+`;
 
   try {
     await sendEmail(client, {
       to: email,
-      subject: `New ${rating}-star review from ${reviewerName} | VibeTalent`,
-      text: `Hey @${username}, you received a new review!\n\n${stars}\nFrom: ${reviewerName}\n${commentPlain}\n\nView Dashboard: ${siteUrl}/dashboard\n\nUnsubscribe: ${unsubUrl(email)}`,
-      html: `
-        <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #0F0F0F; background: #FFFFFF;">
-          <div style="background: #0F0F0F; color: #FFFFFF; padding: 24px 32px;">
-            <h1 style="margin: 0; font-size: 20px; font-weight: 800;">⚡ VibeTalent</h1>
-          </div>
-          <div style="padding: 32px;">
-            <h2 style="color: #0F0F0F; font-size: 24px; font-weight: 700; margin: 0 0 16px;">
-              ⭐ New Review
-            </h2>
-            <p style="color: #52525B; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-              Hey <strong>@${escapeHtml(username)}</strong>, you received a new review!
-            </p>
-            <div style="border: 2px solid #0F0F0F; padding: 20px; margin: 0 0 24px;">
-              <p style="color: #F59E0B; font-size: 20px; margin: 0 0 8px; letter-spacing: 2px;">
-                ${escapeHtml(stars)}
-              </p>
-              <p style="color: #0F0F0F; font-size: 14px; margin: 0 0 8px;">
-                <strong>From:</strong> ${safeReviewer}
-              </p>
-              ${safeComment ? `<p style="color: #52525B; font-size: 14px; line-height: 1.5; margin: 0;">"${safeComment}${(comment?.length || 0) > 200 ? "..." : ""}"</p>` : ""}
-            </div>
-            <a href="${siteUrl}/dashboard" style="display: inline-block; background: #FF3A00; color: #FFFFFF; padding: 12px 24px; text-decoration: none; font-weight: 700; font-size: 14px; border: 2px solid #0F0F0F; box-shadow: 4px 4px 0 #0F0F0F;">
-              View Dashboard
-            </a>
-          </div>
-          <div style="background: #F4F4F5; padding: 16px 32px; border-top: 2px solid #0F0F0F;">
-            <p style="color: #52525B; font-size: 12px; margin: 0;">
-              You received this because someone reviewed you on VibeTalent. <a href="${unsubUrl(email)}" style="color: #52525B;">Unsubscribe</a>
-            </p>
-          </div>
-        </div>
-      `,
+      subject: `${rating}-star review from ${reviewerName}`,
+      text: `Hey @${username}, you received a new review.\n\n${stars}\nFrom: ${reviewerName}\n${commentPlain}\n\nView dashboard: ${siteUrl}/dashboard\n\nUnsubscribe: ${unsubUrl(email)}`,
+      html: renderEmail({
+        preheader: comment ? `${stars} — ${trimmed.slice(0, 80)}${trimmed.length > 80 ? "…" : ""}` : `${stars} from ${reviewerName}`,
+        body,
+        footerContext: "You received this because someone reviewed you on VibeTalent.",
+        unsubLink: unsubUrl(email),
+      }),
     });
   } catch (error) {
     console.error("Failed to send review notification email:", error);
   }
+}
+
+export type EmailPreviewSample = {
+  key: string;
+  label: string;
+  subject: string;
+  html: string;
+};
+
+export function renderAllEmailPreviews(opts?: { logoUrl?: string }): EmailPreviewSample[] {
+  const siteUrl = getSiteUrl();
+  const username = "max";
+  const safeUser = escapeHtml(username);
+  const sampleUnsub = `${siteUrl}/settings?tab=emails&ref=preview`;
+  const logoUrl = opts?.logoUrl;
+
+  function wrap(o: { preheader: string; body: string; footerContext: string }): string {
+    return renderEmail({ ...o, unsubLink: sampleUnsub, logoUrl });
+  }
+
+  const samples: EmailPreviewSample[] = [];
+
+  {
+    const senderName = "Sarah Chen";
+    const message = "Loved your TerminalGPT project — clean implementation, fast UX. We're building a developer-tools platform and would love to chat about a 2-week contract to ship a similar feature in our app.";
+    const dashboardUrl = `${siteUrl}/dashboard`;
+    const chatUrl = `${siteUrl}/hire/chat/preview-id`;
+    const trimmed = message.slice(0, 200);
+    const truncated = message.length > 200 ? "…" : "";
+    const body = `
+${eyebrow("Hire request")}
+${headline(`${escapeHtml(senderName)} wants to work with you`)}
+${paragraph(`Hey <strong>@${safeUser}</strong>, you just received a new hire request on VibeTalent.`)}
+${quoteCard({
+  kicker: "Message",
+  title: escapeHtml(senderName),
+  body: `&ldquo;${escapeHtml(trimmed)}${truncated}&rdquo;`,
+})}
+${cta(chatUrl, "Open chat")}
+${inlineSecondary({ href: dashboardUrl, prefix: "Or ", linkText: "view in dashboard", suffix: "." })}
+`;
+    samples.push({
+      key: "hire",
+      label: "Hire request",
+      subject: `New hire request from ${senderName}`,
+      html: wrap({
+        preheader: `${senderName}: ${trimmed.slice(0, 90)}…`,
+        body,
+        footerContext: "You received this because someone sent you a hire request on VibeTalent.",
+      }),
+    });
+  }
+
+  {
+    const streakDays = 30;
+    const body = `
+${eyebrow("Streak milestone")}
+${headline(`${streakDays} days strong`)}
+${paragraph(`Hey <strong>@${safeUser}</strong>, you've shipped on VibeTalent for <strong>${streakDays} consecutive days</strong>. Keep the momentum going.`)}
+${cta(`${siteUrl}/dashboard`, "View dashboard")}
+`;
+    samples.push({
+      key: "streak-milestone",
+      label: "Streak milestone",
+      subject: `${streakDays} days strong`,
+      html: wrap({
+        preheader: `${streakDays} consecutive days of shipping. That's not luck.`,
+        body,
+        footerContext: "You received this because you hit a streak milestone on VibeTalent.",
+      }),
+    });
+  }
+
+  {
+    const badgeName = "Gold";
+    const body = `
+${eyebrow("Badge unlocked")}
+${headline(`The ${badgeName} badge is yours`)}
+${paragraph(`Congrats <strong>@${safeUser}</strong>. Your consistency just earned the <strong>${badgeName}</strong> badge — it lives on your profile permanently.`)}
+${cta(`${siteUrl}/dashboard`, "View your profile")}
+`;
+    samples.push({
+      key: "badge",
+      label: "Badge earned",
+      subject: `${badgeName} badge unlocked`,
+      html: wrap({
+        preheader: `The ${badgeName} badge is now permanently on your profile.`,
+        body,
+        footerContext: "You received this because you earned a new badge on VibeTalent.",
+      }),
+    });
+  }
+
+  {
+    const projectTitle = "TerminalGPT";
+    const body = `
+${eyebrow("Project verified")}
+${headline(`${escapeHtml(projectTitle)} is now verified`)}
+${paragraph(`Hey <strong>@${safeUser}</strong>, your project is verified and now shows the verified mark across your profile and listings.`)}
+${cta(`${siteUrl}/dashboard`, "View dashboard")}
+`;
+    samples.push({
+      key: "project-verified",
+      label: "Project verified",
+      subject: `${projectTitle} is now verified`,
+      html: wrap({
+        preheader: `Verified mark now showing on ${projectTitle}.`,
+        body,
+        footerContext: "You received this because your project was verified on VibeTalent.",
+      }),
+    });
+  }
+
+  {
+    const streakDays = 14;
+    const body = `
+${eyebrow("Time-sensitive", BRAND.warn)}
+${headline(`Your ${streakDays}-day streak ends today`)}
+${paragraph(`Hey <strong>@${safeUser}</strong>, you have less than 6 hours to log activity before your <strong>${streakDays}-day streak</strong> resets to zero. Don't let it slip.`)}
+${cta(`${siteUrl}/dashboard`, "Log activity now")}
+`;
+    samples.push({
+      key: "streak-warning",
+      label: "Streak warning",
+      subject: `Your ${streakDays}-day streak ends today`,
+      html: wrap({
+        preheader: `Less than 6 hours to keep your ${streakDays}-day streak alive.`,
+        body,
+        footerContext: "You received this because your streak is about to expire on VibeTalent.",
+      }),
+    });
+  }
+
+  {
+    const viewCount = 12;
+    const viewerNames = ["sarahc", "deveshw"];
+    const anonymous = viewCount - viewerNames.length;
+    const viewerHtml = viewerNames.map(n => `<strong>@${escapeHtml(n)}</strong>`).join(", ");
+    const anonHtml = anonymous > 0 ? ` plus ${anonymous} anonymous visitor${anonymous !== 1 ? "s" : ""}` : "";
+    const body = `
+${eyebrow("Profile activity")}
+${headline(`${viewCount} people viewed your profile`)}
+${paragraph(`Hey <strong>@${safeUser}</strong>, ${viewerHtml}${anonHtml} checked out your profile in the last 24 hours.`)}
+${cta(`${siteUrl}/dashboard`, "View dashboard")}
+`;
+    samples.push({
+      key: "profile-views",
+      label: "Profile view digest",
+      subject: `${viewCount} people viewed your profile`,
+      html: wrap({
+        preheader: `@sarahc, @deveshw plus ${anonymous} anonymous visitors stopped by.`,
+        body,
+        footerContext: "You received this daily digest because someone viewed your profile on VibeTalent.",
+      }),
+    });
+  }
+
+  {
+    const stats = { profileViews: 47, streakDays: 12, vibeScore: 84, hireRequests: 3 };
+    const body = `
+${eyebrow("Weekly recap")}
+${headline("Your week on VibeTalent")}
+${paragraph(`Hey <strong>@${safeUser}</strong>, here's how the past 7 days went.`)}
+${renderStatsGrid(stats)}
+${cta(`${siteUrl}/dashboard`, "View dashboard")}
+`;
+    samples.push({
+      key: "weekly-digest",
+      label: "Weekly recap",
+      subject: `Your week on VibeTalent`,
+      html: wrap({
+        preheader: `${stats.profileViews} profile views · ${stats.streakDays}-day streak · ${stats.vibeScore} vibe score`,
+        body,
+        footerContext: "You received this weekly recap from VibeTalent.",
+      }),
+    });
+  }
+
+  {
+    const vibeScore = 105;
+    const milestone = 100;
+    const body = `
+${eyebrow("Score milestone")}
+${headline(`Vibe score ${vibeScore}`)}
+${paragraph(`Congrats <strong>@${safeUser}</strong>, your vibe score just crossed <strong>${milestone}</strong>. The work is paying off.`)}
+${cta(`${siteUrl}/profile/${encodeURIComponent(username)}`, "View your profile")}
+`;
+    samples.push({
+      key: "vibe-milestone",
+      label: "Vibe score milestone",
+      subject: `Vibe score ${vibeScore} — milestone unlocked`,
+      html: wrap({
+        preheader: `You just crossed the ${milestone} vibe score milestone.`,
+        body,
+        footerContext: "You received this because you hit a vibe score milestone on VibeTalent.",
+      }),
+    });
+  }
+
+  {
+    const daysSinceLastActive = 21;
+    const feedbackUrl = `${siteUrl}/feedback?ref=preview`;
+    const body = `
+${eyebrow("We'd love your input")}
+${headline("What would bring you back?")}
+${paragraph(`Hey <strong>@${safeUser}</strong>, you haven't been on VibeTalent for <strong>${daysSinceLastActive} days</strong>. No guilt trip — we just want to understand what happened.`)}
+${paragraph(`Was something missing? Confusing? Not useful? Your honest answer genuinely shapes what we build next.`)}
+${quoteCard({
+  kicker: "Quick question",
+  title: "What's the #1 thing that would bring you back?",
+})}
+${cta(feedbackUrl, "Share feedback (30 sec)")}
+${inlineSecondary({ href: `${siteUrl}/dashboard`, prefix: "Or ", linkText: "head back to your dashboard", suffix: "." })}
+`;
+    samples.push({
+      key: "re-engagement",
+      label: "Re-engagement",
+      subject: `What would bring you back?`,
+      html: wrap({
+        preheader: `30 seconds of honest feedback genuinely shapes what we build next.`,
+        body,
+        footerContext: "You received this because you haven't been active on VibeTalent recently.",
+      }),
+    });
+  }
+
+  {
+    const reviewerName = "Sarah Chen";
+    const rating = 5;
+    const comment = "Shipped fast, communicated clearly, and the code was clean. Would absolutely work with again.";
+    const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
+    const trimmed = comment.slice(0, 200);
+    const reviewBlock = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 28px;background:${BRAND.bgSoft};">
+<tr><td style="padding:18px 22px;border-left:2px solid ${BRAND.accent};">
+<p style="margin:0 0 10px;font-family:${BRAND.fontMono};font-size:18px;letter-spacing:0.18em;color:${BRAND.star};">${escapeHtml(stars)}</p>
+<p style="margin:0 0 10px;font-family:${BRAND.fontSans};font-size:15px;font-weight:600;color:${BRAND.ink};">${escapeHtml(reviewerName)}</p>
+<p style="margin:0;font-family:${BRAND.fontSans};font-size:15px;line-height:1.6;color:${BRAND.textBody};">&ldquo;${escapeHtml(trimmed)}&rdquo;</p>
+</td></tr>
+</table>`;
+    const body = `
+${eyebrow("New review")}
+${headline(`${rating}-star review from ${escapeHtml(reviewerName)}`)}
+${paragraph(`Hey <strong>@${safeUser}</strong>, you just received a new review on your profile.`)}
+${reviewBlock}
+${cta(`${siteUrl}/dashboard`, "View dashboard")}
+`;
+    samples.push({
+      key: "review",
+      label: "New review",
+      subject: `${rating}-star review from ${reviewerName}`,
+      html: wrap({
+        preheader: `${stars} — ${trimmed.slice(0, 80)}`,
+        body,
+        footerContext: "You received this because someone reviewed you on VibeTalent.",
+      }),
+    });
+  }
+
+  return samples;
 }
