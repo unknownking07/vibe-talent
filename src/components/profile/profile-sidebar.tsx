@@ -7,6 +7,7 @@ import Link from "next/link";
 import type { UserWithSocials, BadgeLevel } from "@/lib/types/database";
 import { HireModal } from "@/components/ui/hire-modal";
 import { ShareCardModal } from "@/components/profile/share-card-modal";
+import { extractSocialHandle } from "@/lib/social-handles";
 
 interface ProfileSidebarProps {
   user: UserWithSocials;
@@ -93,6 +94,10 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
     }
   };
   const socials = user.social_links;
+  // Tolerate legacy values stored as full URLs so the rendered link doesn't
+  // become "https://x.com/https://x.com/<handle>".
+  const twitterHandle = extractSocialHandle(socials?.twitter, "twitter");
+  const telegramHandle = extractSocialHandle(socials?.telegram, "telegram");
   const initials = user.username.slice(0, 2).toUpperCase();
   const badgeLabel = getBadgeLabel(user.badge_level);
 
@@ -190,9 +195,9 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
             <Github size={16} />
           </a>
         )}
-        {socials?.twitter && (
+        {twitterHandle && (
           <a
-            href={`https://x.com/${socials.twitter}`}
+            href={`https://x.com/${twitterHandle}`}
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${user.username} on X (Twitter)`}
@@ -206,9 +211,9 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
             <svg aria-hidden="true" width={16} height={16} viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
           </a>
         )}
-        {socials?.telegram && (
+        {telegramHandle && (
           <a
-            href={`https://t.me/${socials.telegram.replace("@", "")}`}
+            href={`https://t.me/${telegramHandle}`}
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${user.username} on Telegram`}

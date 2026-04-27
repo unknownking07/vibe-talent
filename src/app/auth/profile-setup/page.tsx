@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { validateDisplayName, containsProfanity } from "@/lib/profanity";
+import { normalizeSocialHandle } from "@/lib/social-handles";
 import {
   Flame,
   Github,
@@ -258,16 +259,29 @@ export default function ProfileSetupPage() {
   };
 
   const handleStep2Next = async () => {
-    const twitter = socials.twitter.trim();
-    const telegram = socials.telegram.trim();
     if (!verifiedGithub) {
       setError("Connect your GitHub account to verify ownership before continuing.");
       return;
     }
+    const twitterResult = normalizeSocialHandle(socials.twitter, "twitter");
+    if (!twitterResult.ok) {
+      setError(twitterResult.error);
+      return;
+    }
+    const telegramResult = normalizeSocialHandle(socials.telegram, "telegram");
+    if (!telegramResult.ok) {
+      setError(telegramResult.error);
+      return;
+    }
+    const twitter = twitterResult.handle;
+    const telegram = telegramResult.handle;
     if (!twitter && !telegram) {
       setError("Please add your X (Twitter) or Telegram so clients can contact you.");
       return;
     }
+    // Reflect cleaned values back so the user sees the bare handle if they
+    // pasted a profile URL.
+    setSocials((s) => ({ ...s, twitter, telegram }));
 
     setError("");
     setLoading(true);
@@ -596,7 +610,7 @@ export default function ProfileSetupPage() {
           type="text"
           value={socials.twitter}
           onChange={(e) => setSocials({ ...socials, twitter: e.target.value })}
-          placeholder="X / Twitter handle"
+          placeholder="X / Twitter handle or profile link"
           className="input-brutal w-full"
         />
       </div>
@@ -618,7 +632,7 @@ export default function ProfileSetupPage() {
           type="text"
           value={socials.telegram}
           onChange={(e) => setSocials({ ...socials, telegram: e.target.value })}
-          placeholder="Telegram username"
+          placeholder="Telegram username or t.me link"
           className="input-brutal w-full"
         />
       </div>

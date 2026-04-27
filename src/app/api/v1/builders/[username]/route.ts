@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { extractSocialHandle } from "@/lib/social-handles";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -101,8 +102,11 @@ export async function GET(
       ),
       social_links: socialLinks
         ? {
-            twitter: socialLinks.twitter,
-            telegram: socialLinks.telegram,
+            // Always return bare handles so API consumers can build their
+            // own URLs without worrying about whether the user pasted a
+            // username or a full profile link at signup.
+            twitter: extractSocialHandle(socialLinks.twitter, "twitter"),
+            telegram: extractSocialHandle(socialLinks.telegram, "telegram"),
             github: socialLinks.github,
             website: socialLinks.website,
             farcaster: socialLinks.farcaster,
