@@ -81,6 +81,34 @@ describe("normalizeSocialHandle (twitter)", () => {
     const r = normalizeSocialHandle("a".repeat(16), "twitter");
     expect(r.ok).toBe(false);
   });
+
+  it("rejects multi-segment paths like status permalinks", () => {
+    expect(
+      normalizeSocialHandle("https://x.com/abhinav/status/123", "twitter").ok
+    ).toBe(false);
+  });
+
+  it("rejects Twitter reserved first-segment paths", () => {
+    for (const url of [
+      "https://x.com/home",
+      "https://x.com/explore",
+      "https://x.com/i/communities/123",
+      "https://x.com/intent/tweet",
+      "https://x.com/search?q=foo",
+      "https://x.com/login",
+    ]) {
+      expect(normalizeSocialHandle(url, "twitter").ok).toBe(false);
+    }
+  });
+
+  it("treats a bare domain (no path) as a URL and rejects it", () => {
+    expect(normalizeSocialHandle("x.com", "twitter").ok).toBe(false);
+  });
+
+  it("accepts null and undefined as empty input", () => {
+    expect(normalizeSocialHandle(null, "twitter")).toEqual({ ok: true, handle: "" });
+    expect(normalizeSocialHandle(undefined, "twitter")).toEqual({ ok: true, handle: "" });
+  });
 });
 
 describe("normalizeSocialHandle (telegram)", () => {
@@ -124,6 +152,22 @@ describe("normalizeSocialHandle (telegram)", () => {
       "telegram"
     );
     expect(r.ok).toBe(false);
+  });
+
+  it("rejects legacy joinchat invite links", () => {
+    expect(
+      normalizeSocialHandle("https://t.me/joinchat/AAAAAAAAAAAAAAAAAA", "telegram").ok
+    ).toBe(false);
+  });
+
+  it("rejects Telegram reserved first-segment paths", () => {
+    for (const url of [
+      "https://t.me/share/url?url=foo",
+      "https://t.me/addstickers/somepack",
+      "https://t.me/c/123/456",
+    ]) {
+      expect(normalizeSocialHandle(url, "telegram").ok).toBe(false);
+    }
   });
 
   it("allows a 32-char handle and rejects 33", () => {

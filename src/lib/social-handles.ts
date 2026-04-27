@@ -29,6 +29,37 @@ const HANDLE_PATTERN: Record<Platform, RegExp> = {
   telegram: /^[A-Za-z0-9_]{1,32}$/,
 };
 
+// First path segments that look username-shaped but aren't user profiles.
+// Without this, "https://x.com/home" or "https://t.me/joinchat/<code>" would
+// be persisted as the handles "home" and "joinchat" and render as broken links.
+const RESERVED_PATHS: Record<Platform, Set<string>> = {
+  twitter: new Set([
+    "i",
+    "home",
+    "explore",
+    "intent",
+    "search",
+    "messages",
+    "notifications",
+    "settings",
+    "compose",
+    "share",
+    "login",
+    "signup",
+    "tos",
+    "privacy",
+  ]),
+  telegram: new Set([
+    "joinchat",
+    "addstickers",
+    "share",
+    "proxy",
+    "c",
+    "s",
+    "iv",
+  ]),
+};
+
 const PLATFORM_LABEL: Record<Platform, string> = {
   twitter: "X (Twitter)",
   telegram: "Telegram",
@@ -44,7 +75,7 @@ export type NormalizeResult =
   | { ok: false; error: string };
 
 export function normalizeSocialHandle(
-  input: string,
+  input: string | null | undefined,
   platform: Platform
 ): NormalizeResult {
   const raw = (input ?? "").trim();
@@ -64,11 +95,22 @@ export function normalizeSocialHandle(
         error: `Use a ${EXAMPLE_DOMAINS[platform]} link or just your username.`,
       };
     }
-    const handle = parsed.path
-      .replace(/^\//, "")
-      .split(/[/?#]/)[0]
-      .replace(/^@/, "");
-    if (!handle || !HANDLE_PATTERN[platform].test(handle)) {
+    // A real profile URL is exactly /<handle>. Anything with multiple path
+    // segments is an invite link (/joinchat/<code>), a status permalink
+    // (/<user>/status/<id>), or a feature page (/i/communities/<id>).
+    const segments = parsed.path.split("/").filter(Boolean);
+    if (segments.length !== 1) {
+      return {
+        ok: false,
+        error: `Couldn't read a ${PLATFORM_LABEL[platform]} username from that link.`,
+      };
+    }
+    const handle = segments[0].replace(/^@/, "");
+    if (
+      !handle ||
+      !HANDLE_PATTERN[platform].test(handle) ||
+      RESERVED_PATHS[platform].has(handle.toLowerCase())
+    ) {
       return {
         ok: false,
         error: `Couldn't read a ${PLATFORM_LABEL[platform]} username from that link.`,
@@ -103,8 +145,8 @@ export function extractSocialHandle(
 }
 
 function looksLikeUrl(s: string): boolean {
-  // "https://...", "http://...", "//host/...", or "host.tld/..."
-  return /^(https?:)?\/\//i.test(s) || /^[a-z0-9.-]+\.[a-z]{2,}\//i.test(s);
+  // "https://...", "http://...", "//host/...", or "host.tld" / "host.tld/..."
+  return /^(https?:)?\/\//i.test(s) || /^[a-z0-9.-]+\.[a-z]{2,}(\/|$)/i.test(s);
 }
 
 function parseUrlLike(s: string): { host: string; path: string } | null {
