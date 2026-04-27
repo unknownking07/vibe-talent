@@ -5,15 +5,21 @@ import { renderAllEmailPreviews } from "@/lib/email";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Email preview", robots: { index: false, follow: false } };
 
+const LOOPBACK_HOST = /^(localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$/;
+
+function safeLoopbackOrigin(host: string | null): string | undefined {
+  if (!host || !LOOPBACK_HOST.test(host)) return undefined;
+  return `http://${host}`;
+}
+
 export default async function EmailPreviewPage() {
-  if (process.env.NODE_ENV === "production" && process.env.ALLOW_EMAIL_PREVIEW !== "1") {
-    notFound();
-  }
+  const allowed =
+    process.env.NODE_ENV === "development" ||
+    process.env.ALLOW_EMAIL_PREVIEW === "1";
+  if (!allowed) notFound();
 
   const h = await headers();
-  const host = h.get("host");
-  const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
-  const previewOrigin = host ? `${proto}://${host}` : undefined;
+  const previewOrigin = safeLoopbackOrigin(h.get("host"));
   const samples = renderAllEmailPreviews(previewOrigin ? { logoUrl: `${previewOrigin}/logo.png` } : undefined);
 
   return (

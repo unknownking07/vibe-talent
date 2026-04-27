@@ -92,7 +92,7 @@ export function renderEmail(opts: {
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
 <tr>
 <td valign="middle" style="vertical-align:middle;padding-right:14px;line-height:0;">
-<img src="${logoUrl}" width="36" height="36" alt="VibeTalent" style="display:block;width:36px;height:36px;border:0;outline:none;text-decoration:none;border-radius:50%;" />
+<img src="${escapeHtml(logoUrl)}" width="36" height="36" alt="VibeTalent" style="display:block;width:36px;height:36px;border:0;outline:none;text-decoration:none;border-radius:50%;" />
 </td>
 <td valign="middle" style="vertical-align:middle;font-family:${BRAND.fontSans};font-size:19px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:${BRAND.ink};">VIBE TALENT</td>
 </tr>
@@ -119,32 +119,50 @@ ${opts.footerContext}
 </html>`;
 }
 
+/** Eyebrow label above a headline. `text` is plain text and is escaped. */
 export function eyebrow(text: string, color: string = BRAND.accent): string {
-  return `<p style="margin:0 0 14px;font-family:${BRAND.fontMono};font-size:11px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:${color};">${text}</p>`;
+  return `<p style="margin:0 0 14px;font-family:${BRAND.fontMono};font-size:11px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:${color};">${escapeHtml(text)}</p>`;
 }
 
-export function headline(text: string): string {
-  return `<h1 style="margin:0 0 18px;font-family:${BRAND.fontSans};font-size:28px;line-height:1.2;font-weight:600;letter-spacing:-0.02em;color:${BRAND.ink};">${text}</h1>`;
+/** Section headline. `html` may contain pre-escaped interpolation; callers
+ *  are responsible for escaping any user-supplied substrings. */
+export function headline(html: string): string {
+  return `<h1 style="margin:0 0 18px;font-family:${BRAND.fontSans};font-size:28px;line-height:1.2;font-weight:600;letter-spacing:-0.02em;color:${BRAND.ink};">${html}</h1>`;
 }
 
+/** Body paragraph. `html` may contain inline tags (e.g. `<strong>`); callers
+ *  are responsible for escaping any user-supplied substrings. */
 export function paragraph(html: string, marginBottom: number = 28): string {
   return `<p style="margin:0 0 ${marginBottom}px;font-family:${BRAND.fontSans};font-size:16px;line-height:1.65;color:${BRAND.textBody};">${html}</p>`;
 }
 
+/** Primary call-to-action button. `label` is plain text and is escaped. */
 export function cta(href: string, label: string): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 0;">
 <tr><td bgcolor="${BRAND.accent}" style="background:${BRAND.accent};">
 <a href="${href}" style="display:inline-block;background:${BRAND.accent};color:${BRAND.accentText};padding:14px 26px;text-decoration:none;font-family:${BRAND.fontSans};font-size:14px;font-weight:600;letter-spacing:-0.005em;mso-padding-alt:0;">
-${label}<span style="margin-left:8px;">→</span>
+${escapeHtml(label)}<span style="margin-left:8px;">→</span>
 </a>
 </td></tr>
 </table>`;
 }
 
-export function inlineSecondary(href: string, label: string): string {
-  return `<p style="margin:18px 0 0;font-family:${BRAND.fontSans};font-size:14px;line-height:1.5;color:${BRAND.textMuted};">${label.replace("{LINK}", `<a href="${href}" style="color:${BRAND.ink};text-decoration:underline;">`)}</p>`;
+/** Inline secondary link below the CTA, e.g. "Or view in dashboard."
+ *  All fields are plain text and are escaped. */
+export function inlineSecondary(opts: {
+  href: string;
+  prefix?: string;
+  linkText: string;
+  suffix?: string;
+}): string {
+  const prefix = opts.prefix ? escapeHtml(opts.prefix) : "";
+  const suffix = opts.suffix ? escapeHtml(opts.suffix) : "";
+  return `<p style="margin:18px 0 0;font-family:${BRAND.fontSans};font-size:14px;line-height:1.5;color:${BRAND.textMuted};">${prefix}<a href="${opts.href}" style="color:${BRAND.ink};text-decoration:underline;">${escapeHtml(opts.linkText)}</a>${suffix}</p>`;
 }
 
+/** Detail / quote card with a kicker label, title, and optional body.
+ *  `kicker` is plain text (escaped); `title` and `body` are HTML and the
+ *  caller is responsible for escaping any user-supplied substrings. */
 export function quoteCard(opts: { kicker: string; title: string; body?: string }): string {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 28px;background:${BRAND.bgSoft};">
 <tr><td style="padding:18px 22px;border-left:2px solid ${BRAND.accent};">
@@ -235,7 +253,7 @@ ${quoteCard({
   body: `&ldquo;${escapeHtml(trimmed)}${truncated}&rdquo;`,
 })}
 ${cta(chatUrl, "Open chat")}
-${inlineSecondary(dashboardUrl, `Or {LINK}view in dashboard</a>.`)}
+${inlineSecondary({ href: dashboardUrl, prefix: "Or ", linkText: "view in dashboard", suffix: "." })}
 `;
 
   try {
@@ -435,14 +453,16 @@ export async function sendProfileViewDigestEmail({
   viewCount: number;
   viewerNames: string[];
 }): Promise<void> {
+  if (viewCount <= 0) return;
+
   const client = getResend();
   if (!client) return;
 
   const siteUrl = getSiteUrl();
+  const anonymousCount = viewCount - viewerNames.length;
   const viewerHtml = viewerNames.length > 0
     ? viewerNames.map(n => `<strong>@${escapeHtml(n)}</strong>`).join(", ")
     : "";
-  const anonymousCount = viewCount - viewerNames.length;
   const anonymousHtml = anonymousCount > 0
     ? `${viewerNames.length > 0 ? " plus " : ""}${anonymousCount} anonymous visitor${anonymousCount !== 1 ? "s" : ""}`
     : "";
@@ -465,7 +485,7 @@ ${cta(`${siteUrl}/dashboard`, "View dashboard")}
       text: `Hey @${username}, ${viewerPlain}${anonymousPlain} checked out your profile today.\n\nView dashboard: ${siteUrl}/dashboard\n\nUnsubscribe: ${unsubUrl(email)}`,
       html: renderEmail({
         preheader: viewerNames.length > 0
-          ? `${viewerPlain}${anonymousPlain ? `${anonymousPlain}` : ""} stopped by your profile.`
+          ? `${viewerPlain}${anonymousPlain} stopped by your profile.`
           : `${viewCount} ${viewCount === 1 ? "visitor" : "visitors"} on your profile in the last 24 hours.`,
         body,
         footerContext: "You received this daily digest because someone viewed your profile on VibeTalent.",
@@ -601,7 +621,7 @@ ${quoteCard({
   title: "What's the #1 thing that would bring you back?",
 })}
 ${cta(feedbackUrl, "Share feedback (30 sec)")}
-${inlineSecondary(`${siteUrl}/dashboard`, `Or {LINK}head back to your dashboard</a>.`)}
+${inlineSecondary({ href: `${siteUrl}/dashboard`, prefix: "Or ", linkText: "head back to your dashboard", suffix: "." })}
 `;
 
   try {
@@ -718,7 +738,7 @@ ${quoteCard({
   body: `&ldquo;${escapeHtml(trimmed)}${truncated}&rdquo;`,
 })}
 ${cta(chatUrl, "Open chat")}
-${inlineSecondary(dashboardUrl, `Or {LINK}view in dashboard</a>.`)}
+${inlineSecondary({ href: dashboardUrl, prefix: "Or ", linkText: "view in dashboard", suffix: "." })}
 `;
     samples.push({
       key: "hire",
@@ -891,7 +911,7 @@ ${quoteCard({
   title: "What's the #1 thing that would bring you back?",
 })}
 ${cta(feedbackUrl, "Share feedback (30 sec)")}
-${inlineSecondary(`${siteUrl}/dashboard`, `Or {LINK}head back to your dashboard</a>.`)}
+${inlineSecondary({ href: `${siteUrl}/dashboard`, prefix: "Or ", linkText: "head back to your dashboard", suffix: "." })}
 `;
     samples.push({
       key: "re-engagement",
