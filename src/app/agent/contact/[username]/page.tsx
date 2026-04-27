@@ -6,6 +6,7 @@ import { generateHireMessage } from "@/lib/agent-scoring";
 import type { UserWithSocials } from "@/lib/types/database";
 import { AgentThinking } from "@/components/agent/agent-thinking";
 import { Bot, Send, ArrowLeft, Github, Globe } from "lucide-react";
+import { extractSocialHandle } from "@/lib/social-handles";
 import Link from "next/link";
 import type { AgentStep } from "@/lib/types/agent";
 
@@ -73,6 +74,7 @@ export default function ContactPage({
   }
 
   const socials = user.social_links;
+  const twitterHandle = extractSocialHandle(socials?.twitter, "twitter");
   const initials = user.username.slice(0, 2).toUpperCase();
 
   if (sent) {
@@ -127,9 +129,9 @@ export default function ContactPage({
                 GitHub
               </a>
             )}
-            {socials?.twitter && (
+            {twitterHandle && (
               <a
-                href={`https://x.com/${socials.twitter}`}
+                href={`https://x.com/${twitterHandle}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-brutal btn-brutal-secondary text-xs py-2 px-4 flex items-center gap-2"

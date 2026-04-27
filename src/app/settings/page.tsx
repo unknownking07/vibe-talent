@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { validateDisplayName, containsProfanity } from "@/lib/profanity";
 import { siteUrl } from "@/lib/seo";
+import { normalizeSocialHandle } from "@/lib/social-handles";
 import type { UserWithSocials } from "@/lib/types/database";
 import { EmailPreferences } from "@/components/dashboard/email-preferences";
 import {
@@ -16,25 +17,13 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-/**
- * Extract a bare username from a value that might be a full URL or @-prefixed handle.
- */
-function extractUsername(value: string, platform: "twitter" | "telegram"): string {
-  let v = value.trim();
-  if (!v) return "";
-  v = v.replace(/\/+$/, "");
-  const patterns: Record<string, RegExp[]> = {
-    twitter: [/^https?:\/\/(www\.)?(twitter|x)\.com\//i],
-    telegram: [/^https?:\/\/(www\.)?(t\.me|telegram\.me)\//i],
-  };
-  for (const re of patterns[platform]) {
-    v = v.replace(re, "");
-  }
-  v = v.replace(/^@/, "");
-  v = v.split(/[?#]/)[0];
-  v = v.split("/")[0];
-  v = v.trim();
-  return v;
+// Drives the "@" decoration inside the handle inputs: show it for empty
+// fields and bare usernames, hide it once the user pastes a URL so they
+// don't see "@https://x.com/abhinav".
+function looksLikeBareHandle(value: string): boolean {
+  const v = value.trim();
+  if (!v) return true;
+  return /^@?[A-Za-z0-9_]+$/.test(v);
 }
 
 export default function SettingsPage() {
@@ -231,8 +220,18 @@ export default function SettingsPage() {
       alert("Username contains inappropriate language");
       return;
     }
-    const twitter = profileForm.twitter.trim();
-    const telegram = profileForm.telegram.trim();
+    const twitterResult = normalizeSocialHandle(profileForm.twitter, "twitter");
+    if (!twitterResult.ok) {
+      alert(twitterResult.error);
+      return;
+    }
+    const telegramResult = normalizeSocialHandle(profileForm.telegram, "telegram");
+    if (!telegramResult.ok) {
+      alert(telegramResult.error);
+      return;
+    }
+    const twitter = twitterResult.handle;
+    const telegram = telegramResult.handle;
     if (!twitter && !telegram) {
       alert("Please add your X (Twitter) or Telegram so clients can contact you.");
       return;
@@ -293,13 +292,16 @@ export default function SettingsPage() {
       social_links: {
         id: user.social_links?.id || "",
         user_id: user.id,
-        twitter: profileForm.twitter || null,
+        twitter: twitter || null,
         github: verifiedGithub,
-        telegram: profileForm.telegram || null,
+        telegram: telegram || null,
         website: profileForm.website || null,
         farcaster: profileForm.ide || null,
       },
     });
+    // Reflect the normalized values back into the form so a user who
+    // pasted a profile URL sees it cleaned up to a bare handle on save.
+    setProfileForm((p) => ({ ...p, twitter, telegram }));
     // Let other parts of the app (navbar onboarding dot, etc.) react to the
     // profile change without requiring a page reload.
     if (typeof window !== "undefined") {
@@ -448,14 +450,16 @@ export default function SettingsPage() {
             <div>
               <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">X (Twitter)</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted-soft)] font-bold text-sm select-none">@</span>
+                {looksLikeBareHandle(profileForm.twitter) && (
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted-soft)] font-bold text-sm select-none">@</span>
+                )}
                 <input
                   type="text"
                   value={profileForm.twitter}
-                  onChange={(e) => setProfileForm({ ...profileForm, twitter: extractUsername(e.target.value, "twitter") })}
-                  placeholder="username"
+                  onChange={(e) => setProfileForm({ ...profileForm, twitter: e.target.value })}
+                  placeholder="username or x.com link"
                   className="input-brutal"
-                  style={{ paddingLeft: "1.75rem" }}
+                  style={{ paddingLeft: looksLikeBareHandle(profileForm.twitter) ? "1.75rem" : undefined }}
                 />
               </div>
             </div>
@@ -525,14 +529,16 @@ export default function SettingsPage() {
             <div>
               <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Telegram</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted-soft)] font-bold text-sm select-none">@</span>
+                {looksLikeBareHandle(profileForm.telegram) && (
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted-soft)] font-bold text-sm select-none">@</span>
+                )}
                 <input
                   type="text"
                   value={profileForm.telegram}
-                  onChange={(e) => setProfileForm({ ...profileForm, telegram: extractUsername(e.target.value, "telegram") })}
-                  placeholder="username"
+                  onChange={(e) => setProfileForm({ ...profileForm, telegram: e.target.value })}
+                  placeholder="username or t.me link"
                   className="input-brutal"
-                  style={{ paddingLeft: "1.75rem" }}
+                  style={{ paddingLeft: looksLikeBareHandle(profileForm.telegram) ? "1.75rem" : undefined }}
                 />
               </div>
             </div>

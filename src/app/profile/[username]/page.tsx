@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { ProfileSidebar } from "@/components/profile/profile-sidebar";
 import { StatsRibbon } from "@/components/profile/stats-ribbon";
 import { ProfileHeatmap } from "@/components/profile/profile-heatmap";
+import { extractSocialHandle } from "@/lib/social-handles";
 import { ProfileProjectCard } from "@/components/profile/profile-project-card";
 import ReviewsSection from "@/components/profile/reviews-section";
 import { ProfileViewTracker } from "@/components/profile/profile-view-tracker";
@@ -109,11 +110,14 @@ export default async function ProfilePage({
     ...(user.avatar_url ? { image: user.avatar_url } : {}),
     description: user.bio || `Builder on VibeTalent with a ${user.streak}-day streak`,
     jobTitle: "Software Developer",
-    sameAs: [
-      user.social_links?.github ? `https://github.com/${user.social_links.github}` : null,
-      user.social_links?.twitter ? `https://x.com/${user.social_links.twitter}` : null,
-      user.social_links?.website || null,
-    ].filter(Boolean),
+    sameAs: (() => {
+      const twitterHandle = extractSocialHandle(user.social_links?.twitter, "twitter");
+      return [
+        user.social_links?.github ? `https://github.com/${user.social_links.github}` : null,
+        twitterHandle ? `https://x.com/${twitterHandle}` : null,
+        user.social_links?.website || null,
+      ].filter(Boolean);
+    })(),
     knowsAbout: (user.projects ?? []).flatMap((p: { tech_stack: string[] }) => p.tech_stack ?? []).filter((v: string, i: number, a: string[]) => a.indexOf(v) === i),
   };
 
