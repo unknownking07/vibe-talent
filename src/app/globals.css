@@ -396,3 +396,14 @@ body:has(.chat-page-wrapper) main {
     outline: 3px solid var(--accent);
   }
 }
+
+/* Onboarding tour respects reduced-motion: skip both the modal entry
+   scale-in and the per-card fade-in. The .tour-modal-card class is a
+   no-op style hook that exists only to scope this override — without it
+   we'd have to disable the global .animate-scale-in everywhere. */
+@media (prefers-reduced-motion: reduce) {
+  .tour-card-content,
+  .tour-modal-card {
+    animation: none !important;
+  }
+}

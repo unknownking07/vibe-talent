@@ -3,11 +3,12 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, LogOut, Settings, User, Users, BadgeCheck, ChevronDown } from "lucide-react";
+import { Menu, X, LogOut, Settings, Sparkles, User, Users, BadgeCheck, ChevronDown } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { NotificationBell } from "@/components/ui/notification-bell";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { resetTourForReplay, TOUR_FLAG_ENABLED } from "@/lib/onboarding";
 
 const exploreSubLinks = [
   { href: "/explore", label: "Talent" },
@@ -409,6 +410,32 @@ export function Navbar() {
                     <Users size={16} />
                     Referral
                   </Link>
+                  {TOUR_FLAG_ENABLED && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Reset the seen flag and arm the trigger.
+                        resetTourForReplay();
+                        setProfileDropdownOpen(false);
+                        // If we're already on /dashboard, router.push is a
+                        // no-op (Next.js doesn't remount on same-route nav)
+                        // so the dashboard's mount-only effect never re-runs.
+                        // Dispatch a custom event the dashboard listens for
+                        // and it consumes the armed key in-place. From any
+                        // other route, the normal push triggers a full mount.
+                        if (pathname === "/dashboard") {
+                          window.dispatchEvent(new Event("vibetalent-tour-replay"));
+                        } else {
+                          router.push("/dashboard");
+                        }
+                      }}
+                      className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors w-full text-left"
+                      style={{ color: "var(--foreground)" }}
+                    >
+                      <Sparkles size={16} />
+                      Replay tour
+                    </button>
+                  )}
                   <div style={{ borderTop: "2px solid var(--border-hard)" }} />
                   <button
                     onClick={handleLogout}
@@ -582,6 +609,24 @@ export function Navbar() {
                 >
                   Referral
                 </Link>
+                {TOUR_FLAG_ENABLED && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // See desktop button above for the same-route rationale.
+                      resetTourForReplay();
+                      setMobileOpen(false);
+                      if (pathname === "/dashboard") {
+                        window.dispatchEvent(new Event("vibetalent-tour-replay"));
+                      } else {
+                        router.push("/dashboard");
+                      }
+                    }}
+                    className="block w-full text-left px-4 py-3 text-sm font-bold uppercase tracking-wide text-[var(--foreground)]"
+                  >
+                    Replay tour
+                  </button>
+                )}
               </>
             )}
             <button
