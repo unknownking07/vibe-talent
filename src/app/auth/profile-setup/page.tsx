@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { validateDisplayName, containsProfanity } from "@/lib/profanity";
 import { normalizeSocialHandle } from "@/lib/social-handles";
+import { armTourTrigger, TOUR_FLAG_ENABLED } from "@/lib/onboarding";
 import {
   Flame,
   Github,
@@ -245,10 +246,14 @@ export default function ProfileSetupPage() {
   const handleConnectGithub = async () => {
     setConnectingGithub(true);
     setError("");
+    // Encode the destination so the inner "?step=2" survives. Without
+    // encoding, the second "?" gets parsed as a separate query param on
+    // /auth/callback and dropped, sending the user back to step 1.
+    const nextPath = encodeURIComponent("/auth/profile-setup?step=2");
     const { error: linkError } = await supabase.auth.linkIdentity({
       provider: "github",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/auth/profile-setup?step=2`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${nextPath}`,
       },
     });
     if (linkError) {
@@ -920,6 +925,10 @@ export default function ProfileSetupPage() {
               }
               // Drop a one-time in-app nudge so new builders share their referral link.
               fetch("/api/notifications/welcome-referral", { method: "POST" }).catch(() => {});
+              // Arm the onboarding tour so the dashboard fires it on mount.
+              // Gated on the env flag so flipping the kill-switch never leaves
+              // a stale signal sitting in the user's tab.
+              if (TOUR_FLAG_ENABLED) armTourTrigger();
               router.push("/dashboard");
             }}
             className="btn-brutal btn-brutal-primary w-full justify-center text-sm"

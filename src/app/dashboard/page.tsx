@@ -13,6 +13,8 @@ import { ActivityHeatmap } from "@/components/ui/activity-heatmap";
 import { ProjectCard } from "@/components/ui/project-card";
 import { ProfileViewsWidget } from "@/components/dashboard/profile-views-widget";
 import { StreakMilestone } from "@/components/dashboard/streak-milestone";
+import { OnboardingTour } from "@/components/onboarding/onboarding-tour";
+import { consumeTourTrigger, TOUR_FLAG_ENABLED } from "@/lib/onboarding";
 import type { HireRequest, HireMessage } from "@/lib/types/database";
 import {
   Plus,
@@ -112,6 +114,36 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [hireRequests, setHireRequests] = useState<HireRequest[]>([]);
   const [senderProfiles, setSenderProfiles] = useState<Record<string, { username: string }>>({});
+  // Onboarding tour visibility. Initialized false on the server (SSR-safe);
+  // the effect below reads the sessionStorage trigger or `?tour=force` query
+  // param on mount and flips it on. Kept separate from `forceOpen` (passed
+  // to the modal) so the dev-replay path can bypass the env-var check
+  // without changing how the production trigger is recorded.
+  const [showTour, setShowTour] = useState(false);
+  const [tourForceOpen, setTourForceOpen] = useState(false);
+
+  // One-shot tour trigger. Runs once on mount (empty deps), reads two signals:
+  //   1. The `vibetalent_show_tour_after_redirect` sessionStorage key set by
+  //      profile-setup step 4. Consumed-on-read so reloads don't replay.
+  //   2. `?tour=force` query param for dev-replay (also consumed by reading
+  //      `window.location.search` directly — no Suspense-boundary needed for
+  //      `useSearchParams`).
+  // Both paths are gated on the env flag UNLESS `?tour=force` is set, which
+  // is intentional: developers need a way to preview without touching env.
+  useEffect(() => {
+    const forced =
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("tour") === "force";
+    if (forced) {
+      setTourForceOpen(true);
+      setShowTour(true);
+      return;
+    }
+    if (!TOUR_FLAG_ENABLED) return;
+    if (consumeTourTrigger()) {
+      setShowTour(true);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -136,7 +168,9 @@ export default function DashboardPage() {
 
       const profile = results[0].status === "fulfilled" ? results[0].value?.data : null;
       const projects = results[1].status === "fulfilled" ? results[1].value?.data : [];
-      const socials = results[2].status === "fulfilled" ? results[2].value?.data : null;
+      // `let` because the GitHub self-heal block below may overwrite this in
+      // memory after a fire-and-forget DB upsert.
+      let socials = results[2].status === "fulfilled" ? results[2].value?.data : null;
       const streakData = results[3].status === "fulfilled" ? results[3].value : {};
       const inboxData = results[4].status === "fulfilled" ? results[4].value?.data : [];
       setHireRequests(inboxData || []);
@@ -173,6 +207,37 @@ export default function DashboardPage() {
       if (!profile) {
         window.location.href = "/auth/profile-setup";
         return;
+      }
+
+      // Self-heal: if the GitHub identity is attached in auth.users but the
+      // mirror columns (users.github_username / social_links.github) are out
+      // of sync, repair them in place so the missing-socials redirect below
+      // doesn't bounce the user into an unfixable loop. Same lookup pattern
+      // as settings/page.tsx and profile-setup/page.tsx.
+      if (!profile.github_username || !socials?.github) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const ghIdentity = authUser.identities?.find((i: any) => i.provider === "github");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const ghData = (ghIdentity?.identity_data ?? {}) as any;
+        const ghUsername =
+          ghData.user_name ||
+          ghData.preferred_username ||
+          authUser.user_metadata?.user_name ||
+          authUser.user_metadata?.preferred_username ||
+          null;
+        if (ghUsername) {
+          if (!profile.github_username) {
+            profile.github_username = ghUsername;
+            sb.from("users").update({ github_username: ghUsername }).eq("id", authUser.id);
+          }
+          if (!socials?.github) {
+            socials = { ...(socials || {}), github: ghUsername, user_id: authUser.id };
+            sb.from("social_links").upsert(
+              { user_id: authUser.id, github: ghUsername },
+              { onConflict: "user_id" }
+            );
+          }
+        }
       }
 
       // Enforce mandatory socials: GitHub + (X or Telegram)
@@ -1888,6 +1953,18 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Onboarding tour. Mounts only when explicitly armed (post-signup
+          sessionStorage flag) or when `?tour=force` is in the URL. The
+          component itself returns null if the env flag is off, so this
+          render is harmless when the feature is disabled. */}
+      {showTour && (
+        <OnboardingTour
+          username={user?.username ?? null}
+          forceOpen={tourForceOpen}
+          onClose={() => setShowTour(false)}
+        />
       )}
     </div>
   );

@@ -396,3 +396,12 @@ body:has(.chat-page-wrapper) main {
     outline: 3px solid var(--accent);
   }
 }
+
+/* Onboarding tour respects reduced-motion: skip the per-card fade-in and
+   let the content render statically. Without this, the carousel still
+   animates each transition even for users who've opted out globally. */
+@media (prefers-reduced-motion: reduce) {
+  .tour-card-content {
+    animation: none !important;
+  }
+}
