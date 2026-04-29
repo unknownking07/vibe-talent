@@ -128,9 +128,18 @@ export default function DashboardPage() {
   //   2. `?tour=force` query param for dev-replay (also consumed by reading
   //      `window.location.search` directly — no Suspense-boundary needed for
   //      `useSearchParams`).
-  // Both paths are gated on the env flag UNLESS `?tour=force` is set, which
-  // is intentional: developers need a way to preview without touching env.
+  // Both paths require TOUR_FLAG_ENABLED. Gating `?tour=force` on the flag
+  // too is critical for the kill-switch contract: if we disable the tour in
+  // prod, no URL trick should bring it back. Use `/dev/tour-preview` (which
+  // is NODE_ENV-gated) for development previews instead.
+  //
+  // We also listen for a "vibetalent-tour-replay" window event so the navbar
+  // "Replay tour" button works when the user is already on /dashboard. Without
+  // this, router.push("/dashboard") from the navbar is a no-op (Next.js sees
+  // the same route, doesn't remount), so the mount-only signals above never
+  // re-fire.
   useEffect(() => {
+    if (!TOUR_FLAG_ENABLED) return;
     const forced =
       typeof window !== "undefined" &&
       new URLSearchParams(window.location.search).get("tour") === "force";
@@ -139,10 +148,24 @@ export default function DashboardPage() {
       setShowTour(true);
       return;
     }
-    if (!TOUR_FLAG_ENABLED) return;
     if (consumeTourTrigger()) {
       setShowTour(true);
     }
+  }, []);
+
+  // Same-page replay: navbar dispatches this when the user clicks "Replay
+  // tour" while already on /dashboard. We re-consume the trigger and open
+  // the modal without a route change.
+  useEffect(() => {
+    if (!TOUR_FLAG_ENABLED) return;
+    const handleReplay = () => {
+      if (consumeTourTrigger()) {
+        setTourForceOpen(false);
+        setShowTour(true);
+      }
+    };
+    window.addEventListener("vibetalent-tour-replay", handleReplay);
+    return () => window.removeEventListener("vibetalent-tour-replay", handleReplay);
   }, []);
 
   useEffect(() => {

@@ -414,12 +414,20 @@ export function Navbar() {
                     <button
                       type="button"
                       onClick={() => {
-                        // Resets the seen flag and arms the trigger; routing
-                        // through /dashboard guarantees the modal mounts via
-                        // the same code path as the post-signup flow.
+                        // Reset the seen flag and arm the trigger.
                         resetTourForReplay();
                         setProfileDropdownOpen(false);
-                        router.push("/dashboard");
+                        // If we're already on /dashboard, router.push is a
+                        // no-op (Next.js doesn't remount on same-route nav)
+                        // so the dashboard's mount-only effect never re-runs.
+                        // Dispatch a custom event the dashboard listens for
+                        // and it consumes the armed key in-place. From any
+                        // other route, the normal push triggers a full mount.
+                        if (pathname === "/dashboard") {
+                          window.dispatchEvent(new Event("vibetalent-tour-replay"));
+                        } else {
+                          router.push("/dashboard");
+                        }
                       }}
                       className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors w-full text-left"
                       style={{ color: "var(--foreground)" }}
@@ -605,9 +613,14 @@ export function Navbar() {
                   <button
                     type="button"
                     onClick={() => {
+                      // See desktop button above for the same-route rationale.
                       resetTourForReplay();
                       setMobileOpen(false);
-                      router.push("/dashboard");
+                      if (pathname === "/dashboard") {
+                        window.dispatchEvent(new Event("vibetalent-tour-replay"));
+                      } else {
+                        router.push("/dashboard");
+                      }
                     }}
                     className="block w-full text-left px-4 py-3 text-sm font-bold uppercase tracking-wide text-[var(--foreground)]"
                   >

@@ -130,9 +130,12 @@ export function OnboardingTour({ onClose, forceOpen = false, username }: Onboard
         aria-hidden="true"
       />
 
-      {/* Card. Same brutal-shadow + warm-grey treatment as the rest of the app. */}
+      {/* Card. Same brutal-shadow + warm-grey treatment as the rest of the app.
+          The `tour-modal-card` class is a hook for the prefers-reduced-motion
+          override in globals.css — without it, animate-scale-in still runs for
+          users who've opted out globally. */}
       <div
-        className="relative w-full max-w-lg max-h-[90dvh] overflow-y-auto animate-scale-in"
+        className="relative w-full max-w-lg max-h-[90dvh] overflow-y-auto animate-scale-in tour-modal-card"
         style={{
           maxHeight: "90vh", // legacy fallback for browsers without dvh support
           backgroundColor: "var(--bg-surface)",
