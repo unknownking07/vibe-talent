@@ -136,7 +136,9 @@ export default function DashboardPage() {
 
       const profile = results[0].status === "fulfilled" ? results[0].value?.data : null;
       const projects = results[1].status === "fulfilled" ? results[1].value?.data : [];
-      const socials = results[2].status === "fulfilled" ? results[2].value?.data : null;
+      // `let` because the GitHub self-heal block below may overwrite this in
+      // memory after a fire-and-forget DB upsert.
+      let socials = results[2].status === "fulfilled" ? results[2].value?.data : null;
       const streakData = results[3].status === "fulfilled" ? results[3].value : {};
       const inboxData = results[4].status === "fulfilled" ? results[4].value?.data : [];
       setHireRequests(inboxData || []);
@@ -173,6 +175,37 @@ export default function DashboardPage() {
       if (!profile) {
         window.location.href = "/auth/profile-setup";
         return;
+      }
+
+      // Self-heal: if the GitHub identity is attached in auth.users but the
+      // mirror columns (users.github_username / social_links.github) are out
+      // of sync, repair them in place so the missing-socials redirect below
+      // doesn't bounce the user into an unfixable loop. Same lookup pattern
+      // as settings/page.tsx and profile-setup/page.tsx.
+      if (!profile.github_username || !socials?.github) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const ghIdentity = authUser.identities?.find((i: any) => i.provider === "github");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const ghData = (ghIdentity?.identity_data ?? {}) as any;
+        const ghUsername =
+          ghData.user_name ||
+          ghData.preferred_username ||
+          authUser.user_metadata?.user_name ||
+          authUser.user_metadata?.preferred_username ||
+          null;
+        if (ghUsername) {
+          if (!profile.github_username) {
+            profile.github_username = ghUsername;
+            sb.from("users").update({ github_username: ghUsername }).eq("id", authUser.id);
+          }
+          if (!socials?.github) {
+            socials = { ...(socials || {}), github: ghUsername, user_id: authUser.id };
+            sb.from("social_links").upsert(
+              { user_id: authUser.id, github: ghUsername },
+              { onConflict: "user_id" }
+            );
+          }
+        }
       }
 
       // Enforce mandatory socials: GitHub + (X or Telegram)

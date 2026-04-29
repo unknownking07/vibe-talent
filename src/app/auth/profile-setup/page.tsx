@@ -245,10 +245,14 @@ export default function ProfileSetupPage() {
   const handleConnectGithub = async () => {
     setConnectingGithub(true);
     setError("");
+    // Encode the destination so the inner "?step=2" survives. Without
+    // encoding, the second "?" gets parsed as a separate query param on
+    // /auth/callback and dropped, sending the user back to step 1.
+    const nextPath = encodeURIComponent("/auth/profile-setup?step=2");
     const { error: linkError } = await supabase.auth.linkIdentity({
       provider: "github",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/auth/profile-setup?step=2`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${nextPath}`,
       },
     });
     if (linkError) {
