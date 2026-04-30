@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useLayoutEffect, useRef } from "react";
+import { countToLevel } from "@/lib/heatmap-utils";
 
 interface ActivityHeatmapProps {
   data: Record<string, number>;
@@ -10,15 +11,10 @@ interface ActivityHeatmapProps {
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
 
-// Bucket a real per-day commit count into a 0-4 color intensity. Same scale
-// used by ProfileHeatmap so the two views feel consistent.
-const countToLevel = (count: number) => {
-  if (count <= 0) return 0;
-  if (count < 3) return 1;
-  if (count < 8) return 2;
-  if (count < 20) return 3;
-  return 4;
-};
+function dayLabel(count: number, date: string): string {
+  if (count <= 0) return `No contributions on ${date}`;
+  return `${count} ${count === 1 ? "contribution" : "contributions"} on ${date}`;
+}
 
 export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
   const { weeks, monthLabels } = useMemo(() => {
@@ -146,19 +142,22 @@ export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
           <div className="flex gap-[3px]">
             {weeks.map((week, wi) => (
               <div key={wi} className="flex flex-col gap-[3px]">
-                {week.map((day) => (
-                  <div
-                    key={day.date}
-                    className="w-3 h-3"
-                    style={{
-                      backgroundColor: getLevelColor(countToLevel(day.count)),
-                      border: "1px solid var(--border-subtle)",
-                    }}
-                    title={day.count > 0
-                      ? `${day.count} ${day.count === 1 ? "contribution" : "contributions"} on ${day.date}`
-                      : `No contributions on ${day.date}`}
-                  />
-                ))}
+                {week.map((day) => {
+                  const label = dayLabel(day.count, day.date);
+                  return (
+                    <div
+                      key={day.date}
+                      className="w-3 h-3"
+                      style={{
+                        backgroundColor: getLevelColor(countToLevel(day.count)),
+                        border: "1px solid var(--border-subtle)",
+                      }}
+                      title={label}
+                      aria-label={label}
+                      role="img"
+                    />
+                  );
+                })}
               </div>
             ))}
           </div>
