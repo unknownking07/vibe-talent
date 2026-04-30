@@ -117,15 +117,22 @@ export async function GET(req: NextRequest) {
       const batchResults = await Promise.allSettled(
         batch.map(async (userInfo) => {
           try {
-            // Fetch public events from GitHub API
+            // Fetch public events from GitHub API. Authenticated requests get
+            // 5000/hour vs 60/hour unauthenticated — at 2 calls per user, the
+            // unauthenticated budget runs out around user 30 and the rest of
+            // the batch silently rate-limits, leaving lifetime_contributions
+            // at 0 for everyone past the cutoff. Token is optional; if unset
+            // we fall back to anonymous (still works for small userbases).
+            const ghHeaders: Record<string, string> = {
+              Accept: "application/vnd.github.v3+json",
+              "User-Agent": "VibeTalent/1.0",
+            };
+            if (process.env.GITHUB_TOKEN) {
+              ghHeaders.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+            }
             const response = await fetch(
               `https://api.github.com/users/${encodeURIComponent(userInfo.githubUsername)}/events/public?per_page=100`,
-              {
-                headers: {
-                  Accept: "application/vnd.github.v3+json",
-                  "User-Agent": "VibeTalent/1.0",
-                },
-              }
+              { headers: ghHeaders }
             );
 
             if (!response.ok) {
