@@ -5,6 +5,7 @@ import { fetchGitHubContributions, sumLastNDays } from "@/lib/github-contributio
 const QUALIFYING_EVENTS = ["PushEvent", "CreateEvent", "PullRequestEvent", "IssuesEvent"];
 const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 2000;
+const EVENTS_API_TIMEOUT_MS = 8000;
 
 function cleanGithubUsername(raw: string): string {
   return raw
@@ -146,10 +147,15 @@ export async function GET(req: NextRequest) {
             let eventsApiError: string | null = null;
             let userNotFound = false;
 
+            const eventsController = new AbortController();
+            const eventsTimeoutId = setTimeout(
+              () => eventsController.abort(),
+              EVENTS_API_TIMEOUT_MS
+            );
             try {
               const response = await fetch(
                 `https://api.github.com/users/${encodeURIComponent(userInfo.githubUsername)}/events/public?per_page=100`,
-                { headers: ghApiHeaders }
+                { headers: ghApiHeaders, signal: eventsController.signal }
               );
 
               if (response.status === 404) {
@@ -168,7 +174,13 @@ export async function GET(req: NextRequest) {
                 );
               }
             } catch (err) {
-              eventsApiError = err instanceof Error ? err.message : "fetch failed";
+              eventsApiError = err instanceof Error && err.name === "AbortError"
+                ? `timeout after ${EVENTS_API_TIMEOUT_MS}ms`
+                : err instanceof Error
+                  ? err.message
+                  : "fetch failed";
+            } finally {
+              clearTimeout(eventsTimeoutId);
             }
 
             // Hard skip only if GitHub explicitly says the user doesn't exist.
