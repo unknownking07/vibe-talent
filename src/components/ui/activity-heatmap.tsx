@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useLayoutEffect, useRef } from "react";
+import { countToLevel } from "@/lib/heatmap-utils";
 
 interface ActivityHeatmapProps {
   data: Record<string, number>;
@@ -10,9 +11,14 @@ interface ActivityHeatmapProps {
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
 
+function dayLabel(count: number, date: string): string {
+  if (count <= 0) return `No contributions on ${date}`;
+  return `${count} ${count === 1 ? "contribution" : "contributions"} on ${date}`;
+}
+
 export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
   const { weeks, monthLabels } = useMemo(() => {
-    const result: { date: string; level: number; dayOfWeek: number }[][] = [];
+    const result: { date: string; count: number; dayOfWeek: number }[][] = [];
     const today = new Date();
 
     // Go back to the start: 52 weeks ago, aligned to Sunday
@@ -23,13 +29,13 @@ export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
       start.setDate(start.getDate() - 1);
     }
 
-    let currentWeek: { date: string; level: number; dayOfWeek: number }[] = [];
+    let currentWeek: { date: string; count: number; dayOfWeek: number }[] = [];
     const current = new Date(start);
 
     while (current <= today) {
       const key = current.toISOString().split("T")[0];
-      const level = data[key] || 0;
-      currentWeek.push({ date: key, level, dayOfWeek: current.getDay() });
+      const count = data[key] || 0;
+      currentWeek.push({ date: key, count, dayOfWeek: current.getDay() });
 
       if (currentWeek.length === 7) {
         result.push(currentWeek);
@@ -136,17 +142,22 @@ export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
           <div className="flex gap-[3px]">
             {weeks.map((week, wi) => (
               <div key={wi} className="flex flex-col gap-[3px]">
-                {week.map((day) => (
-                  <div
-                    key={day.date}
-                    className="w-3 h-3"
-                    style={{
-                      backgroundColor: getLevelColor(day.level),
-                      border: "1px solid var(--border-subtle)",
-                    }}
-                    title={`${day.date}: ${day.level > 0 ? day.level : "No"} contributions`}
-                  />
-                ))}
+                {week.map((day) => {
+                  const label = dayLabel(day.count, day.date);
+                  return (
+                    <div
+                      key={day.date}
+                      className="w-3 h-3"
+                      style={{
+                        backgroundColor: getLevelColor(countToLevel(day.count)),
+                        border: "1px solid var(--border-subtle)",
+                      }}
+                      title={label}
+                      aria-label={label}
+                      role="img"
+                    />
+                  );
+                })}
               </div>
             ))}
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, useLayoutEffect, useRef } from "react";
+import { countToLevel } from "@/lib/heatmap-utils";
 
 interface ProfileHeatmapProps {
   data: Record<string, number>;
@@ -19,6 +20,11 @@ const getLevelColor = (level: number) => {
     default: return "var(--hm-4)";
   }
 };
+
+function dayLabel(count: number, date: string): string {
+  if (count <= 0) return `No contributions on ${date}`;
+  return `${count} ${count === 1 ? "contribution" : "contributions"} on ${date}`;
+}
 
 export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
   const [ghData, setGhData] = useState<Record<string, number>>({});
@@ -59,17 +65,17 @@ export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
   }, [data, ghData]);
 
   const { weeks, monthLabels } = useMemo(() => {
-    const result: { date: string; level: number }[][] = [];
+    const result: { date: string; count: number }[][] = [];
     const today = new Date();
     const start = new Date(today);
     start.setDate(start.getDate() - 363);
     while (start.getDay() !== 0) start.setDate(start.getDate() - 1);
 
-    let currentWeek: { date: string; level: number }[] = [];
+    let currentWeek: { date: string; count: number }[] = [];
     const current = new Date(start);
     while (current <= today) {
       const key = current.toISOString().split("T")[0];
-      currentWeek.push({ date: key, level: mergedData[key] || 0 });
+      currentWeek.push({ date: key, count: mergedData[key] || 0 });
       if (currentWeek.length === 7) {
         result.push(currentWeek);
         currentWeek = [];
@@ -146,14 +152,19 @@ export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
           <div className="flex gap-[3px]">
             {weeks.map((week, wi) => (
               <div key={wi} className="flex flex-col gap-[3px]">
-                {week.map((day) => (
-                  <div
-                    key={day.date}
-                    className="w-3 h-3"
-                    style={{ backgroundColor: getLevelColor(day.level), border: "1px solid var(--border-subtle)" }}
-                    title={`${day.date}: ${day.level > 0 ? day.level : "No"} contributions`}
-                  />
-                ))}
+                {week.map((day) => {
+                  const label = dayLabel(day.count, day.date);
+                  return (
+                    <div
+                      key={day.date}
+                      className="w-3 h-3"
+                      style={{ backgroundColor: getLevelColor(countToLevel(day.count)), border: "1px solid var(--border-subtle)" }}
+                      title={label}
+                      aria-label={label}
+                      role="img"
+                    />
+                  );
+                })}
               </div>
             ))}
           </div>
