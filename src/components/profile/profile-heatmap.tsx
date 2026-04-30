@@ -20,6 +20,17 @@ const getLevelColor = (level: number) => {
   }
 };
 
+// Bucket a real per-day commit count into a 0-4 color intensity. Mirrors the
+// shape of GitHub's own contribution calendar buckets so the visual feel is
+// familiar (low/med/high days look low/med/high).
+const countToLevel = (count: number) => {
+  if (count <= 0) return 0;
+  if (count < 3) return 1;
+  if (count < 8) return 2;
+  if (count < 20) return 3;
+  return 4;
+};
+
 export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
   const [ghData, setGhData] = useState<Record<string, number>>({});
   const [ghTotal, setGhTotal] = useState<number>(0);
@@ -59,17 +70,17 @@ export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
   }, [data, ghData]);
 
   const { weeks, monthLabels } = useMemo(() => {
-    const result: { date: string; level: number }[][] = [];
+    const result: { date: string; count: number }[][] = [];
     const today = new Date();
     const start = new Date(today);
     start.setDate(start.getDate() - 363);
     while (start.getDay() !== 0) start.setDate(start.getDate() - 1);
 
-    let currentWeek: { date: string; level: number }[] = [];
+    let currentWeek: { date: string; count: number }[] = [];
     const current = new Date(start);
     while (current <= today) {
       const key = current.toISOString().split("T")[0];
-      currentWeek.push({ date: key, level: mergedData[key] || 0 });
+      currentWeek.push({ date: key, count: mergedData[key] || 0 });
       if (currentWeek.length === 7) {
         result.push(currentWeek);
         currentWeek = [];
@@ -150,8 +161,10 @@ export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
                   <div
                     key={day.date}
                     className="w-3 h-3"
-                    style={{ backgroundColor: getLevelColor(day.level), border: "1px solid var(--border-subtle)" }}
-                    title={`${day.date}: ${day.level > 0 ? day.level : "No"} contributions`}
+                    style={{ backgroundColor: getLevelColor(countToLevel(day.count)), border: "1px solid var(--border-subtle)" }}
+                    title={day.count > 0
+                      ? `${day.count} ${day.count === 1 ? "contribution" : "contributions"} on ${day.date}`
+                      : `No contributions on ${day.date}`}
                   />
                 ))}
               </div>

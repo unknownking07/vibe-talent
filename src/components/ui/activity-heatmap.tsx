@@ -10,9 +10,19 @@ interface ActivityHeatmapProps {
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
 
+// Bucket a real per-day commit count into a 0-4 color intensity. Same scale
+// used by ProfileHeatmap so the two views feel consistent.
+const countToLevel = (count: number) => {
+  if (count <= 0) return 0;
+  if (count < 3) return 1;
+  if (count < 8) return 2;
+  if (count < 20) return 3;
+  return 4;
+};
+
 export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
   const { weeks, monthLabels } = useMemo(() => {
-    const result: { date: string; level: number; dayOfWeek: number }[][] = [];
+    const result: { date: string; count: number; dayOfWeek: number }[][] = [];
     const today = new Date();
 
     // Go back to the start: 52 weeks ago, aligned to Sunday
@@ -23,13 +33,13 @@ export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
       start.setDate(start.getDate() - 1);
     }
 
-    let currentWeek: { date: string; level: number; dayOfWeek: number }[] = [];
+    let currentWeek: { date: string; count: number; dayOfWeek: number }[] = [];
     const current = new Date(start);
 
     while (current <= today) {
       const key = current.toISOString().split("T")[0];
-      const level = data[key] || 0;
-      currentWeek.push({ date: key, level, dayOfWeek: current.getDay() });
+      const count = data[key] || 0;
+      currentWeek.push({ date: key, count, dayOfWeek: current.getDay() });
 
       if (currentWeek.length === 7) {
         result.push(currentWeek);
@@ -141,10 +151,12 @@ export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
                     key={day.date}
                     className="w-3 h-3"
                     style={{
-                      backgroundColor: getLevelColor(day.level),
+                      backgroundColor: getLevelColor(countToLevel(day.count)),
                       border: "1px solid var(--border-subtle)",
                     }}
-                    title={`${day.date}: ${day.level > 0 ? day.level : "No"} contributions`}
+                    title={day.count > 0
+                      ? `${day.count} ${day.count === 1 ? "contribution" : "contributions"} on ${day.date}`
+                      : `No contributions on ${day.date}`}
                   />
                 ))}
               </div>
