@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchGitHubContributions, sumLastNDays } from "@/lib/github-contributions";
 
 const QUALIFYING_EVENTS = ["PushEvent", "CreateEvent", "PullRequestEvent", "IssuesEvent"];
 const BATCH_SIZE = 5;
@@ -107,7 +108,7 @@ export async function GET(req: NextRequest) {
     let synced = 0;
     let skipped = 0;
     let errors = 0;
-    const details: { user: string; github: string; status: string; dates_logged?: number }[] = [];
+    const details: { user: string; github: string; status: string; dates_logged?: number; lifetime?: number; last30d?: number }[] = [];
 
     // Process in batches
     for (let i = 0; i < usersToSync.length; i += BATCH_SIZE) {
@@ -147,11 +148,9 @@ export async function GET(req: NextRequest) {
                 new Date(event.created_at) > oneDayAgo
             );
 
-            if (recentEvents.length === 0) {
-              return { userInfo, status: "skipped", reason: "No recent qualifying events" };
-            }
-
-            // Save events to feed_events table for the activity feed
+            // Save events to feed_events table for the activity feed (only
+            // when there are recent events; inactive users still get their
+            // lifetime/30d totals refreshed below).
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const feedRows = recentEvents.slice(0, 10).map((event: any) => {
               const repoName = (event.repo?.name || 'unknown').replace(/^[^/]+\//, '');
@@ -194,8 +193,22 @@ export async function GET(req: NextRequest) {
               await (supabase as any).from('feed_events').insert(feedRows);
             }
 
-            // Extract unique activity dates
-            const activityDates = [
+            // Pull the user's full-year contribution heatmap from GitHub for
+            // accurate per-day commit counts, lifetime totals, and last-30d
+            // activity. Failures here are non-fatal — falls back to the
+            // events-API path so streak_logs still updates.
+            const { contributions, total: heatmapTotal } = await fetchGitHubContributions(
+              userInfo.githubUsername
+            );
+            const lifetime = heatmapTotal > 0
+              ? heatmapTotal
+              : Object.values(contributions).reduce((s, v) => s + (v > 0 ? v : 0), 0);
+            const last30d = sumLastNDays(contributions, 30);
+
+            // Extract unique activity dates from the events feed (last 24h
+            // window) — these are the dates we know had activity even before
+            // GitHub's heatmap may have indexed them.
+            const eventDates = [
               ...new Set(
                 recentEvents.map((event: { created_at: string }) =>
                   new Date(event.created_at).toISOString().split("T")[0]
@@ -203,19 +216,45 @@ export async function GET(req: NextRequest) {
               ),
             ] as string[];
 
-            // Upsert streak_logs for each activity date
+            // Merge: heatmap dates with count > 0, plus event dates as
+            // fallback (count = 1) if not already in heatmap.
+            const dateCounts = new Map<string, number>();
+            for (const [date, count] of Object.entries(contributions)) {
+              if (count > 0) dateCounts.set(date, count);
+            }
+            for (const d of eventDates) {
+              if (!dateCounts.has(d)) dateCounts.set(d, 1);
+            }
+
+            // Skip if there's nothing at all to record (no events, empty
+            // heatmap) — most likely a private/empty GitHub user.
+            if (dateCounts.size === 0 && lifetime === 0) {
+              return { userInfo, status: "skipped", reason: "No GitHub activity in last year" };
+            }
+
+            // Upsert streak_logs with real per-day counts. Only writes dates
+            // that have new data; existing entries past the cron window stay
+            // unchanged and continue contributing to the streak calculation.
             let loggedCount = 0;
-            for (const activityDate of activityDates) {
+            for (const [activityDate, count] of dateCounts.entries()) {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const { error } = await (supabase as any)
                 .from("streak_logs")
                 .upsert(
-                  { user_id: userInfo.userId, activity_date: activityDate },
+                  { user_id: userInfo.userId, activity_date: activityDate, commit_count: count },
                   { onConflict: "user_id,activity_date" }
                 );
 
               if (!error) loggedCount++;
             }
+
+            // Update denormalized totals on users so update_user_streak can
+            // read them when computing the volume bonus.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase as any)
+              .from("users")
+              .update({ lifetime_contributions: lifetime, contributions_30d: last30d })
+              .eq("id", userInfo.userId);
 
             // Recalculate streak + vibe_score via DB function (handles everything)
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -230,7 +269,7 @@ export async function GET(req: NextRequest) {
               };
             }
 
-            return { userInfo, status: "synced", loggedCount };
+            return { userInfo, status: "synced", loggedCount, lifetime, last30d };
           } catch (err) {
             console.error(`Error syncing GitHub for ${userInfo.githubUsername}:`, err);
             return { userInfo, status: "error", reason: "Unexpected error" };
@@ -248,6 +287,8 @@ export async function GET(req: NextRequest) {
               github: val.userInfo.githubUsername,
               status: "synced",
               dates_logged: val.loggedCount,
+              lifetime: val.lifetime,
+              last30d: val.last30d,
             });
           } else if (val.status === "skipped") {
             skipped++;

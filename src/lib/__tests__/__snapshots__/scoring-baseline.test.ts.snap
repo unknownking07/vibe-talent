@@ -12,6 +12,12 @@ exports[`calculateVibeScore numeric baseline > legacy path — count-based scori
 
 exports[`calculateVibeScore numeric baseline > shipper — 45 streak, 3 verified projects, bronze 1`] = `125`;
 
+exports[`calculateVibeScore numeric baseline > volume credit: 16k lifetime, 0 recent — addresses Meta's 16k-commit case 1`] = `136`;
+
+exports[`calculateVibeScore numeric baseline > volume credit: active veteran — 50k lifetime, 100 last-30d, gold badge 1`] = `394`;
+
+exports[`calculateVibeScore numeric baseline > volume credit: light user — 200 lifetime, 5 last-30d 1`] = `37`;
+
 exports[`evaluateUser numeric baseline (locks before refactor) > beginner persona — low streak, 1 unverified project 1`] = `
 {
   "badge_level": "none",
