@@ -179,8 +179,9 @@ export function calculateVibeScore(
 
   const endorsementPoints = endorsementCount * VIBE_SCORE.perEndorsement;
 
-  const volumePoints = Math.floor(
-    Math.log10(Math.max(1, lifetimeContributions)) * VIBE_SCORE.volumeCredit.lifetimeScale
+  const volumePoints = Math.min(
+    Math.floor(Math.sqrt(Math.max(0, lifetimeContributions))),
+    VIBE_SCORE.volumeCredit.lifetimeCap
   );
   const recentPoints = Math.min(
     Math.floor(contributions30d * VIBE_SCORE.volumeCredit.recent30dWeight),

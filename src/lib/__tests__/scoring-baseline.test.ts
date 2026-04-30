@@ -258,7 +258,7 @@ describe("calculateVibeScore numeric baseline", () => {
   // Default callers (no volume args) hit the snapshots above unchanged.
   it("volume credit: 16k lifetime, 0 recent — addresses Meta's 16k-commit case", () => {
     // 0 streak + 0 projects + no badge + 16k lifetime + 0 recent
-    // = 10 + 0 + 0 + 0 + floor(log10(16000)*4) + 0 = 10 + 16 = 26
+    // = 10 + 0 + 0 + 0 + min(floor(sqrt(16000)), 250) + 0 = 10 + 126 = 136
     expect(
       calculateVibeScore(0, 0, "none", undefined, undefined, 0, 0, 16000, 0)
     ).toMatchSnapshot();
@@ -266,7 +266,8 @@ describe("calculateVibeScore numeric baseline", () => {
 
   it("volume credit: active veteran — 50k lifetime, 100 last-30d, gold badge", () => {
     // 30 streak + 3 quality projects + gold + 50k lifetime + 100 30d
-    // = 10 + 60 + 21 + 30 + floor(log10(50000)*4) + min(50, 50) = 10+60+21+30+18+50 = 189
+    // = 10 + 60 + 21 + 30 + min(floor(sqrt(50000)), 250) + min(50,50)
+    // = 10+60+21+30+223+50 = 394
     expect(
       calculateVibeScore(
         30,
@@ -288,7 +289,8 @@ describe("calculateVibeScore numeric baseline", () => {
 
   it("volume credit: light user — 200 lifetime, 5 last-30d", () => {
     // 5 streak + 1 unverified + no badge + 200 lifetime + 5 30d
-    // = 10 + 10 + 1 + 0 + floor(log10(200)*4) + floor(5*0.5) = 10+10+1+0+9+2 = 32
+    // = 10 + 10 + 1 + 0 + min(floor(sqrt(200)), 250) + floor(5*0.5)
+    // = 10+10+1+0+14+2 = 37
     expect(
       calculateVibeScore(
         5,
@@ -302,6 +304,15 @@ describe("calculateVibeScore numeric baseline", () => {
         5
       )
     ).toMatchSnapshot();
+  });
+
+  it("volume credit: outlier 1M lifetime — capped at 250", () => {
+    // 0 streak + 0 projects + no badge + 1M lifetime + 0 recent
+    // sqrt(1M) = 1000, capped at 250 → +250
+    // = 10 + 0 + 0 + 0 + 250 + 0 = 260
+    expect(
+      calculateVibeScore(0, 0, "none", undefined, undefined, 0, 0, 1_000_000, 0)
+    ).toBe(260);
   });
 
   it("volume credit: brand-new user (0 lifetime) → no volume bonus", () => {

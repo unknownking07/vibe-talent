@@ -12,7 +12,7 @@
 --   2. Adds users.lifetime_contributions / users.contributions_30d
 --      (denormalized totals from the daily GitHub heatmap parser; default 0).
 --   3. Updates update_user_streak to include:
---        + FLOOR(log10(max(1, lifetime)) * 4)            -- lifetime credit
+--        + LEAST(FLOOR(sqrt(max(0, lifetime))), 250)     -- lifetime credit
 --        + LEAST(FLOOR(contributions_30d * 0.5), 50)     -- recent activity
 --      Existing terms (streak, project, endorsements, badge, reviews) are
 --      preserved verbatim from 20260426_harden_trigger_search_paths.sql.
@@ -138,9 +138,10 @@ BEGIN
         WHERE builder_id = p_user_id
           AND COALESCE(trust_score, 100) >= 30
       ), 0)
-      -- Lifetime contribution credit, log-scaled. 100 commits → +8, 1k → +12,
-      -- 10k → +16, 100k → +20. Rewards veterans without dominating streaks.
-      + FLOOR(LOG(GREATEST(1, v_lifetime)::numeric) * 4)::INTEGER
+      -- Lifetime contribution credit, sqrt-scaled. 100 → +10, 1k → +31,
+      -- 10k → +100, 16k → +126, 62.5k+ → cap. Sqrt gives veterans visible
+      -- separation from casuals while still capping bot-scale outliers.
+      + LEAST(FLOOR(SQRT(GREATEST(0, v_lifetime)::numeric))::INTEGER, 250)
       -- Recent activity bonus. 100 commits in last 30d → +50 (capped).
       + LEAST(FLOOR(v_30d::numeric * 0.5)::INTEGER, 50)
   WHERE id = p_user_id;

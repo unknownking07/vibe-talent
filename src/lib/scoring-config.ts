@@ -29,9 +29,12 @@ export const VIBE_SCORE = {
   // beyond just streak consistency. Values mirror the SQL migration
   // 20260430_add_volume_credit_to_vibe_score.sql so DB and TS stay in sync.
   volumeCredit: {
-    // floor(log10(max(1, lifetime)) * lifetimeScale)
-    // 100 commits → +8, 1k → +12, 10k → +16, 100k → +20
-    lifetimeScale: 4,
+    // min(floor(sqrt(lifetime_contributions)), lifetimeCap)
+    // 100 → +10, 1k → +31, 10k → +100, 16k → +126, 62.5k+ → cap
+    // sqrt is intentional — log was too gentle (16k → +16), this gives heavy
+    // committers visible separation from casual users while still capping
+    // outliers (1M-commit bots don't dwarf platform activity).
+    lifetimeCap: 250,
     // min(floor(contributions_30d * recent30dWeight), recent30dCap)
     // 100 commits in last 30 days → +50 (capped)
     recent30dWeight: 0.5,
