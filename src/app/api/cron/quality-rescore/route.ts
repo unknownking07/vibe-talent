@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl } from "@/lib/github-quality";
 
+// Each project costs 4 api.github.com calls. At 50 projects per run that's
+// 200 calls — well over the 60/hr anonymous limit. Plus default 60s Vercel
+// timeout can't fit even half of a full run. Pro plan caps maxDuration at
+// 300s; combined with a GITHUB_TOKEN bumping us to 5000/hr, this lets the
+// cron actually finish.
+export const maxDuration = 300;
+
 const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 2500;
 
@@ -24,6 +31,19 @@ export async function GET(req: NextRequest) {
   }
 
   const supabase = createAdminClient();
+
+  // Pass GITHUB_TOKEN through to analyzeRepository so we get the 5000/hr
+  // authenticated rate limit instead of the 60/hr anonymous one. Token is
+  // optional; without it the cron still runs but will only get through ~15
+  // projects before api.github.com starts returning 403s.
+  const githubToken = process.env.GITHUB_TOKEN;
+  if (!githubToken) {
+    console.warn(
+      "[quality-rescore] GITHUB_TOKEN not set — anonymous api.github.com " +
+      "limit is 60/hr per IP and each project costs 4 calls, so only ~15 " +
+      "projects can be analyzed per run. Add a GitHub PAT to GITHUB_TOKEN."
+    );
+  }
 
   try {
     // Find verified projects with a GitHub URL that were last analyzed 7+ days ago (or never)
@@ -67,7 +87,7 @@ export async function GET(req: NextRequest) {
 
             const { owner: repoOwner, repo: repoName } = parsed;
 
-            const qualityResult = await analyzeRepository(repoOwner, repoName);
+            const qualityResult = await analyzeRepository(repoOwner, repoName, githubToken);
             const qualityScore = qualityResult.success ? (qualityResult.metrics?.quality_score ?? 0) : 0;
             const qualityMetrics = (qualityResult.success && qualityResult.metrics)
               ? {
