@@ -25,6 +25,18 @@ export const VIBE_SCORE = {
   reviewMultiplier: 2,
   reviewCap: 50,
   badgeBonuses: { none: 0, bronze: 10, silver: 20, gold: 30, diamond: 40 } as Record<BadgeLevel, number>,
+  // Volume credit: rewards lifetime contribution count and recent activity
+  // beyond just streak consistency. Values mirror the SQL migration
+  // 20260430_add_volume_credit_to_vibe_score.sql so DB and TS stay in sync.
+  volumeCredit: {
+    // floor(log10(max(1, lifetime)) * lifetimeScale)
+    // 100 commits → +8, 1k → +12, 10k → +16, 100k → +20
+    lifetimeScale: 4,
+    // min(floor(contributions_30d * recent30dWeight), recent30dCap)
+    // 100 commits in last 30 days → +50 (capped)
+    recent30dWeight: 0.5,
+    recent30dCap: 50,
+  },
 } as const;
 
 // ---- Per-project quality score (streak.ts calculateProjectScore) ----

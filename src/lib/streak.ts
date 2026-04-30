@@ -141,7 +141,9 @@ export function calculateVibeScore(
   verifiedCount?: number,
   projects?: ProjectForScoring[],
   reviewBonus: number = 0,
-  endorsementCount: number = 0
+  endorsementCount: number = 0,
+  lifetimeContributions: number = 0,
+  contributions30d: number = 0
 ): number {
   const baseline = VIBE_SCORE.baseline;
   const streakPoints = currentStreak * VIBE_SCORE.perStreakDay;
@@ -177,7 +179,24 @@ export function calculateVibeScore(
 
   const endorsementPoints = endorsementCount * VIBE_SCORE.perEndorsement;
 
-  return baseline + streakPoints + projectPoints + VIBE_SCORE.badgeBonuses[badgeLevel] + reviewBonus + endorsementPoints;
+  const volumePoints = Math.floor(
+    Math.log10(Math.max(1, lifetimeContributions)) * VIBE_SCORE.volumeCredit.lifetimeScale
+  );
+  const recentPoints = Math.min(
+    Math.floor(contributions30d * VIBE_SCORE.volumeCredit.recent30dWeight),
+    VIBE_SCORE.volumeCredit.recent30dCap
+  );
+
+  return (
+    baseline +
+    streakPoints +
+    projectPoints +
+    VIBE_SCORE.badgeBonuses[badgeLevel] +
+    reviewBonus +
+    endorsementPoints +
+    volumePoints +
+    recentPoints
+  );
 }
 
 /**
