@@ -5,6 +5,7 @@ import { fetchGitHubContributions, sumLastNDays } from "@/lib/github-contributio
 const QUALIFYING_EVENTS = ["PushEvent", "CreateEvent", "PullRequestEvent", "IssuesEvent"];
 const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 2000;
+const EVENTS_API_TIMEOUT_MS = 8000;
 
 function cleanGithubUsername(raw: string): string {
   return raw
@@ -35,6 +36,25 @@ export async function GET(req: NextRequest) {
   }
 
   const supabase = createAdminClient();
+
+  // Build common GitHub API headers. Anonymous calls share Vercel's IP with
+  // every other Vercel project and are capped at 60/hr — easy to exhaust
+  // partway through the run, leaving most users un-synced. With a token the
+  // limit is 5000/hr.
+  const githubToken = process.env.GITHUB_TOKEN;
+  const ghApiHeaders: Record<string, string> = {
+    Accept: "application/vnd.github.v3+json",
+    "User-Agent": "VibeTalent/1.0",
+  };
+  if (githubToken) {
+    ghApiHeaders.Authorization = `Bearer ${githubToken}`;
+  } else {
+    console.warn(
+      "[github-sync] GITHUB_TOKEN not set — anonymous api.github.com limit " +
+      "is 60/hr per IP. Expect partial sync once userbase exceeds ~30 users. " +
+      "Add a GitHub PAT (no scopes / public_repo) as GITHUB_TOKEN in Vercel."
+    );
+  }
 
   try {
     // Fetch users with github_username set
@@ -108,7 +128,7 @@ export async function GET(req: NextRequest) {
     let synced = 0;
     let skipped = 0;
     let errors = 0;
-    const details: { user: string; github: string; status: string; dates_logged?: number; lifetime?: number; last30d?: number }[] = [];
+    const details: { user: string; github: string; status: string; dates_logged?: number; lifetime?: number; last30d?: number; events_api_error?: string }[] = [];
 
     // Process in batches
     for (let i = 0; i < usersToSync.length; i += BATCH_SIZE) {
@@ -117,40 +137,59 @@ export async function GET(req: NextRequest) {
       const batchResults = await Promise.allSettled(
         batch.map(async (userInfo) => {
           try {
-            // Fetch public events from GitHub API
-            const response = await fetch(
-              `https://api.github.com/users/${encodeURIComponent(userInfo.githubUsername)}/events/public?per_page=100`,
-              {
-                headers: {
-                  Accept: "application/vnd.github.v3+json",
-                  "User-Agent": "VibeTalent/1.0",
-                },
-              }
-            );
+            // Try the events API first (for the activity feed). Failure here
+            // is NON-fatal — we still fetch the heatmap below for lifetime
+            // and 30d totals. Previously a single 403 (rate-limit) on this
+            // call would skip a user entirely, so most users never got their
+            // volume scoring populated.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let recentEvents: any[] = [];
+            let eventsApiError: string | null = null;
+            let userNotFound = false;
 
-            if (!response.ok) {
+            const eventsController = new AbortController();
+            const eventsTimeoutId = setTimeout(
+              () => eventsController.abort(),
+              EVENTS_API_TIMEOUT_MS
+            );
+            try {
+              const response = await fetch(
+                `https://api.github.com/users/${encodeURIComponent(userInfo.githubUsername)}/events/public?per_page=100`,
+                { headers: ghApiHeaders, signal: eventsController.signal }
+              );
+
               if (response.status === 404) {
-                return { userInfo, status: "skipped", reason: "GitHub user not found" };
+                userNotFound = true;
+              } else if (!response.ok) {
+                eventsApiError = response.status === 403
+                  ? "rate limit exceeded"
+                  : `HTTP ${response.status}`;
+              } else {
+                const events = await response.json();
+                const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                recentEvents = events.filter(
+                  (event: { type: string; created_at: string }) =>
+                    QUALIFYING_EVENTS.includes(event.type) &&
+                    new Date(event.created_at) > oneDayAgo
+                );
               }
-              if (response.status === 403) {
-                return { userInfo, status: "error", reason: "GitHub rate limit exceeded" };
-              }
-              return { userInfo, status: "error", reason: `GitHub API error: ${response.status}` };
+            } catch (err) {
+              eventsApiError = err instanceof Error && err.name === "AbortError"
+                ? `timeout after ${EVENTS_API_TIMEOUT_MS}ms`
+                : err instanceof Error
+                  ? err.message
+                  : "fetch failed";
+            } finally {
+              clearTimeout(eventsTimeoutId);
             }
 
-            const events = await response.json();
-
-            // Filter qualifying events from the last 24 hours
-            const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-            const recentEvents = events.filter(
-              (event: { type: string; created_at: string }) =>
-                QUALIFYING_EVENTS.includes(event.type) &&
-                new Date(event.created_at) > oneDayAgo
-            );
+            // Hard skip only if GitHub explicitly says the user doesn't exist.
+            if (userNotFound) {
+              return { userInfo, status: "skipped", reason: "GitHub user not found" };
+            }
 
             // Save events to feed_events table for the activity feed (only
-            // when there are recent events; inactive users still get their
-            // lifetime/30d totals refreshed below).
+            // when the events API actually succeeded and returned items).
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const feedRows = recentEvents.slice(0, 10).map((event: any) => {
               const repoName = (event.repo?.name || 'unknown').replace(/^[^/]+\//, '');
@@ -269,7 +308,7 @@ export async function GET(req: NextRequest) {
               };
             }
 
-            return { userInfo, status: "synced", loggedCount, lifetime, last30d };
+            return { userInfo, status: "synced", loggedCount, lifetime, last30d, eventsApiError };
           } catch (err) {
             console.error(`Error syncing GitHub for ${userInfo.githubUsername}:`, err);
             return { userInfo, status: "error", reason: "Unexpected error" };
@@ -289,6 +328,7 @@ export async function GET(req: NextRequest) {
               dates_logged: val.loggedCount,
               lifetime: val.lifetime,
               last30d: val.last30d,
+              ...(val.eventsApiError ? { events_api_error: val.eventsApiError } : {}),
             });
           } else if (val.status === "skipped") {
             skipped++;
