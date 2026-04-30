@@ -1,4 +1,6 @@
 import { LiveActivityFeed } from "@/components/ui/live-activity-feed";
+import { LiveFeedSection } from "@/components/homepage/live-feed-section";
+import { EndGameLadder } from "@/components/homepage/end-game-ladder";
 import { FeaturedCarousel } from "@/components/ui/featured-carousel";
 import Link from "next/link";
 import { VibecoderCard } from "@/components/ui/vibecoder-card";
@@ -6,8 +8,20 @@ import { ProjectCard } from "@/components/ui/project-card";
 import { HeroCTA } from "@/components/ui/hero-cta";
 import { TestimonialScroll } from "@/components/ui/testimonial-scroll";
 import { fetchHomepageDataCached } from "@/lib/supabase/server-queries";
+import {
+  fetchHomepageFeedCached,
+  SPARSE_THRESHOLD,
+  type HomepageFeedItem,
+} from "@/lib/homepage-feed";
 import { siteUrl } from "@/lib/seo";
 import { Flame, TrendingUp, Award, Zap, ArrowRight, Code2, Target, Users } from "lucide-react";
+
+// Feature flag: gates the new homepage feed section. When false (or unset),
+// the homepage renders the existing `<LiveActivityFeed />` snippet exactly
+// like before. Strict equality with "true" — same convention as the
+// onboarding tour flag. Kill switch in Vercel takes ~30s to flip back.
+const HOMEPAGE_FEED_V2_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_HOMEPAGE_FEED_V2 === "true";
 
 export const revalidate = 60;
 
@@ -44,17 +58,44 @@ export default async function HomePage() {
   let totalBuilders = 0;
   let totalProjects = 0;
   let avgStreak = 0;
+  let homepageFeed: HomepageFeedItem[] = [];
 
-  try {
-    const data = await fetchHomepageDataCached();
+  // Run the existing homepage data fetch and the new feed fetch in parallel.
+  // Promise.allSettled means a failure in either branch never blocks the
+  // other from rendering — the page degrades gracefully to default values
+  // (empty arrays, zeroed stats) on the failed side. This matters more for
+  // the feed than the stats: a transient feed-query timeout shouldn't make
+  // the homepage stats disappear, and vice versa.
+  const [homepageDataResult, homepageFeedResult] = await Promise.allSettled([
+    fetchHomepageDataCached(),
+    HOMEPAGE_FEED_V2_ENABLED
+      ? fetchHomepageFeedCached()
+      : Promise.resolve([] as HomepageFeedItem[]),
+  ]);
+
+  if (homepageDataResult.status === "fulfilled") {
+    const data = homepageDataResult.value;
     topVibecoders = data.topVibecoders;
     featuredProjects = data.featuredProjects;
     totalBuilders = data.totalBuilders;
     totalProjects = data.totalProjects;
     avgStreak = data.avgStreak;
-  } catch (err) {
-    console.error("[HomePage] Failed to fetch homepage data:", err);
+  } else {
+    console.error("[HomePage] Failed to fetch homepage data:", homepageDataResult.reason);
   }
+
+  if (homepageFeedResult.status === "fulfilled") {
+    homepageFeed = homepageFeedResult.value;
+  } else {
+    // Feed-fetch failure is not fatal — we just fall back to the snippet.
+    console.error("[HomePage] Failed to fetch homepage feed:", homepageFeedResult.reason);
+  }
+
+  // Render the new section only when the flag is on AND we have enough
+  // items for it to look alive. Below SPARSE_THRESHOLD, fall back to the
+  // existing snippet — better a tight curated card than a half-empty grid.
+  const showFeedV2 =
+    HOMEPAGE_FEED_V2_ENABLED && homepageFeed.length >= SPARSE_THRESHOLD;
 
   return (
     <div>
@@ -167,7 +208,12 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <LiveActivityFeed />
+      {showFeedV2 ? <LiveFeedSection items={homepageFeed} /> : <LiveActivityFeed />}
+
+      {/* End-game ladder — answers Meta Alchemist's "what's the goal" gap.
+          Always rendered (no flag): it's purely additive marketing copy
+          that complements every variant of the feed above it. */}
+      <EndGameLadder />
 
       <FeaturedCarousel />
 
