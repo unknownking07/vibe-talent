@@ -25,8 +25,19 @@ export function normalizeExternalUrl(
   const trimmed = input.trim();
   if (!trimmed) return null;
 
+  // Reject explicit non-http(s) schemes BEFORE the prepend step. Without
+  // this guard, "mailto:user@example.com" survives: prepending "https://"
+  // turns it into "https://mailto:user@example.com", which `new URL()`
+  // happily parses as protocol="https:" with hostname="example.com" —
+  // bypassing the protocol check below. Same hazard for `ftp:`, `tel:`,
+  // `gopher:`, etc. Anything that looks like an explicit non-http scheme
+  // is a hard reject.
+  const isHttpScheme = /^https?:\/\//i.test(trimmed);
+  const hasExplicitScheme = /^[a-z][a-z0-9+.-]*:/i.test(trimmed);
+  if (hasExplicitScheme && !isHttpScheme) return null;
+
   let candidate = trimmed;
-  if (!/^https?:\/\//i.test(candidate)) {
+  if (!isHttpScheme) {
     // Handle protocol-relative ("//example.com") and bare-host inputs.
     candidate = candidate.startsWith("//") ? `https:${candidate}` : `https://${candidate}`;
   }

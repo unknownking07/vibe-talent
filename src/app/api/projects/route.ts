@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { projectsLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
 import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl } from "@/lib/github-quality";
+import { normalizeExternalUrl, normalizeRepoUrl } from "@/lib/url-normalize";
 import { createNotification } from "@/lib/notifications";
 
 // GET /api/projects — List projects (public)
@@ -68,13 +69,29 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    if (liveUrlTrim && !liveUrlTrim.match(/^https:\/\/.+/)) {
-      return NextResponse.json({ error: "live_url must be a valid HTTPS URL" }, { status: 400 });
+    // Validate + canonicalize URLs through the shared helpers so this API
+    // path agrees with the dashboard / profile-setup write paths. Persist
+    // the canonical form (never the raw input) — the bug class that caused
+    // the SPARK link to render as a relative path was exactly this: stale
+    // raw values stored in `live_url` / `github_url`.
+    let normalizedLiveUrl: string | null = null;
+    if (liveUrlTrim) {
+      normalizedLiveUrl = normalizeExternalUrl(liveUrlTrim);
+      if (!normalizedLiveUrl || !normalizedLiveUrl.startsWith("https://")) {
+        return NextResponse.json({ error: "live_url must be a valid HTTPS URL" }, { status: 400 });
+      }
     }
-    // Delegate to parseGithubRepoUrl so validation tolerates the same shapes
-    // the parser does (www., .git, subpaths) and rejects non-repo URLs like
-    // /login/oauth consistently across the app.
-    if (githubUrlTrim && !parseGithubRepoUrl(githubUrlTrim)) {
+    let normalizedGithubUrl: string | null = null;
+    if (githubUrlTrim) {
+      normalizedGithubUrl = normalizeRepoUrl(githubUrlTrim);
+      if (!normalizedGithubUrl) {
+        return NextResponse.json({ error: "github_url must be a valid GitHub repo URL" }, { status: 400 });
+      }
+    }
+    // Sanity-check the GitHub URL through `parseGithubRepoUrl` directly too,
+    // since the auto-verify path below pulls owner/repo from the same parser
+    // and we want a clear 400 here rather than a silently-skipped verify.
+    if (normalizedGithubUrl && !parseGithubRepoUrl(normalizedGithubUrl)) {
       return NextResponse.json({ error: "github_url must be a valid GitHub repo URL" }, { status: 400 });
     }
 
@@ -85,8 +102,8 @@ export async function POST(request: NextRequest) {
       title: title.trim().slice(0, 100),
       description: description.trim().slice(0, 500),
       tech_stack: Array.isArray(tech_stack) ? tech_stack.slice(0, 20).map((t: string) => String(t).trim().slice(0, 50)) : [],
-      live_url: liveUrlTrim || null,
-      github_url: githubUrlTrim || null,
+      live_url: normalizedLiveUrl,
+      github_url: normalizedGithubUrl,
       build_time: build_time ? String(build_time).trim().slice(0, 50) : null,
       tags: Array.isArray(tags) ? tags.slice(0, 10).map((t: string) => String(t).trim().slice(0, 30)) : [],
     }).select().single();
@@ -100,7 +117,7 @@ export async function POST(request: NextRequest) {
     // GitHub identity on every OAuth callback, covering linked-later accounts
     // whose user_metadata doesn't hold the GitHub handle). OAuth metadata is a
     // fallback for the first-login edge case before the callback has written.
-    if (data && githubUrlTrim) {
+    if (data && normalizedGithubUrl) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: userRow } = await (supabase as any)
         .from("users")
@@ -114,7 +131,7 @@ export async function POST(request: NextRequest) {
         user.user_metadata?.preferred_username ||
         null;
 
-      const parsed = parseGithubRepoUrl(githubUrlTrim);
+      const parsed = parseGithubRepoUrl(normalizedGithubUrl);
       if (githubUsername && parsed && parsed.owner.toLowerCase() === githubUsername.toLowerCase()) {
         const { owner: repoOwner, repo: repoName } = parsed;
 
@@ -156,8 +173,8 @@ export async function POST(request: NextRequest) {
             };
 
             let live_url_ok: boolean | null = null;
-            if (liveUrlTrim) {
-              live_url_ok = await checkLiveUrl(liveUrlTrim);
+            if (normalizedLiveUrl) {
+              live_url_ok = await checkLiveUrl(normalizedLiveUrl);
             }
 
             const { error: updateError } = await sb.from("projects").update({

@@ -39,6 +39,19 @@ describe("normalizeExternalUrl", () => {
     expect(normalizeExternalUrl("file:///etc/passwd")).toBeNull();
   });
 
+  it("rejects explicit non-http(s) schemes that would otherwise survive the prepend step", () => {
+    // Without the explicit-scheme guard, prepending https:// to any of these
+    // produces a string that `new URL()` parses as protocol="https:" with a
+    // dotted hostname — slipping past the protocol check below.
+    expect(normalizeExternalUrl("mailto:user@example.com")).toBeNull();
+    expect(normalizeExternalUrl("ftp://example.com")).toBeNull();
+    expect(normalizeExternalUrl("ftp://files.example.com/path")).toBeNull();
+    expect(normalizeExternalUrl("tel:+1234567890")).toBeNull();
+    expect(normalizeExternalUrl("ssh://user@host.example.com")).toBeNull();
+    // Case-insensitivity: an upper-case scheme is rejected the same way.
+    expect(normalizeExternalUrl("MAILTO:user@example.com")).toBeNull();
+  });
+
   it("rejects inputs that don't resolve to a real host", () => {
     expect(normalizeExternalUrl("not a url")).toBeNull();
     expect(normalizeExternalUrl("http://")).toBeNull();

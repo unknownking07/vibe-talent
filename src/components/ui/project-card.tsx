@@ -207,6 +207,8 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
                 href={liveHref}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="Open live site"
+                title="Open live site"
                 className="text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -221,6 +223,8 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
                 href={repoHref}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="Open GitHub repository"
+                title="Open GitHub repository"
                 className="text-[var(--text-secondary)] hover:text-[var(--foreground)] transition-colors"
                 onClick={(e) => e.stopPropagation()}
               >
