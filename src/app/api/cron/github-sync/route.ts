@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchGitHubContributions, sumLastNDays } from "@/lib/github-contributions";
 
+// Bump function timeout to 5 minutes — at ~100 users × ~3-5s each (events
+// API + heatmap fetch + per-day upserts) we'd routinely hit the default
+// 60s and leave 60+ users un-synced. Pro plan caps maxDuration at 300s.
+export const maxDuration = 300;
+
 const QUALIFYING_EVENTS = ["PushEvent", "CreateEvent", "PullRequestEvent", "IssuesEvent"];
 const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 2000;
@@ -57,13 +62,17 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Fetch users with github_username set
+    // Fetch users with github_username set. Order by lifetime_contributions
+    // ASC NULLS FIRST so unpopulated users get processed first — if the
+    // function still times out, the next run picks up where this one left
+    // off instead of re-doing the same prefix.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: usersWithGithub, error: usersError } = await (supabase as any)
       .from("users")
-      .select("id, username, github_username")
+      .select("id, username, github_username, lifetime_contributions")
       .not("github_username", "is", null)
-      .neq("github_username", "");
+      .neq("github_username", "")
+      .order("lifetime_contributions", { ascending: true, nullsFirst: true });
 
     if (usersError) {
       console.error("Failed to fetch users:", usersError);

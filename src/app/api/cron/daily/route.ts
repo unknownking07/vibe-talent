@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSiteUrl } from "@/lib/seo";
 
+// Daily orchestrator awaits each child cron sequentially, so its own
+// timeout has to be long enough to cover the slowest child plus all
+// the others. github-sync alone can run up to 5 min at scale.
+export const maxDuration = 300;
+
 /**
  * Daily orchestrator cron — fans out to individual cron job routes.
  * Each job runs in its own serverless invocation for independent timeouts.
