@@ -89,12 +89,12 @@ export async function GET(request: NextRequest) {
         .from("users")
         .select("id, username, display_name, avatar_url, badge_level, streak, github_username")
         .order("vibe_score", { ascending: false })
-        .limit(200),
+        .limit(100),
       supabase
         .from("feed_events")
         .select("id, event_type, repo_name, message, github_url, created_at, user_id")
         .order("created_at", { ascending: false })
-        .limit(200)
+        .limit(80)
         .then(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (r: any) => r,
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
         .from("streak_logs")
         .select("id, activity_date, user_id")
         .order("activity_date", { ascending: false })
-        .limit(100),
+        .limit(60),
       supabase
         .from("projects")
         .select("id, title, description, tech_stack, live_url, github_url, created_at, user_id")

@@ -136,10 +136,16 @@ export interface NetworkFeedProps {
    *  Used on the homepage. */
   variant: "full" | "compact";
 
-  /** Server-rendered initial items. Used by the homepage so the first paint
-   *  has data without waiting on the client-side fetch. The component still
-   *  polls `/api/feed` on mount to surface fresher activity. */
+  /** Server-rendered initial items. When supplied, NetworkFeed renders rows
+   *  on first paint without waiting on a client-side fetch — the polling
+   *  loop kicks in *after* the page is interactive. The /feed page and
+   *  the homepage both pass these in. */
   initialItems?: FeedItem[];
+
+  /** Server-rendered network stats for the right-rail card on the full
+   *  variant. When supplied, NetworkFeed skips the client-side
+   *  /api/admin-stats fetch — same coherence story as initialItems. */
+  initialStats?: LiveStats;
 
   /** Cap on rendered rows. Defaults to 50 for full, 10 for compact. */
   limit?: number;
@@ -148,11 +154,16 @@ export interface NetworkFeedProps {
 const POLL_INTERVAL_FULL = 30_000;
 const POLL_INTERVAL_COMPACT = 60_000;
 
-export function NetworkFeed({ variant, initialItems = [], limit }: NetworkFeedProps) {
+export function NetworkFeed({
+  variant,
+  initialItems = [],
+  initialStats = null,
+  limit,
+}: NetworkFeedProps) {
   const [feed, setFeed] = useState<FeedItem[]>(initialItems);
   const [loading, setLoading] = useState(initialItems.length === 0);
   const [filter, setFilter] = useState<FeedFilter>("all");
-  const [stats, setStats] = useState<LiveStats>(null);
+  const [stats, setStats] = useState<LiveStats>(initialStats);
   const isFull = variant === "full";
   const effectiveLimit = limit ?? (isFull ? 50 : 10);
   // Track whether the consumer hydrated us with data so we don't briefly
@@ -175,15 +186,17 @@ export function NetworkFeed({ variant, initialItems = [], limit }: NetworkFeedPr
         // network errors are swallowed — the server-rendered initial items
         // (or a loading state) keep the page from looking broken.
       } finally {
-        if (!cancelled && !hydratedRef.current) setLoading(false);
-        else if (!cancelled) setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchFeed();
 
-    if (isFull) {
-      // The full feed is the dedicated /feed page — load network stats too.
+    // Only fetch stats client-side if SSR didn't already provide them. The
+    // /feed page passes stats via `initialStats`; only the legacy code path
+    // (or future surfaces that mount NetworkFeed without prefetching) hits
+    // /api/admin-stats here.
+    if (isFull && !initialStats) {
       fetch("/api/admin-stats")
         .then((r) => r.json())
         .then((d) => {
@@ -198,7 +211,7 @@ export function NetworkFeed({ variant, initialItems = [], limit }: NetworkFeedPr
       cancelled = true;
       clearInterval(interval);
     };
-  }, [isFull]);
+  }, [isFull, initialStats]);
 
   const grouped = useMemo(() => {
     const g = groupFeedItems(feed);
