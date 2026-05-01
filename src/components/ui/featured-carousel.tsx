@@ -13,6 +13,7 @@ import { BadgeDisplay } from "@/components/ui/badge-display";
 import { CHAIN_CONFIGS, SUPPORTED_CHAINS, DEFAULT_CHAIN, getChainConfig, isEVMChain, isSolanaChain } from "@/lib/chains-config";
 import { buildSolanaUSDCTransfer, confirmSolanaTransaction, signatureToString } from "@/lib/solana-payment";
 import { fetchPromotions, enrichPromotions, msUntilNextExpiry, type EnrichedPromotion } from "@/lib/featured-promotions";
+import { normalizeRepoUrl } from "@/lib/url-normalize";
 
 // Base chain defaults (for fetching promotions — always read from Base contract)
 const BASE_CONFIG = CHAIN_CONFIGS.base;
@@ -349,21 +350,24 @@ export function FeaturedCarousel() {
                               View Project <ExternalLink size={12} />
                             </a>
                           )}
-                          {promo.project?.github_url && (
-                            <a
-                              href={promo.project.github_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-2 text-[var(--text-secondary)] hover:text-[var(--foreground)] transition-colors"
-                              style={{
-                                border: "2px solid var(--border-hard)",
-                                backgroundColor: "var(--bg-surface)",
-                              }}
-                              aria-label="View on GitHub"
-                            >
-                              <Github size={14} />
-                            </a>
-                          )}
+                          {(() => {
+                            const repoHref = normalizeRepoUrl(promo.project?.github_url);
+                            return repoHref ? (
+                              <a
+                                href={repoHref}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 text-[var(--text-secondary)] hover:text-[var(--foreground)] transition-colors"
+                                style={{
+                                  border: "2px solid var(--border-hard)",
+                                  backgroundColor: "var(--bg-surface)",
+                                }}
+                                aria-label="View on GitHub"
+                              >
+                                <Github size={14} />
+                              </a>
+                            ) : null;
+                          })()}
                           {promo.project?.endorsement_count ? (
                             <span className="text-[10px] font-bold uppercase text-[var(--text-muted)] flex items-center gap-1">
                               <Sparkles size={10} style={{ color: "var(--accent)" }} />

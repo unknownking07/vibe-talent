@@ -8,6 +8,7 @@ import type { UserWithSocials, BadgeLevel } from "@/lib/types/database";
 import { HireModal } from "@/components/ui/hire-modal";
 import { ShareCardModal } from "@/components/profile/share-card-modal";
 import { extractSocialHandle } from "@/lib/social-handles";
+import { normalizeExternalUrl } from "@/lib/url-normalize";
 
 interface ProfileSidebarProps {
   user: UserWithSocials;
@@ -227,22 +228,25 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
             <Send size={16} />
           </a>
         )}
-        {socials?.website && (
-          <a
-            href={socials.website}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`${user.username}'s website`}
-            className="w-10 h-10 flex items-center justify-center text-[var(--foreground)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_var(--border-hard)]"
-            style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "2px solid var(--border-hard)",
-              boxShadow: "var(--shadow-brutal-sm)",
-            }}
-          >
-            <Globe size={16} />
-          </a>
-        )}
+        {(() => {
+          const websiteHref = normalizeExternalUrl(socials?.website);
+          return websiteHref ? (
+            <a
+              href={websiteHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${user.username}'s website`}
+              className="w-10 h-10 flex items-center justify-center text-[var(--foreground)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_var(--border-hard)]"
+              style={{
+                backgroundColor: "var(--bg-surface)",
+                border: "2px solid var(--border-hard)",
+                boxShadow: "var(--shadow-brutal-sm)",
+              }}
+            >
+              <Globe size={16} />
+            </a>
+          ) : null;
+        })()}
       </div>
 
       {/* IDE Badge */}

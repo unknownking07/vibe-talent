@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { BadgeCheck } from "lucide-react";
+import { normalizeExternalUrl } from "@/lib/url-normalize";
 
 type FeedItem = {
   id: string;
@@ -272,11 +273,21 @@ export default function FeedPage() {
                             </div>
                           )}
                         </div>
-                        {item.live_url && (
-                          <a href={item.live_url} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0, color: "var(--text-muted, #8A8B94)" }}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
-                          </a>
-                        )}
+                        {(() => {
+                          const liveHref = normalizeExternalUrl(item.live_url);
+                          return liveHref ? (
+                            <a
+                              href={liveHref}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label="Open live project"
+                              title="Open live project"
+                              style={{ flexShrink: 0, color: "var(--text-muted, #8A8B94)" }}
+                            >
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
+                            </a>
+                          ) : null;
+                        })()}
                       </div>
                     )}
 

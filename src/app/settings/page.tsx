@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { validateDisplayName, containsProfanity } from "@/lib/profanity";
 import { siteUrl } from "@/lib/seo";
 import { normalizeSocialHandle } from "@/lib/social-handles";
+import { normalizeExternalUrl } from "@/lib/url-normalize";
 import type { UserWithSocials } from "@/lib/types/database";
 import { EmailPreferences } from "@/components/dashboard/email-preferences";
 import {
@@ -236,6 +237,18 @@ export default function SettingsPage() {
       alert("Please add your X (Twitter) or Telegram so clients can contact you.");
       return;
     }
+    // Canonicalize the website URL so the DB stores `https://...` form. The
+    // onboarding write path already does this; the settings save bypassed it
+    // and could re-introduce bare-domain values that render as relative paths.
+    const websiteTrim = profileForm.website.trim();
+    let normalizedWebsite: string | null = null;
+    if (websiteTrim) {
+      normalizedWebsite = normalizeExternalUrl(websiteTrim);
+      if (!normalizedWebsite) {
+        alert("Website must be a valid URL (e.g. https://example.com)");
+        return;
+      }
+    }
     setSaving(true);
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -279,7 +292,7 @@ export default function SettingsPage() {
       twitter: twitter || null,
       github: verifiedGithub,
       telegram: telegram || null,
-      website: profileForm.website.trim() || null,
+      website: normalizedWebsite,
       farcaster: profileForm.ide || null,
     }, { onConflict: "user_id" });
 
@@ -295,13 +308,14 @@ export default function SettingsPage() {
         twitter: twitter || null,
         github: verifiedGithub,
         telegram: telegram || null,
-        website: profileForm.website || null,
+        website: normalizedWebsite,
         farcaster: profileForm.ide || null,
       },
     });
     // Reflect the normalized values back into the form so a user who
-    // pasted a profile URL sees it cleaned up to a bare handle on save.
-    setProfileForm((p) => ({ ...p, twitter, telegram }));
+    // pasted a profile URL sees it cleaned up to a bare handle on save,
+    // and a bare-domain website becomes the canonical https:// form.
+    setProfileForm((p) => ({ ...p, twitter, telegram, website: normalizedWebsite ?? "" }));
     // Let other parts of the app (navbar onboarding dot, etc.) react to the
     // profile change without requiring a page reload.
     if (typeof window !== "undefined") {
