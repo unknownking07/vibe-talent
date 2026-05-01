@@ -8,7 +8,7 @@ You can't buy it. You can only earn it — through quality output and consistent
 
 Your Vibe Score is made up of eight components:
 
-```
+```text
 Vibe Score = 10 (baseline)
            + Project Score
            + Streak Points
@@ -34,7 +34,7 @@ Every project you add earns points:
 
 ### 2. Streak Points
 
-```
+```text
 Current Streak × 2
 ```
 
@@ -74,7 +74,7 @@ Reviews are also scored for **trust** (0-100) to detect fake/bot reviews. Review
 
 Your full-year GitHub contribution count earns points on a square-root curve, capped at 250:
 
-```
+```text
 min(floor(sqrt(lifetime_contributions)), 250)
 ```
 
@@ -95,7 +95,7 @@ Connect your GitHub in your profile settings to enable this — the daily cron p
 
 Commits in the last 30 days earn extra points, capped at +50:
 
-```
+```text
 min(floor(contributions_30d × 0.5), 50)
 ```
 
