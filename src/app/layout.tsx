@@ -3,6 +3,7 @@ import Script from "next/script";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
+import { SignupBar } from "@/components/layout/signup-bar";
 import { PromoBillboard } from "@/components/ui/promo-billboard";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import Providers from "@/components/providers";
@@ -110,6 +111,7 @@ export default function RootLayout({
             <main className="min-h-screen">{children}</main>
           </ErrorBoundary>
           <Footer />
+          <SignupBar />
         </Providers>
       </body>
     </html>
