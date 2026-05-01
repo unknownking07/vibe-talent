@@ -76,9 +76,11 @@ The core profile table. Scores and badges are **auto-calculated** by database tr
 | `avatar_url` | TEXT | Profile photo URL |
 | `streak` | INTEGER | Current consecutive active days |
 | `longest_streak` | INTEGER | All-time best streak |
-| `vibe_score` | INTEGER | Composite reputation score |
+| `vibe_score` | INTEGER | Composite reputation score (see `update_user_streak` below) |
 | `badge_level` | TEXT | `none`, `bronze`, `silver`, `gold`, `diamond` |
 | `github_username` | TEXT | Extracted from GitHub OAuth metadata |
+| `lifetime_contributions` | INTEGER | Sum of last-365-day public GitHub commits, populated daily by the github-sync cron from the public contribution heatmap. Default 0. Feeds the volume bonus in `update_user_streak`. |
+| `contributions_30d` | INTEGER | Sum of last-30-day public GitHub commits. Same source as above. Default 0. Feeds the recent activity bonus. |
 | `created_at` | TIMESTAMPTZ | Account creation date |
 
 ### projects
@@ -114,6 +116,7 @@ One row per user per day. The `UNIQUE(user_id, activity_date)` constraint preven
 | `id` | UUID (PK) | Auto-generated |
 | `user_id` | UUID (FK → users) | Who logged the activity |
 | `activity_date` | DATE | The day of activity |
+| `commit_count` | INTEGER | Real number of commits on this date, from the GitHub heatmap. Default 1 for manually-logged days. Feeds the contribution heatmap on profile pages. |
 
 **Trigger:** On INSERT, fires `update_user_streak()` to recalculate the user's streak, longest_streak, badge_level, and vibe_score.
 
@@ -211,7 +214,7 @@ This is the most critical function in the system. It runs automatically when a s
 **What it calculates:**
 
 ```sql
--- 1. Current streak: count consecutive days backwards from today
+-- 1. Current streak: count consecutive days backwards from today (from streak_logs)
 -- 2. Longest streak: MAX of current and all historical streaks
 -- 3. Badge level based on longest_streak:
 --    - none:    < 30 days
@@ -219,11 +222,19 @@ This is the most critical function in the system. It runs automatically when a s
 --    - silver:  >= 90 days
 --    - gold:    >= 180 days
 --    - diamond: >= 365 days
--- 4. Vibe score formula:
---    (current_streak * 2) + Σ project_quality_scores + badge_bonus + review_bonus
---    Project quality: up to 15 pts per verified project (completeness bonuses)
---    Badge bonuses: bronze=10, silver=20, gold=30, diamond=40
---    Review bonus: avg_rating × review_count × 2, capped at 50
+-- 4. Vibe score formula (eight components):
+--    10 (baseline)
+--    + (current_streak * 2)                                          ← streak
+--    + Σ per_project (2 + live_url? +2 + github_url? +2 + LEAST(quality_score, 100))
+--    + (endorsement_count * 5)
+--    + badge_bonus                                                    ← bronze=10, silver=20, gold=30, diamond=40
+--    + Σ review_bonus per rating (5★=+20, 4★=+15, 3★=+10, 2★=+5, only if trust_score>=30)
+--    + LEAST(FLOOR(SQRT(GREATEST(0, lifetime_contributions))), 250)  ← lifetime volume
+--    + LEAST(FLOOR(contributions_30d * 0.5), 50)                     ← recent activity
+--
+-- Lifetime + recent volume terms were added in migration
+-- 20260430_add_volume_credit_to_vibe_score.sql to credit GitHub history
+-- and recent activity (e.g. 16,000 lifetime commits → +126 points).
 ```
 
 **Triggers:**
