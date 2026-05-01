@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { fetchStreakLogs } from "@/lib/supabase/queries";
 import { siteUrl } from "@/lib/seo";
+import { normalizeExternalUrl, normalizeRepoUrl } from "@/lib/url-normalize";
 import { BadgeDisplay } from "@/components/ui/badge-display";
 import type { UserWithSocials } from "@/lib/types/database";
 import { StreakCounter } from "@/components/ui/streak-counter";
@@ -817,19 +818,21 @@ export default function DashboardPage() {
       setProjectError("Add a live URL or a GitHub repo — at least one is required so clients can verify your work.");
       return;
     }
+    // Validate + canonicalize URLs. Persist normalized forms so the DB
+    // never carries bare-domain values that would render as relative paths.
+    let normalizedLiveUrl: string | null = null;
     if (liveUrlTrim) {
-      try {
-        const url = new URL(liveUrlTrim);
-        if (url.protocol !== "https:") throw new Error();
-      } catch {
-        setProjectError("Live URL must be a valid URL starting with https://");
+      normalizedLiveUrl = normalizeExternalUrl(liveUrlTrim);
+      if (!normalizedLiveUrl || !normalizedLiveUrl.startsWith("https://")) {
+        setProjectError("Live URL must be a valid URL (e.g. https://example.com)");
         return;
       }
     }
+    let normalizedGithubUrl: string | null = null;
     if (githubUrlTrim) {
-      const ghPattern = /^https:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+\/?$/;
-      if (!ghPattern.test(githubUrlTrim)) {
-        setProjectError("GitHub URL must be in the format: https://github.com/username/repo");
+      normalizedGithubUrl = normalizeRepoUrl(githubUrlTrim);
+      if (!normalizedGithubUrl) {
+        setProjectError("GitHub URL must be a valid GitHub repo (e.g. https://github.com/username/repo)");
         return;
       }
     }
@@ -844,8 +847,8 @@ export default function DashboardPage() {
       title: projectForm.title,
       description: projectForm.description,
       tech_stack: projectForm.tech_stack ? projectForm.tech_stack.split(",").map((t: string) => t.trim()).filter(Boolean) : [],
-      live_url: projectForm.live_url || null,
-      github_url: projectForm.github_url || null,
+      live_url: normalizedLiveUrl,
+      github_url: normalizedGithubUrl,
       build_time: projectForm.build_time || null,
       tags: projectForm.tags ? projectForm.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [],
     }).select("id").single();
@@ -937,19 +940,19 @@ export default function DashboardPage() {
       setProjectError("Add a live URL or a GitHub repo — at least one is required so clients can verify your work.");
       return;
     }
+    let normalizedLiveUrl: string | null = null;
     if (liveUrlTrim) {
-      try {
-        const url = new URL(liveUrlTrim);
-        if (url.protocol !== "https:") throw new Error();
-      } catch {
-        setProjectError("Live URL must be a valid URL starting with https://");
+      normalizedLiveUrl = normalizeExternalUrl(liveUrlTrim);
+      if (!normalizedLiveUrl || !normalizedLiveUrl.startsWith("https://")) {
+        setProjectError("Live URL must be a valid URL (e.g. https://example.com)");
         return;
       }
     }
+    let normalizedGithubUrl: string | null = null;
     if (githubUrlTrim) {
-      const ghPattern = /^https:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+\/?$/;
-      if (!ghPattern.test(githubUrlTrim)) {
-        setProjectError("GitHub URL must be in the format: https://github.com/username/repo");
+      normalizedGithubUrl = normalizeRepoUrl(githubUrlTrim);
+      if (!normalizedGithubUrl) {
+        setProjectError("GitHub URL must be a valid GitHub repo (e.g. https://github.com/username/repo)");
         return;
       }
     }
@@ -963,8 +966,8 @@ export default function DashboardPage() {
       title: projectForm.title,
       description: projectForm.description,
       tech_stack: projectForm.tech_stack ? projectForm.tech_stack.split(",").map((t: string) => t.trim()).filter(Boolean) : [],
-      live_url: projectForm.live_url || null,
-      github_url: projectForm.github_url || null,
+      live_url: normalizedLiveUrl,
+      github_url: normalizedGithubUrl,
       build_time: projectForm.build_time || null,
       tags: projectForm.tags ? projectForm.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [],
     }).eq("id", editingProjectId);

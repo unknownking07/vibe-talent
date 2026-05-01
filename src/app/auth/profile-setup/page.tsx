@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { validateDisplayName, containsProfanity } from "@/lib/profanity";
 import { normalizeSocialHandle } from "@/lib/social-handles";
+import { normalizeExternalUrl, normalizeRepoUrl } from "@/lib/url-normalize";
 import { armTourTrigger, TOUR_FLAG_ENABLED } from "@/lib/onboarding";
 import {
   Flame,
@@ -298,13 +299,24 @@ export default function ProfileSetupPage() {
       const hasLinks = github || twitter || website || telegram;
 
       if (hasLinks) {
+        // Normalize the website URL so the DB stores a canonical https:// form.
+        let normalizedWebsite: string | null = null;
+        if (website) {
+          normalizedWebsite = normalizeExternalUrl(website);
+          if (!normalizedWebsite) {
+            setError("Website must be a valid URL (e.g. https://example.com)");
+            setLoading(false);
+            return;
+          }
+        }
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: dbError } = await (supabase.from("social_links") as any).upsert(
           {
             user_id: userId,
             github: github || null,
             twitter: twitter || null,
-            website: website || null,
+            website: normalizedWebsite,
             telegram: telegram || null,
           },
           { onConflict: "user_id" }
@@ -343,13 +355,25 @@ export default function ProfileSetupPage() {
         .map((t) => t.trim())
         .filter(Boolean);
 
+      // Validate + canonicalize GitHub URL — same shared validator the
+      // dashboard form and POST /api/projects use, so all write paths agree.
+      let normalizedGithubUrl: string | null = null;
+      if (project.github_url && project.github_url.trim()) {
+        normalizedGithubUrl = normalizeRepoUrl(project.github_url);
+        if (!normalizedGithubUrl) {
+          setError("GitHub URL must be a valid GitHub repo (e.g. https://github.com/username/repo)");
+          setLoading(false);
+          return;
+        }
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: dbError } = await (supabase.from("projects") as any).insert({
         user_id: userId,
         title: project.title,
         description: project.description,
         tech_stack: techArray.length > 0 ? techArray : null,
-        github_url: project.github_url || null,
+        github_url: normalizedGithubUrl,
       });
 
       if (dbError) throw dbError;

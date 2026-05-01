@@ -8,6 +8,7 @@ import { QualityScoreBadge } from "@/components/ui/quality-score-badge";
 import { EndorseButton } from "@/components/ui/endorse-button";
 import { createClient } from "@/lib/supabase/client";
 import { parseImageCrop } from "@/lib/image-crop";
+import { normalizeExternalUrl, normalizeRepoUrl } from "@/lib/url-normalize";
 
 interface ProfileProjectCardProps {
   project: Project;
@@ -130,32 +131,38 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
       <div className="flex justify-between items-start gap-3">
         <span className="text-[1.1rem] font-extrabold uppercase text-[var(--foreground)] min-w-0 break-words">{project.title}</span>
         <div className="flex items-center gap-2 shrink-0">
-          {project.live_url && (
-            <a
-              href={project.live_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
-              onClick={(e) => e.stopPropagation()}
-              title="Open live site"
-              aria-label="Open live site"
-            >
-              <ExternalLink size={16} />
-            </a>
-          )}
-          {project.github_url && (
-            <a
-              href={project.github_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
-              onClick={(e) => e.stopPropagation()}
-              title="Open GitHub repo"
-              aria-label="Open GitHub repo"
-            >
-              <Github size={16} />
-            </a>
-          )}
+          {(() => {
+            const liveHref = normalizeExternalUrl(project.live_url);
+            return liveHref ? (
+              <a
+                href={liveHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                onClick={(e) => e.stopPropagation()}
+                title="Open live site"
+                aria-label="Open live site"
+              >
+                <ExternalLink size={16} />
+              </a>
+            ) : null;
+          })()}
+          {(() => {
+            const repoHref = normalizeRepoUrl(project.github_url);
+            return repoHref ? (
+              <a
+                href={repoHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                onClick={(e) => e.stopPropagation()}
+                title="Open GitHub repo"
+                aria-label="Open GitHub repo"
+              >
+                <Github size={16} />
+              </a>
+            ) : null;
+          })()}
           <div className="relative" ref={reportRef}>
             {reported ? (
               <button
