@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -164,15 +164,30 @@ export function NetworkFeed({
   const [loading, setLoading] = useState(initialItems.length === 0);
   const [filter, setFilter] = useState<FeedFilter>("all");
   const [stats, setStats] = useState<LiveStats>(initialStats);
+  // Single "now" tick for the whole feed — passed to every <FeedRow> so
+  // every relative-time label uses the same wall-clock and we don't trip
+  // a hydration mismatch between server's `Date.now()` and client's.
+  // `null` until first useEffect runs on the client.
+  const [nowMs, setNowMs] = useState<number | null>(null);
   const isFull = variant === "full";
   const effectiveLimit = limit ?? (isFull ? 50 : 10);
-  // Track whether the consumer hydrated us with data so we don't briefly
-  // flash a "Loading..." state when SSR already provided rows.
-  const hydratedRef = useRef(initialItems.length > 0);
 
+  // "Now" tick. Updates every 30s so labels age past the "Just now" /
+  // "Xm ago" / "Xh ago" boundaries even when no new data arrives.
+  useEffect(() => {
+    setNowMs(Date.now());
+    const id = setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Feed polling. Pauses while the tab is hidden so background tabs don't
+  // burn serverless invocations + Supabase egress for content nobody is
+  // looking at; resumes (with one immediate fetch to re-sync) on focus.
   useEffect(() => {
     let cancelled = false;
+    let interval: ReturnType<typeof setInterval> | null = null;
     const apiLimit = isFull ? 50 : 30;
+    const pollMs = isFull ? POLL_INTERVAL_FULL : POLL_INTERVAL_COMPACT;
 
     const fetchFeed = async () => {
       try {
@@ -180,7 +195,6 @@ export function NetworkFeed({
         const data = await res.json();
         if (!cancelled && Array.isArray(data.feed)) {
           setFeed(data.feed);
-          hydratedRef.current = true;
         }
       } catch {
         // network errors are swallowed — the server-rendered initial items
@@ -190,7 +204,30 @@ export function NetworkFeed({
       }
     };
 
+    const startPolling = () => {
+      if (interval !== null) return;
+      interval = setInterval(fetchFeed, pollMs);
+    };
+    const stopPolling = () => {
+      if (interval === null) return;
+      clearInterval(interval);
+      interval = null;
+    };
+    const onVisibilityChange = () => {
+      if (typeof document === "undefined") return;
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        // Re-sync on focus so the user doesn't see stale data while we
+        // wait out the next tick.
+        fetchFeed();
+        startPolling();
+      }
+    };
+
+    // Initial fetch + polling start.
     fetchFeed();
+    startPolling();
 
     // Only fetch stats client-side if SSR didn't already provide them. The
     // /feed page passes stats via `initialStats`; only the legacy code path
@@ -205,11 +242,16 @@ export function NetworkFeed({
         .catch(() => {});
     }
 
-    const pollMs = isFull ? POLL_INTERVAL_FULL : POLL_INTERVAL_COMPACT;
-    const interval = setInterval(fetchFeed, pollMs);
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", onVisibilityChange);
+    }
+
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      stopPolling();
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      }
     };
   }, [isFull, initialStats]);
 
@@ -305,7 +347,7 @@ export function NetworkFeed({
 
         <div style={{ display: "flex", flexDirection: "column" }}>
           {visibleRows.map((item) => (
-            <FeedRow key={item.id} item={item} compact />
+            <FeedRow key={item.id} item={item} compact nowMs={nowMs} />
           ))}
         </div>
 
@@ -374,7 +416,7 @@ export function NetworkFeed({
 
           <div style={{ display: "flex", flexDirection: "column" }}>
             {visibleRows.map((item) => (
-              <FeedRow key={item.id} item={item} />
+              <FeedRow key={item.id} item={item} nowMs={nowMs} />
             ))}
           </div>
         </main>

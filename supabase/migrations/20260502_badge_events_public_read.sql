@@ -15,6 +15,12 @@
 -- for existing rows. Surfacing the existing data with a tightly-scoped read
 -- policy is the smallest reversible change that satisfies the feed need.
 
+-- Drop first so re-running the migration in a fresh environment (or on top
+-- of a partial apply) doesn't fail with "policy already exists". Postgres
+-- < 14 doesn't support `CREATE POLICY IF NOT EXISTS`, and Supabase's
+-- migration runner doesn't wrap us in a transaction we can rely on.
+DROP POLICY IF EXISTS "Anyone can view badge_earned notifications" ON notifications;
+
 CREATE POLICY "Anyone can view badge_earned notifications"
   ON notifications FOR SELECT
   USING (type = 'badge_earned');

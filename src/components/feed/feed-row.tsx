@@ -24,8 +24,16 @@ const BADGE_LABELS: Record<BadgeTier, string> = {
   diamond: "Diamond",
 };
 
-function relativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+/**
+ * Relative-time formatter that takes `nowMs` as a parameter rather than
+ * calling `Date.now()` itself. NetworkFeed lifts the "now" tick into a
+ * single interval and passes it down — this avoids a hydration mismatch
+ * (server's `Date.now()` and client's `Date.now()` differ by milliseconds
+ * to seconds, which crosses minute boundaries on fresh items and produces
+ * "1m ago" on the server / "2m ago" on the client during hydration).
+ */
+function relativeTime(dateStr: string, nowMs: number): string {
+  const diff = nowMs - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 2) return "Just now";
   if (mins < 60) return `${mins}m ago`;
@@ -93,11 +101,16 @@ export interface FeedRowProps {
   /** When true, drop secondary content (commit messages list, project description)
    *  to keep rows tight on the homepage compact variant. */
   compact?: boolean;
+  /** Current wall-clock time in ms, lifted from the parent NetworkFeed so
+   *  every row sees the same "now" and we don't trip a hydration mismatch
+   *  between SSR's `Date.now()` and the client's. `null` means SSR/first
+   *  paint — renders an empty placeholder. */
+  nowMs?: number | null;
 }
 
 /** Pure presentational component for a single feed row. The wrapper assumes
  *  `.fl-*` classes (defined in NetworkFeed's `<style>` block) are loaded. */
-export function FeedRow({ item, compact = false }: FeedRowProps) {
+export function FeedRow({ item, compact = false, nowMs = null }: FeedRowProps) {
   const isMilestone = item.type === "streak" && item.streak >= 30;
   const isProject = item.type === "project";
   const isReview = item.type === "review";
@@ -200,7 +213,9 @@ export function FeedRow({ item, compact = false }: FeedRowProps) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, color: "var(--text-muted)" }}>
-          <span style={{ fontVariantNumeric: "tabular-nums" }}>{relativeTime(item.date)}</span>
+          <span style={{ fontVariantNumeric: "tabular-nums" }} suppressHydrationWarning>
+            {nowMs == null ? "" : relativeTime(item.date, nowMs)}
+          </span>
           {item.count > 1 && (
             <>
               <span>·</span>
