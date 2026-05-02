@@ -1,5 +1,5 @@
 import { LiveActivityFeed } from "@/components/ui/live-activity-feed";
-import { LiveFeedSection } from "@/components/homepage/live-feed-section";
+import { NetworkFeed } from "@/components/feed/network-feed";
 import { EndGameLadder } from "@/components/homepage/end-game-ladder";
 import { FeaturedCarousel } from "@/components/ui/featured-carousel";
 import Link from "next/link";
@@ -208,7 +208,18 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {showFeedV2 ? <LiveFeedSection items={homepageFeed} /> : <LiveActivityFeed />}
+      {/* Live Network Feed — the homepage's "what's happening right now" surface.
+          When HOMEPAGE_FEED_V2_ENABLED is on AND the feed has enough items
+          to look alive (>= SPARSE_THRESHOLD), mount the compact NetworkFeed
+          (same component the /feed page uses, just with one column + chip
+          filters). Otherwise fall back to the existing snippet. */}
+      <section className="mx-auto max-w-5xl px-4 sm:px-6 pt-6 pb-2">
+        {showFeedV2 ? (
+          <NetworkFeed variant="compact" initialItems={homepageFeed} />
+        ) : (
+          <LiveActivityFeed />
+        )}
+      </section>
 
       {/* End-game ladder — answers Meta Alchemist's "what's the goal" gap.
           Always rendered (no flag): it's purely additive marketing copy

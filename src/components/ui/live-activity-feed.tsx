@@ -17,6 +17,20 @@ type FeedItem = {
   project_title?: string;
 };
 
+// /api/feed returns more event types than this legacy snippet knows how to
+// render (endorsement / review / badge / joined). They'd fall through to
+// the default "pushed" label and look wrong, so filter at the source.
+// This snippet is only meant for the small homepage card when the new
+// `<NetworkFeed variant="compact">` is feature-flagged off — keep it
+// strictly bounded to the types `actionText` explicitly handles.
+const SUPPORTED_LEGACY_TYPES = new Set<FeedItem["type"]>([
+  "push",
+  "pr",
+  "create",
+  "project",
+  "streak",
+]);
+
 type GroupedItem = FeedItem & { count: number };
 
 const GROUP_WINDOW = 4 * 60 * 60 * 1000;
@@ -64,7 +78,14 @@ export function LiveActivityFeed() {
     function fetchFeed() {
       fetch("/api/feed?limit=20")
         .then((r) => r.json())
-        .then((d) => { setFeed(d.feed || []); setLoaded(true); })
+        .then((d) => {
+          // Drop any event types this snippet can't render correctly.
+          const items: FeedItem[] = (d.feed || []).filter(
+            (i: FeedItem) => SUPPORTED_LEGACY_TYPES.has(i.type),
+          );
+          setFeed(items);
+          setLoaded(true);
+        })
         .catch(() => setLoaded(true));
     }
     fetchFeed();

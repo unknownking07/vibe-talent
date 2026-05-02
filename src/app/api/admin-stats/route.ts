@@ -27,7 +27,12 @@ export async function GET(request: NextRequest) {
       sb.from("users").select("streak, longest_streak, vibe_score").limit(500),
       sb.from("users").select("badge_level").not("badge_level", "is", null).limit(500),
       sb.from("hire_requests").select("id", { count: "exact", head: true }),
-      sb.from("endorsements").select("id", { count: "exact", head: true }),
+      // The endorsements table is named `project_endorsements` in the
+      // schema (`supabase/schema.sql:455`). Querying `endorsements`
+      // returned a silent error and zeroed the count for every caller —
+      // the homepage Network Velocity card and the in-app stats page both
+      // showed "0 Endorsements" regardless of the real total.
+      sb.from("project_endorsements").select("id", { count: "exact", head: true }),
       sb.from("users").select("created_at").order("created_at", { ascending: false }).limit(100),
       sb.from("users").select("id", { count: "exact", head: true }).gt("streak", 0),
     ]);
