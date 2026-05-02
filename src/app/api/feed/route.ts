@@ -71,12 +71,11 @@ export async function GET(request: NextRequest) {
     const supabase = getPublicClient() as any;
     const feed: FeedItem[] = [];
 
-    // Run every source query in parallel. We keep the soft-fail wrappers on
-    // the optional ones (feed_events, notifications) so a single missing
-    // table or RLS policy doesn't take down the whole feed — losing one
-    // event type is degraded, losing all of them is broken.
+    // Phase 1: fetch every event source in parallel. We keep the soft-fail
+    // wrappers on the optional ones (feed_events, notifications) so a single
+    // missing table or RLS policy doesn't take down the whole feed — losing
+    // one event type is degraded, losing all of them is broken.
     const [
-      usersResult,
       eventsResult,
       streakResult,
       projectsResult,
@@ -85,11 +84,6 @@ export async function GET(request: NextRequest) {
       reviewsResult,
       badgeNotificationsResult,
     ] = await Promise.all([
-      supabase
-        .from("users")
-        .select("id, username, display_name, avatar_url, badge_level, streak, github_username")
-        .order("vibe_score", { ascending: false })
-        .limit(100),
       supabase
         .from("feed_events")
         .select("id, event_type, repo_name, message, github_url, created_at, user_id")
@@ -150,8 +144,38 @@ export async function GET(request: NextRequest) {
         ),
     ]);
 
-    // Build user lookup map. Items whose user can't be resolved are dropped
-    // rather than rendered as "unknown" — keeps the feed tidy.
+    // Phase 2: collect every user_id referenced by the event sources. We
+    // used to fetch the top-N users by vibe_score and join client-side,
+    // which silently dropped events from anyone outside that window —
+    // exactly the lower-ranked builders the feed is supposed to surface.
+    // Resolving users by ID guarantees every event in the response is
+    // renderable.
+    const referencedUserIds = new Set<string>();
+    for (const e of (eventsResult.data || [])) referencedUserIds.add(e.user_id);
+    for (const log of (streakResult.data || [])) referencedUserIds.add(log.user_id);
+    for (const p of (projectsResult.data || [])) referencedUserIds.add(p.user_id);
+    for (const e of (endorsementsResult.data || [])) {
+      referencedUserIds.add(e.user_id);
+      const projectRow = Array.isArray(e.projects) ? e.projects[0] : e.projects;
+      if (projectRow?.user_id) referencedUserIds.add(projectRow.user_id);
+    }
+    for (const r of (reviewsResult.data || [])) referencedUserIds.add(r.builder_id);
+    for (const n of (badgeNotificationsResult.data || [])) referencedUserIds.add(n.user_id);
+
+    // Phase 3: resolve those IDs to user rows. Skip the round-trip entirely
+    // when no events landed (cold instance / empty DB); otherwise issue one
+    // `id IN (...)` query that scales with the actual feed size, not with
+    // the total user-base.
+    const usersResult = referencedUserIds.size > 0
+      ? await supabase
+          .from("users")
+          .select("id, username, display_name, avatar_url, badge_level, streak, github_username")
+          .in("id", [...referencedUserIds])
+      : { data: [] };
+
+    // Build user lookup map. Items whose user can't be resolved (deleted
+    // user, RLS-hidden row, etc.) are dropped rather than rendered as
+    // "unknown" — keeps the feed tidy.
     const userMap = new Map<string, {
       username: string;
       display_name: string | null;

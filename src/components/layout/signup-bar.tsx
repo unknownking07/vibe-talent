@@ -43,40 +43,56 @@ export function SignupBar() {
 
   useEffect(() => {
     let cancelled = false;
+    const supabase = createClient();
 
-    const init = async () => {
-      // Check the dismiss timestamp first — cheaper than a network round-trip.
+    /** True if the user previously dismissed the bar within the TTL window.
+     *  localStorage can throw in private mode / disabled storage — we fail
+     *  open (return false) so the bar still surfaces in those edge cases. */
+    const isDismissed = (): boolean => {
       try {
         const dismissedAt = localStorage.getItem(DISMISSED_KEY);
-        if (dismissedAt) {
-          const ts = Number(dismissedAt);
-          if (Number.isFinite(ts) && Date.now() - ts < DISMISSED_TTL_DAYS * DAY_MS) {
-            return; // still within dismissal window
-          }
-          // stale dismissal — clear so we don't re-check every page nav
-          localStorage.removeItem(DISMISSED_KEY);
+        if (!dismissedAt) return false;
+        const ts = Number(dismissedAt);
+        if (Number.isFinite(ts) && Date.now() - ts < DISMISSED_TTL_DAYS * DAY_MS) {
+          return true;
         }
+        // stale dismissal — clear so we don't re-check every page nav
+        localStorage.removeItem(DISMISSED_KEY);
+        return false;
       } catch {
-        // localStorage can throw in private mode / disabled storage — fail
-        // open and show the bar.
-      }
-
-      try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (cancelled) return;
-        if (!user) {
-          setVisible(true);
-        }
-      } catch {
-        // If auth check fails, default to NOT showing — better to under-show
-        // than to flash a "Sign up" CTA at someone who's already signed in.
+        return false;
       }
     };
 
-    init();
+    /** Reconcile the bar's visibility against the current auth + dismiss
+     *  state. Called on initial mount AND every auth state change so the
+     *  bar disappears on sign-in and reappears on sign-out without a
+     *  page refresh. */
+    const reconcile = (hasUser: boolean) => {
+      if (cancelled) return;
+      if (hasUser || isDismissed()) {
+        setVisible(false);
+      } else {
+        setVisible(true);
+      }
+    };
+
+    // Initial check. If `getUser()` errors we default to hidden — better
+    // to under-show than flash a "Sign up" CTA at someone who's signed in.
+    supabase.auth
+      .getUser()
+      .then(({ data: { user } }) => reconcile(Boolean(user)))
+      .catch(() => {});
+
+    // Subscribe to auth changes so signing in/out updates the bar live.
+    // Mirrors the pattern used in navbar.tsx and dashboard/page.tsx.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => reconcile(Boolean(session?.user)),
+    );
+
     return () => {
       cancelled = true;
+      subscription.unsubscribe();
     };
   }, []);
 
@@ -109,7 +125,14 @@ export function SignupBar() {
   return (
     <>
       <style>{`
-        body[data-signup-bar="visible"] main { padding-bottom: 72px; }
+        /* Pad both <main> AND <body> when the bar is visible. The Footer is
+           rendered outside <main> in the root layout, so padding only on
+           <main> would leave the footer overlapped by the fixed bar at
+           the very bottom of the page. The body padding is the global
+           clearance; the main padding keeps page-internal sticky elements
+           from sliding under the bar. */
+        body[data-signup-bar="visible"] { padding-bottom: 72px; }
+        body[data-signup-bar="visible"] main { padding-bottom: 24px; }
         .signup-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; background: var(--bg-surface, #15151A); border-top: 2px solid var(--border-hard, #2A2A33); padding: 12px 16px; box-shadow: 0 -4px 24px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
         .signup-bar__copy { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
         .signup-bar__heading { font-size: 14px; font-weight: 700; color: var(--foreground, #fff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

@@ -213,9 +213,13 @@ export function FeedRow({ item, compact = false, nowMs = null }: FeedRowProps) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, color: "var(--text-muted)" }}>
-          <span style={{ fontVariantNumeric: "tabular-nums" }} suppressHydrationWarning>
+          <time
+            dateTime={item.date}
+            style={{ fontVariantNumeric: "tabular-nums" }}
+            suppressHydrationWarning
+          >
             {nowMs == null ? "" : relativeTime(item.date, nowMs)}
-          </span>
+          </time>
           {item.count > 1 && (
             <>
               <span>·</span>

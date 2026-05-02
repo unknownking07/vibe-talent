@@ -11,9 +11,11 @@
 --
 --   2. reviews WHERE trust_score >= 30 ORDER BY created_at DESC
 --      Existing index is on (builder_id) only — the feed's filter+sort
---      can't use it. A composite (trust_score, created_at DESC) lets
---      Postgres seek into the qualifying rows and walk the heap in
---      created-at order.
+--      can't use it. A *partial* index `(created_at DESC) WHERE
+--      trust_score >= 30` is the right shape: Postgres walks the heap
+--      in created_at order across exactly the rows the feed wants,
+--      without paying for the full table or the trust-score grouping
+--      that a multicolumn `(trust_score, created_at DESC)` index forces.
 --
 --   3. notifications WHERE type = 'badge_earned' ORDER BY created_at DESC
 --      Existing index is on (user_id, read, created_at DESC) for the
@@ -28,8 +30,14 @@
 CREATE INDEX IF NOT EXISTS idx_endorsements_created_at
   ON public.project_endorsements (created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_reviews_trust_created
-  ON public.reviews (trust_score, created_at DESC);
+-- The original idx_reviews_trust_created (composite) is dropped in favor
+-- of the partial below; this is idempotent so re-runs are safe whether
+-- or not the previous migration apply created it.
+DROP INDEX IF EXISTS idx_reviews_trust_created;
+
+CREATE INDEX IF NOT EXISTS idx_reviews_feed_created_at
+  ON public.reviews (created_at DESC)
+  WHERE trust_score >= 30;
 
 CREATE INDEX IF NOT EXISTS idx_notifications_type_created
   ON public.notifications (type, created_at DESC);

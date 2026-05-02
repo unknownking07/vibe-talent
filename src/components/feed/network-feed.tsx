@@ -16,7 +16,12 @@ import { FeedRow } from "./feed-row";
 
 /** Group adjacent push/pr/create/issue events from the same user+repo
  *  within a 4-hour window into one row. Standalone types (project, review,
- *  endorsement, badge, joined) always render as their own row regardless. */
+ *  endorsement, badge, joined) always render as their own row regardless.
+ *
+ *  Only compares against the *immediately previous* bucket — scanning the
+ *  whole accumulated list breaks ordering: if the stream is `A, B, A`
+ *  within the window, `find()` would collapse the second A back into the
+ *  first and silently swallow the intervening B row. */
 function groupFeedItems(items: FeedItem[]): GroupedFeedItem[] {
   const grouped: GroupedFeedItem[] = [];
   for (const item of items) {
@@ -24,23 +29,23 @@ function groupFeedItems(items: FeedItem[]): GroupedFeedItem[] {
       grouped.push({ ...item, count: 1, messages: [] });
       continue;
     }
-    const existing = grouped.find(
-      (g) =>
-        g.type === item.type &&
-        g.username === item.username &&
-        g.repo_name === item.repo_name &&
-        !isStandaloneType(g.type) &&
-        Math.abs(new Date(g.date).getTime() - new Date(item.date).getTime()) < GROUP_WINDOW,
-    );
-    if (existing) {
-      existing.count++;
+    const last = grouped[grouped.length - 1];
+    const canMerge =
+      last !== undefined &&
+      !isStandaloneType(last.type) &&
+      last.type === item.type &&
+      last.username === item.username &&
+      last.repo_name === item.repo_name &&
+      Math.abs(new Date(last.date).getTime() - new Date(item.date).getTime()) < GROUP_WINDOW;
+    if (canMerge) {
+      last.count++;
       if (
         item.message &&
         item.message !== "pushed code" &&
         item.message !== "opened a pull request" &&
-        !existing.messages.includes(item.message)
+        !last.messages.includes(item.message)
       ) {
-        existing.messages.push(item.message);
+        last.messages.push(item.message);
       }
     } else {
       const messages: string[] = [];
@@ -192,6 +197,12 @@ export function NetworkFeed({
     const fetchFeed = async () => {
       try {
         const res = await fetch(`/api/feed?limit=${apiLimit}`);
+        // Skip non-2xx responses — they include the 429 rate-limit body
+        // (`{ feed: [], error: "Rate limited" }`) and any 5xx fallback
+        // body. Accepting `Array.isArray(data.feed)` on those wipes the
+        // already-rendered rows and the user sees an empty feed mid-poll.
+        // Keeping the last good snapshot is much better behavior.
+        if (!res.ok) return;
         const data = await res.json();
         if (!cancelled && Array.isArray(data.feed)) {
           setFeed(data.feed);
@@ -276,11 +287,17 @@ export function NetworkFeed({
     return result;
   }, [feed]);
 
-  // Top contributor calculation only needed for the full variant's right rail.
+  // Top contributor for the full variant's right-rail card. The card
+  // header reads "Top contributor this week", so the count must actually
+  // be windowed to 7 days — counting the entire loaded feed (50 rows that
+  // could span any time range depending on activity volume) reported a
+  // misleading winner.
   const topContributor = useMemo(() => {
     if (!isFull) return null;
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const userCounts: Record<string, { count: number; username: string; avatar_url: string | null; streak: number }> = {};
     for (const item of feed) {
+      if (new Date(item.date).getTime() < cutoff) continue;
       if (!userCounts[item.username]) {
         userCounts[item.username] = {
           count: 0,
@@ -321,13 +338,12 @@ export function NetworkFeed({
           <span className="fl-tag fl-tag-dark"><span style={{ color: "#4ade80" }}>●</span> Live</span>
         </header>
 
-        <div className="fl-chip-row" role="tablist" aria-label="Feed filters">
+        <div className="fl-chip-row" role="group" aria-label="Feed filters">
           {FILTER_ORDER.map((f) => (
             <button
               key={f}
               type="button"
-              role="tab"
-              aria-selected={filter === f}
+              aria-pressed={filter === f}
               className={`fl-chip ${filter === f ? "active" : ""}`}
               onClick={() => setFilter(f)}
             >
@@ -383,13 +399,19 @@ export function NetworkFeed({
               <span className="fl-section-num">01</span>
               <span className="fl-section-pill">Filters</span>
             </div>
-            <div className="fl-nav-list" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div
+              className="fl-nav-list"
+              style={{ display: "flex", flexDirection: "column", gap: 6 }}
+              role="group"
+              aria-label="Feed filters"
+            >
               {FILTER_ORDER.map((f) => (
                 <button
                   key={f}
                   className={`fl-nav-item ${filter === f ? "active" : ""}`}
                   onClick={() => setFilter(f)}
                   type="button"
+                  aria-pressed={filter === f}
                 >
                   {FILTER_LABELS[f]}
                   <span className="fl-nav-count">{counts[f]}</span>

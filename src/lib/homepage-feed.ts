@@ -79,9 +79,12 @@ type FeedMode = "homepage" | "full";
 
 /** Per-mode query limits. Keep these small — the merged feed is sliced
  *  back down to MAX_ITEMS / FULL_FEED_MAX_ITEMS at the end, so over-fetching
- *  is just network bytes and JSON-parse cost on the hot path. */
+ *  is just network bytes and JSON-parse cost on the hot path.
+ *
+ *  Note: we no longer pre-fetch a `users` lookup table. Users are resolved
+ *  by ID *after* the event sources land, so every event in the feed is
+ *  guaranteed to be renderable regardless of the actor's vibe_score rank. */
 const LIMITS_BY_MODE: Record<FeedMode, {
-  users: number;
   events: number;
   streaks: number;
   projects: number;
@@ -92,12 +95,12 @@ const LIMITS_BY_MODE: Record<FeedMode, {
   outputCap: number;
 }> = {
   homepage: {
-    users: 100, events: 60, streaks: 40, projects: 20, recent: 20,
+    events: 60, streaks: 40, projects: 20, recent: 20,
     endorsements: 20, reviews: 20, badges: 20,
     outputCap: MAX_ITEMS,
   },
   full: {
-    users: 100, events: 80, streaks: 60, projects: 30, recent: 50,
+    events: 80, streaks: 60, projects: 30, recent: 50,
     endorsements: 50, reviews: 50, badges: 50,
     outputCap: FULL_FEED_MAX_ITEMS,
   },
@@ -108,12 +111,11 @@ async function _fetchFeed(mode: FeedMode): Promise<FeedItem[]> {
   const sb = getPublicClient() as any;
   const limits = LIMITS_BY_MODE[mode];
 
-  // Mirror the parallel-query pattern in /api/feed/route.ts. Each optional
-  // source (feed_events, endorsements, reviews, badge notifications) is
-  // wrapped in a `.then(ok, err)` so a missing table or RLS gap on one
-  // event type doesn't take down the whole feed.
+  // Phase 1: fetch every event source in parallel. Each optional source
+  // (feed_events, endorsements, reviews, badge notifications) is wrapped
+  // in a `.then(ok, err)` so a missing table or RLS gap on one event type
+  // doesn't take down the whole feed.
   const [
-    usersResult,
     eventsResult,
     streakResult,
     projectsResult,
@@ -122,10 +124,6 @@ async function _fetchFeed(mode: FeedMode): Promise<FeedItem[]> {
     reviewsResult,
     badgeNotificationsResult,
   ] = await Promise.all([
-    sb.from("users")
-      .select("id, username, display_name, avatar_url, badge_level, streak, github_username")
-      .order("vibe_score", { ascending: false })
-      .limit(limits.users),
     sb.from("feed_events")
       .select("id, event_type, repo_name, message, github_url, created_at, user_id")
       .order("created_at", { ascending: false })
@@ -179,8 +177,37 @@ async function _fetchFeed(mode: FeedMode): Promise<FeedItem[]> {
       ),
   ]);
 
-  // Build user lookup map. We only enrich items whose user we can resolve —
-  // anything orphaned gets dropped to avoid showing dangling activity.
+  // Phase 2: collect every user_id referenced by the event sources. We
+  // used to fetch the top-N users by vibe_score and join client-side,
+  // which silently dropped events from anyone outside that window —
+  // exactly the lower-ranked builders the feed is supposed to surface.
+  // Resolving users by ID guarantees every event in the response is
+  // renderable.
+  const referencedUserIds = new Set<string>();
+  for (const e of (eventsResult.data || [])) referencedUserIds.add(e.user_id);
+  for (const log of (streakResult.data || [])) referencedUserIds.add(log.user_id);
+  for (const p of (projectsResult.data || [])) referencedUserIds.add(p.user_id);
+  for (const e of (endorsementsResult.data || [])) {
+    referencedUserIds.add(e.user_id);
+    const projectRow = Array.isArray(e.projects) ? e.projects[0] : e.projects;
+    if (projectRow?.user_id) referencedUserIds.add(projectRow.user_id);
+  }
+  for (const r of (reviewsResult.data || [])) referencedUserIds.add(r.builder_id);
+  for (const n of (badgeNotificationsResult.data || [])) referencedUserIds.add(n.user_id);
+
+  // Phase 3: resolve those IDs to user rows. Skip the round-trip entirely
+  // when no events landed; otherwise issue one `id IN (...)` query that
+  // scales with the actual feed size, not with the total user-base.
+  const usersResult = referencedUserIds.size > 0
+    ? await sb
+        .from("users")
+        .select("id, username, display_name, avatar_url, badge_level, streak, github_username")
+        .in("id", [...referencedUserIds])
+    : { data: [] };
+
+  // Build user lookup map. Items whose user we can't resolve (deleted user,
+  // RLS-hidden row, etc.) are dropped rather than rendered as "unknown" —
+  // keeps the feed tidy.
   const userMap = new Map<string, {
     username: string;
     display_name: string | null;
