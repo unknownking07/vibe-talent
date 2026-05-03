@@ -3,8 +3,20 @@ import Link from "next/link";
 import { ChainDot } from "./chain-dot";
 import type { EnrichedPromotion } from "@/lib/featured-promotions";
 
+// Reject anything that isn't plain http(s). User-submitted live_url values
+// could otherwise carry javascript:/data:/file: schemes that execute on click.
+function isSafeHttpUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" || u.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
 function destinationFor(promo: EnrichedPromotion): { href: string; external: boolean } {
-  if (promo.project?.live_url) return { href: promo.project.live_url, external: true };
+  const liveUrl = promo.project?.live_url;
+  if (liveUrl && isSafeHttpUrl(liveUrl)) return { href: liveUrl, external: true };
   if (promo.author?.username) return { href: `/profile/${promo.author.username}`, external: false };
   return { href: `/explore?q=${encodeURIComponent(promo.projectName)}`, external: false };
 }
@@ -42,7 +54,7 @@ export function FeaturedProjectCard({ promo }: { promo: EnrichedPromotion }) {
         {imageUrl ? (
           <Image
             src={imageUrl}
-            alt=""
+            alt={title}
             fill
             className="object-cover object-top"
             sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"

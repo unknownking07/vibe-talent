@@ -117,7 +117,14 @@ async function main() {
   }
 
   const account = privateKeyToAccount(pk as `0x${string}`);
-  if (owner && account.address.toLowerCase() !== owner.toLowerCase()) {
+  // If we couldn't read owner() above, refuse to broadcast — we can't verify
+  // the connected key matches the contract owner, and a non-owner call will
+  // burn gas on a guaranteed revert.
+  if (!owner) {
+    console.error("✗ Could not read on-chain owner() — refusing to broadcast without verification.");
+    process.exit(1);
+  }
+  if (account.address.toLowerCase() !== owner.toLowerCase()) {
     console.error(`✗ Connected account ${account.address} is not the contract owner (${owner}).`);
     process.exit(1);
   }

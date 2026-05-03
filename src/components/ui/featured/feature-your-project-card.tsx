@@ -79,8 +79,11 @@ async function fetchPrices(): Promise<bigint[]> {
       }),
     });
     const json = await res.json();
-    if (!json.result || json.result === "0x" || json.result.length < 10) return FALLBACK_PRICES;
-    const data = json.result.slice(2);
+    if (!json.result || typeof json.result !== "string") return FALLBACK_PRICES;
+    const data = json.result.startsWith("0x") ? json.result.slice(2) : json.result;
+    // Need 5 × 32-byte slots (320 hex chars) — anything shorter means the RPC
+    // returned a truncated/error payload, not a valid getPrices() result.
+    if (data.length < 5 * 64) return FALLBACK_PRICES;
     const prices: bigint[] = [];
     for (let i = 0; i < 5; i++) {
       prices.push(BigInt("0x" + data.slice(i * 64, i * 64 + 64)));

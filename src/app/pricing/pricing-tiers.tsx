@@ -43,8 +43,10 @@ async function fetchPrices(): Promise<bigint[]> {
       }),
     });
     const json = await res.json();
-    if (!json.result || json.result === "0x" || json.result.length < 10) return FALLBACK_PRICES;
-    const data = json.result.slice(2);
+    if (!json.result || typeof json.result !== "string") return FALLBACK_PRICES;
+    const data = json.result.startsWith("0x") ? json.result.slice(2) : json.result;
+    // Need 5 × 32-byte slots (320 hex chars). Shorter = truncated/error payload.
+    if (data.length < 5 * 64) return FALLBACK_PRICES;
     const prices: bigint[] = [];
     for (let i = 0; i < 5; i++) {
       prices.push(BigInt("0x" + data.slice(i * 64, i * 64 + 64)));
@@ -64,10 +66,15 @@ export function PricingTiers() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     fetchPrices().then((p) => {
+      if (cancelled) return;
       setPrices(p);
       setLoaded(true);
     });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
