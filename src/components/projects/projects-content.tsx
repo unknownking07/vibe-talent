@@ -76,9 +76,12 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
   }, [projects, search, sortBy, verifiedOnly, hasLiveUrl, selectedTech]);
 
   const totalPages = Math.ceil(filteredProjects.length / PAGE_SIZE);
+  // Clamp in case the projects prop refreshes (ISR / revalidation) while the
+  // user is on a page that no longer exists.
+  const activePage = currentPage > totalPages ? 1 : currentPage;
   const paginatedProjects = filteredProjects.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
+    (activePage - 1) * PAGE_SIZE,
+    activePage * PAGE_SIZE
   );
 
   const activeFilterCount = [verifiedOnly, hasLiveUrl, selectedTech.length > 0].filter(Boolean).length;
@@ -213,7 +216,7 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
       {totalPages > 1 && (
         <div className="mt-8">
           <Pagination
-            currentPage={currentPage}
+            currentPage={activePage}
             totalPages={totalPages}
             onPageChange={goToPage}
             label="Projects"
