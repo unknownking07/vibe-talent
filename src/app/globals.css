@@ -192,6 +192,32 @@ html {
   opacity: 0.85;
 }
 
+/* Notched corner — top-right cut for sponsored CTAs */
+.btn-notched {
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+}
+
+/* Featured promo card hover/focus overlay
+   Reveals a centered "View Project" CTA when the parent card is hovered or
+   keyboard-focused. Uses an explicit class so it doesn't depend on Tailwind's
+   group-focus-within variant being compiled. */
+.featured-card-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-out;
+}
+.featured-card:hover .featured-card-overlay,
+.featured-card:focus-within .featured-card-overlay {
+  opacity: 1;
+}
+
 /* Brutalist card */
 .card-brutal {
   background: var(--bg-surface);
