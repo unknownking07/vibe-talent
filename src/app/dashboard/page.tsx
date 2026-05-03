@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { fetchStreakLogs } from "@/lib/supabase/queries";
 import { siteUrl } from "@/lib/seo";
 import { normalizeExternalUrl, normalizeRepoUrl } from "@/lib/url-normalize";
+import { processProjectImage } from "@/lib/image-processing";
 import { BadgeDisplay } from "@/components/ui/badge-display";
 import type { UserWithSocials } from "@/lib/types/database";
 import { StreakCounter } from "@/components/ui/streak-counter";
@@ -470,12 +471,14 @@ export default function DashboardPage() {
   const [showVerifyGuide, setShowVerifyGuide] = useState(true);
   const [projectImageFile, setProjectImageFile] = useState<File | null>(null);
   const [projectImagePreview, setProjectImagePreview] = useState<string | null>(null);
+  // Tracks blob: URLs we created via URL.createObjectURL so we can revoke
+  // them on replacement / unmount. The Supabase public URLs that come back
+  // when editing an existing project are not blob URLs and must not be revoked.
+  const previewBlobUrlRef = useRef<string | null>(null);
   const projectImageInputRef = useRef<HTMLInputElement>(null);
   const [imageDragging, setImageDragging] = useState(false);
-  const [imageOffsetY, setImageOffsetY] = useState(50);
-  const [imageZoom, setImageZoom] = useState(1);
-  const [isDraggingImage, setIsDraggingImage] = useState(false);
-  const dragStartRef = useRef<{ y: number; startOffset: number } | null>(null);
+  const [imageProcessing, setImageProcessing] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [syncingGithub, setSyncingGithub] = useState(false);
   const [githubSyncResult, setGithubSyncResult] = useState<string | null>(null);
   const [lastSyncLabel, setLastSyncLabel] = useState<string | null>(null);
@@ -534,27 +537,99 @@ export default function DashboardPage() {
     setVerifyingProjectId(null);
   };
 
-  const validateAndSetImage = (file: File) => {
+  const setPreviewBlobUrl = (blob: Blob | null) => {
+    if (previewBlobUrlRef.current) {
+      URL.revokeObjectURL(previewBlobUrlRef.current);
+      previewBlobUrlRef.current = null;
+    }
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      previewBlobUrlRef.current = url;
+      setProjectImagePreview(url);
+    } else {
+      setProjectImagePreview(null);
+    }
+  };
+
+  const validateAndSetImage = async (file: File) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(file.type)) {
-      alert('Only JPG, PNG, WebP, and GIF images are allowed');
+      setImageError('Only JPG, PNG, WebP, and GIF images are allowed');
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image must be under 5MB');
+    // Source cap is generous (20MB) because we re-encode to ~1600x900 JPEG
+    // q80 below — typical processed output lands under 300KB regardless of
+    // how large the source is.
+    if (file.size > 20 * 1024 * 1024) {
+      setImageError('Image must be under 20MB');
       return;
     }
 
-    setProjectImageFile(file);
-    setProjectImagePreview(URL.createObjectURL(file));
+    setImageError(null);
+    setImageProcessing(true);
+    try {
+      const processed = await processProjectImage(file);
+      const processedFile = new File([processed], "image.jpg", {
+        type: "image/jpeg",
+        lastModified: Date.now(),
+      });
+      setProjectImageFile(processedFile);
+      setPreviewBlobUrl(processed);
+    } catch (err) {
+      console.error("[dashboard] image processing failed:", err);
+      setImageError("Couldn't process this image. Try a different file.");
+    } finally {
+      setImageProcessing(false);
+    }
   };
 
   const handleProjectImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Reset the input so picking the same file again still fires onChange.
+    e.target.value = "";
     if (!file) return;
-    validateAndSetImage(file);
+    void validateAndSetImage(file);
   };
+
+  // Clipboard paste: while the form is open, intercept image paste events
+  // (screenshots, copied web images) and route them through the same
+  // processor. We only consume image clipboard items — text paste is
+  // untouched so users can still paste descriptions, URLs, etc.
+  useEffect(() => {
+    if (!showProjectForm) return;
+    const handler = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === "file" && item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) {
+            e.preventDefault();
+            void validateAndSetImage(file);
+            return;
+          }
+        }
+      }
+    };
+    window.addEventListener("paste", handler);
+    return () => window.removeEventListener("paste", handler);
+    // validateAndSetImage is stable enough — it only reads setters, which
+    // React guarantees are stable. Re-attaching on each render would tear
+    // down/up the listener unnecessarily.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showProjectForm]);
+
+  // Revoke any outstanding blob: preview URL on unmount.
+  useEffect(() => {
+    return () => {
+      if (previewBlobUrlRef.current) {
+        URL.revokeObjectURL(previewBlobUrlRef.current);
+        previewBlobUrlRef.current = null;
+      }
+    };
+  }, []);
 
   const handleGithubSync = async () => {
     if (syncingGithub || !user) return;
@@ -859,14 +934,15 @@ export default function DashboardPage() {
       return;
     }
 
-    // Upload project image if selected
+    // Upload project image if selected. The file has already been processed
+    // to a 16:9 JPEG (see validateAndSetImage), so no y/z crop params are
+    // needed — parseImageCrop falls back to center/1.0 for new URLs.
     if (projectImageFile && insertedProject?.id) {
-      const ext = projectImageFile.name.split(".").pop();
-      const filePath = `${user.id}/${insertedProject.id}/image.${ext}`;
-      const { error: uploadError } = await sb.storage.from("project-images").upload(filePath, projectImageFile, { upsert: true });
+      const filePath = `${user.id}/${insertedProject.id}/image.jpg`;
+      const { error: uploadError } = await sb.storage.from("project-images").upload(filePath, projectImageFile, { upsert: true, contentType: "image/jpeg" });
       if (!uploadError) {
         const { data: { publicUrl } } = sb.storage.from("project-images").getPublicUrl(filePath);
-        await sb.from("projects").update({ image_url: `${publicUrl}?t=${Date.now()}&y=${Math.round(imageOffsetY)}&z=${imageZoom.toFixed(2)}` }).eq("id", insertedProject.id);
+        await sb.from("projects").update({ image_url: `${publicUrl}?t=${Date.now()}` }).eq("id", insertedProject.id);
       }
     }
 
@@ -879,9 +955,8 @@ export default function DashboardPage() {
     await reloadUser();
     setProjectForm({ title: "", description: "", tech_stack: "", live_url: "", github_url: "", build_time: "", tags: "" });
     setProjectImageFile(null);
-    setProjectImagePreview(null);
-    setImageOffsetY(50);
-    setImageZoom(1);
+    setPreviewBlobUrl(null);
+    setImageError(null);
     setShowProjectForm(false);
     setAddingProject(false);
 
@@ -903,22 +978,15 @@ export default function DashboardPage() {
       build_time: project.build_time || "",
       tags: project.tags?.join(", ") || "",
     });
-    // Load existing image preview and crop settings
+    // Show the existing image as the preview. We deliberately don't surface
+    // any reposition/zoom UI any more — new uploads are processed to 16:9
+    // before upload, so the controls became obsolete. Legacy images keep
+    // their existing y/z params on the saved image_url and continue to
+    // render correctly via parseImageCrop on the public side.
     setProjectImageFile(null);
+    setPreviewBlobUrl(null);
     setProjectImagePreview(project.image_url || null);
-    if (project.image_url) {
-      try {
-        const u = new URL(project.image_url);
-        setImageOffsetY(parseInt(u.searchParams.get("y") || "50"));
-        setImageZoom(parseFloat(u.searchParams.get("z") || "1"));
-      } catch {
-        setImageOffsetY(50);
-        setImageZoom(1);
-      }
-    } else {
-      setImageOffsetY(50);
-      setImageZoom(1);
-    }
+    setImageError(null);
     setShowProjectForm(true);
   };
 
@@ -978,19 +1046,17 @@ export default function DashboardPage() {
       return;
     }
 
-    // Upload project image if a new file was selected
+    // Upload project image if a new file was selected. New uploads are
+    // pre-processed to 16:9 JPEG so no y/z params are written; legacy
+    // image_url values that already have y/z params are left untouched
+    // when no new file is chosen.
     if (projectImageFile && user && editingProjectId) {
-      const ext = projectImageFile.name.split(".").pop();
-      const filePath = `${user.id}/${editingProjectId}/image.${ext}`;
-      const { error: uploadError } = await sb.storage.from("project-images").upload(filePath, projectImageFile, { upsert: true });
+      const filePath = `${user.id}/${editingProjectId}/image.jpg`;
+      const { error: uploadError } = await sb.storage.from("project-images").upload(filePath, projectImageFile, { upsert: true, contentType: "image/jpeg" });
       if (!uploadError) {
         const { data: { publicUrl } } = sb.storage.from("project-images").getPublicUrl(filePath);
-        await sb.from("projects").update({ image_url: `${publicUrl}?t=${Date.now()}&y=${Math.round(imageOffsetY)}&z=${imageZoom.toFixed(2)}` }).eq("id", editingProjectId);
+        await sb.from("projects").update({ image_url: `${publicUrl}?t=${Date.now()}` }).eq("id", editingProjectId);
       }
-    } else if (!projectImageFile && projectImagePreview && editingProjectId) {
-      // User repositioned/zoomed existing image without uploading a new one
-      const baseUrl = projectImagePreview.split("?")[0];
-      await sb.from("projects").update({ image_url: `${baseUrl}?t=${Date.now()}&y=${Math.round(imageOffsetY)}&z=${imageZoom.toFixed(2)}` }).eq("id", editingProjectId);
     }
 
     await reloadUser();
@@ -1001,9 +1067,8 @@ export default function DashboardPage() {
 
     setProjectForm({ title: "", description: "", tech_stack: "", live_url: "", github_url: "", build_time: "", tags: "" });
     setProjectImageFile(null);
-    setProjectImagePreview(null);
-    setImageOffsetY(50);
-    setImageZoom(1);
+    setPreviewBlobUrl(null);
+    setImageError(null);
     setShowProjectForm(false);
     setEditingProjectId(null);
     setEditingOriginalGithubUrl("");
@@ -1216,9 +1281,8 @@ export default function DashboardPage() {
                 setProjectForm({ title: "", description: "", tech_stack: "", live_url: "", github_url: "", build_time: "", tags: "" });
                 setProjectError("");
                 setProjectImageFile(null);
-                setProjectImagePreview(null);
-                setImageOffsetY(50);
-                setImageZoom(1);
+                setPreviewBlobUrl(null);
+                setImageError(null);
               } else {
                 setShowProjectForm(true);
               }
@@ -1344,71 +1408,62 @@ export default function DashboardPage() {
                 {projectImagePreview ? (
                   <div>
                     <div
-                      className="relative w-full border-2 border-[var(--border-hard)] overflow-hidden select-none"
-                      style={{ height: 120, cursor: isDraggingImage ? "grabbing" : "grab" }}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setIsDraggingImage(true);
-                        dragStartRef.current = { y: e.clientY, startOffset: imageOffsetY };
-                      }}
-                      onMouseMove={(e) => {
-                        if (!isDraggingImage || !dragStartRef.current) return;
-                        const delta = e.clientY - dragStartRef.current.y;
-                        const newOffset = Math.min(100, Math.max(0, dragStartRef.current.startOffset + delta * 0.5));
-                        setImageOffsetY(newOffset);
-                      }}
-                      onMouseUp={() => { setIsDraggingImage(false); dragStartRef.current = null; }}
-                      onMouseLeave={() => { setIsDraggingImage(false); dragStartRef.current = null; }}
-                      onTouchStart={(e) => {
-                        const touch = e.touches[0];
-                        setIsDraggingImage(true);
-                        dragStartRef.current = { y: touch.clientY, startOffset: imageOffsetY };
-                      }}
-                      onTouchMove={(e) => {
-                        if (!isDraggingImage || !dragStartRef.current) return;
-                        const delta = e.touches[0].clientY - dragStartRef.current.y;
-                        const newOffset = Math.min(100, Math.max(0, dragStartRef.current.startOffset + delta * 0.5));
-                        setImageOffsetY(newOffset);
-                      }}
-                      onTouchEnd={() => { setIsDraggingImage(false); dragStartRef.current = null; }}
+                      className="relative w-full border-2 border-[var(--border-hard)] overflow-hidden bg-[var(--bg-surface-light)]"
+                      style={{ aspectRatio: "16 / 9" }}
                     >
-                      <Image
-                        src={projectImagePreview}
-                        alt="Preview"
-                        fill
-                        className="object-cover pointer-events-none"
-                        style={{ objectPosition: `center ${imageOffsetY}%`, transform: `scale(${imageZoom})` }}
-                        draggable={false}
-                      />
+                      {(() => {
+                        // For freshly-processed uploads (blob: URL) the image
+                        // is already 16:9 — show with object-cover at default
+                        // position. For legacy edits we get back a stored
+                        // public URL that may carry y/z params from the old
+                        // crop/zoom UI; replay those so the preview matches
+                        // what visitors see on the live site.
+                        const isBlobPreview =
+                          projectImagePreview.startsWith("blob:") ||
+                          projectImageFile !== null;
+                        let objectPosition = "center";
+                        let transform = "none";
+                        if (!isBlobPreview) {
+                          try {
+                            const u = new URL(projectImagePreview);
+                            const y = u.searchParams.get("y");
+                            const z = u.searchParams.get("z");
+                            if (y) objectPosition = `center ${y}%`;
+                            if (z) transform = `scale(${parseFloat(z) || 1})`;
+                          } catch {
+                            /* fall through to defaults */
+                          }
+                        }
+                        return (
+                          <Image
+                            src={projectImagePreview}
+                            alt="Preview"
+                            fill
+                            className="object-cover pointer-events-none"
+                            style={{ objectPosition, transform }}
+                            unoptimized={isBlobPreview}
+                            draggable={false}
+                          />
+                        );
+                      })()}
                       <div className="absolute top-2 right-2 flex gap-2">
                         <button type="button" onClick={(e) => { e.stopPropagation(); projectImageInputRef.current?.click(); }} className="w-7 h-7 bg-black/60 text-white rounded-full flex items-center justify-center text-xs hover:bg-black/80 transition-colors" title="Change image">
                           <Camera size={14} />
                         </button>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); setProjectImageFile(null); setProjectImagePreview(null); setImageOffsetY(50); setImageZoom(1); }} className="w-7 h-7 bg-black/60 text-white rounded-full flex items-center justify-center text-xs hover:bg-black/80 transition-colors" title="Remove image">&times;</button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setProjectImageFile(null); setPreviewBlobUrl(null); setProjectImagePreview(null); setImageError(null); }} className="w-7 h-7 bg-black/60 text-white rounded-full flex items-center justify-center text-xs hover:bg-black/80 transition-colors" title="Remove image">&times;</button>
                       </div>
-                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/60 rounded-full text-[10px] text-white font-bold uppercase pointer-events-none">
-                        Drag to reposition
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 mt-2">
-                      <span className="text-[10px] font-bold uppercase text-[var(--text-muted)]">Zoom</span>
-                      <input
-                        type="range"
-                        min="1"
-                        max="2"
-                        step="0.05"
-                        value={imageZoom}
-                        onChange={(e) => setImageZoom(parseFloat(e.target.value))}
-                        className="flex-1 h-1 accent-[var(--accent)]"
-                      />
-                      <span className="text-[10px] font-mono text-[var(--text-muted)]">{Math.round(imageZoom * 100)}%</span>
+                      {imageProcessing && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-[10px] font-bold uppercase tracking-wider text-white">
+                          Processing…
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (
                   <button
                     type="button"
                     className={`w-full border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent)] ${imageDragging ? "border-[var(--accent)] bg-[rgba(255,58,0,0.06)]" : "border-[var(--border-hard)] hover:border-[var(--accent)]"}`}
-                    style={{ height: 120 }}
+                    style={{ aspectRatio: "16 / 9" }}
                     onClick={() => projectImageInputRef.current?.click()}
                     onDragOver={(e) => { e.preventDefault(); setImageDragging(true); }}
                     onDragLeave={() => setImageDragging(false)}
@@ -1416,14 +1471,24 @@ export default function DashboardPage() {
                       e.preventDefault();
                       setImageDragging(false);
                       const file = e.dataTransfer.files?.[0];
-                      if (file) validateAndSetImage(file);
+                      if (file) void validateAndSetImage(file);
                     }}
                     aria-label="Upload project screenshot"
+                    aria-busy={imageProcessing}
                   >
-                    <Camera size={20} className="text-[var(--text-muted)]" />
-                    <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Drag & drop or click to upload</span>
-                    <span className="text-[10px] text-[var(--text-muted-soft)]">Max 5MB. JPG, PNG, WebP, GIF.</span>
+                    {imageProcessing ? (
+                      <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Processing…</span>
+                    ) : (
+                      <>
+                        <Camera size={20} className="text-[var(--text-muted)]" />
+                        <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Drag, click, or paste an image</span>
+                        <span className="text-[10px] text-[var(--text-muted-soft)]">Auto-fitted to 16:9. Max 20MB. JPG, PNG, WebP, GIF.</span>
+                      </>
+                    )}
                   </button>
+                )}
+                {imageError && (
+                  <p className="text-[10px] font-bold text-red-600 mt-1.5" role="alert">{imageError}</p>
                 )}
                 <input ref={projectImageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleProjectImageSelect} className="hidden" />
               </div>
