@@ -94,9 +94,17 @@ export function FeaturedSection() {
     node.focus({ preventScroll: true });
     // Briefly pulse the card so users see where the click landed — without
     // this, if both cards already share a viewport, the click looks dead.
-    // Restart the animation by removing/re-adding the class on the next frame.
+    // The offsetWidth read forces a synchronous reflow between remove + add
+    // so the browser registers a class change instead of batching the two
+    // ops into a no-op (the canonical "restart CSS animation" pattern).
+    // rAF would also work but stalls on hidden tabs; reflow is universal.
+    // setTimeout cleanup matches the 1.2s animation + buffer, and also
+    // handles the prefers-reduced-motion path where no animationend fires
+    // (the static outline stays visible until the class is removed).
     node.classList.remove("claim-pulse");
-    requestAnimationFrame(() => node.classList.add("claim-pulse"));
+    void node.offsetWidth;
+    node.classList.add("claim-pulse");
+    window.setTimeout(() => node.classList.remove("claim-pulse"), 1400);
   }, []);
 
   return (

@@ -29,7 +29,10 @@ export function FeaturedProjectCard({ promo }: { promo: EnrichedPromotion }) {
   const description = promo.project?.description || "";
   const imageUrl = promo.project?.image_url || null;
   const username = promo.author?.username || null;
-  const techStack = promo.project?.tech_stack ?? [];
+  // Dedupe — tech_stack is just a string[] with no uniqueness constraint, so
+  // duplicates from the source data would render duplicate pills AND collide
+  // on the React key. Set preserves insertion order.
+  const techStack = Array.from(new Set(promo.project?.tech_stack ?? []));
   const { href, external } = destinationFor(promo);
 
   const linkProps = external
