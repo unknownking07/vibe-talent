@@ -127,7 +127,7 @@ async function main() {
   const hash = await wallet.sendTransaction({
     to: CONTRACT_ADDR,
     data: calldata,
-    value: 0n,
+    value: BigInt(0),
   });
   console.log(`✓ Sent: https://basescan.org/tx/${hash}`);
   console.log("Waiting for confirmation…");
