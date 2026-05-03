@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ChainDot } from "./chain-dot";
 import type { EnrichedPromotion } from "@/lib/featured-promotions";
 
 // Reject anything that isn't plain http(s). User-submitted live_url values
@@ -86,18 +85,6 @@ export function FeaturedProjectCard({ promo }: { promo: EnrichedPromotion }) {
             {description}
           </p>
         )}
-
-        <div className="flex-1 min-h-3" />
-
-        <div
-          className="mt-3 pt-3 flex items-center justify-between"
-          style={{ borderTop: "1px solid var(--border-subtle)" }}
-        >
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-            Network
-          </span>
-          <ChainDot chain="base" withLabel />
-        </div>
       </div>
 
       {/* Hover/focus overlay — see .featured-card-overlay in globals.css */}

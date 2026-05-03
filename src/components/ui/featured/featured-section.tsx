@@ -92,6 +92,11 @@ export function FeaturedSection() {
     if (!node) return;
     node.scrollIntoView({ behavior: "smooth", block: "center" });
     node.focus({ preventScroll: true });
+    // Briefly pulse the card so users see where the click landed — without
+    // this, if both cards already share a viewport, the click looks dead.
+    // Restart the animation by removing/re-adding the class on the next frame.
+    node.classList.remove("claim-pulse");
+    requestAnimationFrame(() => node.classList.add("claim-pulse"));
   }, []);
 
   return (

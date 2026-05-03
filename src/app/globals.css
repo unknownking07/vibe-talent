@@ -197,6 +197,25 @@ html {
   clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
 }
 
+/* Brief outline ripple on the Feature-Your-Project card after a user clicks
+   "Claim This Spot" on an empty slot. The empty card scrolls/focuses the
+   feature card, but the cards already share a viewport — without this pulse
+   the click looks dead. Uses outline (not box-shadow) so it doesn't fight
+   .card-brutal's hard offset shadow. */
+.claim-pulse {
+  animation: claim-pulse 1.2s ease-out;
+}
+@keyframes claim-pulse {
+  0% {
+    outline: 4px solid var(--accent);
+    outline-offset: -2px;
+  }
+  100% {
+    outline: 4px solid transparent;
+    outline-offset: 16px;
+  }
+}
+
 /* Featured promo card hover/focus overlay
    Reveals a centered "View Project" CTA when the parent card is hovered or
    keyboard-focused. Uses an explicit class so it doesn't depend on Tailwind's
