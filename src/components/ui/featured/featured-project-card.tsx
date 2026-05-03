@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ChainDot } from "./chain-dot";
 import type { EnrichedPromotion } from "@/lib/featured-promotions";
 
 // Reject anything that isn't plain http(s). User-submitted live_url values
@@ -21,10 +20,19 @@ function destinationFor(promo: EnrichedPromotion): { href: string; external: boo
   return { href: `/explore?q=${encodeURIComponent(promo.projectName)}`, external: false };
 }
 
+// How many tech-stack pills to surface inline before collapsing to "+N".
+// Four keeps the row to one line on the typical card width.
+const MAX_TECH_PILLS = 4;
+
 export function FeaturedProjectCard({ promo }: { promo: EnrichedPromotion }) {
   const title = promo.project?.title || promo.projectName;
   const description = promo.project?.description || "";
   const imageUrl = promo.project?.image_url || null;
+  const username = promo.author?.username || null;
+  // Dedupe — tech_stack is just a string[] with no uniqueness constraint, so
+  // duplicates from the source data would render duplicate pills AND collide
+  // on the React key. Set preserves insertion order.
+  const techStack = Array.from(new Set(promo.project?.tech_stack ?? []));
   const { href, external } = destinationFor(promo);
 
   const linkProps = external
@@ -81,23 +89,42 @@ export function FeaturedProjectCard({ promo }: { promo: EnrichedPromotion }) {
         <h3 className="mt-2 text-base font-extrabold uppercase text-[var(--foreground)] line-clamp-1 leading-tight">
           {title}
         </h3>
+        {username && (
+          <p className="mt-0.5 text-[11px] font-mono text-[var(--text-muted)] line-clamp-1">
+            @{username}
+          </p>
+        )}
         {description && (
-          <p className="mt-1 text-xs text-[var(--text-secondary)] line-clamp-2 leading-snug">
+          <p className="mt-2 text-xs text-[var(--text-secondary)] line-clamp-2 leading-snug">
             {description}
           </p>
         )}
-
-        <div className="flex-1 min-h-3" />
-
-        <div
-          className="mt-3 pt-3 flex items-center justify-between"
-          style={{ borderTop: "1px solid var(--border-subtle)" }}
-        >
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-            Network
-          </span>
-          <ChainDot chain="base" withLabel />
-        </div>
+        {/* Tech stack — plain text pills are kept non-interactive on purpose.
+            The whole-card link captures clicks (rendering nested anchors here
+            would break HTML semantics and the focus order). mt-auto pushes
+            this row to the bottom of the content area so it fills the space
+            the old Network row used to occupy. */}
+        {techStack.length > 0 && (
+          <div className="mt-auto pt-4 flex flex-wrap gap-1.5">
+            {techStack.slice(0, MAX_TECH_PILLS).map((tech) => (
+              <span
+                key={tech}
+                className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider text-[var(--text-muted)]"
+                style={{
+                  backgroundColor: "var(--bg-surface-light)",
+                  border: "1px solid var(--border-subtle)",
+                }}
+              >
+                {tech}
+              </span>
+            ))}
+            {techStack.length > MAX_TECH_PILLS && (
+              <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                +{techStack.length - MAX_TECH_PILLS}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Hover/focus overlay — see .featured-card-overlay in globals.css */}
