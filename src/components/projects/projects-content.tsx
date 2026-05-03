@@ -82,8 +82,6 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
   );
 
   const activeFilterCount = [verifiedOnly, hasLiveUrl, selectedTech.length > 0].filter(Boolean).length;
-  const start = (currentPage - 1) * PAGE_SIZE + 1;
-  const end = Math.min(currentPage * PAGE_SIZE, filteredProjects.length);
 
   return (
     <>
@@ -183,14 +181,21 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
         </div>
       )}
 
-      {/* Results count */}
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-[var(--text-secondary)] font-medium">
-          {filteredProjects.length === 0
-            ? "No projects found"
-            : `Showing ${start}–${end} of ${filteredProjects.length} projects`}
-        </p>
-      </div>
+      {/* Results count — only when no pagination is needed (paginated case puts the count inside <Pagination />) */}
+      {filteredProjects.length > 0 && filteredProjects.length <= PAGE_SIZE && (
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-[var(--text-secondary)] font-medium">
+            Showing {filteredProjects.length} project{filteredProjects.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+      )}
+      {filteredProjects.length === 0 && (
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-[var(--text-secondary)] font-medium">
+            No projects found
+          </p>
+        </div>
+      )}
 
       {/* Project grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
@@ -211,6 +216,10 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={goToPage}
+            label="Projects"
+            pageSize={PAGE_SIZE}
+            totalItems={filteredProjects.length}
+            itemNoun="projects"
           />
         </div>
       )}

@@ -329,12 +329,12 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
         </div>
       )}
 
-      {/* Results count */}
-      <p className="mb-4 text-sm font-bold uppercase tracking-wide text-[var(--text-muted)]">
-        {filteredUsers.length > PAGE_SIZE
-          ? `Showing ${(activePage - 1) * PAGE_SIZE + 1}–${Math.min(activePage * PAGE_SIZE, filteredUsers.length)} of ${filteredUsers.length} builders`
-          : `${filteredUsers.length} builder${filteredUsers.length !== 1 ? "s" : ""} found`}
-      </p>
+      {/* Results count — only shown when no pagination is needed; paginated case puts the count inside <Pagination /> */}
+      {filteredUsers.length > 0 && filteredUsers.length <= PAGE_SIZE && (
+        <p className="mb-4 text-sm font-bold uppercase tracking-wide text-[var(--text-muted)]">
+          {filteredUsers.length} builder{filteredUsers.length !== 1 ? "s" : ""} found
+        </p>
+      )}
 
       {/* Grid */}
       {filteredUsers.length > 0 ? (
@@ -347,7 +347,15 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
 
           {/* Pagination */}
           <div className="mt-10">
-            <Pagination currentPage={activePage} totalPages={totalPages} onPageChange={goToPage} />
+            <Pagination
+              currentPage={activePage}
+              totalPages={totalPages}
+              onPageChange={goToPage}
+              label="Builders Directory"
+              pageSize={PAGE_SIZE}
+              totalItems={filteredUsers.length}
+              itemNoun="builders"
+            />
           </div>
         </>
       ) : (

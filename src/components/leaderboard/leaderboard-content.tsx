@@ -232,14 +232,17 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
         </table>
       </div>
 
-      {/* Results count + Pagination */}
+      {/* Pagination (count + eyebrow rendered inside) */}
       {sortedUsers.length > PAGE_SIZE && (
-        <>
-          <p className="mt-4 text-sm font-bold uppercase tracking-wide text-[var(--text-muted)] text-center">
-            Showing {(activePage - 1) * PAGE_SIZE + 1}–{Math.min(activePage * PAGE_SIZE, sortedUsers.length)} of {sortedUsers.length} builders
-          </p>
-          <Pagination currentPage={activePage} totalPages={totalPages} onPageChange={goToPage} />
-        </>
+        <Pagination
+          currentPage={activePage}
+          totalPages={totalPages}
+          onPageChange={goToPage}
+          label="Leaderboard"
+          pageSize={PAGE_SIZE}
+          totalItems={sortedUsers.length}
+          itemNoun="builders"
+        />
       )}
     </>
   );
