@@ -1,81 +1,20 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { CHAIN_CONFIGS, isEVMChain } from "@/lib/chains-config";
 import { ChainDot } from "@/components/ui/featured/chain-dot";
+import { formatUsd, type PriceSnapshot } from "@/lib/pricing";
 
 const BASE_CONFIG = CHAIN_CONFIGS.base;
 const CONTRACT_ADDR = isEVMChain(BASE_CONFIG) ? BASE_CONFIG.contractAddr : "";
-const BASE_RPC = isEVMChain(BASE_CONFIG) ? BASE_CONFIG.rpc : "";
 
-// keccak256("getPrices()") first 4 bytes — same selector used by the homepage card
-const GET_PRICES_SELECTOR = "0xbd9a548b";
-
-// Fallback prices — the actual prices come from the on-chain contract via
-// fetchPrices(). The contract has 5 package slots (0..4); we surface 4 to
-// users (Day/Week/Month/Annual) and skip the 3-day legacy slot.
-const FALLBACK_PRICES: bigint[] = [
-  BigInt(2_000_000),    // 0: Day    — $2.00
-  BigInt(5_000_000),    // 1: 3-day (hidden, must fit monotonic curve)
-  BigInt(10_000_000),   // 2: Week   — $10.00 (29% off /day)
-  BigInt(29_000_000),   // 3: Month  — $29.00 (52% off /day — best value)
-  BigInt(199_000_000),  // 4: Annual — $199.00 (73% off /day; contract treats as Lifetime)
+const TIERS: { key: keyof Omit<PriceSnapshot, "source">; label: string; duration: string; note: string }[] = [
+  { key: "day",    label: "Day",    duration: "24 hours", note: "Quick boost — perfect for launch days" },
+  { key: "week",   label: "Week",   duration: "7 days",   note: "Sustained exposure across a hiring cycle" },
+  { key: "month",  label: "Month",  duration: "30 days",  note: "Full hiring cycle, the sweet spot" },
+  { key: "annual", label: "Annual", duration: "Year-round (slot persists indefinitely)", note: "Permanent visibility — refunded only if the contract is upgraded" },
 ];
 
-const TIERS = [
-  { idx: 0, label: "Day", duration: "24 hours", note: "Quick boost — perfect for launch days" },
-  { idx: 2, label: "Week", duration: "7 days", note: "Sustained exposure across a hiring cycle" },
-  { idx: 3, label: "Month", duration: "30 days", note: "Full hiring cycle, the sweet spot" },
-  { idx: 4, label: "Annual", duration: "Year-round (slot persists indefinitely)", note: "Permanent visibility — refunded only if the contract is upgraded" },
-] as const;
-
-async function fetchPrices(): Promise<bigint[]> {
-  try {
-    const res = await fetch(BASE_RPC, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "eth_call",
-        params: [{ to: CONTRACT_ADDR, data: GET_PRICES_SELECTOR }, "latest"],
-      }),
-    });
-    const json = await res.json();
-    if (!json.result || typeof json.result !== "string") return FALLBACK_PRICES;
-    const data = json.result.startsWith("0x") ? json.result.slice(2) : json.result;
-    // Need 5 × 32-byte slots (320 hex chars). Shorter = truncated/error payload.
-    if (data.length < 5 * 64) return FALLBACK_PRICES;
-    const prices: bigint[] = [];
-    for (let i = 0; i < 5; i++) {
-      prices.push(BigInt("0x" + data.slice(i * 64, i * 64 + 64)));
-    }
-    return prices;
-  } catch {
-    return FALLBACK_PRICES;
-  }
-}
-
-function format(price: bigint): string {
-  return `$${(Number(price) / 1e6).toFixed(2)}`;
-}
-
-export function PricingTiers() {
-  const [prices, setPrices] = useState<bigint[]>(FALLBACK_PRICES);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchPrices().then((p) => {
-      if (cancelled) return;
-      setPrices(p);
-      setLoaded(true);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+export function PricingTiers({ initialPrices }: { initialPrices: PriceSnapshot }) {
+  const isLive = initialPrices.source === "chain";
 
   return (
     <div>
@@ -102,18 +41,18 @@ export function PricingTiers() {
           <span className="text-xs font-extrabold uppercase">Solana</span>
         </span>
         <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] ml-auto">
-          {loaded ? "Live on-chain pricing" : "Loading…"}
+          {isLive ? "Live on-chain pricing" : "Estimated pricing (RPC unreachable)"}
         </span>
       </div>
 
       {/* Tier grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {TIERS.map((t) => {
-          const price = prices[t.idx];
-          const isHighlight = t.idx === 3; // Month — best value
+          const price = initialPrices[t.key];
+          const isHighlight = t.key === "month";
           return (
             <div
-              key={t.idx}
+              key={t.key}
               className="card-brutal p-5 flex flex-col"
               style={{
                 backgroundColor: "var(--bg-surface)",
@@ -138,7 +77,7 @@ export function PricingTiers() {
               </h3>
               <div className="flex items-baseline gap-1.5 mb-3">
                 <span className="font-mono text-3xl font-extrabold text-[var(--foreground)]">
-                  {format(price)}
+                  {formatUsd(price)}
                 </span>
                 <span className="text-xs font-bold uppercase text-[var(--text-muted)]">USDC</span>
               </div>

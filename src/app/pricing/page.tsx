@@ -2,60 +2,72 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Megaphone, Wallet, Shield, ArrowRight, HelpCircle } from "lucide-react";
 import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
+import { getPriceSnapshot, formatUsd, type PriceSnapshot } from "@/lib/pricing";
 import { PricingTiers } from "./pricing-tiers";
 
 const PAGE_TITLE = "Featured Project Pricing & Guidelines";
-const PAGE_DESCRIPTION =
-  "Sponsored homepage slots on VibeTalent from $2 USDC. Day ($2), Week ($10), Month ($29), and Lifetime ($199) tiers paid with USDC on Base or Solana — live on-chain pricing, no platform fees.";
 const PAGE_URL = `${siteUrl}/pricing`;
 
-export const metadata: Metadata = {
-  title: PAGE_TITLE,
-  description: PAGE_DESCRIPTION,
-  alternates: { canonical: PAGE_URL },
-  openGraph: {
-    title: `${PAGE_TITLE} | VibeTalent`,
-    description: PAGE_DESCRIPTION,
-    url: PAGE_URL,
-    type: "website",
-    images: [{ url: `${siteUrl}/og-image-v2.jpg`, width: 1200, height: 630 }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${PAGE_TITLE} | VibeTalent`,
-    description: PAGE_DESCRIPTION,
-    images: [`${siteUrl}/og-image-v2.jpg`],
-  },
-};
+function buildDescription(p: PriceSnapshot): string {
+  return `Sponsored homepage slots on VibeTalent from ${formatUsd(p.day)} USDC. Day (${formatUsd(p.day)}), Week (${formatUsd(p.week)}), Month (${formatUsd(p.month)}), and Lifetime (${formatUsd(p.annual)}) tiers paid with USDC on Base or Solana — live on-chain pricing, no platform fees.`;
+}
 
-const FAQ: { q: string; a: string }[] = [
-  {
-    q: "How much does it cost to feature a project on VibeTalent?",
-    a: "Featured slots start at $2 USDC for 24 hours. We offer four tiers: Day ($2), Week ($10), Month ($29), and Lifetime ($199). Prices are read live from the on-chain contract on Base — no hidden platform fees on top.",
-  },
-  {
-    q: "What payment methods are accepted?",
-    a: "USDC on Base or Solana. Connect any Privy-supported wallet — MetaMask, Rabby, Coinbase, or Rainbow on EVM, and Phantom, Backpack, or Solflare on Solana. Gas is paid separately in ETH (Base) or SOL (Solana).",
-  },
-  {
-    q: "How long does my featured slot last?",
-    a: "Day = 24 hours. Week = 7 days. Month = 30 days. Lifetime persists indefinitely until the contract is upgraded or removed. The slot starts the moment your transaction confirms on-chain.",
-  },
-  {
-    q: "Where does my project appear?",
-    a: "At the top of the VibeTalent homepage in the Featured Projects section — the first thing founders see when they visit the marketplace to scout talent.",
-  },
-  {
-    q: "What happens when my slot expires?",
-    a: "It returns to the available pool automatically — no action needed on your end. Lifetime promotions never expire.",
-  },
-  {
-    q: "Can I get a refund?",
-    a: "If we remove a sponsored slot for violating the content guidelines, the unused paid time is automatically refunded to your original wallet. Otherwise sales are final.",
-  },
-];
+function buildFaq(p: PriceSnapshot): { q: string; a: string }[] {
+  return [
+    {
+      q: "How much does it cost to feature a project on VibeTalent?",
+      a: `Featured slots start at ${formatUsd(p.day)} USDC for 24 hours. We offer four tiers: Day (${formatUsd(p.day)}), Week (${formatUsd(p.week)}), Month (${formatUsd(p.month)}), and Lifetime (${formatUsd(p.annual)}). Prices are read live from the on-chain contract on Base — no hidden platform fees on top.`,
+    },
+    {
+      q: "What payment methods are accepted?",
+      a: "USDC on Base or Solana. Connect any Privy-supported wallet — MetaMask, Rabby, Coinbase, or Rainbow on EVM, and Phantom, Backpack, or Solflare on Solana. Gas is paid separately in ETH (Base) or SOL (Solana).",
+    },
+    {
+      q: "How long does my featured slot last?",
+      a: "Day = 24 hours. Week = 7 days. Month = 30 days. Lifetime persists indefinitely until the contract is upgraded or removed. The slot starts the moment your transaction confirms on-chain.",
+    },
+    {
+      q: "Where does my project appear?",
+      a: "At the top of the VibeTalent homepage in the Featured Projects section — the first thing founders see when they visit the marketplace to scout talent.",
+    },
+    {
+      q: "What happens when my slot expires?",
+      a: "It returns to the available pool automatically — no action needed on your end. Lifetime promotions never expire.",
+    },
+    {
+      q: "Can I get a refund?",
+      a: "Sales are final once your slot goes live. The one exception: if we remove a slot for violating the content guidelines, the unused paid time is refunded to your original wallet.",
+    },
+  ];
+}
 
-export default function PricingPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  const prices = await getPriceSnapshot();
+  const description = buildDescription(prices);
+  return {
+    title: PAGE_TITLE,
+    description,
+    alternates: { canonical: PAGE_URL },
+    openGraph: {
+      title: `${PAGE_TITLE} | VibeTalent`,
+      description,
+      url: PAGE_URL,
+      type: "website",
+      images: [{ url: `${siteUrl}/og-image-v2.jpg`, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${PAGE_TITLE} | VibeTalent`,
+      description,
+      images: [`${siteUrl}/og-image-v2.jpg`],
+    },
+  };
+}
+
+export default async function PricingPage() {
+  const prices = await getPriceSnapshot();
+  const faq = buildFaq(prices);
+
   const breadcrumbLd = {
     "@context": "https://schema.org",
     ...buildBreadcrumbList([
@@ -75,14 +87,14 @@ export default function PricingPage() {
     offers: {
       "@type": "AggregateOffer",
       priceCurrency: "USD",
-      lowPrice: "2.00",
-      highPrice: "199.00",
+      lowPrice: prices.day.toFixed(2),
+      highPrice: prices.annual.toFixed(2),
       offerCount: 4,
       offers: [
         {
           "@type": "Offer",
           name: "Day",
-          price: "2.00",
+          price: prices.day.toFixed(2),
           priceCurrency: "USD",
           description: "24-hour featured slot on the VibeTalent homepage.",
           eligibleDuration: { "@type": "QuantitativeValue", value: 1, unitCode: "DAY" },
@@ -91,25 +103,25 @@ export default function PricingPage() {
         {
           "@type": "Offer",
           name: "Week",
-          price: "10.00",
+          price: prices.week.toFixed(2),
           priceCurrency: "USD",
-          description: "7-day featured slot — 29% off the daily rate.",
+          description: "7-day featured slot.",
           eligibleDuration: { "@type": "QuantitativeValue", value: 7, unitCode: "DAY" },
           availability: "https://schema.org/InStock",
         },
         {
           "@type": "Offer",
           name: "Month",
-          price: "29.00",
+          price: prices.month.toFixed(2),
           priceCurrency: "USD",
-          description: "30-day featured slot — 52% off the daily rate. Best value tier.",
+          description: "30-day featured slot — best value tier.",
           eligibleDuration: { "@type": "QuantitativeValue", value: 30, unitCode: "DAY" },
           availability: "https://schema.org/InStock",
         },
         {
           "@type": "Offer",
           name: "Lifetime",
-          price: "199.00",
+          price: prices.annual.toFixed(2),
           priceCurrency: "USD",
           description: "Permanent featured slot — persists indefinitely until the contract is upgraded or removed.",
           availability: "https://schema.org/InStock",
@@ -121,7 +133,7 @@ export default function PricingPage() {
   const faqLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: FAQ.map(({ q, a }) => ({
+    mainEntity: faq.map(({ q, a }) => ({
       "@type": "Question",
       name: q,
       acceptedAnswer: { "@type": "Answer", text: a },
@@ -159,11 +171,13 @@ export default function PricingPage() {
       <p className="text-sm text-[var(--text-secondary)] max-w-2xl mb-10 leading-relaxed">
         Founders scout VibeTalent every day looking for builders to hire. A sponsored slot lands your project
         at the top of the marketplace — exactly where they&apos;re looking. Pay with USDC on Base or Solana,
-        prices read live from the on-chain contract, expirations refund automatically.
+        prices read live from the on-chain contract. Expired slots return to the pool automatically; refunds
+        are issued only when a slot is removed for a guideline violation.
       </p>
 
-      {/* Live tiers (client component reads contract) */}
-      <PricingTiers />
+      {/* Live tiers (client component reads contract; initialPrices keeps SSR
+          and hydration in sync with the snapshot used for metadata + JSON-LD) */}
+      <PricingTiers initialPrices={prices} />
 
       {/* How it works */}
       <section
@@ -247,7 +261,7 @@ export default function PricingPage() {
           <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)]">FAQ</h2>
         </div>
         <dl className="space-y-5">
-          {FAQ.map(({ q, a }) => (
+          {faq.map(({ q, a }) => (
             <div key={q}>
               <dt className="text-sm font-extrabold text-[var(--foreground)] leading-snug">{q}</dt>
               <dd className="mt-1.5 text-sm text-[var(--text-secondary)] font-medium leading-relaxed">

@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
+import { getPriceSnapshot, formatUsd, type PriceSnapshot } from "@/lib/pricing";
 
-const LLMS_TXT = `# VibeTalent
+function buildLlmsTxt(p: PriceSnapshot): string {
+  // Compute the displayed discounts from the live snapshot so they stay
+  // honest when admin changes prices on-chain.
+  const weekDiscount = Math.round((1 - p.week / 7 / p.day) * 100);
+  const monthDiscount = Math.round((1 - p.month / 30 / p.day) * 100);
+
+  return `# VibeTalent
 
 > The marketplace for vibe coders who actually ship.
 
@@ -36,10 +43,10 @@ VibeTalent is a developer talent marketplace that ranks software engineers by co
 Builders can pay to feature a shipped project at the top of the homepage Featured Projects section. Payment is in USDC on Base or Solana — prices read live from the on-chain contract on Base (0x2cDB438f418f5cb53e8Ea87cFD981397FDe3d0da). No platform fees on top of the on-chain price.
 
 Tiers:
-- **Day** — $2 USDC, 24 hours.
-- **Week** — $10 USDC, 7 days. ~29% off the daily rate.
-- **Month** — $29 USDC, 30 days. ~52% off the daily rate. Best value tier.
-- **Lifetime** — $199 USDC. Slot persists indefinitely until the contract is upgraded or removed.
+- **Day** — ${formatUsd(p.day)} USDC, 24 hours.
+- **Week** — ${formatUsd(p.week)} USDC, 7 days. ~${weekDiscount}% off the daily rate.
+- **Month** — ${formatUsd(p.month)} USDC, 30 days. ~${monthDiscount}% off the daily rate. Best value tier.
+- **Lifetime** — ${formatUsd(p.annual)} USDC. Slot persists indefinitely until the contract is upgraded or removed.
 
 When a paid slot expires it returns to the available pool automatically. Removed slots (content guideline violations) refund the unused paid time to the original wallet. Full pricing, guidelines, and FAQ at https://www.vibetalent.work/pricing.
 
@@ -86,12 +93,16 @@ This is the existing USDC-based featuring product. The $VIBE-token-based featuri
 - Website: https://www.vibetalent.work
 - GitHub: https://github.com/unknownking07/vibe-talent
 `;
+}
 
 export async function GET() {
-  return new NextResponse(LLMS_TXT, {
+  const prices = await getPriceSnapshot();
+  return new NextResponse(buildLlmsTxt(prices), {
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "public, max-age=86400, s-maxage=86400",
+      // Match the inner snapshot revalidate window so an admin price update
+      // propagates within ~5 min instead of the previous 24h staleness.
+      "Cache-Control": "public, max-age=300, s-maxage=300",
     },
   });
 }

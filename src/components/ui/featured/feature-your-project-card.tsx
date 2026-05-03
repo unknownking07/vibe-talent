@@ -250,6 +250,20 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
     const provider = (await connectedWallet.getEthereumProvider()) as EthereumProvider;
     const walletAddr = connectedWallet.address.toLowerCase();
 
+    // Make sure the wallet is on the chain we're targeting — without this, the
+    // approve/promote tx would hit whatever contract sits at the same address
+    // on whatever chain the wallet happens to be on. Try a switch first; if the
+    // user rejects or the chain isn't in their wallet, surface a clear error.
+    const targetChainHex = "0x" + chainConfig.chainId.toString(16);
+    const currentChainHex = (await provider.request({ method: "eth_chainId" })) as string;
+    if (currentChainHex.toLowerCase() !== targetChainHex.toLowerCase()) {
+      setStatus({ msg: `Switching wallet to ${chainConfig.name}...`, type: "info" });
+      await provider.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: targetChainHex }],
+      });
+    }
+
     setStatus({ msg: "Checking USDC allowance...", type: "info" });
     const allowanceData = encodeFunctionData({
       abi: ERC20_ABI,
@@ -543,6 +557,9 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
 
             {status && (
               <div
+                role={status.type === "error" ? "alert" : "status"}
+                aria-live={status.type === "error" ? "assertive" : "polite"}
+                aria-atomic="true"
                 className="mb-3 px-3 py-2 text-[11px] font-bold uppercase"
                 style={{
                   border: "2px solid var(--border-hard)",

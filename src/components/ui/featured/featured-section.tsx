@@ -20,16 +20,15 @@ export function FeaturedSection() {
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [authChecked, setAuthChecked] = useState(false);
   const pausedRef = useRef(false);
   const featureCardRef = useRef<HTMLDivElement>(null);
 
-  // Supabase auth check
+  // Supabase auth check — only gates the claim-flow UX inside the
+  // FeatureYourProjectCard, NOT the public promotions fetch below.
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       setIsLoggedIn(!!user);
-      setAuthChecked(true);
     });
   }, []);
 
@@ -46,10 +45,12 @@ export function FeaturedSection() {
       });
   }, []);
 
+  // Public RPC call + public Supabase reads — fire immediately, don't wait
+  // for auth round-trip. Otherwise crawlers and signed-out visitors see an
+  // empty section until the auth check resolves.
   useEffect(() => {
-    if (!authChecked) return;
     refreshPromotions();
-  }, [authChecked, refreshPromotions]);
+  }, [refreshPromotions]);
 
   // Re-fetch when the soonest non-lifetime promotion expires
   useEffect(() => {
@@ -93,8 +94,6 @@ export function FeaturedSection() {
     node.focus({ preventScroll: true });
   }, []);
 
-  if (!authChecked) return null;
-
   return (
     <section
       id="featured-projects"
@@ -104,7 +103,24 @@ export function FeaturedSection() {
         backgroundColor: "var(--bg-surface)",
       }}
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+      {/* Pause boundary wraps BOTH the header (with prev/next buttons) and the
+          card grid, so keyboard focus on pagination controls also pauses
+          autoplay. Previously these handlers lived only on the inner grid. */}
+      <div
+        className="mx-auto max-w-7xl px-4 sm:px-6 py-12"
+        onMouseEnter={() => {
+          pausedRef.current = true;
+        }}
+        onMouseLeave={() => {
+          pausedRef.current = false;
+        }}
+        onFocusCapture={() => {
+          pausedRef.current = true;
+        }}
+        onBlurCapture={() => {
+          pausedRef.current = false;
+        }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
           <div className="flex items-center gap-3">
@@ -165,21 +181,7 @@ export function FeaturedSection() {
             </p>
           </div>
         ) : (
-          <div
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5"
-            onMouseEnter={() => {
-              pausedRef.current = true;
-            }}
-            onMouseLeave={() => {
-              pausedRef.current = false;
-            }}
-            onFocusCapture={() => {
-              pausedRef.current = true;
-            }}
-            onBlurCapture={() => {
-              pausedRef.current = false;
-            }}
-          >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
             {visibleSlots.map((slot, idx) =>
               slot ? (
                 <FeaturedProjectCard key={slot.id} promo={slot} />
