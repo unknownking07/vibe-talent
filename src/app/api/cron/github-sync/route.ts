@@ -63,16 +63,18 @@ export async function GET(req: NextRequest) {
 
   try {
     // Fetch users with github_username set. Order by lifetime_contributions
-    // ASC NULLS FIRST so unpopulated users get processed first — if the
-    // function still times out, the next run picks up where this one left
-    // off instead of re-doing the same prefix.
+    // DESC NULLS LAST so the platform's heavy users — the ones whose
+    // streaks visibly drive the leaderboard / featured grid — get synced
+    // first. The previous ASC ordering meant if the function timed out
+    // partway through, the back of the queue (heavy users) was the first
+    // thing dropped, leaving them stuck for days.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: usersWithGithub, error: usersError } = await (supabase as any)
       .from("users")
       .select("id, username, github_username, lifetime_contributions")
       .not("github_username", "is", null)
       .neq("github_username", "")
-      .order("lifetime_contributions", { ascending: true, nullsFirst: true });
+      .order("lifetime_contributions", { ascending: false, nullsFirst: false });
 
     if (usersError) {
       console.error("Failed to fetch users:", usersError);
@@ -280,20 +282,27 @@ export async function GET(req: NextRequest) {
               return { userInfo, status: "skipped", reason: "No GitHub activity in last year" };
             }
 
-            // Upsert streak_logs with real per-day counts. Only writes dates
-            // that have new data; existing entries past the cron window stay
-            // unchanged and continue contributing to the streak calculation.
-            let loggedCount = 0;
-            for (const [activityDate, count] of dateCounts.entries()) {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const { error } = await (supabase as any)
-                .from("streak_logs")
-                .upsert(
-                  { user_id: userInfo.userId, activity_date: activityDate, commit_count: count },
-                  { onConflict: "user_id,activity_date" }
-                );
-
-              if (!error) loggedCount++;
+            // Upsert streak_logs with real per-day counts in a single batch
+            // round-trip. The previous per-row loop fired N sequential
+            // requests (200+ for heavy users), which routinely blew the
+            // 5-min serverless budget and starved the back of the queue.
+            const streakRows = Array.from(dateCounts.entries()).map(
+              ([activity_date, commit_count]) => ({
+                user_id: userInfo.userId,
+                activity_date,
+                commit_count,
+              })
+            );
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error: streakUpsertError } = await (supabase as any)
+              .from("streak_logs")
+              .upsert(streakRows, { onConflict: "user_id,activity_date" });
+            const loggedCount = streakUpsertError ? 0 : streakRows.length;
+            if (streakUpsertError) {
+              console.error(
+                `streak_logs batch upsert failed for ${userInfo.githubUsername}:`,
+                streakUpsertError
+              );
             }
 
             // Update denormalized totals on users so update_user_streak can
