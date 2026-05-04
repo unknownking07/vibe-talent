@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { buildersLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
+import { getSiteUrl } from "@/lib/seo";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,6 +23,7 @@ export async function GET(req: NextRequest) {
     const skills = searchParams.get("skills");
     const minStreak = searchParams.get("min_streak");
     const minVibeScore = searchParams.get("min_vibe_score");
+    const verifiedOnly = searchParams.get("verified_only") === "true";
     const sort = searchParams.get("sort") || "vibe_score";
     const limitParam = Math.min(
       Math.max(parseInt(searchParams.get("limit") || "20", 10) || 20, 1),
@@ -72,7 +74,7 @@ export async function GET(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: projects, error: projectsError } = await (supabase as any)
       .from("projects")
-      .select("user_id, tech_stack")
+      .select("user_id, tech_stack, verified")
       .in("user_id", userIds)
       .eq("flagged", false);
 
@@ -86,18 +88,24 @@ export async function GET(req: NextRequest) {
 
     // Build per-user project counts and aggregated tech stacks
     const projectCountMap: Record<string, number> = {};
+    const verifiedCountMap: Record<string, number> = {};
     const techStackMap: Record<string, Set<string>> = {};
     for (const p of projects || []) {
       projectCountMap[p.user_id] = (projectCountMap[p.user_id] || 0) + 1;
+      if (p.verified) {
+        verifiedCountMap[p.user_id] = (verifiedCountMap[p.user_id] || 0) + 1;
+      }
       if (!techStackMap[p.user_id]) techStackMap[p.user_id] = new Set();
       for (const tech of p.tech_stack || []) {
         techStackMap[p.user_id].add(tech);
       }
     }
 
+    const siteUrl = getSiteUrl();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let builders = users.map((user: any) => ({
       username: user.username,
+      profile_url: `${siteUrl}/profile/${user.username}`,
       bio: user.bio,
       avatar_url: user.avatar_url,
       vibe_score: user.vibe_score,
@@ -105,8 +113,16 @@ export async function GET(req: NextRequest) {
       longest_streak: user.longest_streak,
       badge_level: user.badge_level,
       projects_count: projectCountMap[user.id] || 0,
+      verified_projects_count: verifiedCountMap[user.id] || 0,
       tech_stack: Array.from(techStackMap[user.id] || []),
     }));
+
+    // Filter to builders with at least one verified project, if requested
+    if (verifiedOnly) {
+      builders = builders.filter(
+        (b: { verified_projects_count: number }) => b.verified_projects_count > 0
+      );
+    }
 
     // Filter by skills if provided
     if (skills) {

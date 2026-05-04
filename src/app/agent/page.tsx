@@ -205,7 +205,7 @@ export default function AgentHubPage() {
             <code className="text-xs font-mono font-bold text-[var(--accent)]">GET</code>
             <p className="text-sm font-extrabold text-[var(--foreground)] mt-1">/api/v1/builders</p>
             <p className="text-xs text-[var(--text-muted)] font-medium mt-1">
-              Search builders by skills, streak, vibe score. Supports sorting and filtering.
+              Search builders by skills, streak, vibe score. Filter by <code>verified_only=true</code> to surface only GitHub-verified builders.
             </p>
           </div>
           <div
@@ -215,7 +215,7 @@ export default function AgentHubPage() {
             <code className="text-xs font-mono font-bold text-[var(--accent)]">GET</code>
             <p className="text-sm font-extrabold text-[var(--foreground)] mt-1">/api/v1/builders/:username</p>
             <p className="text-xs text-[var(--text-muted)] font-medium mt-1">
-              Get full builder profile with projects, social links, and stats.
+              Full profile + projects with verification status, quality scores, live-URL health, endorsements, and review aggregates.
             </p>
           </div>
           <div

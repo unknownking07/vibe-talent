@@ -84,7 +84,6 @@ function timeAgo(dateStr: string): string {
 
 export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSectionProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [avgRating, setAvgRating] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -132,7 +131,6 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
         if (res.ok) {
           const data = await res.json();
           setReviews(data.reviews || []);
-          setAvgRating(data.average_rating || 0);
         } else {
           setError(true);
         }
@@ -181,7 +179,6 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
         if (reviewsRes.ok) {
           const data = await reviewsRes.json();
           setReviews(data.reviews || []);
-          setAvgRating(data.average_rating || 0);
         }
 
         setTimeout(() => setSubmitSuccess(false), 3000);
@@ -224,7 +221,6 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
         if (reviewsRes.ok) {
           const data = await reviewsRes.json();
           setReviews(data.reviews || []);
-          setAvgRating(data.average_rating || 0);
         }
       } else {
         const data = await res.json();
@@ -270,11 +266,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
         </h3>
         <div className="flex items-center gap-3">
           {reviews.length > 0 && (
-            <div className="flex items-center gap-2">
-              <StarRating rating={Math.round(avgRating)} size={18} />
-              <span className="font-mono font-bold text-[var(--foreground)]">{avgRating}</span>
-              <span className="text-[var(--text-muted)] text-sm">({reviews.length})</span>
-            </div>
+            <span className="text-[var(--text-muted)] text-sm">({reviews.length})</span>
           )}
           {!isOwner && !showForm && !(isLoggedIn && reviews.some((r) => r.reviewer_email === formEmail)) && (
             <button

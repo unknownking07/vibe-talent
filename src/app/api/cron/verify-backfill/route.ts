@@ -136,7 +136,9 @@ export async function GET(req: NextRequest) {
               const githubUsername = usernameById.get(project.user_id);
               if (!githubUsername) {
                 skipped++;
-                await markAttempted(project.id);
+                // Don't stamp last_verify_attempt_at — missing github_username
+                // is recoverable (user links GitHub later). Stamping forces a
+                // 7-day wait even after the user fixes it on their end.
                 return;
               }
 
