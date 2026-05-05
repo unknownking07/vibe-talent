@@ -6,6 +6,12 @@ import { createNotification } from "@/lib/notifications";
 const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 2500;
 const MAX_PROJECTS_PER_RUN = 200;
+// Hard ceiling on the linked-users prefetch. PostgREST silently caps
+// .select() at 1,000 rows by default; without an explicit .range() the
+// prefilter would start missing legitimate users once the platform crosses
+// 1k. 100k is several orders of magnitude above current size and still
+// well under any sensible memory limit.
+const MAX_LINKED_USERS = 100_000;
 // How long to wait before re-attempting a project that we couldn't verify
 // (owner mismatch, missing github_username, unparseable URL). Transient
 // GitHub API failures don't bump this timestamp so they retry next run.
@@ -66,7 +72,9 @@ export async function GET(req: NextRequest) {
       .from("users")
       .select("id, github_username")
       .not("github_username", "is", null)
-      .neq("github_username", "");
+      .neq("github_username", "")
+      .order("id", { ascending: true })
+      .range(0, MAX_LINKED_USERS - 1);
 
     if (linkedUsersError) {
       console.error("verify-backfill: failed to fetch linked users:", linkedUsersError);
@@ -80,6 +88,12 @@ export async function GET(req: NextRequest) {
 
     if (usernameById.size === 0) {
       return NextResponse.json({ message: "No users with github_username set", verified: 0 });
+    }
+
+    if (usernameById.size === MAX_LINKED_USERS) {
+      console.warn(
+        `verify-backfill: hit MAX_LINKED_USERS=${MAX_LINKED_USERS} cap on the user prefetch — bump the constant if the platform has grown beyond that.`
+      );
     }
 
     // Two classes of candidates:

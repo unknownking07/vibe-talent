@@ -49,17 +49,30 @@ export async function GET(req: NextRequest) {
     // underfill responses — agents asking for limit=20 verified builders could
     // get back 3 because the in-memory filter dropped the rest.
     if (verifiedOnly) {
+      // PostgREST defaults to a 1,000-row cap on .select() — without an
+      // explicit .range() the verified-projects fanout would silently
+      // truncate once the platform crosses 1k verified projects (one heavy
+      // builder × multiple verified projects gets there fast). 100k ceiling
+      // is well above current scale and still trivial to deduplicate in JS.
+      const MAX_VERIFIED_PROJECTS = 100_000;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: verifiedRows, error: verifiedErr } = await (supabase as any)
         .from("projects")
         .select("user_id")
         .eq("verified", true)
-        .eq("flagged", false);
+        .eq("flagged", false)
+        .order("user_id", { ascending: true })
+        .range(0, MAX_VERIFIED_PROJECTS - 1);
       if (verifiedErr) {
         console.error("Failed to resolve verified user_ids:", verifiedErr);
         return NextResponse.json(
           { error: "Failed to apply verified_only filter" },
           { status: 500, headers: corsHeaders }
+        );
+      }
+      if ((verifiedRows?.length ?? 0) === MAX_VERIFIED_PROJECTS) {
+        console.warn(
+          `v1/builders: hit MAX_VERIFIED_PROJECTS=${MAX_VERIFIED_PROJECTS} cap — bump if the platform has grown beyond that.`
         );
       }
       const verifiedUserIds = Array.from(
