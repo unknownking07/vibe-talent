@@ -44,6 +44,36 @@ export async function GET(req: NextRequest) {
       query = query.gte("vibe_score", isNaN(parsed) ? 0 : parsed);
     }
 
+    // Apply verified_only at the SQL level so LIMIT counts post-filter rows.
+    // Doing it after the limit (as we do for skills/sort=projects below) would
+    // underfill responses — agents asking for limit=20 verified builders could
+    // get back 3 because the in-memory filter dropped the rest.
+    if (verifiedOnly) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: verifiedRows, error: verifiedErr } = await (supabase as any)
+        .from("projects")
+        .select("user_id")
+        .eq("verified", true)
+        .eq("flagged", false);
+      if (verifiedErr) {
+        console.error("Failed to resolve verified user_ids:", verifiedErr);
+        return NextResponse.json(
+          { error: "Failed to apply verified_only filter" },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+      const verifiedUserIds = Array.from(
+        new Set((verifiedRows || []).map((r: { user_id: string }) => r.user_id))
+      );
+      if (verifiedUserIds.length === 0) {
+        return NextResponse.json(
+          { builders: [], total: 0 },
+          { headers: corsHeaders }
+        );
+      }
+      query = query.in("id", verifiedUserIds);
+    }
+
     const sortColumn =
       sort === "streak"
         ? "streak"
@@ -117,12 +147,8 @@ export async function GET(req: NextRequest) {
       tech_stack: Array.from(techStackMap[user.id] || []),
     }));
 
-    // Filter to builders with at least one verified project, if requested
-    if (verifiedOnly) {
-      builders = builders.filter(
-        (b: { verified_projects_count: number }) => b.verified_projects_count > 0
-      );
-    }
+    // verified_only is now applied at the SQL level above (so LIMIT counts
+    // post-filter rows) — no in-memory filter needed here.
 
     // Filter by skills if provided
     if (skills) {

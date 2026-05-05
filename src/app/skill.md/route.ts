@@ -198,7 +198,9 @@ weight them differently if they want.
 
 ### Live URL Health (\`live_url_ok\`)
 \`true\` if the project's \`live_url\` responded healthily on the most recent check.
-\`false\` means the deployment is broken or unreachable. \`null\` means no live URL.
+\`false\` means the deployment is broken or unreachable. \`null\` means either no
+\`live_url\` is set or the first health check hasn't run yet — treat null as
+"unknown" rather than "healthy" or "broken".
 
 ### Endorsements (\`endorsement_count\`)
 Peer endorsements from other builders on the platform. Social-proof signal.

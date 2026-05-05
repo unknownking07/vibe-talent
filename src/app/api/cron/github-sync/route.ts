@@ -297,13 +297,22 @@ export async function GET(req: NextRequest) {
             const { error: streakUpsertError } = await (supabase as any)
               .from("streak_logs")
               .upsert(streakRows, { onConflict: "user_id,activity_date" });
-            const loggedCount = streakUpsertError ? 0 : streakRows.length;
             if (streakUpsertError) {
+              // Bail out: running update_user_streak against stale streak_logs
+              // would either return the existing (incorrect) streak or compute
+              // from partial data. Better to surface the failure to the cron
+              // summary so the next run retries cleanly.
               console.error(
                 `streak_logs batch upsert failed for ${userInfo.githubUsername}:`,
                 streakUpsertError
               );
+              return {
+                userInfo,
+                status: "error",
+                reason: `streak_logs upsert failed: ${streakUpsertError.message}`,
+              };
             }
+            const loggedCount = streakRows.length;
 
             // Update denormalized totals on users so update_user_streak can
             // read them when computing the volume bonus.

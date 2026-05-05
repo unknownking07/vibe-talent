@@ -137,10 +137,15 @@ async function diagnoseOne(user: UserRow, unstick: boolean, verbose = true): Pro
 
 async function runAll(unstick: boolean) {
   console.log(`\n── Scanning all users with at least one project ──`);
+  // PostgREST caps .select() at 1,000 rows by default. Without an explicit
+  // .range() the --all scan would silently miss anyone past the first 1k
+  // users — bad for a diagnostic that's supposed to be exhaustive.
+  const MAX_USERS = 100_000;
   const { data: users, error: usersErr } = await sb
     .from("users")
     .select("id, username, github_username, created_at")
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .range(0, MAX_USERS - 1);
   if (usersErr) {
     console.error("Failed to fetch users:", usersErr.message);
     process.exit(1);
@@ -148,6 +153,11 @@ async function runAll(unstick: boolean) {
   if (!users || users.length === 0) {
     console.log("No users found.");
     return;
+  }
+  if (users.length === MAX_USERS) {
+    console.warn(
+      `[warn] hit MAX_USERS=${MAX_USERS} cap — bump if the platform has grown beyond that.`
+    );
   }
 
   let totalUnstuck = 0;

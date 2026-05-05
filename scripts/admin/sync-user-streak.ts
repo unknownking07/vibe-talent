@@ -32,6 +32,17 @@ if (!url || !serviceRoleKey) {
   process.exit(1);
 }
 
+if (!process.env.GITHUB_TOKEN) {
+  // fetchGitHubContributions hits github.com HTML and doesn't use the API
+  // token, but printing a clear pre-flight warning saves debugging time when
+  // a future code path adds events-API calls and silently rate-limits.
+  console.warn(
+    "[warn] GITHUB_TOKEN not set in env. Anonymous GitHub HTML fetches " +
+      "rarely rate-limit at small batch sizes, but if you see 429s or " +
+      "0-day skips, export GITHUB_TOKEN (any unscoped GitHub PAT) and retry."
+  );
+}
+
 const sb = createClient(url, serviceRoleKey);
 
 const RATE_LIMIT_DELAY_MS = 800;
@@ -193,13 +204,20 @@ async function main() {
   // lifetime_contributions DESC so the heaviest accounts — the ones whose
   // streaks you actually care about being fresh — go first. The production
   // cron does the opposite (ASC) which is why meta_alchemist's row was stale.
+  //
+  // PostgREST defaults to a 1,000-row cap on .select() unless you opt into
+  // a larger range, which would silently truncate the platform once the
+  // user count crosses 1k. Use .range(0, MAX_USERS - 1) so the script
+  // genuinely processes every row.
+  const MAX_USERS = 100_000;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: users, error } = await (sb as any)
     .from("users")
     .select("id, username, github_username, streak, longest_streak, vibe_score, lifetime_contributions")
     .not("github_username", "is", null)
     .neq("github_username", "")
-    .order("lifetime_contributions", { ascending: false, nullsFirst: false });
+    .order("lifetime_contributions", { ascending: false, nullsFirst: false })
+    .range(0, MAX_USERS - 1);
   if (error) {
     console.error("Failed to fetch users:", error.message);
     process.exit(1);
@@ -207,6 +225,11 @@ async function main() {
   if (!users || users.length === 0) {
     console.log("No users with a github_username found.");
     return;
+  }
+  if (users.length === MAX_USERS) {
+    console.warn(
+      `[warn] hit MAX_USERS=${MAX_USERS} cap — bump the constant if the platform has grown beyond that.`
+    );
   }
 
   console.log(`\n── Syncing ${users.length} user(s)${dryRun ? " (dry-run, no writes)" : ""} ──\n`);

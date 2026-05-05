@@ -1,7 +1,36 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createNotification } from "@/lib/notifications";
 import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl } from "@/lib/github-quality";
+
+/**
+ * Invalidate the cached profile read so the new "Verified" badge appears
+ * immediately instead of waiting up to 60s for the unstable_cache TTL on
+ * fetchUserByUsernameCached. Returns silently if the username can't be
+ * resolved — caching is best-effort.
+ */
+async function invalidateProfileCache(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  sb: any,
+  userId: string
+): Promise<void> {
+  try {
+    const { data: userRow } = await sb
+      .from("users")
+      .select("username")
+      .eq("id", userId)
+      .single();
+    if (userRow?.username) {
+      // Mirror the call shape used by /api/endorsements: { expire: 0 } forces
+      // the tagged cache entry to be evicted immediately rather than on its
+      // next read. Next.js 16 made the second arg required.
+      revalidateTag(`user-${userRow.username}`, { expire: 0 });
+    }
+  } catch (err) {
+    console.error("Failed to revalidate profile cache after verify:", err);
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -155,6 +184,10 @@ export async function POST(request: Request) {
         metadata: { project_id, quality_score: qualityScore },
       }).catch(console.error);
 
+      // Bust the profile cache so the new badge appears on the next page
+      // visit instead of waiting up to 60s for unstable_cache to expire.
+      await invalidateProfileCache(sb, user.id);
+
       return NextResponse.json({
         verified: true,
         reason: "Repository owner matches your GitHub username.",
@@ -242,6 +275,10 @@ export async function POST(request: Request) {
             message: `Your project has been verified via verification file. Quality score: ${qualityScore}/100.`,
             metadata: { project_id, quality_score: qualityScore },
           }).catch(console.error);
+
+          // Bust the profile cache so the new badge appears immediately
+          // instead of waiting up to 60s for unstable_cache to expire.
+          await invalidateProfileCache(sb, user.id);
 
           return NextResponse.json({
             verified: true,

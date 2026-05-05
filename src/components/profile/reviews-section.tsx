@@ -266,7 +266,12 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
         </h3>
         <div className="flex items-center gap-3">
           {reviews.length > 0 && (
-            <span className="text-[var(--text-muted)] text-sm">({reviews.length})</span>
+            <span
+              className="text-[var(--text-muted)] text-sm"
+              aria-label={`${reviews.length} ${reviews.length === 1 ? "review" : "reviews"}`}
+            >
+              ({reviews.length})
+            </span>
           )}
           {!isOwner && !showForm && !(isLoggedIn && reviews.some((r) => r.reviewer_email === formEmail)) && (
             <button

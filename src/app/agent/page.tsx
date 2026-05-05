@@ -205,7 +205,7 @@ export default function AgentHubPage() {
             <code className="text-xs font-mono font-bold text-[var(--accent)]">GET</code>
             <p className="text-sm font-extrabold text-[var(--foreground)] mt-1">/api/v1/builders</p>
             <p className="text-xs text-[var(--text-muted)] font-medium mt-1">
-              Search builders by skills, streak, vibe score. Filter by <code>verified_only=true</code> to surface only GitHub-verified builders.
+              Search builders by skills, streak, vibe score. Filter by <code>verified_only=true</code> to surface builders with at least one GitHub-verified project.
             </p>
           </div>
           <div

@@ -39,7 +39,7 @@ export async function GET(
     const [
       { data: projects, error: projectsError },
       { data: socialLinks, error: socialLinksError },
-      { data: reviews },
+      { data: reviews, error: reviewsError },
     ] = await Promise.all([
       (supabase as any)
         .from("projects")
@@ -73,6 +73,17 @@ export async function GET(
       console.error("Failed to fetch social links:", socialLinksError);
       return NextResponse.json(
         { error: "Failed to fetch social links" },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    if (reviewsError) {
+      // Don't silently treat a transient DB failure as "0 trusted reviews" —
+      // an agent making a hire decision based on review_count would otherwise
+      // see false-zeros that look identical to a builder with no reviews.
+      console.error("Failed to fetch reviews:", reviewsError);
+      return NextResponse.json(
+        { error: "Failed to fetch reviews" },
         { status: 500, headers: corsHeaders }
       );
     }
