@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { buildersLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
+import { getSiteUrl } from "@/lib/seo";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,6 +23,7 @@ export async function GET(req: NextRequest) {
     const skills = searchParams.get("skills");
     const minStreak = searchParams.get("min_streak");
     const minVibeScore = searchParams.get("min_vibe_score");
+    const verifiedOnly = searchParams.get("verified_only") === "true";
     const sort = searchParams.get("sort") || "vibe_score";
     const limitParam = Math.min(
       Math.max(parseInt(searchParams.get("limit") || "20", 10) || 20, 1),
@@ -40,6 +42,49 @@ export async function GET(req: NextRequest) {
     if (minVibeScore) {
       const parsed = parseInt(minVibeScore, 10);
       query = query.gte("vibe_score", isNaN(parsed) ? 0 : parsed);
+    }
+
+    // Apply verified_only at the SQL level so LIMIT counts post-filter rows.
+    // Doing it after the limit (as we do for skills/sort=projects below) would
+    // underfill responses — agents asking for limit=20 verified builders could
+    // get back 3 because the in-memory filter dropped the rest.
+    if (verifiedOnly) {
+      // PostgREST defaults to a 1,000-row cap on .select() — without an
+      // explicit .range() the verified-projects fanout would silently
+      // truncate once the platform crosses 1k verified projects (one heavy
+      // builder × multiple verified projects gets there fast). 100k ceiling
+      // is well above current scale and still trivial to deduplicate in JS.
+      const MAX_VERIFIED_PROJECTS = 100_000;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: verifiedRows, error: verifiedErr } = await (supabase as any)
+        .from("projects")
+        .select("user_id")
+        .eq("verified", true)
+        .eq("flagged", false)
+        .order("user_id", { ascending: true })
+        .range(0, MAX_VERIFIED_PROJECTS - 1);
+      if (verifiedErr) {
+        console.error("Failed to resolve verified user_ids:", verifiedErr);
+        return NextResponse.json(
+          { error: "Failed to apply verified_only filter" },
+          { status: 500, headers: corsHeaders }
+        );
+      }
+      if ((verifiedRows?.length ?? 0) === MAX_VERIFIED_PROJECTS) {
+        console.warn(
+          `v1/builders: hit MAX_VERIFIED_PROJECTS=${MAX_VERIFIED_PROJECTS} cap — bump if the platform has grown beyond that.`
+        );
+      }
+      const verifiedUserIds = Array.from(
+        new Set((verifiedRows || []).map((r: { user_id: string }) => r.user_id))
+      );
+      if (verifiedUserIds.length === 0) {
+        return NextResponse.json(
+          { builders: [], total: 0 },
+          { headers: corsHeaders }
+        );
+      }
+      query = query.in("id", verifiedUserIds);
     }
 
     const sortColumn =
@@ -72,7 +117,7 @@ export async function GET(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: projects, error: projectsError } = await (supabase as any)
       .from("projects")
-      .select("user_id, tech_stack")
+      .select("user_id, tech_stack, verified")
       .in("user_id", userIds)
       .eq("flagged", false);
 
@@ -86,18 +131,24 @@ export async function GET(req: NextRequest) {
 
     // Build per-user project counts and aggregated tech stacks
     const projectCountMap: Record<string, number> = {};
+    const verifiedCountMap: Record<string, number> = {};
     const techStackMap: Record<string, Set<string>> = {};
     for (const p of projects || []) {
       projectCountMap[p.user_id] = (projectCountMap[p.user_id] || 0) + 1;
+      if (p.verified) {
+        verifiedCountMap[p.user_id] = (verifiedCountMap[p.user_id] || 0) + 1;
+      }
       if (!techStackMap[p.user_id]) techStackMap[p.user_id] = new Set();
       for (const tech of p.tech_stack || []) {
         techStackMap[p.user_id].add(tech);
       }
     }
 
+    const siteUrl = getSiteUrl();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let builders = users.map((user: any) => ({
       username: user.username,
+      profile_url: `${siteUrl}/profile/${user.username}`,
       bio: user.bio,
       avatar_url: user.avatar_url,
       vibe_score: user.vibe_score,
@@ -105,8 +156,12 @@ export async function GET(req: NextRequest) {
       longest_streak: user.longest_streak,
       badge_level: user.badge_level,
       projects_count: projectCountMap[user.id] || 0,
+      verified_projects_count: verifiedCountMap[user.id] || 0,
       tech_stack: Array.from(techStackMap[user.id] || []),
     }));
+
+    // verified_only is now applied at the SQL level above (so LIMIT counts
+    // post-filter rows) — no in-memory filter needed here.
 
     // Filter by skills if provided
     if (skills) {

@@ -51,6 +51,13 @@ export async function GET() {
               schema: { type: "integer" },
             },
             {
+              name: "verified_only",
+              in: "query",
+              description:
+                "If true, only return builders with at least one GitHub-verified project (recommended for hire decisions).",
+              schema: { type: "boolean", default: false },
+            },
+            {
               name: "sort",
               in: "query",
               description: "Sort field",
@@ -184,6 +191,11 @@ export async function GET() {
           type: "object",
           properties: {
             username: { type: "string" },
+            profile_url: {
+              type: "string",
+              format: "uri",
+              description: "Direct URL to the builder's public profile.",
+            },
             bio: { type: "string", nullable: true },
             avatar_url: { type: "string", nullable: true },
             vibe_score: { type: "integer" },
@@ -194,6 +206,11 @@ export async function GET() {
               enum: ["none", "bronze", "silver", "gold", "diamond"],
             },
             projects_count: { type: "integer" },
+            verified_projects_count: {
+              type: "integer",
+              description:
+                "How many of the builder's projects are GitHub-verified (owner-match or .vibetalent file).",
+            },
             tech_stack: { type: "array", items: { type: "string" } },
           },
         },
@@ -201,6 +218,7 @@ export async function GET() {
           type: "object",
           properties: {
             username: { type: "string" },
+            profile_url: { type: "string", format: "uri" },
             bio: { type: "string", nullable: true },
             avatar_url: { type: "string", nullable: true },
             vibe_score: { type: "integer" },
@@ -211,6 +229,15 @@ export async function GET() {
               enum: ["none", "bronze", "silver", "gold", "diamond"],
             },
             created_at: { type: "string", format: "date-time" },
+            review_count: {
+              type: "integer",
+              description: "Trust-scored review count (anti-abuse filter applied).",
+            },
+            average_rating: {
+              type: "number",
+              nullable: true,
+              description: "Average of trust-scored reviews (1-5), null if no reviews.",
+            },
             projects: {
               type: "array",
               items: { $ref: "#/components/schemas/Project" },
@@ -233,6 +260,33 @@ export async function GET() {
             image_url: { type: "string", nullable: true },
             build_time: { type: "string", nullable: true },
             tags: { type: "array", items: { type: "string" } },
+            verified: {
+              type: "boolean",
+              description:
+                "True when GitHub ownership is verified (owner-match or .vibetalent file).",
+            },
+            quality_score: {
+              type: "integer",
+              nullable: true,
+              description:
+                "Composite 0-100 score from public GitHub signals (community, substance, maintenance).",
+            },
+            quality_metrics: {
+              type: "object",
+              nullable: true,
+              description:
+                "Raw signals — stars, forks, contributors, total_commits, has_tests, has_ci, has_readme, sub-scores, analyzed_at.",
+              additionalProperties: true,
+            },
+            live_url_ok: {
+              type: "boolean",
+              nullable: true,
+              description: "True if the live_url responded healthily on the last check.",
+            },
+            endorsement_count: {
+              type: "integer",
+              description: "Public endorsements from other builders.",
+            },
             created_at: { type: "string", format: "date-time" },
           },
         },

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ExternalLink, Flag, CheckCircle, Undo2, Github } from "lucide-react";
+import { ExternalLink, Flag, CheckCircle, Undo2, Github, ShieldCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import type { Project } from "@/lib/types/database";
 import { QualityScoreBadge } from "@/components/ui/quality-score-badge";
@@ -35,12 +36,38 @@ function clearReportData(projectId: string) {
 }
 
 export function ProfileProjectCard({ project, verified = false, isOwner = false }: ProfileProjectCardProps) {
+  const router = useRouter();
   const [showReportMenu, setShowReportMenu] = useState(false);
   const [reported, setReported] = useState(() => !!getReportData(project.id));
   const [undoing, setUndoing] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyMessage, setVerifyMessage] = useState<{ success: boolean; text: string } | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
   const isLongDescription = (project.description?.length ?? 0) > 280;
+
+  async function handleVerify() {
+    if (verifying) return;
+    setVerifying(true);
+    setVerifyMessage(null);
+    try {
+      const res = await fetch("/api/projects/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: project.id }),
+      });
+      const data = await res.json();
+      if (data.verified) {
+        setVerifyMessage({ success: true, text: data.reason || "Project verified!" });
+        router.refresh();
+      } else {
+        setVerifyMessage({ success: false, text: data.reason || data.error || "Verification failed." });
+      }
+    } catch {
+      setVerifyMessage({ success: false, text: "Verification request failed." });
+    }
+    setVerifying(false);
+  }
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -248,6 +275,29 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
           </span>
         ))}
       </div>
+
+      {isOwner && !verified && project.github_url && (
+        <div className="mt-2 flex flex-col gap-1.5">
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); handleVerify(); }}
+            disabled={verifying}
+            className="self-start inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold uppercase text-[var(--foreground)] border-2 border-[var(--border-hard)] bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-light)] transition-colors disabled:opacity-50"
+            title="Verify GitHub ownership"
+          >
+            <ShieldCheck size={12} />
+            {verifying ? "Verifying..." : "Verify"}
+          </button>
+          {verifyMessage && (
+            <p
+              className={`text-[11px] font-bold ${verifyMessage.success ? "text-green-700" : "text-red-600"}`}
+              role="status"
+            >
+              {verifyMessage.text}
+            </p>
+          )}
+        </div>
+      )}
 
       {reportStatus === "success" && (
         <p className="text-xs font-bold text-green-700 mt-2">Thanks for the report! We&apos;ll review this project shortly.</p>

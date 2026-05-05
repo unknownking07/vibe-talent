@@ -6,6 +6,12 @@ import { createNotification } from "@/lib/notifications";
 const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 2500;
 const MAX_PROJECTS_PER_RUN = 200;
+// Hard ceiling on the linked-users prefetch. PostgREST silently caps
+// .select() at 1,000 rows by default; without an explicit .range() the
+// prefilter would start missing legitimate users once the platform crosses
+// 1k. 100k is several orders of magnitude above current size and still
+// well under any sensible memory limit.
+const MAX_LINKED_USERS = 100_000;
 // How long to wait before re-attempting a project that we couldn't verify
 // (owner mismatch, missing github_username, unparseable URL). Transient
 // GitHub API failures don't bump this timestamp so they retry next run.
@@ -56,6 +62,40 @@ export async function GET(req: NextRequest) {
     // projects once the stuck backlog exceeds MAX_PROJECTS_PER_RUN.
     const retryWindow = new Date(Date.now() - RETRY_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
+    // Pre-fetch the set of user IDs that actually have a github_username set,
+    // so the candidate query can exclude projects whose owner can't be
+    // owner-matched anyway. Without this prefilter, the LIMIT(MAX_PROJECTS_PER_RUN)
+    // budget could be entirely consumed by missing-username rows that we now
+    // skip without stamping (which would let them re-enter the next run forever),
+    // starving legitimate owner-mismatch retries.
+    const { data: linkedUserRows, error: linkedUsersError } = await sb
+      .from("users")
+      .select("id, github_username")
+      .not("github_username", "is", null)
+      .neq("github_username", "")
+      .order("id", { ascending: true })
+      .range(0, MAX_LINKED_USERS - 1);
+
+    if (linkedUsersError) {
+      console.error("verify-backfill: failed to fetch linked users:", linkedUsersError);
+      return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
+    }
+
+    const usernameById = new Map<string, string>();
+    for (const row of (linkedUserRows ?? []) as { id: string; github_username: string }[]) {
+      if (row.github_username) usernameById.set(row.id, row.github_username);
+    }
+
+    if (usernameById.size === 0) {
+      return NextResponse.json({ message: "No users with github_username set", verified: 0 });
+    }
+
+    if (usernameById.size === MAX_LINKED_USERS) {
+      console.warn(
+        `verify-backfill: hit MAX_LINKED_USERS=${MAX_LINKED_USERS} cap on the user prefetch — bump the constant if the platform has grown beyond that.`
+      );
+    }
+
     // Two classes of candidates:
     //   1. verified=false — never (successfully) verified yet.
     //   2. verified=true AND quality_metrics IS NULL — legacy rows from the
@@ -71,6 +111,7 @@ export async function GET(req: NextRequest) {
       .not("github_url", "is", null)
       .neq("github_url", "")
       .or(`last_verify_attempt_at.is.null,last_verify_attempt_at.lt.${retryWindow}`)
+      .in("user_id", Array.from(usernameById.keys()))
       .order("created_at", { ascending: true })
       .limit(MAX_PROJECTS_PER_RUN);
 
@@ -81,22 +122,6 @@ export async function GET(req: NextRequest) {
 
     if (!candidates || candidates.length === 0) {
       return NextResponse.json({ message: "No unverified projects to check", verified: 0 });
-    }
-
-    // Resolve each candidate's GitHub handle from the authoritative DB column.
-    // One query for all users referenced by the batch avoids per-project lookups.
-    const userIds: string[] = Array.from(
-      new Set(candidates.map((p: { user_id: string }) => p.user_id))
-    );
-    const { data: userRows } = await sb
-      .from("users")
-      .select("id, github_username")
-      .in("id", userIds)
-      .not("github_username", "is", null);
-
-    const usernameById = new Map<string, string>();
-    for (const row of (userRows ?? []) as { id: string; github_username: string }[]) {
-      if (row.github_username) usernameById.set(row.id, row.github_username);
     }
 
     // Stamp non-verifiable-via-owner-match projects so the next run skips them
@@ -135,8 +160,12 @@ export async function GET(req: NextRequest) {
 
               const githubUsername = usernameById.get(project.user_id);
               if (!githubUsername) {
+                // Defensive: the SQL prefilter above narrows candidates to
+                // user_ids that have a github_username, so this should be
+                // unreachable unless the user row was deleted mid-run. Skip
+                // without stamping — if the user re-appears with a username,
+                // the next run will pick this project up immediately.
                 skipped++;
-                await markAttempted(project.id);
                 return;
               }
 

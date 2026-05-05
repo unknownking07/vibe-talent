@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { extractSocialHandle } from "@/lib/social-handles";
+import { getSiteUrl } from "@/lib/seo";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,12 +34,18 @@ export async function GET(
       );
     }
 
-    // Fetch projects and social links in parallel
+    // Fetch projects, social links, and review aggregates in parallel
     /* eslint-disable @typescript-eslint/no-explicit-any */
-    const [{ data: projects, error: projectsError }, { data: socialLinks, error: socialLinksError }] = await Promise.all([
+    const [
+      { data: projects, error: projectsError },
+      { data: socialLinks, error: socialLinksError },
+      { data: reviews, error: reviewsError },
+    ] = await Promise.all([
       (supabase as any)
         .from("projects")
-        .select("id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, created_at")
+        .select(
+          "id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, live_url_ok, endorsement_count, created_at"
+        )
         .eq("user_id", user.id)
         .eq("flagged", false)
         .order("created_at", { ascending: false }),
@@ -47,6 +54,10 @@ export async function GET(
         .select("twitter, telegram, github, website, farcaster")
         .eq("user_id", user.id)
         .single(),
+      (supabase as any)
+        .from("reviews")
+        .select("rating, trust_score")
+        .eq("builder_id", user.id),
     ]);
     /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -66,8 +77,37 @@ export async function GET(
       );
     }
 
+    if (reviewsError) {
+      // Don't silently treat a transient DB failure as "0 trusted reviews" —
+      // an agent making a hire decision based on review_count would otherwise
+      // see false-zeros that look identical to a builder with no reviews.
+      console.error("Failed to fetch reviews:", reviewsError);
+      return NextResponse.json(
+        { error: "Failed to fetch reviews" },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    // Average only trust-scored reviews (>= 30) to mirror the public profile.
+    const trustedReviews = (reviews || []).filter(
+      (r: { trust_score?: number | null }) => (r.trust_score ?? 100) >= 30
+    );
+    const averageRating =
+      trustedReviews.length > 0
+        ? Math.round(
+            (trustedReviews.reduce(
+              (sum: number, r: { rating: number }) => sum + r.rating,
+              0
+            ) /
+              trustedReviews.length) *
+              10
+          ) / 10
+        : null;
+
+    const siteUrl = getSiteUrl();
     const builder = {
       username: user.username,
+      profile_url: `${siteUrl}/profile/${user.username}`,
       bio: user.bio,
       avatar_url: user.avatar_url,
       vibe_score: user.vibe_score,
@@ -75,6 +115,8 @@ export async function GET(
       longest_streak: user.longest_streak,
       badge_level: user.badge_level,
       created_at: user.created_at,
+      review_count: trustedReviews.length,
+      average_rating: averageRating,
       projects: (projects || []).map(
         (p: {
           id: string;
@@ -86,6 +128,11 @@ export async function GET(
           image_url: string | null;
           build_time: string | null;
           tags: string[];
+          verified: boolean;
+          quality_score: number | null;
+          quality_metrics: Record<string, unknown> | null;
+          live_url_ok: boolean | null;
+          endorsement_count: number;
           created_at: string;
         }) => ({
           id: p.id,
@@ -97,6 +144,11 @@ export async function GET(
           image_url: p.image_url,
           build_time: p.build_time,
           tags: p.tags,
+          verified: p.verified,
+          quality_score: p.quality_score,
+          quality_metrics: p.quality_metrics,
+          live_url_ok: p.live_url_ok,
+          endorsement_count: p.endorsement_count,
           created_at: p.created_at,
         })
       ),
