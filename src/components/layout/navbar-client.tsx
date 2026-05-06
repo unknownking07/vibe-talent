@@ -71,6 +71,9 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
   const [userProfile, setUserProfile] = useState<NavbarProfile | null>(initialProfile);
   const [hasUnloggedActivity, setHasUnloggedActivity] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  // Reference to the avatar button so we can restore focus to it when the
+  // dropdown closes via Escape — required for keyboard / screen-reader users.
+  const avatarTriggerRef = useRef<HTMLButtonElement>(null);
   // Mirror isLoggedIn into a ref so checkTodayLogged (a stable useCallback)
   // can read the latest auth state without going stale across re-renders.
   // Critical for the visibilitychange / streak-updated listeners — without
@@ -206,17 +209,29 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
     };
   }, [checkTodayLogged, initialIsLoggedIn]);
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside or pressing Escape. Escape also
+  // returns focus to the trigger so keyboard users land somewhere sensible
+  // instead of falling off the menu.
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setProfileDropdownOpen(false);
       }
     }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setProfileDropdownOpen(false);
+        avatarTriggerRef.current?.focus();
+      }
+    }
     if (profileDropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKey);
     }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKey);
+    };
   }, [profileDropdownOpen]);
 
   const handleLogout = async () => {
@@ -341,6 +356,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
             {/* Profile Avatar Dropdown */}
             <div className="relative ml-3" ref={dropdownRef}>
               <button
+                ref={avatarTriggerRef}
                 onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                 aria-label="Profile menu"
                 aria-expanded={profileDropdownOpen}
@@ -397,6 +413,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                 >
                   <Link
                     href={`/profile/${userProfile?.username || ""}`}
+                    role="menuitem"
                     onClick={() => setProfileDropdownOpen(false)}
                     className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors"
                     style={{ color: "var(--foreground)" }}
@@ -406,6 +423,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   </Link>
                   <Link
                     href={userProfile && !userProfile.display_name ? "/settings?complete=name" : "/settings"}
+                    role="menuitem"
                     onClick={() => setProfileDropdownOpen(false)}
                     className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors"
                     style={{ color: "var(--foreground)" }}
@@ -432,6 +450,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   </Link>
                   <Link
                     href="/settings#referral"
+                    role="menuitem"
                     onClick={() => setProfileDropdownOpen(false)}
                     className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors"
                     style={{ color: "var(--foreground)" }}
@@ -442,6 +461,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   {TOUR_FLAG_ENABLED && (
                     <button
                       type="button"
+                      role="menuitem"
                       onClick={() => {
                         // Reset the seen flag and arm the trigger.
                         resetTourForReplay();
@@ -467,6 +487,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   )}
                   <div style={{ borderTop: "2px solid var(--border-hard)" }} />
                   <button
+                    role="menuitem"
                     onClick={handleLogout}
                     className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors w-full text-left"
                     style={{ color: "var(--foreground)" }}
