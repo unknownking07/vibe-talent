@@ -168,12 +168,14 @@ export function msUntilNextExpiry(promos: Pick<Promotion, "expiresAt">[]): numbe
 // `unstable_cache`) pass a cookie-free Supabase client — Next.js disallows
 // reading `cookies()` inside cached scopes, which would happen if we always
 // instantiated the request-bound browser/SSR client here.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function enrichPromotions(promotions: Promotion[], client?: any): Promise<EnrichedPromotion[]> {
+type PromotionsClient = ReturnType<typeof createClient>;
+export async function enrichPromotions(
+  promotions: Promotion[],
+  client?: PromotionsClient,
+): Promise<EnrichedPromotion[]> {
   if (promotions.length === 0) return [];
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabase: any = client ?? createClient();
+    const supabase = client ?? createClient();
     const projectIds = [...new Set(promotions.map((p) => p.projectId))];
 
     const { data: projects } = await supabase
@@ -181,19 +183,24 @@ export async function enrichPromotions(promotions: Promotion[], client?: any): P
       .select("id, title, description, tech_stack, live_url, github_url, image_url, verified, quality_score, endorsement_count, user_id")
       .in("id", projectIds);
 
+    // Supabase's typed client narrows the row to `never` when the select
+    // string can't be resolved against the generated Database type — cast
+    // to the projection we actually requested.
+    const projectRows = (projects ?? []) as Array<EnrichedProject & { user_id: string }>;
     const projectMap = new Map<string, EnrichedProject & { user_id: string }>();
-    for (const p of projects || []) {
+    for (const p of projectRows) {
       projectMap.set(p.id, p);
     }
 
-    const userIds = [...new Set((projects || []).map((p: { user_id: string }) => p.user_id))];
+    const userIds = [...new Set(projectRows.map((p) => p.user_id))];
     const { data: users } = await supabase
       .from("users")
       .select("id, username, display_name, avatar_url, vibe_score, streak, badge_level")
       .in("id", userIds);
 
+    const userRows = (users ?? []) as Array<EnrichedAuthor & { id: string }>;
     const userMap = new Map<string, EnrichedAuthor>();
-    for (const u of users || []) {
+    for (const u of userRows) {
       userMap.set(u.id, u);
     }
 

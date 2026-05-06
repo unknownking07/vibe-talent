@@ -179,11 +179,25 @@ function PromoLap({ items, ariaHidden = false }: { items: EnrichedPromotion[]; a
   );
 }
 
+// Only treat the user-provided live_url as external when it parses as a real
+// http/https URL. Anything else (including `javascript:` payloads) collapses
+// to the internal-route fallback so we never inject an unsafe scheme into href.
+function safeExternalHref(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  try {
+    const u = new URL(raw);
+    return u.protocol === "http:" || u.protocol === "https:" ? raw : null;
+  } catch {
+    return null;
+  }
+}
+
 function PromoItem({ promo }: { promo: EnrichedPromotion }) {
   const title = promo.project?.title || promo.projectName;
-  const href = promo.project?.live_url
+  const externalHref = safeExternalHref(promo.project?.live_url);
+  const href = externalHref
     ?? (promo.author ? `/profile/${promo.author.username}` : `/explore?q=${encodeURIComponent(promo.projectName)}`);
-  const isExternal = !!promo.project?.live_url;
+  const isExternal = !!externalHref;
 
   const byline = promo.author ? `by @${promo.author.username}` : "sponsored";
 

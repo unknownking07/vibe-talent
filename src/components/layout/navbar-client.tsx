@@ -70,10 +70,13 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<NavbarProfile | null>(initialProfile);
   const [hasUnloggedActivity, setHasUnloggedActivity] = useState(false);
+  const [exploreOpen, setExploreOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const exploreRef = useRef<HTMLDivElement>(null);
   // Reference to the avatar button so we can restore focus to it when the
   // dropdown closes via Escape — required for keyboard / screen-reader users.
   const avatarTriggerRef = useRef<HTMLButtonElement>(null);
+  const exploreTriggerRef = useRef<HTMLButtonElement>(null);
   // Mirror isLoggedIn into a ref so checkTodayLogged (a stable useCallback)
   // can read the latest auth state without going stale across re-renders.
   // Critical for the visibilitychange / streak-updated listeners — without
@@ -234,6 +237,28 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
     };
   }, [profileDropdownOpen]);
 
+  // Same outside-click + Escape handling for the Explore dropdown.
+  useEffect(() => {
+    if (!exploreOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (exploreRef.current && !exploreRef.current.contains(e.target as Node)) {
+        setExploreOpen(false);
+      }
+    }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setExploreOpen(false);
+        exploreTriggerRef.current?.focus();
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [exploreOpen]);
+
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -276,9 +301,22 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
 
         {/* Desktop nav */}
         <div className="hidden sm:flex items-center gap-1">
-          {/* Explore dropdown */}
-          <div className="relative group">
+          {/* Explore dropdown — state-driven so it works with both pointer and
+              keyboard users (the previous group-hover:flex left keyboard users
+              with no way to open the menu). Mouse hover still opens it via
+              onMouseEnter; click toggles; Escape closes and restores focus. */}
+          <div
+            className="relative"
+            ref={exploreRef}
+            onMouseEnter={() => setExploreOpen(true)}
+            onMouseLeave={() => setExploreOpen(false)}
+          >
             <button
+              ref={exploreTriggerRef}
+              type="button"
+              onClick={() => setExploreOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={exploreOpen}
               className="flex items-center gap-1 px-4 py-2 text-sm font-bold uppercase tracking-wide transition-colors"
               style={{
                 color: pathname === "/explore" || pathname === "/projects" ? "var(--accent)" : "var(--foreground)",
@@ -288,7 +326,8 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               Explore <ChevronDown size={12} />
             </button>
             <div
-              className="absolute left-0 top-full mt-0 hidden group-hover:flex flex-col min-w-[160px] py-1 z-50"
+              role="menu"
+              className={`absolute left-0 top-full mt-0 ${exploreOpen ? "flex" : "hidden"} flex-col min-w-[160px] py-1 z-50`}
               style={{
                 border: "2px solid var(--border-hard)",
                 boxShadow: "var(--shadow-brutal-sm)",
@@ -299,6 +338,8 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                 <Link
                   key={link.href}
                   href={link.href}
+                  role="menuitem"
+                  onClick={() => setExploreOpen(false)}
                   className="px-4 py-2.5 text-sm font-bold uppercase tracking-wide transition-colors hover:bg-[var(--accent)]/10"
                   style={{
                     color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
