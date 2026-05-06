@@ -8,7 +8,7 @@ function getThemeSnapshot(): "light" | "dark" {
 }
 
 function getServerSnapshot(): "light" | "dark" {
-  return "light";
+  return "dark";
 }
 
 function subscribeToTheme(callback: () => void) {
@@ -34,7 +34,7 @@ export function ThemeToggle() {
   return (
     <button
       onClick={toggle}
-      className="flex items-center justify-center w-9 h-9 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_var(--border-hard)]"
+      className="flex items-center justify-center w-10 h-10 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_var(--border-hard)]"
       style={{
         border: "2px solid var(--border-hard)",
         backgroundColor: theme === "dark" ? "#1a1a1a" : "var(--bg-surface)",
@@ -46,7 +46,7 @@ export function ThemeToggle() {
       aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
       title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
     >
-      {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+      {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
     </button>
   );
 }
