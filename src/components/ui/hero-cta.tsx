@@ -1,33 +1,10 @@
-"use client";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { HeroCTAClient } from "./hero-cta-client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-
-interface HeroCTAProps {
-  className?: string;
-  style?: React.CSSProperties;
-}
-
-export function HeroCTA({ className = "", style }: HeroCTAProps) {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setIsLoggedIn(!!user);
-    });
-  }, []);
-
-  return (
-    <Link
-      href="/dashboard"
-      className={`btn-brutal btn-brutal-primary text-base flex items-center gap-2 ${className}`}
-      style={style}
-    >
-      {isLoggedIn ? "Go to Dashboard" : "Create Your Profile"}
-      <ArrowRight size={18} />
-    </Link>
-  );
+// Server wrapper: resolves auth at SSR time so the hero CTA renders with the
+// correct label ("Go to Dashboard" vs "Create Your Profile") on first paint.
+export async function HeroCTA(props: { className?: string; style?: React.CSSProperties }) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return <HeroCTAClient {...props} initialIsLoggedIn={!!user} />;
 }
