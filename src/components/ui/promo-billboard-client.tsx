@@ -10,6 +10,7 @@
 //      the bar can disappear without a page refresh
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Flame, ExternalLink } from "lucide-react";
 import {
   fetchPromotions,
@@ -154,6 +155,12 @@ function PromoLap({ items, ariaHidden = false }: { items: EnrichedPromotion[]; a
   return (
     <ul
       aria-hidden={ariaHidden}
+      // `inert` on the duplicated lap removes the inner <a> elements from the
+      // tab order so keyboard users don't focus links that are aria-hidden
+      // from screen readers (WCAG 4.1.2). Supported as a JSX attribute since
+      // React 19 (`@types/react` ≥ 19) — passes through to the DOM as
+      // HTMLElement.inert when `true`.
+      inert={ariaHidden}
       style={{
         display: "flex",
         alignItems: "center",
@@ -218,7 +225,8 @@ function PromoItem({ promo }: { promo: EnrichedPromotion }) {
           {inner}
         </a>
       ) : (
-        <a href={href} style={linkStyle}>{inner}</a>
+        // Internal route — use next/link to avoid a hard navigation.
+        <Link href={href} style={linkStyle}>{inner}</Link>
       )}
     </li>
   );

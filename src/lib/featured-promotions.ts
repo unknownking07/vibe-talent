@@ -164,14 +164,19 @@ export function msUntilNextExpiry(promos: Pick<Promotion, "expiresAt">[]): numbe
   return Math.min(Math.min(...future) - nowMs + 1000, 2_000_000_000);
 }
 
-export async function enrichPromotions(promotions: Promotion[]): Promise<EnrichedPromotion[]> {
+// Optional `client` lets callers (e.g. server components running inside
+// `unstable_cache`) pass a cookie-free Supabase client — Next.js disallows
+// reading `cookies()` inside cached scopes, which would happen if we always
+// instantiated the request-bound browser/SSR client here.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function enrichPromotions(promotions: Promotion[], client?: any): Promise<EnrichedPromotion[]> {
   if (promotions.length === 0) return [];
   try {
-    const supabase = createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase: any = client ?? createClient();
     const projectIds = [...new Set(promotions.map((p) => p.projectId))];
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: projects } = await (supabase as any)
+    const { data: projects } = await supabase
       .from("projects")
       .select("id, title, description, tech_stack, live_url, github_url, image_url, verified, quality_score, endorsement_count, user_id")
       .in("id", projectIds);
@@ -182,8 +187,7 @@ export async function enrichPromotions(promotions: Promotion[]): Promise<Enriche
     }
 
     const userIds = [...new Set((projects || []).map((p: { user_id: string }) => p.user_id))];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: users } = await (supabase as any)
+    const { data: users } = await supabase
       .from("users")
       .select("id, username, display_name, avatar_url, vibe_score, streak, badge_level")
       .in("id", userIds);

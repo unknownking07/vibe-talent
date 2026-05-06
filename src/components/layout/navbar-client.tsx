@@ -103,6 +103,9 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
+    // Guard against late-resolving async work landing on a torn-down instance
+    // during fast route changes / auth flips.
+    let cancelled = false;
 
     async function fetchProfile(userId: string, email?: string) {
       try {
@@ -111,6 +114,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
           .select("username, avatar_url, github_username, display_name")
           .eq("id", userId)
           .single();
+        if (cancelled) return;
         if (error) console.error("Navbar profile fetch error:", error);
         if (profile && profile.username) {
           setUserProfile({
@@ -124,6 +128,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
           setUserProfile({ username: email.split("@")[0], avatar_url: null, github_username: null, display_name: null });
         }
       } catch (err) {
+        if (cancelled) return;
         console.error("Navbar profile fetch failed:", err);
         if (email) {
           setUserProfile({ username: email.split("@")[0], avatar_url: null, github_username: null, display_name: null });
@@ -133,30 +138,35 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
 
     // If SSR already gave us a logged-in user, kick off the dashboard-dot
     // check immediately — the auth round-trip below would otherwise delay it.
+    // Defer to a microtask so react-hooks/set-state-in-effect sees an async
+    // boundary (the setState happens after the API round-trip, not during
+    // this effect's body, so there's no cascading render risk).
     if (initialIsLoggedIn) {
-      checkTodayLogged();
+      void Promise.resolve().then(() => checkTodayLogged());
     }
 
     // Check auth once on mount, then listen for changes. This still runs even
     // when SSR pre-populated state, in case the cookie changed between render
     // and hydration (e.g. user signed out in another tab).
     supabase.auth.getUser().then(({ data: { user } }) => {
+      if (cancelled) return;
       isLoggedInRef.current = !!user;
       setIsLoggedIn(!!user);
       if (user) {
         fetchProfile(user.id, user.email);
-        checkTodayLogged();
+        void checkTodayLogged();
       } else {
         setHasUnloggedActivity(false);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (cancelled) return;
       isLoggedInRef.current = !!session?.user;
       setIsLoggedIn(!!session?.user);
       if (session?.user) {
         fetchProfile(session.user.id, session.user.email);
-        checkTodayLogged();
+        void checkTodayLogged();
       } else {
         setUserProfile(null);
         setHasUnloggedActivity(false);
@@ -168,6 +178,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
     // would only clear on a full reload.
     const handleProfileUpdated = async () => {
       const { data: { user } } = await supabase.auth.getUser();
+      if (cancelled) return;
       if (user) fetchProfile(user.id, user.email);
     };
     window.addEventListener("profile-updated", handleProfileUpdated);
@@ -187,6 +198,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
     document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
+      cancelled = true;
       subscription.unsubscribe();
       window.removeEventListener("profile-updated", handleProfileUpdated);
       window.removeEventListener("streak-updated", checkTodayLogged);

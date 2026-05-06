@@ -16,11 +16,25 @@ export function HeroCTAClient({ className = "", style, initialIsLoggedIn }: Hero
 
   useEffect(() => {
     const supabase = createClient();
-    // Re-confirm on mount in case the cookie changed between SSR and hydration
-    // (e.g. logged out in another tab). State setter is a no-op when unchanged.
+    let cancelled = false;
+
+    // Re-confirm on mount in case the cookie changed between SSR and hydration.
     supabase.auth.getUser().then(({ data: { user } }) => {
-      setIsLoggedIn(!!user);
+      if (!cancelled) setIsLoggedIn(!!user);
     });
+
+    // Stay in sync with later auth changes (sign-in/out in another tab) so the
+    // CTA label doesn't drift from the navbar.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!cancelled) setIsLoggedIn(!!session?.user);
+      },
+    );
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
