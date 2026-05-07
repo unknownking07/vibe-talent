@@ -345,6 +345,13 @@ export default function ProfileSetupPage() {
       setError("Title and description are required");
       return;
     }
+    // GitHub URL is required so the project can be auto-verified and quality-
+    // scored. Without a URL we'd persist a project that can never be verified
+    // — the exact bug that left brand-new builders stuck at score=0.
+    if (!project.github_url || !project.github_url.trim()) {
+      setError("Add a GitHub URL so we can verify and score your project.");
+      return;
+    }
 
     setError("");
     setLoading(true);
@@ -355,28 +362,36 @@ export default function ProfileSetupPage() {
         .map((t) => t.trim())
         .filter(Boolean);
 
-      // Validate + canonicalize GitHub URL — same shared validator the
-      // dashboard form and POST /api/projects use, so all write paths agree.
-      let normalizedGithubUrl: string | null = null;
-      if (project.github_url && project.github_url.trim()) {
-        normalizedGithubUrl = normalizeRepoUrl(project.github_url);
-        if (!normalizedGithubUrl) {
-          setError("GitHub URL must be a valid GitHub repo (e.g. https://github.com/username/repo)");
-          setLoading(false);
-          return;
-        }
+      // Validate + canonicalize client-side for instant feedback. The API
+      // re-validates with the same helper, but we want a clear error here
+      // rather than a 400 round-trip.
+      const normalizedGithubUrl = normalizeRepoUrl(project.github_url);
+      if (!normalizedGithubUrl) {
+        setError("GitHub URL must be a valid GitHub repo (e.g. https://github.com/username/repo)");
+        setLoading(false);
+        return;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: dbError } = await (supabase.from("projects") as any).insert({
-        user_id: userId,
-        title: project.title,
-        description: project.description,
-        tech_stack: techArray.length > 0 ? techArray : null,
-        github_url: normalizedGithubUrl,
+      // Route through POST /api/projects rather than a direct insert so the
+      // server's auto-verify path (analyzeRepository + quality_score in
+      // after()) actually runs. The previous direct-insert path left every
+      // onboarding project unverified until the daily verify-backfill cron.
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: project.title,
+          description: project.description,
+          tech_stack: techArray,
+          github_url: normalizedGithubUrl,
+        }),
       });
 
-      if (dbError) throw dbError;
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to save project");
+      }
+
       setStep(4);
     } catch (err: unknown) {
       const message =
@@ -764,7 +779,7 @@ export default function ProfileSetupPage() {
 
       <div>
         <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5 block">
-          GitHub URL
+          GitHub URL *
         </label>
         <input
           type="text"
@@ -775,6 +790,9 @@ export default function ProfileSetupPage() {
           placeholder="https://github.com/you/project"
           className="input-brutal w-full"
         />
+        <p className="text-[10px] text-[var(--text-secondary)] mt-1">
+          Required — we use this to auto-verify ownership and score your project.
+        </p>
       </div>
 
       {errorBox}
