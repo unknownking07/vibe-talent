@@ -177,6 +177,42 @@ export async function GET(req: NextRequest) {
                   : `HTTP ${response.status}`;
               } else {
                 const events = await response.json();
+
+                // Detect GitHub username drift. When a user renames their
+                // GitHub handle, /users/{old}/events redirects transparently,
+                // but actor.login on the response carries the new canonical
+                // handle. Compare against what we have stored — if it's
+                // changed, refresh users.github_username and social_links.github
+                // so verify-backfill, share cards, and profile links stop
+                // pointing at the old name. Without this, the only way to
+                // sync was for the user to log out + back in via GitHub OAuth.
+                const canonicalLogin: string | undefined = events[0]?.actor?.login;
+                if (
+                  canonicalLogin &&
+                  canonicalLogin.toLowerCase() !== userInfo.githubUsername.toLowerCase()
+                ) {
+                  console.log(
+                    `[github-sync] username drift for user ${userInfo.userId}: ` +
+                    `stored="${userInfo.githubUsername}" → canonical="${canonicalLogin}"`
+                  );
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  await (supabase as any)
+                    .from("users")
+                    .update({ github_username: canonicalLogin })
+                    .eq("id", userInfo.userId);
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  await (supabase as any)
+                    .from("social_links")
+                    .upsert(
+                      { user_id: userInfo.userId, github: canonicalLogin },
+                      { onConflict: "user_id" }
+                    );
+                  // Use the canonical handle for the rest of this iteration —
+                  // mostly cosmetic since GitHub redirects, but keeps
+                  // fetchGitHubContributions and log lines on the right name.
+                  userInfo.githubUsername = canonicalLogin;
+                }
+
                 const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
                 recentEvents = events.filter(
                   (event: { type: string; created_at: string }) =>
