@@ -2,15 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchGitHubContributions, sumLastNDays } from "@/lib/github-contributions";
 
-// Bump function timeout to 5 minutes — at ~100 users × ~3-5s each (events
-// API + heatmap fetch + per-day upserts) we'd routinely hit the default
-// 60s and leave 60+ users un-synced. Pro plan caps maxDuration at 300s.
+// Declared as 300s for Pro but Vercel silently caps Hobby at 60s. The batch
+// constants below are tuned to finish the full queue inside the 60s envelope
+// — with GITHUB_TOKEN set we get 5000 req/hr, so the 2s inter-batch delay
+// inherited from the anonymous-API days is no longer needed. A wall-clock
+// budget guards against pathological slow users (8s events timeout × N).
 export const maxDuration = 300;
 
 const QUALIFYING_EVENTS = ["PushEvent", "CreateEvent", "PullRequestEvent", "IssuesEvent"];
-const BATCH_SIZE = 5;
-const BATCH_DELAY_MS = 2000;
+const BATCH_SIZE = 20;
+const BATCH_DELAY_MS = 0;
 const EVENTS_API_TIMEOUT_MS = 8000;
+const WALL_CLOCK_BUDGET_MS = 50_000;
 
 function cleanGithubUsername(raw: string): string {
   return raw
@@ -139,10 +142,24 @@ export async function GET(req: NextRequest) {
     let synced = 0;
     let skipped = 0;
     let errors = 0;
+    let unattempted = 0;
     const details: { user: string; github: string; status: string; dates_logged?: number; lifetime?: number; last30d?: number; events_api_error?: string }[] = [];
+    const loopStart = Date.now();
 
     // Process in batches
     for (let i = 0; i < usersToSync.length; i += BATCH_SIZE) {
+      // Stop cleanly if we're approaching the function timeout. Without this
+      // guard the platform kills the function mid-batch and any writes still
+      // in flight are lost. Better to return what we have and let the next
+      // run pick up the tail.
+      if (Date.now() - loopStart > WALL_CLOCK_BUDGET_MS) {
+        unattempted = usersToSync.length - i;
+        console.warn(
+          `[github-sync] wall-clock budget hit after ${i}/${usersToSync.length} users — ${unattempted} unattempted`
+        );
+        break;
+      }
+
       const batch = usersToSync.slice(i, i + BATCH_SIZE);
 
       const batchResults = await Promise.allSettled(
@@ -418,19 +435,23 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      // Delay between batches to respect GitHub rate limits
-      if (i + BATCH_SIZE < usersToSync.length) {
+      // Delay between batches to respect GitHub rate limits. Set to 0 once
+      // GITHUB_TOKEN is in place since the 5000/hr ceiling is far above what
+      // this loop generates — kept as a tunable for future no-token rollback.
+      if (BATCH_DELAY_MS > 0 && i + BATCH_SIZE < usersToSync.length) {
         await sleep(BATCH_DELAY_MS);
       }
     }
 
-    console.log(`GitHub sync complete: ${synced} synced, ${skipped} skipped, ${errors} errors`);
+    const budgetNote = unattempted > 0 ? `, ${unattempted} unattempted (budget)` : "";
+    console.log(`GitHub sync complete: ${synced} synced, ${skipped} skipped, ${errors} errors${budgetNote}`);
 
     return NextResponse.json({
-      message: `GitHub sync complete: ${synced} synced, ${skipped} skipped, ${errors} errors`,
+      message: `GitHub sync complete: ${synced} synced, ${skipped} skipped, ${errors} errors${budgetNote}`,
       synced,
       skipped,
       errors,
+      unattempted,
       details,
     });
   } catch (error) {
