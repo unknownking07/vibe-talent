@@ -42,13 +42,15 @@ describe("validateDisplayName", () => {
   });
 
   it("blocks profanity disguised with leet character substitutions", () => {
-    // containsProfanity normalizes 0→o, 1→i, 3→e, 4→a, 5→s, @→a, $→s before
-    // matching. Separator-based evasion ("f.u.c.k") is *not* caught — the
-    // normalizer collapses dots/dashes/underscores to spaces, which splits
-    // the letters into separate words. That's a known gap; see profanity.ts.
     expect(validateDisplayName("sh1t")).toMatch(/inappropriate language/);
     expect(validateDisplayName("$hit")).toMatch(/inappropriate language/);
     expect(validateDisplayName("@ss")).toMatch(/inappropriate language/);
+  });
+
+  it("blocks profanity disguised with separator characters", () => {
+    expect(validateDisplayName("f.u.c.k")).toMatch(/inappropriate language/);
+    expect(validateDisplayName("s-h-i-t")).toMatch(/inappropriate language/);
+    expect(validateDisplayName("b_i_t_c_h")).toMatch(/inappropriate language/);
   });
 });
 

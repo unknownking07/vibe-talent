@@ -25,14 +25,8 @@ const PROFANITY_REGEX = new RegExp(
   "i"
 );
 
-/**
- * Returns true if the text contains profanity/offensive language.
- */
-export function containsProfanity(text: string): boolean {
-  if (!text) return false;
-  // Normalize: strip special chars that might be used to evade
-  const normalized = text
-    .replace(/[_\-.\s]+/g, " ")  // underscores, dashes, dots → spaces
+function applyLeetSubstitutions(text: string): string {
+  return text
     .replace(/0/g, "o")
     .replace(/1/g, "i")
     .replace(/3/g, "e")
@@ -40,8 +34,26 @@ export function containsProfanity(text: string): boolean {
     .replace(/5/g, "s")
     .replace(/@/g, "a")
     .replace(/\$/g, "s");
+}
 
-  return PROFANITY_REGEX.test(normalized);
+/**
+ * Returns true if the text contains profanity/offensive language.
+ *
+ * Checks two normalized forms so we catch both shapes of evasion without
+ * false-positiving on legitimate words:
+ *   1. Separators (underscores/dashes/dots/whitespace) collapsed to a single
+ *      space — preserves `\bword\b` boundaries inside multi-word strings, so
+ *      "ass kicker" is caught while "Cassandra" is not.
+ *   2. Separators stripped entirely — collapses "f.u.c.k" or "s-h-i-t" back
+ *      to "fuck"/"shit" so dot/dash-obfuscated slurs trip the same regex.
+ *      Word-boundary matching still keeps "Cl.ass.room" → "Classroom" clean
+ *      since "ass" is mid-word in the stripped form.
+ */
+export function containsProfanity(text: string): boolean {
+  if (!text) return false;
+  const spaced = applyLeetSubstitutions(text.replace(/[_\-.\s]+/g, " "));
+  const stripped = applyLeetSubstitutions(text.replace(/[_\-.\s]+/g, ""));
+  return PROFANITY_REGEX.test(spaced) || PROFANITY_REGEX.test(stripped);
 }
 
 /**

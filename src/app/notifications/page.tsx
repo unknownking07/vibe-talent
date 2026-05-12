@@ -36,16 +36,23 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
-        // The login page reads `?redirect=` (not `?next=`) to decide where
-        // to send the user after a successful sign-in.
+    supabase.auth
+      .getUser()
+      .then(({ data: { user } }) => {
+        if (!user) {
+          // The login page reads `?redirect=` (not `?next=`) to decide where
+          // to send the user after a successful sign-in.
+          router.push("/auth/login?redirect=/notifications");
+          return;
+        }
+        setAuthChecking(false);
+        fetchNotifications();
+      })
+      .catch(() => {
+        // Treat a getUser rejection (network drop, transient Supabase error)
+        // as unauthenticated rather than letting authChecking stall forever.
         router.push("/auth/login?redirect=/notifications");
-        return;
-      }
-      setAuthChecking(false);
-      fetchNotifications();
-    });
+      });
   }, [fetchNotifications, router]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -70,11 +77,15 @@ export default function NotificationsPage() {
   };
 
   const handleMarkRead = async (id: string) => {
-    // Snapshot for rollback — this page doesn't poll, so a silent server
-    // failure would otherwise leave the row marked read in the UI until a
-    // hard refresh, with the server still treating it as unread.
-    const previous = notifications;
+    // Snapshot only the row's prior read state — this page doesn't poll, so a
+    // silent server failure would leave the row marked read in the UI while
+    // the DB still treated it as unread. Reverting just this row (not the
+    // whole list) avoids clobbering concurrent updates from other handlers
+    // that may have fired between the optimistic write and the failure.
+    const previousRead = notifications.find(n => n.id === id)?.read ?? false;
     setNotifications(prev => prev.map(n => (n.id === id ? { ...n, read: true } : n)));
+    const revert = () =>
+      setNotifications(prev => prev.map(n => (n.id === id ? { ...n, read: previousRead } : n)));
     try {
       const res = await fetch("/api/notifications", {
         method: "PATCH",
@@ -82,12 +93,12 @@ export default function NotificationsPage() {
         body: JSON.stringify({ id }),
       });
       if (!res.ok) {
-        setNotifications(previous);
+        revert();
         return;
       }
       window.dispatchEvent(new Event("notifications-updated"));
     } catch {
-      setNotifications(previous);
+      revert();
     }
   };
 
