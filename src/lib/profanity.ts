@@ -25,14 +25,8 @@ const PROFANITY_REGEX = new RegExp(
   "i"
 );
 
-/**
- * Returns true if the text contains profanity/offensive language.
- */
-export function containsProfanity(text: string): boolean {
-  if (!text) return false;
-  // Normalize: strip special chars that might be used to evade
-  const normalized = text
-    .replace(/[_\-.\s]+/g, " ")  // underscores, dashes, dots → spaces
+function applyLeetSubstitutions(text: string): string {
+  return text
     .replace(/0/g, "o")
     .replace(/1/g, "i")
     .replace(/3/g, "e")
@@ -40,21 +34,38 @@ export function containsProfanity(text: string): boolean {
     .replace(/5/g, "s")
     .replace(/@/g, "a")
     .replace(/\$/g, "s");
+}
 
-  return PROFANITY_REGEX.test(normalized);
+/**
+ * Returns true if the text contains profanity/offensive language.
+ *
+ * Checks two normalized forms so we catch both shapes of evasion without
+ * false-positiving on legitimate words:
+ *   1. Separators (underscores/dashes/dots/whitespace) collapsed to a single
+ *      space — preserves `\bword\b` boundaries inside multi-word strings, so
+ *      "ass kicker" is caught while "Cassandra" is not.
+ *   2. Separators stripped entirely — collapses "f.u.c.k" or "s-h-i-t" back
+ *      to "fuck"/"shit" so dot/dash-obfuscated slurs trip the same regex.
+ *      Word-boundary matching still keeps "Cl.ass.room" → "Classroom" clean
+ *      since "ass" is mid-word in the stripped form.
+ */
+export function containsProfanity(text: string): boolean {
+  if (!text) return false;
+  const spaced = applyLeetSubstitutions(text.replace(/[_\-.\s]+/g, " "));
+  const stripped = applyLeetSubstitutions(text.replace(/[_\-.\s]+/g, ""));
+  return PROFANITY_REGEX.test(spaced) || PROFANITY_REGEX.test(stripped);
 }
 
 /**
  * Validates a display name. Returns an error message or null if valid.
+ * Intentionally permissive on character content — numbers, symbols, and mixed
+ * scripts are all fine. The only hard rules are length and profanity.
  */
 export function validateDisplayName(name: string): string | null {
   const trimmed = name.trim();
   if (!trimmed) return null; // display name is optional
   if (trimmed.length < 2) return "Display name must be at least 2 characters";
   if (trimmed.length > 30) return "Display name must be 30 characters or less";
-  if (!/[aeiouyAEIOUY]/.test(trimmed)) return "Please enter a valid name";
-  // Flag strings with 4+ consecutive consonants (gibberish like "bsdjkfhsd")
-  if (/[^aeiouy\s]{5,}/i.test(trimmed)) return "Please enter a valid name";
   if (containsProfanity(trimmed)) return "Display name contains inappropriate language";
   return null;
 }
