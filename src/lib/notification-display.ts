@@ -30,6 +30,41 @@ export const NOTIFICATION_COLORS: Record<string, string> = {
   referral_prompt: "#FF3A00",
 };
 
+/**
+ * Returns a safe URL extracted from a notification's metadata.link, or null if
+ * the field is missing/unsafe. Defends against `javascript:`, `data:`,
+ * `vbscript:`, protocol-relative (`//evil.com`), and backslash-trick URLs.
+ *
+ * Accepted shapes:
+ *   - Same-origin paths starting with a single forward slash: "/dashboard"
+ *   - Absolute http:// or https:// URLs
+ *
+ * Notification rows are written by server code today, but metadata is a
+ * free-form jsonb column — any future write path (admin tool, migration,
+ * compromised input) could land an unsafe value here, so we filter at the
+ * render boundary rather than trust the producer.
+ */
+export function extractNotificationLink(
+  metadata: Record<string, unknown> | null | undefined
+): string | null {
+  if (!metadata) return null;
+  const link = metadata.link;
+  if (typeof link !== "string" || link.length === 0) return null;
+  // Same-origin relative path
+  if (link.startsWith("/")) {
+    if (link.startsWith("//") || link.includes("\\")) return null;
+    return link;
+  }
+  // Absolute URL — only http(s) is allowed; rejects javascript:, data:, etc.
+  try {
+    const parsed = new URL(link);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") return link;
+  } catch {
+    // unparseable
+  }
+  return null;
+}
+
 export function notificationTimeAgo(dateStr: string): string {
   const timestamp = new Date(dateStr).getTime();
   if (Number.isNaN(timestamp)) return "";

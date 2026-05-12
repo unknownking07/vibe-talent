@@ -6,13 +6,7 @@ import { useRouter } from "next/navigation";
 import { Bell, ArrowLeft, ExternalLink, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Notification } from "@/lib/types/database";
-import { NOTIFICATION_ICONS, NOTIFICATION_COLORS, notificationTimeAgo } from "@/lib/notification-display";
-
-function extractLink(metadata: Record<string, unknown> | null | undefined): string | null {
-  if (!metadata) return null;
-  const link = metadata.link;
-  return typeof link === "string" && link.length > 0 ? link : null;
-}
+import { NOTIFICATION_ICONS, NOTIFICATION_COLORS, notificationTimeAgo, extractNotificationLink } from "@/lib/notification-display";
 
 export default function NotificationsPage() {
   const router = useRouter();
@@ -188,7 +182,7 @@ export default function NotificationsPage() {
             {notifications.map((n) => {
               const Icon = NOTIFICATION_ICONS[n.type] || Bell;
               const color = NOTIFICATION_COLORS[n.type] || "var(--text-muted)";
-              const link = extractLink(n.metadata as Record<string, unknown> | null);
+              const link = extractNotificationLink(n.metadata as Record<string, unknown> | null);
               return (
                 <article
                   key={n.id}

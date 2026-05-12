@@ -52,6 +52,12 @@ describe("validateDisplayName", () => {
     expect(validateDisplayName("s-h-i-t")).toMatch(/inappropriate language/);
     expect(validateDisplayName("b_i_t_c_h")).toMatch(/inappropriate language/);
   });
+
+  it("blocks profanity combining leet substitution and separators", () => {
+    expect(validateDisplayName("sh.1.t")).toMatch(/inappropriate language/);
+    expect(validateDisplayName("@.s.s")).toMatch(/inappropriate language/);
+    expect(validateDisplayName("$_h_i_t")).toMatch(/inappropriate language/);
+  });
 });
 
 describe("containsProfanity", () => {
