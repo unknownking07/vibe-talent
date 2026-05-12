@@ -1,49 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Bell, Flame, Trophy, CheckCircle, AlertTriangle, Mail, Star, Eye, BarChart3, Zap, LinkIcon, Users } from "lucide-react";
+import { Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Notification } from "@/lib/types/database";
-
-const typeIcons: Record<string, typeof Bell> = {
-  hire_request: Mail,
-  streak_milestone: Flame,
-  streak_warning: AlertTriangle,
-  badge_earned: Trophy,
-  project_verified: CheckCircle,
-  project_flagged: AlertTriangle,
-  new_review: Star,
-  profile_view_summary: Eye,
-  weekly_digest: BarChart3,
-  vibe_score_milestone: Zap,
-  project_missing_links: LinkIcon,
-  referral_prompt: Users,
-};
-
-const typeColors: Record<string, string> = {
-  hire_request: "#FF3A00",
-  streak_milestone: "#F59E0B",
-  streak_warning: "#EF4444",
-  badge_earned: "#8B5CF6",
-  project_verified: "#10B981",
-  project_flagged: "#EF4444",
-  new_review: "#F59E0B",
-  profile_view_summary: "#3B82F6",
-  weekly_digest: "#6366F1",
-  vibe_score_milestone: "#FF3A00",
-  project_missing_links: "#F59E0B",
-  referral_prompt: "#FF3A00",
-};
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
+import { NOTIFICATION_ICONS, NOTIFICATION_COLORS, notificationTimeAgo } from "@/lib/notification-display";
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
@@ -120,8 +81,10 @@ export function NotificationBell() {
       setUnreadCount(prev => Math.max(0, prev - 1));
     }
     setOpen(false);
-    const link = typeof notification.metadata?.link === "string" ? notification.metadata.link : null;
-    router.push(link || "/dashboard");
+    // Always send users to the dedicated notifications page so they can read
+    // the full message — the dropdown truncates long bodies. Deep links from
+    // metadata.link still surface there as a per-item CTA.
+    router.push("/notifications");
   };
 
   return (
@@ -182,8 +145,8 @@ export function NotificationBell() {
           ) : (
             <div>
               {notifications.slice(0, 10).map((n) => {
-                const Icon = typeIcons[n.type] || Bell;
-                const color = typeColors[n.type] || "var(--text-muted)";
+                const Icon = NOTIFICATION_ICONS[n.type] || Bell;
+                const color = NOTIFICATION_COLORS[n.type] || "var(--text-muted)";
                 return (
                   <button
                     key={n.id}
@@ -200,7 +163,7 @@ export function NotificationBell() {
                         {n.title}
                       </p>
                       <p className="text-xs mt-0.5 truncate" style={{ color: n.read ? "var(--text-muted)" : "var(--text-secondary)" }}>{n.message}</p>
-                      <p className="text-[10px] mt-1 font-medium" style={{ color: "var(--text-muted)" }}>{timeAgo(n.created_at)}</p>
+                      <p className="text-[10px] mt-1 font-medium" style={{ color: "var(--text-muted)" }}>{notificationTimeAgo(n.created_at)}</p>
                     </div>
                     {!n.read && (
                       <span
@@ -211,11 +174,15 @@ export function NotificationBell() {
                   </button>
                 );
               })}
-              {notifications.length > 10 && (
-                <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-center text-[var(--text-muted-soft)] border-t-2 border-[var(--border-hard)]">
-                  Showing 10 of {notifications.length}
-                </p>
-              )}
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  router.push("/notifications");
+                }}
+                className="w-full px-4 py-2.5 text-xs font-extrabold uppercase tracking-wide text-center text-[var(--accent)] border-t-2 border-[var(--border-hard)] hover:bg-[var(--bg-surface-light)] cursor-pointer"
+              >
+                View all notifications
+              </button>
             </div>
           )}
         </div>

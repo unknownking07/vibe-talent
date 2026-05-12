@@ -46,15 +46,14 @@ export function containsProfanity(text: string): boolean {
 
 /**
  * Validates a display name. Returns an error message or null if valid.
+ * Intentionally permissive on character content — numbers, symbols, and mixed
+ * scripts are all fine. The only hard rules are length and profanity.
  */
 export function validateDisplayName(name: string): string | null {
   const trimmed = name.trim();
   if (!trimmed) return null; // display name is optional
   if (trimmed.length < 2) return "Display name must be at least 2 characters";
   if (trimmed.length > 30) return "Display name must be 30 characters or less";
-  if (!/[aeiouyAEIOUY]/.test(trimmed)) return "Please enter a valid name";
-  // Flag strings with 4+ consecutive consonants (gibberish like "bsdjkfhsd")
-  if (/[^aeiouy\s]{5,}/i.test(trimmed)) return "Please enter a valid name";
   if (containsProfanity(trimmed)) return "Display name contains inappropriate language";
   return null;
 }
