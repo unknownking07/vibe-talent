@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Bell, ArrowLeft, ExternalLink, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Notification } from "@/lib/types/database";
@@ -14,6 +15,7 @@ function extractLink(metadata: Record<string, unknown> | null | undefined): stri
 }
 
 export default function NotificationsPage() {
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [authChecking, setAuthChecking] = useState(true);
@@ -36,13 +38,15 @@ export default function NotificationsPage() {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) {
-        window.location.href = "/auth/login?next=/notifications";
+        // The login page reads `?redirect=` (not `?next=`) to decide where
+        // to send the user after a successful sign-in.
+        router.push("/auth/login?redirect=/notifications");
         return;
       }
       setAuthChecking(false);
       fetchNotifications();
     });
-  }, [fetchNotifications]);
+  }, [fetchNotifications, router]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -66,16 +70,24 @@ export default function NotificationsPage() {
   };
 
   const handleMarkRead = async (id: string) => {
+    // Snapshot for rollback — this page doesn't poll, so a silent server
+    // failure would otherwise leave the row marked read in the UI until a
+    // hard refresh, with the server still treating it as unread.
+    const previous = notifications;
     setNotifications(prev => prev.map(n => (n.id === id ? { ...n, read: true } : n)));
     try {
-      await fetch("/api/notifications", {
+      const res = await fetch("/api/notifications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
+      if (!res.ok) {
+        setNotifications(previous);
+        return;
+      }
       window.dispatchEvent(new Event("notifications-updated"));
     } catch {
-      // Silently fail
+      setNotifications(previous);
     }
   };
 
