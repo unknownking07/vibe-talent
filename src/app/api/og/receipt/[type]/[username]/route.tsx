@@ -13,14 +13,15 @@ export async function GET(
 ) {
   const { type, username } = await ctx.params;
   const validType = (["weekly", "shipped", "custom"] as const).includes(type as ReceiptType) ? (type as ReceiptType) : "weekly";
+  // validType is currently computed for future per-type detail rows; keep it for parity.
+  void validType;
 
   const user = await fetchUserByUsernameCached(username);
   if (!user) {
     return new Response("Not Found", { status: 404 });
   }
 
-  const lines = buildLines(validType, user);
-  const headerSub = headerSubFor(validType);
+  const lines = buildLines(user);
 
   return new ImageResponse(
     (
@@ -32,9 +33,26 @@ export async function GET(
           background: "#fff", color: "#0F0F0F", padding: "36px 44px", width: "76%",
           boxShadow: "12px 12px 0 #FF3A00", position: "relative", display: "flex", flexDirection: "column",
         }}>
-          <div style={{ textAlign: "center", borderBottom: "3px dashed #0F0F0F", paddingBottom: 16, marginBottom: 18, display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 26, fontWeight: 900, letterSpacing: "0.18em", display: "flex", justifyContent: "center" }}>VIBETALENT · {validType.toUpperCase()}</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#3F3F46", letterSpacing: "0.08em", marginTop: 6, display: "flex", justifyContent: "center" }}>{headerSub}</div>
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderBottom: "3px dashed #0F0F0F",
+            paddingBottom: 18,
+            marginBottom: 18,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <Avatar user={user} size={64} />
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ display: "flex", fontSize: 32, fontWeight: 900, letterSpacing: "-0.02em" }}>
+                  @{user.username}
+                </span>
+                {user.github_username ? <VerifiedBadge size={24} /> : null}
+              </div>
+            </div>
+            <div style={{ display: "flex", fontSize: 14, fontWeight: 900, letterSpacing: "0.18em", color: "#0F0F0F" }}>
+              VIBE<span style={{ display: "flex", color: "#FF3A00" }}>TALENT</span>
+            </div>
           </div>
 
           {lines.map(({ label, value, highlight }) => (
@@ -69,18 +87,69 @@ export async function GET(
   );
 }
 
-function buildLines(_type: ReceiptType, user: { username: string; longest_streak?: number | null; streak?: number | null }): Array<{ label: string; value: string; highlight?: boolean }> {
-  // For v1, just username + streak + longest. Receipt detail (commits, rank delta) gets
-  // wired in Task 17 when we add /api/receipt/[username]/weekly.
+function buildLines(user: { longest_streak?: number | null; streak?: number | null }): Array<{ label: string; value: string; highlight?: boolean }> {
+  // For v1, just streak + longest. Receipt detail (commits, rank delta) gets
+  // wired in Task 17 when we add /api/receipt/[username]/weekly. Username is in the header.
   return [
-    { label: "USER", value: `@${user.username}` },
     { label: "STREAK", value: `${user.streak ?? 0} days` },
     { label: "LONGEST", value: `${user.longest_streak ?? 0} days` },
   ];
 }
 
-function headerSubFor(type: ReceiptType): string {
-  if (type === "weekly")  return "WEEKLY RECEIPT";
-  if (type === "shipped") return "PROJECT SHIPPED";
-  return "SHARED FROM PROFILE";
+function Avatar({ user, size }: { user: { username: string; avatar_url: string | null }; size: number }) {
+  const url = user.avatar_url;
+  const valid = typeof url === "string" && /^https?:\/\//.test(url);
+  if (valid) {
+    return (
+      <div style={{
+        display: "flex",
+        width: size, height: size,
+        borderRadius: "50%",
+        overflow: "hidden",
+        border: "2px solid #0F0F0F",
+        flexShrink: 0,
+      }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={url} width={size} height={size} alt="" style={{ display: "flex", objectFit: "cover", width: size, height: size }} />
+      </div>
+    );
+  }
+  return (
+    <div style={{
+      display: "flex",
+      width: size, height: size,
+      borderRadius: "50%",
+      border: "2px solid #0F0F0F",
+      background: "linear-gradient(135deg, #FF3A00, #FFA07A)",
+      color: "#fff",
+      fontWeight: 900,
+      fontSize: size * 0.42,
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+    }}>
+      {(user.username[0] ?? "?").toUpperCase()}
+    </div>
+  );
+}
+
+function VerifiedBadge({ size }: { size: number }) {
+  return (
+    <div style={{
+      display: "flex",
+      width: size, height: size,
+      borderRadius: "50%",
+      background: "#FF3A00",
+      border: "1.5px solid #0F0F0F",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#fff",
+      fontWeight: 900,
+      fontSize: size * 0.6,
+      lineHeight: 1,
+      flexShrink: 0,
+    }}>
+      ✓
+    </div>
+  );
 }

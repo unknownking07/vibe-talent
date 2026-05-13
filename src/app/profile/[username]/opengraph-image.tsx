@@ -98,11 +98,12 @@ export default async function Image({
           <div
             style={{
               display: "flex",
-              gap: 10,
+              gap: 12,
               marginTop: 30,
               alignItems: "center",
             }}
           >
+            <Avatar user={user} size={56} />
             <span
               style={{
                 background: "#0F0F0F",
@@ -112,9 +113,12 @@ export default async function Image({
                 fontWeight: 800,
                 borderRadius: 4,
                 display: "flex",
+                alignItems: "center",
+                gap: 8,
               }}
             >
               @{user.username}
+              {user.github_username ? <VerifiedBadge size={20} /> : null}
             </span>
             <span
               style={{
@@ -210,5 +214,62 @@ export default async function Image({
       </div>
     ),
     { ...size }
+  );
+}
+
+function Avatar({ user, size }: { user: { username: string; avatar_url: string | null }; size: number }) {
+  const url = user.avatar_url;
+  const valid = typeof url === "string" && /^https?:\/\//.test(url);
+  if (valid) {
+    return (
+      <div style={{
+        display: "flex",
+        width: size, height: size,
+        borderRadius: "50%",
+        overflow: "hidden",
+        border: "2px solid #0F0F0F",
+        flexShrink: 0,
+      }}>
+        <img src={url} width={size} height={size} alt="" style={{ display: "flex", objectFit: "cover", width: size, height: size }} />
+      </div>
+    );
+  }
+  return (
+    <div style={{
+      display: "flex",
+      width: size, height: size,
+      borderRadius: "50%",
+      border: "2px solid #0F0F0F",
+      background: "linear-gradient(135deg, #FF3A00, #FFA07A)",
+      color: "#fff",
+      fontWeight: 900,
+      fontSize: size * 0.42,
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+    }}>
+      {(user.username[0] ?? "?").toUpperCase()}
+    </div>
+  );
+}
+
+function VerifiedBadge({ size }: { size: number }) {
+  return (
+    <div style={{
+      display: "flex",
+      width: size, height: size,
+      borderRadius: "50%",
+      background: "#FF3A00",
+      border: "1.5px solid #0F0F0F",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "#fff",
+      fontWeight: 900,
+      fontSize: size * 0.6,
+      lineHeight: 1,
+      flexShrink: 0,
+    }}>
+      ✓
+    </div>
   );
 }
