@@ -61,7 +61,7 @@ export function ActiveBuilderRow(p: ActiveBuilderRowProps) {
 
       <div className="text-right min-w-[70px]">
         <div className="font-mono font-black text-[22px] leading-none text-[var(--accent)]">{p.vibeScore}</div>
-        <div className="text-[11px] font-extrabold uppercase tracking-widest text-[var(--text-secondary)] mt-1">VIBE</div>
+        <div className="text-[11px] font-extrabold uppercase tracking-widest text-[var(--text-secondary)] mt-1">VIBE SCORE</div>
       </div>
     </Link>
   );
