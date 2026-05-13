@@ -60,9 +60,11 @@ export async function POST(request: Request) {
     // Resolve GitHub handle from users.github_username (authoritative; synced
     // from the GitHub identity on every OAuth callback). Fall back to OAuth
     // metadata only for the first-login edge case before the callback wrote.
+    // Also pull `username` here so the success response can return a
+    // shipped_receipt_url without a second round-trip.
     const { data: userRow } = await sb
       .from("users")
-      .select("github_username")
+      .select("github_username, username")
       .eq("id", user.id)
       .single();
 
@@ -71,6 +73,8 @@ export async function POST(request: Request) {
       user.user_metadata?.user_name ||
       user.user_metadata?.preferred_username ||
       null;
+
+    const profileUsername: string | null = userRow?.username ?? null;
 
     if (!githubUsername) {
       return NextResponse.json(
@@ -188,6 +192,13 @@ export async function POST(request: Request) {
       // visit instead of waiting up to 60s for unstable_cache to expire.
       await invalidateProfileCache(sb, user.id);
 
+      // Projects don't have a slug column today — id is the canonical handle
+      // used by /share/[username]/shipped/[slug] (slug is treated as a label).
+      const receiptSlug = project.id;
+      const shipped_receipt_url = profileUsername
+        ? `/share/${profileUsername}/shipped/${receiptSlug}`
+        : null;
+
       return NextResponse.json({
         verified: true,
         reason: "Repository owner matches your GitHub username.",
@@ -195,6 +206,7 @@ export async function POST(request: Request) {
         quality_score: qualityScore,
         quality_metrics: qualityMetrics,
         live_url_ok,
+        shipped_receipt_url,
       });
     }
 
@@ -280,6 +292,13 @@ export async function POST(request: Request) {
           // instead of waiting up to 60s for unstable_cache to expire.
           await invalidateProfileCache(sb, user.id);
 
+          // Projects don't have a slug column today — id is the canonical
+          // handle used by /share/[username]/shipped/[slug].
+          const receiptSlug = project.id;
+          const shipped_receipt_url = profileUsername
+            ? `/share/${profileUsername}/shipped/${receiptSlug}`
+            : null;
+
           return NextResponse.json({
             verified: true,
             reason:
@@ -288,6 +307,7 @@ export async function POST(request: Request) {
             quality_score: qualityScore,
             quality_metrics: qualityMetrics,
             live_url_ok,
+            shipped_receipt_url,
           });
         } else {
           return NextResponse.json({
