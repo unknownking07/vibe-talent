@@ -42,12 +42,12 @@ export async function GET(
             marginBottom: 18,
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <Avatar user={user} size={64} />
+              <Avatar user={user} size={100} />
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ display: "flex", fontSize: 32, fontWeight: 900, letterSpacing: "-0.02em" }}>
                   @{user.username}
                 </span>
-                {user.github_username ? <VerifiedBadge size={24} /> : null}
+                {user.github_username ? <VerifiedBadge size={32} /> : null}
               </div>
             </div>
             <div style={{ display: "flex", fontSize: 14, fontWeight: 900, letterSpacing: "0.18em", color: "#0F0F0F" }}>
@@ -106,11 +106,17 @@ function Avatar({ user, size }: { user: { username: string; avatar_url: string |
         width: size, height: size,
         borderRadius: "50%",
         overflow: "hidden",
-        border: "2px solid #0F0F0F",
+        border: "2.5px solid #0F0F0F",
         flexShrink: 0,
       }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={url} width={size} height={size} alt="" style={{ display: "flex", objectFit: "cover", width: size, height: size }} />
+        <img
+          src={url}
+          width={size}
+          height={size}
+          alt=""
+          style={{ display: "flex", objectFit: "cover", width: size, height: size }}
+        />
       </div>
     );
   }
@@ -119,7 +125,7 @@ function Avatar({ user, size }: { user: { username: string; avatar_url: string |
       display: "flex",
       width: size, height: size,
       borderRadius: "50%",
-      border: "2px solid #0F0F0F",
+      border: "2.5px solid #0F0F0F",
       background: "linear-gradient(135deg, #FF3A00, #FFA07A)",
       color: "#fff",
       fontWeight: 900,
@@ -135,21 +141,22 @@ function Avatar({ user, size }: { user: { username: string; avatar_url: string |
 
 function VerifiedBadge({ size }: { size: number }) {
   return (
-    <div style={{
-      display: "flex",
-      width: size, height: size,
-      borderRadius: "50%",
-      background: "#FF3A00",
-      border: "1.5px solid #0F0F0F",
-      alignItems: "center",
-      justifyContent: "center",
-      color: "#fff",
-      fontWeight: 900,
-      fontSize: size * 0.6,
-      lineHeight: 1,
-      flexShrink: 0,
-    }}>
-      ✓
-    </div>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      style={{ display: "flex", flexShrink: 0 }}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle cx={12} cy={12} r={11} fill="#FF3A00" stroke="#0F0F0F" strokeWidth={1.5} />
+      <path
+        d="M7 12.5l3 3 7-7"
+        fill="none"
+        stroke="#fff"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
