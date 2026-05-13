@@ -15,15 +15,16 @@ export async function GET(request: NextRequest) {
     const sb = supabase as any;
 
     if (range === "week") {
-      // Last 7 days inclusive
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
-      const sevenDaysAgoStr = sevenDaysAgo.toISOString().slice(0, 10);
+      // Last 7 days inclusive of today: today + 6 prior days = 7 calendar dates.
+      // (Using -7 here would span 8 distinct dates, which is wrong.)
+      const windowStart = new Date();
+      windowStart.setUTCDate(windowStart.getUTCDate() - 6);
+      const windowStartStr = windowStart.toISOString().slice(0, 10);
 
       const { data: logs } = await sb
         .from("streak_logs")
         .select("user_id, activity_date")
-        .gte("activity_date", sevenDaysAgoStr);
+        .gte("activity_date", windowStartStr);
 
       // Aggregate distinct dates per user
       const datesByUser = new Map<string, Set<string>>();

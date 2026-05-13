@@ -42,11 +42,11 @@ export function ActiveBuilderRow(p: ActiveBuilderRowProps) {
       </div>
 
       <div className="text-right min-w-[80px]">
-        <div className="font-mono font-black text-[22px] leading-none text-[var(--accent)] tracking-tight">
-          🔥 {p.streak}
+        <div className="font-mono font-black text-[22px] leading-none text-[var(--foreground)] tracking-tight">
+          {p.streak}
         </div>
         <div className="text-[11px] font-extrabold uppercase tracking-widest text-[var(--text-secondary)] mt-1">
-          {p.streak === 1 ? "DAY" : "DAYS"}
+          {p.streak === 1 ? "DAY STREAK" : "DAY STREAK"}
         </div>
       </div>
 
@@ -60,7 +60,7 @@ export function ActiveBuilderRow(p: ActiveBuilderRowProps) {
       </div>
 
       <div className="text-right min-w-[70px]">
-        <div className="font-mono font-extrabold text-[22px] leading-none text-[var(--foreground)]">{p.vibeScore}</div>
+        <div className="font-mono font-black text-[22px] leading-none text-[var(--accent)]">{p.vibeScore}</div>
         <div className="text-[11px] font-extrabold uppercase tracking-widest text-[var(--text-secondary)] mt-1">VIBE</div>
       </div>
     </Link>
