@@ -1,6 +1,11 @@
 import type { MetadataRoute } from "next";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { siteUrl } from "@/lib/seo";
+
+// Regenerate hourly. Google polls sitemaps on its own schedule and the
+// per-user `<lastmod>` below already signals freshness to crawlers — no
+// reason to rebuild this on every request.
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
@@ -17,19 +22,38 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    const supabase = await createServerSupabaseClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: users } = await (supabase as any).from("users").select("username, updated_at");
+    // Admin client so RLS can't silently filter out profile rows. The
+    // previous anon-context query was hiding two failure modes: (a) a
+    // typo'd column name that PostgREST rejected, and (b) any future RLS
+    // policy that excluded anon reads. Both manifested identically — an
+    // empty result swallowed by `catch {}` — which silently dropped every
+    // profile URL from the sitemap.
+    const supabase = createAdminClient();
+    const { data: users, error } = await supabase
+      .from("users")
+      .select("username, created_at")
+      .not("username", "is", null)
+      .not("github_username", "is", null);
 
-    const profilePages: MetadataRoute.Sitemap = (users || []).map(
-      (user: { username: string; updated_at: string }) => ({
+    if (error) {
+      console.error("[sitemap] users query failed:", error);
+      return staticPages;
+    }
+
+    const profilePages: MetadataRoute.Sitemap = (users ?? []).map(
+      (user: { username: string; created_at: string }) => ({
         url: `${siteUrl}/profile/${user.username.trim()}`,
-        lastModified: user.updated_at ? new Date(user.updated_at) : new Date(),
-      })
+        lastModified: new Date(user.created_at),
+      }),
     );
 
     return [...staticPages, ...profilePages];
-  } catch {
+  } catch (error) {
+    // Last-resort fallback. The previous `catch {}` swallowed errors with
+    // no signal — a column rename or env-var misconfig delisted every
+    // profile from crawl discovery for weeks before the audit caught it.
+    // Always log; let Vercel surface this in observability.
+    console.error("[sitemap] failed to build profile entries:", error);
     return staticPages;
   }
 }
