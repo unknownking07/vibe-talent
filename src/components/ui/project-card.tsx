@@ -7,6 +7,7 @@ import Image from "next/image";
 import type { Project } from "@/lib/types/database";
 import { QualityScoreBadge } from "@/components/ui/quality-score-badge";
 import { EndorseButton } from "@/components/ui/endorse-button";
+import { GithubSignal } from "@/components/projects/github-signal";
 import { createClient } from "@/lib/supabase/client";
 import { parseImageCrop } from "@/lib/image-crop";
 import { normalizeExternalUrl, normalizeRepoUrl } from "@/lib/url-normalize";
@@ -278,6 +279,13 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
         ))}
       </div>
       )}
+
+      <GithubSignal
+        commits7d={null}
+        values7d={null}
+        lastCommitAgo={null}
+        githubUrl={project.github_url ?? null}
+      />
 
       <div className="mt-2 flex items-center gap-3 text-[10px] font-bold text-[var(--text-muted)] uppercase">
         <EndorseButton projectId={project.id} initialCount={project.endorsement_count} />

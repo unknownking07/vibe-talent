@@ -7,6 +7,7 @@ import Image from "next/image";
 import type { Project } from "@/lib/types/database";
 import { QualityScoreBadge } from "@/components/ui/quality-score-badge";
 import { EndorseButton } from "@/components/ui/endorse-button";
+import { GithubSignal } from "@/components/projects/github-signal";
 import { createClient } from "@/lib/supabase/client";
 import { parseImageCrop } from "@/lib/image-crop";
 import { normalizeExternalUrl, normalizeRepoUrl } from "@/lib/url-normalize";
@@ -275,6 +276,13 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
           </span>
         ))}
       </div>
+
+      <GithubSignal
+        commits7d={null}
+        values7d={null}
+        lastCommitAgo={null}
+        githubUrl={project.github_url ?? null}
+      />
 
       {isOwner && !verified && project.github_url && (
         <div className="mt-2 flex flex-col gap-1.5">
