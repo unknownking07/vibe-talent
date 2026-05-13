@@ -4,6 +4,7 @@ import { calculateReviewTrust } from "@/lib/review-trust";
 import { createNotification } from "@/lib/notifications";
 import { sendReviewNotificationEmail } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { validateName, validateEmail, validateUUID } from "@/lib/validation";
 
 export async function GET(req: NextRequest) {
@@ -119,6 +120,20 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { builder_id, reviewer_name, reviewer_email, rating, comment, hire_request_id } = body;
+
+    // Detect the current authenticated user (if any) so we can link the review
+    // to a platform identity. Anonymous external reviewers (e.g. submitted from
+    // a hire-request email link) fall through with null — the existing flow is
+    // unchanged in that case. Wrapped in try/catch so a session-read hiccup
+    // never blocks a legitimate anonymous review.
+    let reviewerUserId: string | null = null;
+    try {
+      const supabase = await createServerSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      reviewerUserId = user?.id ?? null;
+    } catch {
+      reviewerUserId = null;
+    }
 
     // Validate required fields
     if (!builder_id || !reviewer_name || !reviewer_email || rating === undefined) {
@@ -277,6 +292,7 @@ export async function POST(req: NextRequest) {
         comment: commentClean,
         hire_request_id: hire_request_id || null,
         trust_score,
+        reviewer_user_id: reviewerUserId,
       })
       .select("id")
       .single();
