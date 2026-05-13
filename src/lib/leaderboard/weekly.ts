@@ -64,7 +64,8 @@ export interface ActiveBuilderRow {
   avatar_url: string | null;
   currentRank: number;
   activeDays7d: number;     // 0-7
-  streak: number;           // current streak
+  commits7d: number;        // sum of streak_logs.commit_count in last 7d
+  streak: number;
   vibeScore: number;
 }
 
@@ -78,12 +79,13 @@ interface CurrentUserForActive {
 }
 
 /**
- * Joins active-days counts with current users.
- * Filters: must have at least 1 active day in last 7d (i.e., be in activeDaysByUserId).
- * Sort: activeDays7d desc, streak desc, vibeScore desc.
+ * Joins active-days + commit counts with current users.
+ * Filters: must have at least 1 active day in last 7d.
+ * Sort: commits7d desc, activeDays7d desc, streak desc, vibeScore desc.
  */
 export function computeActiveBuilders(
   activeDaysByUserId: Map<string, number>,
+  commitsByUserId: Map<string, number>,
   current: CurrentUserForActive[],
 ): ActiveBuilderRow[] {
   const rows: ActiveBuilderRow[] = [];
@@ -95,11 +97,13 @@ export function computeActiveBuilders(
       avatar_url: u.avatar_url,
       currentRank: u.rank,
       activeDays7d: days,
+      commits7d: commitsByUserId.get(u.id) ?? 0,
       streak: u.streak,
       vibeScore: u.vibe_score,
     });
   }
   rows.sort((a, b) => {
+    if (b.commits7d !== a.commits7d) return b.commits7d - a.commits7d;
     if (b.activeDays7d !== a.activeDays7d) return b.activeDays7d - a.activeDays7d;
     if (b.streak !== a.streak) return b.streak - a.streak;
     return b.vibeScore - a.vibeScore;

@@ -23,18 +23,20 @@ export async function GET(request: NextRequest) {
 
       const { data: logs } = await sb
         .from("streak_logs")
-        .select("user_id, activity_date")
+        .select("user_id, activity_date, commit_count")
         .gte("activity_date", windowStartStr);
 
-      // Aggregate distinct dates per user
+      // Aggregate distinct dates AND sum commit counts per user
       const datesByUser = new Map<string, Set<string>>();
-      for (const log of (logs ?? []) as Array<{ user_id: string; activity_date: string }>) {
+      const commitsByUser = new Map<string, number>();
+      for (const log of (logs ?? []) as Array<{ user_id: string; activity_date: string; commit_count: number }>) {
         let s = datesByUser.get(log.user_id);
         if (!s) {
           s = new Set();
           datesByUser.set(log.user_id, s);
         }
         s.add(log.activity_date);
+        commitsByUser.set(log.user_id, (commitsByUser.get(log.user_id) ?? 0) + (log.commit_count ?? 1));
       }
       const activeDaysByUserId = new Map<string, number>();
       for (const [uid, dates] of datesByUser) activeDaysByUserId.set(uid, dates.size);
@@ -58,9 +60,6 @@ export async function GET(request: NextRequest) {
         .in("id", topUserIds)
         .not("username", "is", null);
 
-      // Assign live ranks from a separate query (overall vibe_score ranking)
-      // For simplicity, rank within the active set by vibe_score for now —
-      // current_rank is informational ("rank #38") so set it relative to all users.
       const { data: allRanked } = await sb
         .from("users")
         .select("id")
@@ -78,7 +77,7 @@ export async function GET(request: NextRequest) {
         rank: rankByUserId.get(u.id) ?? 9999,
       }));
 
-      const builders = computeActiveBuilders(activeDaysByUserId, enriched).slice(0, limit);
+      const builders = computeActiveBuilders(activeDaysByUserId, commitsByUser, enriched).slice(0, limit);
 
       return NextResponse.json(
         { leaderboard: builders, range: "week", mode: "active" },

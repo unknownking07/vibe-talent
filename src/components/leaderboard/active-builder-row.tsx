@@ -7,6 +7,7 @@ export interface ActiveBuilderRowProps {
   avatarUrl: string | null;
   currentRank: number;
   activeDays7d: number;
+  commits7d: number;
   streak: number;
   vibeScore: number;
   isCrown?: boolean;
@@ -16,8 +17,8 @@ export function ActiveBuilderRow(p: ActiveBuilderRowProps) {
   return (
     <Link
       href={`/profile/${p.username}`}
-      className={`grid items-center gap-5 px-5 py-4 border-b border-[var(--border-subtle)] last:border-b-0 hover:bg-[var(--bg-surface-light)] transition-colors ${p.isCrown ? "bg-[#FFF7ED] dark:bg-[var(--bg-surface-light)] border-b-[var(--border-hard)]" : ""}`}
-      style={{ gridTemplateColumns: "44px 48px 1fr auto auto auto" }}
+      className={`grid items-center gap-4 px-5 py-4 border-b border-[var(--border-subtle)] last:border-b-0 hover:bg-[var(--bg-surface-light)] transition-colors ${p.isCrown ? "bg-[#FFF7ED] dark:bg-[var(--bg-surface-light)] border-b-[var(--border-hard)]" : ""}`}
+      style={{ gridTemplateColumns: "44px 48px 1fr auto auto auto auto" }}
     >
       <span className="font-mono text-[15px] font-extrabold text-[var(--text-secondary)]">
         {String(p.position).padStart(2, "0")}
@@ -34,28 +35,28 @@ export function ActiveBuilderRow(p: ActiveBuilderRowProps) {
         </div>
       )}
 
-      <div>
-        <div className="font-bold text-[16px] text-[var(--foreground)] leading-tight">@{p.username}</div>
+      <div className="min-w-0">
+        <div className="font-bold text-[16px] text-[var(--foreground)] leading-tight truncate">@{p.username}</div>
         <div className="text-[13px] font-mono text-[var(--text-tertiary)] mt-1">
           rank #{p.currentRank} · {p.activeDays7d}/7 active
         </div>
       </div>
 
-      <div className="text-right min-w-[80px]">
+      <div className="text-right min-w-[70px]">
+        <div className="font-mono font-black text-[22px] leading-none text-[var(--foreground)]">
+          {p.commits7d}
+        </div>
+        <div className="text-[11px] font-extrabold uppercase tracking-widest text-[var(--text-secondary)] mt-1">
+          COMMITS
+        </div>
+      </div>
+
+      <div className="text-right min-w-[70px]">
         <div className="font-mono font-black text-[22px] leading-none text-[var(--foreground)] tracking-tight">
           {p.streak}
         </div>
         <div className="text-[11px] font-extrabold uppercase tracking-widest text-[var(--text-secondary)] mt-1">
-          {p.streak === 1 ? "DAY STREAK" : "DAY STREAK"}
-        </div>
-      </div>
-
-      <div className="text-right min-w-[60px]">
-        <div className="font-mono font-black text-[22px] leading-none text-[var(--foreground)]">
-          {p.activeDays7d}
-        </div>
-        <div className="text-[11px] font-extrabold uppercase tracking-widest text-[var(--text-secondary)] mt-1">
-          /7 ACTIVE
+          DAY STREAK
         </div>
       </div>
 

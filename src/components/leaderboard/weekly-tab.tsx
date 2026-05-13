@@ -21,6 +21,7 @@ export function WeeklyTab() {
             avatar_url: string | null;
             currentRank: number;
             activeDays7d: number;
+            commits7d: number;
             streak: number;
             vibeScore: number;
           }, idx: number) => ({
@@ -29,6 +30,7 @@ export function WeeklyTab() {
             avatarUrl: r.avatar_url,
             currentRank: r.currentRank,
             activeDays7d: r.activeDays7d,
+            commits7d: r.commits7d,
             streak: r.streak,
             vibeScore: r.vibeScore,
             isCrown: idx === 0,

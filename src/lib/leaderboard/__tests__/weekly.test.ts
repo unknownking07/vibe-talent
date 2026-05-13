@@ -46,23 +46,56 @@ describe("computeClimbers", () => {
 describe("computeActiveBuilders", () => {
   it("filters out users with 0 active days", () => {
     const active = new Map<string, number>([["a", 5]]);
+    const commits = new Map<string, number>([["a", 20], ["b", 0]]);
     const current = [
       { id: "a", username: "alpha", vibe_score: 200, streak: 5, avatar_url: null, rank: 10 },
       { id: "b", username: "beta",  vibe_score: 500, streak: 0, avatar_url: null, rank: 5 },
     ];
-    const result = computeActiveBuilders(active, current);
+    const result = computeActiveBuilders(active, commits, current);
     expect(result.map(r => r.username)).toEqual(["alpha"]);
   });
 
-  it("sorts by active days desc, then streak desc, then vibe_score desc", () => {
-    const active = new Map<string, number>([["a", 5], ["b", 5], ["c", 7]]);
+  it("sorts by commits desc as primary", () => {
+    const active = new Map<string, number>([["a", 7], ["b", 7], ["c", 7]]);
+    const commits = new Map<string, number>([["a", 12], ["b", 47], ["c", 5]]);
     const current = [
-      { id: "a", username: "alpha", vibe_score: 200, streak: 3, avatar_url: null, rank: 10 },
-      { id: "b", username: "beta",  vibe_score: 100, streak: 10, avatar_url: null, rank: 30 },
-      { id: "c", username: "cara",  vibe_score: 500, streak: 1, avatar_url: null, rank: 5 },
+      { id: "a", username: "alpha", vibe_score: 200, streak: 30, avatar_url: null, rank: 1 },
+      { id: "b", username: "beta",  vibe_score: 100, streak: 5,  avatar_url: null, rank: 30 },
+      { id: "c", username: "cara",  vibe_score: 500, streak: 10, avatar_url: null, rank: 5 },
     ];
-    const result = computeActiveBuilders(active, current);
-    // cara first (7 days), then beta (5 days + higher streak), then alpha (5 days + lower streak)
-    expect(result.map(r => r.username)).toEqual(["cara", "beta", "alpha"]);
+    const result = computeActiveBuilders(active, commits, current);
+    expect(result.map(r => r.username)).toEqual(["beta", "alpha", "cara"]);
+  });
+
+  it("falls back to active days desc when commits tie", () => {
+    const active = new Map<string, number>([["a", 4], ["b", 7]]);
+    const commits = new Map<string, number>([["a", 10], ["b", 10]]);
+    const current = [
+      { id: "a", username: "alpha", vibe_score: 100, streak: 5, avatar_url: null, rank: 10 },
+      { id: "b", username: "beta",  vibe_score: 100, streak: 5, avatar_url: null, rank: 30 },
+    ];
+    const result = computeActiveBuilders(active, commits, current);
+    expect(result.map(r => r.username)).toEqual(["beta", "alpha"]);
+  });
+
+  it("falls back to streak desc when commits and active days tie", () => {
+    const active = new Map<string, number>([["a", 5], ["b", 5]]);
+    const commits = new Map<string, number>([["a", 10], ["b", 10]]);
+    const current = [
+      { id: "a", username: "alpha", vibe_score: 100, streak: 30, avatar_url: null, rank: 10 },
+      { id: "b", username: "beta",  vibe_score: 100, streak: 5,  avatar_url: null, rank: 30 },
+    ];
+    const result = computeActiveBuilders(active, commits, current);
+    expect(result.map(r => r.username)).toEqual(["alpha", "beta"]);
+  });
+
+  it("populates commits7d correctly", () => {
+    const active = new Map<string, number>([["a", 5]]);
+    const commits = new Map<string, number>([["a", 47]]);
+    const current = [
+      { id: "a", username: "alpha", vibe_score: 200, streak: 5, avatar_url: null, rank: 10 },
+    ];
+    const result = computeActiveBuilders(active, commits, current);
+    expect(result[0].commits7d).toBe(47);
   });
 });
