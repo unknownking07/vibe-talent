@@ -1,5 +1,5 @@
 import { fetchAllUsersCached } from "@/lib/supabase/server-queries";
-import { LeaderboardContent } from "@/components/leaderboard/leaderboard-content";
+import { LeaderboardTabs } from "@/components/leaderboard/leaderboard-tabs";
 import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
 import { Trophy } from "lucide-react";
 import type { Metadata } from "next";
@@ -81,7 +81,7 @@ export default async function LeaderboardPage() {
         </p>
       </div>
 
-      <LeaderboardContent users={users} />
+      <LeaderboardTabs users={users} />
     </div>
   );
 }
