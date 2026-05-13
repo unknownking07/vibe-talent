@@ -7,6 +7,7 @@ import { extractSocialHandle } from "@/lib/social-handles";
 import { ProfileProjectCard } from "@/components/profile/profile-project-card";
 import ReviewsSection from "@/components/profile/reviews-section";
 import { ProfileViewTracker } from "@/components/profile/profile-view-tracker";
+import { ShareButton } from "@/components/share/share-button";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { siteUrl } from "@/lib/seo";
@@ -146,6 +147,17 @@ export default async function ProfilePage({
 
         {/* Main Content */}
         <div className="flex flex-col gap-6">
+          {/* Share Receipt */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-base font-extrabold uppercase text-[var(--foreground)]">
+              Share @{user.username}&apos;s receipt
+            </h2>
+            <ShareButton
+              url={`/share/${user.username}/custom?range=30d`}
+              text={`Check out @${user.username} on VibeTalent`}
+            />
+          </div>
+
           {/* Stats Ribbon */}
           <StatsRibbon
             streak={user.streak}
