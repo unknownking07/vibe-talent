@@ -1,6 +1,19 @@
 import { updateSession } from "@/lib/supabase/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 
+const AUTH_COOKIE_PREFIX = "sb-";
+const AUTH_COOKIE_SUFFIX = "-auth-token";
+
+function hasSupabaseAuthCookie(request: NextRequest): boolean {
+  return request.cookies
+    .getAll()
+    .some(
+      (c) =>
+        c.name.startsWith(AUTH_COOKIE_PREFIX) &&
+        c.name.endsWith(AUTH_COOKIE_SUFFIX),
+    );
+}
+
 export async function middleware(request: NextRequest) {
   // Catch Supabase auth error redirects (e.g. identity_already_exists)
   // Supabase redirects to the site root with error params when OAuth fails
@@ -14,15 +27,24 @@ export async function middleware(request: NextRequest) {
     // If the user has a Supabase session cookie they're already logged in
     // (e.g. linking GitHub from profile-setup/settings) → send to settings.
     // Otherwise they were signing up/logging in → send to login page.
-    const hasSession = request.cookies
-      .getAll()
-      .some((c) => c.name.startsWith("sb-") && c.name.endsWith("-auth-token"));
-    const dest = hasSession ? "/settings" : "/auth/login";
+    const dest = hasSupabaseAuthCookie(request) ? "/settings" : "/auth/login";
 
     const redirectUrl = new URL(dest, request.url);
     redirectUrl.searchParams.set("error_code", errorCode);
     redirectUrl.searchParams.set("error_description", errorDescription);
     return NextResponse.redirect(redirectUrl);
+  }
+
+  // Anonymous visitors on non-protected routes skip updateSession entirely.
+  // updateSession calls supabase.auth.getUser() and writes Set-Cookie, which
+  // forces `cache-control: no-store` and bypasses both Vercel ISR and the
+  // Cloudflare edge — meaning every visit pays the full origin round-trip
+  // (Vercel iad1). With no auth cookie there's nothing to refresh anyway.
+  // Authenticated users still hit the full code path so the cookie-refresh
+  // fix from the previous regression remains intact.
+  const isProtectedRoute = request.nextUrl.pathname.startsWith("/dashboard");
+  if (!isProtectedRoute && !hasSupabaseAuthCookie(request)) {
+    return NextResponse.next({ request });
   }
 
   return await updateSession(request);
