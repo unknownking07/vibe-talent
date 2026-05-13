@@ -19,7 +19,7 @@ export function LeaderboardTabs({ users }: { users: UserWithSocials[] }) {
           onClick={() => setTab("week")}
           className={`flex-1 py-3 px-4 text-[14px] font-bold border-r-2 border-[var(--border-hard)] ${tab === "week" ? "bg-[var(--accent)] text-white" : "bg-[var(--bg-surface)] text-[var(--foreground)]"}`}
         >
-          This week ▲
+          Active this week 🔥
         </button>
         <button
           role="tab"

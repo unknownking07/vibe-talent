@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeClimbers, MIN_VIBE_FLOOR } from "../weekly";
+import { computeActiveBuilders, computeClimbers, MIN_VIBE_FLOOR } from "../weekly";
 
 describe("computeClimbers", () => {
   it("sorts by rank-position climb desc", () => {
@@ -40,5 +40,29 @@ describe("computeClimbers", () => {
     expect(result).toHaveLength(1);
     expect(result[0].rankClimb).toBeNull();
     expect(result[0].scoreDelta).toBeNull();
+  });
+});
+
+describe("computeActiveBuilders", () => {
+  it("filters out users with 0 active days", () => {
+    const active = new Map<string, number>([["a", 5]]);
+    const current = [
+      { id: "a", username: "alpha", vibe_score: 200, streak: 5, avatar_url: null, rank: 10 },
+      { id: "b", username: "beta",  vibe_score: 500, streak: 0, avatar_url: null, rank: 5 },
+    ];
+    const result = computeActiveBuilders(active, current);
+    expect(result.map(r => r.username)).toEqual(["alpha"]);
+  });
+
+  it("sorts by active days desc, then streak desc, then vibe_score desc", () => {
+    const active = new Map<string, number>([["a", 5], ["b", 5], ["c", 7]]);
+    const current = [
+      { id: "a", username: "alpha", vibe_score: 200, streak: 3, avatar_url: null, rank: 10 },
+      { id: "b", username: "beta",  vibe_score: 100, streak: 10, avatar_url: null, rank: 30 },
+      { id: "c", username: "cara",  vibe_score: 500, streak: 1, avatar_url: null, rank: 5 },
+    ];
+    const result = computeActiveBuilders(active, current);
+    // cara first (7 days), then beta (5 days + higher streak), then alpha (5 days + lower streak)
+    expect(result.map(r => r.username)).toEqual(["cara", "beta", "alpha"]);
   });
 });

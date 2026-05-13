@@ -58,3 +58,51 @@ export function computeClimbers(snapshots: Snapshot[], current: CurrentUser[]): 
 
   return rows;
 }
+
+export interface ActiveBuilderRow {
+  username: string;
+  avatar_url: string | null;
+  currentRank: number;
+  activeDays7d: number;     // 0-7
+  streak: number;           // current streak
+  vibeScore: number;
+}
+
+interface CurrentUserForActive {
+  id: string;
+  username: string;
+  vibe_score: number;
+  streak: number;
+  avatar_url: string | null;
+  rank: number;
+}
+
+/**
+ * Joins active-days counts with current users.
+ * Filters: must have at least 1 active day in last 7d (i.e., be in activeDaysByUserId).
+ * Sort: activeDays7d desc, streak desc, vibeScore desc.
+ */
+export function computeActiveBuilders(
+  activeDaysByUserId: Map<string, number>,
+  current: CurrentUserForActive[],
+): ActiveBuilderRow[] {
+  const rows: ActiveBuilderRow[] = [];
+  for (const u of current) {
+    const days = activeDaysByUserId.get(u.id) ?? 0;
+    if (days <= 0) continue;
+    rows.push({
+      username: u.username,
+      avatar_url: u.avatar_url,
+      currentRank: u.rank,
+      activeDays7d: days,
+      streak: u.streak,
+      vibeScore: u.vibe_score,
+    });
+  }
+  rows.sort((a, b) => {
+    if (b.activeDays7d !== a.activeDays7d) return b.activeDays7d - a.activeDays7d;
+    if (b.streak !== a.streak) return b.streak - a.streak;
+    return b.vibeScore - a.vibeScore;
+  });
+  return rows;
+}
