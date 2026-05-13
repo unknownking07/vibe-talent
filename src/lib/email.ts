@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { getSiteUrl } from "@/lib/seo";
+import { mondayOf } from "@/lib/cron-jobs/weekly-snapshot";
 
 let resend: Resend | null = null;
 
@@ -210,6 +211,33 @@ ${statCell({ value: stats.vibeScore, label: "Vibe score", side: "left", borderRi
 ${statCell({ value: stats.hireRequests, label: "Hire requests", side: "right" })}
 </tr>
 </table>`;
+}
+
+/**
+ * Renders the weekly receipt card (OG image + share CTA) appended to the
+ * weekly digest. `username` is URL-encoded and `monday` is a YYYY-MM-DD string;
+ * both are interpolated into URLs and rendered as image src / hrefs only,
+ * so no HTML escaping is needed beyond the encodeURIComponent on username.
+ */
+export function renderWeeklyReceiptSection(opts: {
+  username: string;
+  monday: string;
+}): string {
+  const siteUrl = getSiteUrl();
+  const safeUser = encodeURIComponent(opts.username);
+  const receiptOg = `${siteUrl}/api/og/receipt/weekly/${safeUser}?w=${opts.monday}`;
+  const receiptLink = `${siteUrl}/share/${safeUser}/weekly/${opts.monday}`;
+  return `<div style="margin-top:8px;padding-top:28px;border-top:1px solid ${BRAND.hairline};">
+<p style="margin:0 0 14px;font-family:${BRAND.fontMono};font-size:11px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:${BRAND.textMuted};">Your weekly receipt</p>
+<a href="${receiptLink}" style="text-decoration:none;display:block;line-height:0;"><img src="${receiptOg}" alt="weekly receipt" width="560" style="display:block;width:100%;max-width:560px;height:auto;border:0;outline:none;" /></a>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 0;">
+<tr><td bgcolor="${BRAND.accent}" style="background:${BRAND.accent};">
+<a href="${receiptLink}" style="display:inline-block;background:${BRAND.accent};color:${BRAND.accentText};padding:14px 26px;text-decoration:none;font-family:${BRAND.fontSans};font-size:14px;font-weight:600;letter-spacing:-0.005em;mso-padding-alt:0;">
+Share your receipt<span style="margin-left:8px;">→</span>
+</a>
+</td></tr>
+</table>
+</div>`;
 }
 
 interface HireNotificationParams {
@@ -519,6 +547,8 @@ export async function sendWeeklyDigestEmail({
   if (!client) return;
 
   const siteUrl = getSiteUrl();
+  const monday = mondayOf(new Date()).toISOString().slice(0, 10);
+  const receiptShareUrl = `${siteUrl}/share/${encodeURIComponent(username)}/weekly/${monday}`;
 
   const body = `
 ${eyebrow("Weekly recap")}
@@ -531,13 +561,14 @@ ${renderStatsGrid({
   hireRequests: stats.hireRequests,
 })}
 ${cta(`${siteUrl}/dashboard`, "View dashboard")}
+${renderWeeklyReceiptSection({ username, monday })}
 `;
 
   try {
     await sendEmail(client, {
       to: email,
       subject: `Your week on VibeTalent`,
-      text: `Hey @${username}, here's how your week went:\n\nProfile views: ${stats.profileViews}\nDay streak: ${stats.streakDays}\nVibe score: ${stats.vibeScore}\nHire requests: ${stats.hireRequests}\n\nView dashboard: ${siteUrl}/dashboard\n\nUnsubscribe: ${unsubUrl(email)}`,
+      text: `Hey @${username}, here's how your week went:\n\nProfile views: ${stats.profileViews}\nDay streak: ${stats.streakDays}\nVibe score: ${stats.vibeScore}\nHire requests: ${stats.hireRequests}\n\nView dashboard: ${siteUrl}/dashboard\n\nYour weekly receipt: ${receiptShareUrl}\n\nUnsubscribe: ${unsubUrl(email)}`,
       html: renderEmail({
         preheader: `${stats.profileViews} profile views · ${stats.streakDays}-day streak · ${stats.vibeScore} vibe score`,
         body,
@@ -858,12 +889,14 @@ ${cta(`${siteUrl}/dashboard`, "View dashboard")}
 
   {
     const stats = { profileViews: 47, streakDays: 12, vibeScore: 84, hireRequests: 3 };
+    const previewMonday = mondayOf(new Date()).toISOString().slice(0, 10);
     const body = `
 ${eyebrow("Weekly recap")}
 ${headline("Your week on VibeTalent")}
 ${paragraph(`Hey <strong>@${safeUser}</strong>, here's how the past 7 days went.`)}
 ${renderStatsGrid(stats)}
 ${cta(`${siteUrl}/dashboard`, "View dashboard")}
+${renderWeeklyReceiptSection({ username, monday: previewMonday })}
 `;
     samples.push({
       key: "weekly-digest",
