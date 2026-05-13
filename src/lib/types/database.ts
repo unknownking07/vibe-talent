@@ -106,6 +106,14 @@ export interface Review {
   comment: string | null;
   trust_score: number;
   created_at: string;
+  reviewer_user_id?: string | null;
+  // Optional embedded reviewer profile when reviewer_user_id is set.
+  // Populated by API joins; null for anonymous reviews.
+  reviewer?: {
+    username: string;
+    reviewer_calibration: number | null;
+    reviewer_tier: "bronze" | "silver" | "gold" | null;
+  } | null;
 }
 
 export interface ProjectEndorsement {

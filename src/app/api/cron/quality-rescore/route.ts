@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl } from "@/lib/github-quality";
+import { runWeeklySnapshot } from "@/lib/cron-jobs/weekly-snapshot";
 
 // Each project costs 4 api.github.com calls. At 50 projects per run that's
 // 200 calls — well over the 60/hr anonymous limit. Plus default 60s Vercel
@@ -69,8 +70,29 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch projects" }, { status: 500 });
     }
 
+    // Monday-only weekly snapshot of all users' vibe scores so we can compute
+    // "climbed since last Monday" deltas. Runs in-process after rescoring (or
+    // the no-op skip path) to avoid burning another Vercel cron slot. Isolated
+    // try/catch: a snapshot failure must not mask the rescore result.
+    const today = new Date();
+    const isMondayUTC = today.getUTCDay() === 1;
+    const runSnapshot = async (): Promise<{ inserted: number } | null> => {
+      if (!isMondayUTC) return null;
+      try {
+        return await runWeeklySnapshot(today);
+      } catch (err) {
+        console.error("quality-rescore weekly-snapshot error:", err);
+        return null;
+      }
+    };
+
     if (needsRescore.length === 0) {
-      return NextResponse.json({ message: "No projects need rescoring", rescored: 0 });
+      const weeklySnapshot = await runSnapshot();
+      return NextResponse.json({
+        message: "No projects need rescoring",
+        rescored: 0,
+        weeklySnapshot,
+      });
     }
 
     let rescored = 0;
@@ -137,11 +159,14 @@ export async function GET(req: NextRequest) {
 
     console.log(`Quality rescore complete: ${rescored} rescored, ${errors} errors`);
 
+    const weeklySnapshot = await runSnapshot();
+
     return NextResponse.json({
       message: `Quality rescore complete: ${rescored} rescored, ${errors} errors`,
       rescored,
       errors,
       total_checked: needsRescore.length,
+      weeklySnapshot,
     });
   } catch (error) {
     console.error("Quality rescore cron error:", error);
