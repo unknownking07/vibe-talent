@@ -29,23 +29,57 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // empty result swallowed by `catch {}` — which silently dropped every
     // profile URL from the sitemap.
     const supabase = createAdminClient();
-    const { data: users, error } = await supabase
-      .from("users")
-      .select("username, created_at")
-      .not("username", "is", null)
-      .not("github_username", "is", null);
 
-    if (error) {
-      console.error("[sitemap] users query failed:", error);
+    // Only index profiles that have actually done something on the
+    // platform — either built a streak or shipped a project. A signed-up
+    // account with nothing on it is thin content; including it dilutes
+    // site-wide quality signals and gives Google ~empty pages to crawl.
+    // Streak-or-project (not just GitHub linked) catches builders who
+    // imported projects manually or whose GitHub connect didn't land.
+    const [usersResult, projectUserIdsResult] = await Promise.all([
+      supabase
+        .from("users")
+        .select("id, username, created_at, longest_streak")
+        .not("username", "is", null),
+      supabase.from("projects").select("user_id"),
+    ]);
+
+    if (usersResult.error) {
+      console.error("[sitemap] users query failed:", usersResult.error);
+      return staticPages;
+    }
+    if (projectUserIdsResult.error) {
+      console.error(
+        "[sitemap] projects query failed:",
+        projectUserIdsResult.error,
+      );
       return staticPages;
     }
 
-    const profilePages: MetadataRoute.Sitemap = (users ?? []).map(
-      (user: { username: string; created_at: string }) => ({
+    type SitemapUser = {
+      id: string;
+      username: string;
+      created_at: string;
+      longest_streak: number | null;
+    };
+
+    const userIdsWithProjects = new Set(
+      (projectUserIdsResult.data ?? []).map(
+        (p: { user_id: string }) => p.user_id,
+      ),
+    );
+
+    const profilePages: MetadataRoute.Sitemap = (
+      (usersResult.data ?? []) as SitemapUser[]
+    )
+      .filter(
+        (u) =>
+          (u.longest_streak ?? 0) > 0 || userIdsWithProjects.has(u.id),
+      )
+      .map((user) => ({
         url: `${siteUrl}/profile/${user.username.trim()}`,
         lastModified: new Date(user.created_at),
-      }),
-    );
+      }));
 
     return [...staticPages, ...profilePages];
   } catch (error) {
