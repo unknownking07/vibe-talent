@@ -1,8 +1,11 @@
 import { fetchUserByUsernameCached, fetchStreakLogsCached } from "@/lib/supabase/server-queries";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { ProfileSidebar } from "@/components/profile/profile-sidebar";
 import { StatsRibbon } from "@/components/profile/stats-ribbon";
 import { ProfileHeatmap } from "@/components/profile/profile-heatmap";
+import { ReviewerStats } from "@/components/profile/reviewer-stats";
+import type { ReviewerTier } from "@/lib/reviewer/tier";
 import { extractSocialHandle } from "@/lib/social-handles";
 import { ProfileProjectCard } from "@/components/profile/profile-project-card";
 import ReviewsSection from "@/components/profile/reviews-section";
@@ -92,6 +95,46 @@ export default async function ProfilePage({
 
   const heatmapData = await fetchStreakLogsCached(user.id);
 
+  // Fetch reviewer reputation data — kept outside the cached user fetch so we
+  // don't bust the per-username cache when only review counts change.
+  let reviewsGiven = 0;
+  let reviewsLast30d = 0;
+  let reviewerCalibration: number | null = null;
+  let reviewerTier: ReviewerTier | null = null;
+  try {
+    const adminSb = createAdminClient();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count: givenCount } = await (adminSb as any)
+      .from("reviews")
+      .select("id", { count: "exact", head: true })
+      .eq("reviewer_user_id", user.id);
+    reviewsGiven = givenCount ?? 0;
+
+    const since = new Date();
+    since.setUTCDate(since.getUTCDate() - 30);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count: last30Count } = await (adminSb as any)
+      .from("reviews")
+      .select("id", { count: "exact", head: true })
+      .eq("reviewer_user_id", user.id)
+      .gte("created_at", since.toISOString());
+    reviewsLast30d = last30Count ?? 0;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: rep } = await (adminSb as any)
+      .from("users")
+      .select("reviewer_calibration, reviewer_tier")
+      .eq("id", user.id)
+      .single();
+    reviewerCalibration = rep?.reviewer_calibration ?? null;
+    reviewerTier = (rep?.reviewer_tier ?? null) as ReviewerTier | null;
+  } catch (err) {
+    // Reviewer reputation is non-critical — fall through with zeros/nulls so
+    // the profile page still renders if Supabase is briefly unavailable.
+    console.error("Failed to fetch reviewer reputation:", err);
+  }
+
   const breadcrumbLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -142,8 +185,16 @@ export default async function ProfilePage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="w-full max-w-[1200px] grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 items-start">
-        {/* Sidebar */}
-        <ProfileSidebar user={user} />
+        {/* Sidebar column — primary profile sidebar + reviewer reputation block */}
+        <div className="flex flex-col gap-6">
+          <ProfileSidebar user={user} />
+          <ReviewerStats
+            reviewsGiven={reviewsGiven}
+            reviewsLast30d={reviewsLast30d}
+            calibration={reviewerCalibration}
+            tier={reviewerTier}
+          />
+        </div>
 
         {/* Main Content */}
         <div className="flex flex-col gap-6">

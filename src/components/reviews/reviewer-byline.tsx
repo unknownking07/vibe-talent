@@ -21,8 +21,8 @@ export function ReviewerByline({
   calibration,
   tier,
 }: ReviewerBylineProps) {
-  // Anonymous reviewer — no reputation data to show.
-  if (!reviewerUsername || reviewsGiven == null || reviewsGiven === 0) {
+  // Anonymous reviewer (no linked user) — fall back to plain name.
+  if (!reviewerUsername) {
     return (
       <div className="text-[13px] text-[var(--text-secondary)]">
         reviewed by <b className="text-[var(--foreground)]">{reviewerName}</b>
@@ -30,13 +30,17 @@ export function ReviewerByline({
     );
   }
 
+  const hasMeta = (reviewsGiven != null && reviewsGiven > 0) || calibration != null;
+
   return (
     <div className="flex items-center gap-2 flex-wrap text-[13px] text-[var(--text-secondary)]">
       <span>reviewed by <b className="text-[var(--foreground)]">@{reviewerUsername}</b></span>
-      <span className="font-mono">
-        · {reviewsGiven} reviews
-        {calibration != null && ` · ${Math.round(calibration)}% cal`}
-      </span>
+      {hasMeta && (
+        <span className="font-mono">
+          {reviewsGiven != null && reviewsGiven > 0 && `· ${reviewsGiven} reviews`}
+          {calibration != null && ` · ${Math.round(calibration)}% cal`}
+        </span>
+      )}
       {tier && (
         <span className={`${TIER_STYLES[tier]} text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-sm tracking-wider`}>
           {tier.toUpperCase()}

@@ -21,9 +21,15 @@ export async function GET(req: NextRequest) {
     }
 
     const sb = createAdminClient();
-    const { data, error } = await sb
+    // Embed reviewer profile (username + reputation) via the reviewer_user_id FK.
+    // Anonymous reviews (reviewer_user_id IS NULL) come back with reviewer: null.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (sb as any)
       .from("reviews")
-      .select("id, builder_id, reviewer_name, reviewer_email, rating, comment, trust_score, created_at")
+      .select(`
+        id, builder_id, reviewer_name, reviewer_email, rating, comment, trust_score, created_at, reviewer_user_id,
+        reviewer:users!reviewer_user_id ( username, reviewer_calibration, reviewer_tier )
+      `)
       .eq("builder_id", builderId)
       .order("created_at", { ascending: false });
 
