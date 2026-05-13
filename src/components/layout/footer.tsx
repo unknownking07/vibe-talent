@@ -10,7 +10,7 @@ export function Footer() {
       }}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-8">
           <div className="sm:col-span-2">
             <div className="flex items-center gap-2.5 mb-3">
               <Image src="/logo.png" alt="VibeTalent" width={36} height={36} className="object-contain" />
@@ -31,6 +31,21 @@ export function Footer() {
               <Link href="/dashboard" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Dashboard</Link>
               <Link href="/roadmap" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Roadmap</Link>
               <a href="https://vibe-talent.gitbook.io/untitled" target="_blank" rel="noopener noreferrer" aria-label="Docs (opens in new tab)" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Docs</a>
+            </div>
+          </div>
+          <div>
+            <h4 className="text-sm font-extrabold uppercase tracking-wide mb-3" style={{ color: "var(--foreground)" }}>Community</h4>
+            <div className="flex flex-col gap-2">
+              <a
+                href="https://t.me/vibetalentwork"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Telegram community (opens in new tab)"
+                className="text-sm font-semibold hover:text-[var(--accent)] transition-colors"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Telegram
+              </a>
             </div>
           </div>
           <div>

@@ -925,6 +925,35 @@ export default function ProfileSetupPage() {
             </p>
           </div>
 
+          <a
+            href="https://t.me/vibetalentwork"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Join the VibeTalent Telegram community (opens in new tab)"
+            className="flex items-center gap-3 p-4 text-left transition-all hover:translate-x-[1px] hover:translate-y-[1px]"
+            style={{
+              backgroundColor: "var(--bg-surface)",
+              border: "2px solid var(--border-hard)",
+              boxShadow: "var(--shadow-brutal-sm)",
+            }}
+          >
+            <div
+              className="shrink-0 w-10 h-10 flex items-center justify-center"
+              style={{ backgroundColor: "#229ED9", color: "white" }}
+            >
+              <TelegramIcon size={20} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-extrabold uppercase tracking-wide text-[var(--foreground)]">
+                Join our Telegram
+              </p>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                Where builders ship in public — @vibetalentwork
+              </p>
+            </div>
+            <ArrowRight size={16} className="shrink-0 text-[var(--text-muted)]" />
+          </a>
+
           <button
             type="button"
             onClick={async () => {
