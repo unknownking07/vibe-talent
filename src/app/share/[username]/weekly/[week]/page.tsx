@@ -27,7 +27,7 @@ export default async function WeeklyReceiptPage({ params }: { params: Promise<{ 
         <Image src={ogImage} alt="receipt" width={1200} height={630} className="w-full h-auto" />
       </div>
       <div className="mt-6">
-        <ShareButton url={shareUrl} text={shareText} />
+        <ShareButton url={shareUrl} text={shareText} imageUrl={ogImage} />
       </div>
     </main>
   );

@@ -206,6 +206,7 @@ export default async function ProfilePage({
             <ShareButton
               url={`/share/${user.username}/custom?range=30d`}
               text={`Check out @${user.username} on VibeTalent`}
+              imageUrl={`/api/og/receipt/custom/${user.username}?range=30d`}
             />
           </div>
 

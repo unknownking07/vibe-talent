@@ -37,7 +37,7 @@ export default async function CustomReceiptPage({ params, searchParams }: { para
       <div className="border-2 border-[var(--border-hard)]" style={{ boxShadow: "var(--shadow-brutal)" }}>
         <Image src={ogImage} alt="receipt" width={1200} height={630} className="w-full h-auto" />
       </div>
-      <div className="mt-6"><ShareButton url={shareUrl} text={shareText} /></div>
+      <div className="mt-6"><ShareButton url={shareUrl} text={shareText} imageUrl={ogImage} /></div>
     </main>
   );
 }
