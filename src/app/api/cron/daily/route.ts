@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSiteUrl } from "@/lib/seo";
+import { runReviewerCalibration } from "@/lib/cron-jobs/reviewer-calibration";
 
 // Daily orchestrator awaits each child cron sequentially, so its own
 // timeout has to be long enough to cover the slowest child plus all
@@ -52,9 +53,20 @@ export async function GET(req: NextRequest) {
   const summary = Object.entries(results).map(([name, r]: [string, { status: number }]) => `${name}:${r.status}`).join(", ");
   console.log(`Daily cron completed: ${summary}`);
 
+  // Run reviewer calibration in-process after the fan-out so we don't burn
+  // another Vercel cron slot. Isolated try/catch: a calibration failure must
+  // not mask the orchestrator's primary results.
+  let reviewerCalibration: { updated: number; skipped: number } | null = null;
+  try {
+    reviewerCalibration = await runReviewerCalibration();
+  } catch (error) {
+    console.error("Daily cron reviewer-calibration error:", error);
+  }
+
   return NextResponse.json({
     message: "Daily cron completed",
     results,
+    reviewerCalibration,
     ran_at: new Date().toISOString(),
   });
 }

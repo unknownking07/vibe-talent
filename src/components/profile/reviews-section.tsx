@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Star, MessageSquare, Send, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Review } from "@/lib/types/database";
+import { ReviewerByline } from "@/components/reviews/reviewer-byline";
 
 interface ReviewsSectionProps {
   builderId: string;
@@ -408,14 +409,18 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
               className="border-2 p-4"
               style={{ borderColor: "var(--border-subtle)" }}
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <span className="font-bold text-[var(--foreground)] text-sm">
-                    {review.reviewer_name}
-                  </span>
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="flex flex-col gap-1.5 min-w-0">
+                  <ReviewerByline
+                    reviewerName={review.reviewer_name}
+                    reviewerUsername={review.reviewer?.username ?? null}
+                    reviewsGiven={null}
+                    calibration={review.reviewer?.reviewer_calibration ?? null}
+                    tier={review.reviewer?.reviewer_tier ?? null}
+                  />
                   <StarRating rating={review.rating} size={14} />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <span className="text-[var(--text-muted-soft)] text-xs font-mono">
                     {timeAgo(review.created_at)}
                   </span>
