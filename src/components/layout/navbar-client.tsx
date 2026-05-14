@@ -151,15 +151,22 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
     // during fast route changes / auth flips.
     let cancelled = false;
 
-    // Synchronously hydrate from the localStorage snapshot before any network
-    // round-trip so the first post-hydration paint already shows the avatar
-    // for returning users. The auth check + profile fetch below still run and
-    // overwrite this state if the cached snapshot is stale.
+    // Hydrate from the localStorage snapshot so the first re-render after
+    // hydration shows the avatar for returning users instead of waiting on
+    // supabase.auth.getUser(). The setState is deferred to a microtask to
+    // satisfy react-hooks/set-state-in-effect — same pattern as the
+    // checkTodayLogged call below. The ref is set synchronously so any
+    // listener that reads it (visibilitychange, streak-updated) sees the
+    // correct logged-in state immediately. Auth check + profile fetch below
+    // still run and overwrite this if the cached snapshot is stale.
     const cachedProfile = readCachedNavProfile();
     if (cachedProfile) {
       isLoggedInRef.current = true;
-      setIsLoggedIn(true);
-      setUserProfile(cachedProfile);
+      void Promise.resolve().then(() => {
+        if (cancelled) return;
+        setIsLoggedIn(true);
+        setUserProfile(cachedProfile);
+      });
     }
 
     async function fetchProfile(userId: string, email?: string) {
