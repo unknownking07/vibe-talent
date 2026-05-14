@@ -22,6 +22,9 @@ const FeatureYourProjectCard = dynamic(
     ssr: false,
     loading: () => (
       <div
+        role="status"
+        aria-busy="true"
+        aria-label="Loading promote-your-project card"
         className="card-brutal relative p-6 flex flex-col md:min-h-[420px] overflow-hidden"
         style={{ backgroundColor: "var(--bg-surface)" }}
       >

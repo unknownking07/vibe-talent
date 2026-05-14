@@ -269,12 +269,30 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
     };
     document.addEventListener("visibilitychange", handleVisibility);
 
+    // Cross-tab logout: when another tab clears the cache via
+    // writeCachedNavProfile(null), drop our state and re-validate. Supabase's
+    // onAuthStateChange does propagate across tabs eventually, but the
+    // `storage` event fires synchronously the moment localStorage changes,
+    // closing the stale-render window. The `storage` event only fires in
+    // OTHER tabs (not the one that wrote the change), so we won't loop.
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key !== NAV_PROFILE_CACHE_KEY) return;
+      if (e.newValue === null) {
+        isLoggedInRef.current = false;
+        setIsLoggedIn(false);
+        setUserProfile(null);
+        setHasUnloggedActivity(false);
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
     return () => {
       cancelled = true;
       subscription.unsubscribe();
       window.removeEventListener("profile-updated", handleProfileUpdated);
       window.removeEventListener("streak-updated", checkTodayLogged);
       document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("storage", handleStorage);
     };
   }, [checkTodayLogged, initialIsLoggedIn]);
 

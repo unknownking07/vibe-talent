@@ -33,9 +33,16 @@ const PRIVY_CONFIGURED = !!PRIVY_APP_ID;
 
 // Solana Wallet Standard connectors — needed so Privy can detect installed
 // Solana wallets via the Wallet Standard instead of redirecting to download
-// pages. Module-level call mirrors the previous root-Providers behavior, so
-// the connectors are constructed exactly once when this chunk loads.
-const solanaConnectors = toSolanaWalletConnectors();
+// pages. Lazily initialized so the setup cost only runs when PRIVY_CONFIGURED
+// branch actually renders; cached at module scope so it's constructed exactly
+// once per chunk load (Privy expects a stable reference across re-renders).
+let solanaConnectorsCache: ReturnType<typeof toSolanaWalletConnectors> | null = null;
+function getSolanaConnectors() {
+  if (solanaConnectorsCache === null) {
+    solanaConnectorsCache = toSolanaWalletConnectors();
+  }
+  return solanaConnectorsCache;
+}
 
 const SEL = { getPrices: "0xbd9a548b" };
 
@@ -197,7 +204,7 @@ export const FeatureYourProjectCard = forwardRef<HTMLDivElement, Props>(function
           walletChainType: "ethereum-and-solana",
         },
         externalWallets: {
-          solana: { connectors: solanaConnectors },
+          solana: { connectors: getSolanaConnectors() },
         },
         embeddedWallets: {
           ethereum: {
