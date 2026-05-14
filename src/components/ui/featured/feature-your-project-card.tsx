@@ -3,9 +3,14 @@
 import { useState, useEffect, forwardRef } from "react";
 import { Wallet, Loader2, Check } from "lucide-react";
 import { encodeFunctionData, parseAbi } from "viem";
+import { base, mainnet, arbitrum } from "viem/chains";
 import { createClient } from "@/lib/supabase/client";
-import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { useWallets as useSolanaWallets, useSignAndSendTransaction } from "@privy-io/react-auth/solana";
+import { PrivyProvider, usePrivy, useWallets } from "@privy-io/react-auth";
+import {
+  toSolanaWalletConnectors,
+  useWallets as useSolanaWallets,
+  useSignAndSendTransaction,
+} from "@privy-io/react-auth/solana";
 import {
   CHAIN_CONFIGS,
   SUPPORTED_CHAINS,
@@ -23,7 +28,21 @@ const BASE_CONFIG = CHAIN_CONFIGS.base;
 const CONTRACT_ADDR = isEVMChain(BASE_CONFIG) ? BASE_CONFIG.contractAddr : "";
 const BASE_RPC = isEVMChain(BASE_CONFIG) ? BASE_CONFIG.rpc : "";
 
-const PRIVY_CONFIGURED = !!process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+const PRIVY_CONFIGURED = !!PRIVY_APP_ID;
+
+// Solana Wallet Standard connectors — needed so Privy can detect installed
+// Solana wallets via the Wallet Standard instead of redirecting to download
+// pages. Lazily initialized so the setup cost only runs when PRIVY_CONFIGURED
+// branch actually renders; cached at module scope so it's constructed exactly
+// once per chunk load (Privy expects a stable reference across re-renders).
+let solanaConnectorsCache: ReturnType<typeof toSolanaWalletConnectors> | null = null;
+function getSolanaConnectors() {
+  if (solanaConnectorsCache === null) {
+    solanaConnectorsCache = toSolanaWalletConnectors();
+  }
+  return solanaConnectorsCache;
+}
 
 const SEL = { getPrices: "0xbd9a548b" };
 
@@ -156,7 +175,47 @@ export const FeatureYourProjectCard = forwardRef<HTMLDivElement, Props>(function
     );
   }
 
-  return <FeatureCardBody ref={ref} onSuccess={onSuccess} isLoggedIn={isLoggedIn} />;
+  // PrivyProvider lives inside this component (not the root layout) so the
+  // entire web3 stack — @privy-io/*, @walletconnect/*, @coinbase/wallet-sdk,
+  // @solana/*, viem chains — only loads when the card itself mounts. Combined
+  // with the dynamic import in featured-section, that defers ~60 JS chunks
+  // and the auth.privy.io / mainnet.base.org RPC calls off the critical path.
+  return (
+    <PrivyProvider
+      appId={PRIVY_APP_ID!}
+      config={{
+        loginMethods: ["wallet", "email"],
+        defaultChain: base,
+        supportedChains: [base, mainnet, arbitrum],
+        appearance: {
+          walletList: [
+            "rabby_wallet",
+            "metamask",
+            "coinbase_wallet",
+            "rainbow",
+            "wallet_connect",
+            "detected_ethereum_wallets",
+            "phantom",
+            "backpack",
+            "solflare",
+            "jupiter",
+            "detected_solana_wallets",
+          ],
+          walletChainType: "ethereum-and-solana",
+        },
+        externalWallets: {
+          solana: { connectors: getSolanaConnectors() },
+        },
+        embeddedWallets: {
+          ethereum: {
+            createOnLogin: "users-without-wallets",
+          },
+        },
+      }}
+    >
+      <FeatureCardBody ref={ref} onSuccess={onSuccess} isLoggedIn={isLoggedIn} />
+    </PrivyProvider>
+  );
 });
 
 const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBody(

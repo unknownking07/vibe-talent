@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { Megaphone, ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -11,7 +12,40 @@ import {
 } from "@/lib/featured-promotions";
 import { FeaturedProjectCard } from "./featured-project-card";
 import { EmptySlotCard } from "./empty-slot-card";
-import { FeatureYourProjectCard } from "./feature-your-project-card";
+
+// Lazy-loaded so the Privy / WalletConnect / Coinbase / Solana / viem stack
+// (~60 chunks) stays out of the homepage's critical path. The placeholder
+// matches the real card's dimensions to avoid CLS when it swaps in.
+const FeatureYourProjectCard = dynamic(
+  () => import("./feature-your-project-card").then((m) => ({ default: m.FeatureYourProjectCard })),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        role="status"
+        aria-busy="true"
+        aria-label="Loading promote-your-project card"
+        className="card-brutal relative p-6 flex flex-col md:min-h-[420px] overflow-hidden"
+        style={{ backgroundColor: "var(--bg-surface)" }}
+      >
+        <h3 className="text-2xl font-extrabold uppercase leading-tight">
+          <span className="block text-[var(--foreground)]">Feature</span>
+          <span className="block" style={{ color: "var(--accent)" }}>Your Project</span>
+        </h3>
+        <div className="mt-6 space-y-3">
+          <div
+            className="h-3 w-3/4 animate-pulse"
+            style={{ backgroundColor: "var(--border-subtle)" }}
+          />
+          <div
+            className="h-3 w-2/3 animate-pulse"
+            style={{ backgroundColor: "var(--border-subtle)" }}
+          />
+        </div>
+      </div>
+    ),
+  },
+);
 
 const SLOTS_PER_PAGE = 2;
 
@@ -202,9 +236,16 @@ export function FeaturedSection() {
                 <EmptySlotCard key={`empty-${idx}`} onClaim={handleClaim} />
               ),
             )}
-            <div className="md:col-span-2 lg:col-span-1">
+            {/* Ref lives on the wrapper, not the card, because next/dynamic
+                doesn't forward refs. The wrapper has the card's exact bounds
+                (no extra padding / borders), so the .claim-pulse outline and
+                scrollIntoView target stay visually identical. */}
+            <div
+              ref={featureCardRef}
+              tabIndex={-1}
+              className="md:col-span-2 lg:col-span-1 focus:outline-none"
+            >
               <FeatureYourProjectCard
-                ref={featureCardRef}
                 onSuccess={refreshPromotions}
                 isLoggedIn={isLoggedIn}
               />

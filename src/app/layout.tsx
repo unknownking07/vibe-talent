@@ -6,7 +6,6 @@ import { Footer } from "@/components/layout/footer";
 import { SignupBar } from "@/components/layout/signup-bar";
 import { PromoBillboard } from "@/components/ui/promo-billboard";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
-import Providers from "@/components/providers";
 import { siteUrl } from "@/lib/seo";
 import "./globals.css";
 
@@ -104,15 +103,13 @@ export default function RootLayout({
       <body
         className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        <Providers>
-          <PromoBillboard />
-          <Navbar />
-          <ErrorBoundary>
-            <main className="min-h-screen">{children}</main>
-          </ErrorBoundary>
-          <Footer />
-          <SignupBar />
-        </Providers>
+        <PromoBillboard />
+        <Navbar />
+        <ErrorBoundary>
+          <main className="min-h-screen">{children}</main>
+        </ErrorBoundary>
+        <Footer />
+        <SignupBar />
       </body>
     </html>
   );

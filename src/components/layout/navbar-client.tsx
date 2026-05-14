@@ -36,6 +36,44 @@ interface NavbarClientProps {
   initialProfile: NavbarProfile | null;
 }
 
+// Cache the navbar profile in localStorage so a hard refresh renders the
+// avatar from the first post-hydration paint instead of flashing the
+// "Create Profile" CTA and "??" initials while supabase.auth.getUser() and
+// the profile DB query resolve. The background auth check below still runs
+// and overwrites stale entries (logout in another tab, profile renamed, etc.).
+const NAV_PROFILE_CACHE_KEY = "vt-navbar-profile-v1";
+
+function readCachedNavProfile(): NavbarProfile | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(NAV_PROFILE_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed.username !== "string") return null;
+    return {
+      username: parsed.username,
+      avatar_url: typeof parsed.avatar_url === "string" ? parsed.avatar_url : null,
+      github_username: typeof parsed.github_username === "string" ? parsed.github_username : null,
+      display_name: typeof parsed.display_name === "string" ? parsed.display_name : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedNavProfile(profile: NavbarProfile | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (profile === null) {
+      window.localStorage.removeItem(NAV_PROFILE_CACHE_KEY);
+    } else {
+      window.localStorage.setItem(NAV_PROFILE_CACHE_KEY, JSON.stringify(profile));
+    }
+  } catch {
+    // Private mode / quota / disabled storage — best-effort cache.
+  }
+}
+
 function ProfileAvatar({
   avatarUrl,
   username,
@@ -113,6 +151,24 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
     // during fast route changes / auth flips.
     let cancelled = false;
 
+    // Hydrate from the localStorage snapshot so the first re-render after
+    // hydration shows the avatar for returning users instead of waiting on
+    // supabase.auth.getUser(). The setState is deferred to a microtask to
+    // satisfy react-hooks/set-state-in-effect — same pattern as the
+    // checkTodayLogged call below. The ref is set synchronously so any
+    // listener that reads it (visibilitychange, streak-updated) sees the
+    // correct logged-in state immediately. Auth check + profile fetch below
+    // still run and overwrite this if the cached snapshot is stale.
+    const cachedProfile = readCachedNavProfile();
+    if (cachedProfile) {
+      isLoggedInRef.current = true;
+      void Promise.resolve().then(() => {
+        if (cancelled) return;
+        setIsLoggedIn(true);
+        setUserProfile(cachedProfile);
+      });
+    }
+
     async function fetchProfile(userId: string, email?: string) {
       try {
         const { data: profile, error } = await sb
@@ -123,14 +179,18 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
         if (cancelled) return;
         if (error) console.error("Navbar profile fetch error:", error);
         if (profile && profile.username) {
-          setUserProfile({
+          const next: NavbarProfile = {
             username: profile.username,
             avatar_url: profile.avatar_url,
             github_username: profile.github_username || null,
             display_name: profile.display_name || null,
-          });
+          };
+          setUserProfile(next);
+          writeCachedNavProfile(next);
         } else if (email) {
-          // Fallback: use email prefix as display name
+          // Fallback: use email prefix as display name. Intentionally NOT
+          // cached — these are users mid-onboarding with no `users` row yet,
+          // and we want the real username to show as soon as it exists.
           setUserProfile({ username: email.split("@")[0], avatar_url: null, github_username: null, display_name: null });
         }
       } catch (err) {
@@ -142,12 +202,13 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
       }
     }
 
-    // If SSR already gave us a logged-in user, kick off the dashboard-dot
-    // check immediately — the auth round-trip below would otherwise delay it.
-    // Defer to a microtask so react-hooks/set-state-in-effect sees an async
-    // boundary (the setState happens after the API round-trip, not during
-    // this effect's body, so there's no cascading render risk).
-    if (initialIsLoggedIn) {
+    // If SSR or the localStorage cache already tells us the user is logged
+    // in, kick off the dashboard-dot check immediately — the auth round-trip
+    // below would otherwise delay it. Defer to a microtask so
+    // react-hooks/set-state-in-effect sees an async boundary (the setState
+    // happens after the API round-trip, not during this effect's body, so
+    // there's no cascading render risk).
+    if (initialIsLoggedIn || cachedProfile) {
       void Promise.resolve().then(() => checkTodayLogged());
     }
 
@@ -162,6 +223,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
         fetchProfile(user.id, user.email);
         void checkTodayLogged();
       } else {
+        // Cookie expired or cleared between cache write and now — drop the
+        // cached profile so the next hard refresh doesn't flash it.
+        setUserProfile(null);
+        writeCachedNavProfile(null);
         setHasUnloggedActivity(false);
       }
     });
@@ -176,6 +241,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
       } else {
         setUserProfile(null);
         setHasUnloggedActivity(false);
+        writeCachedNavProfile(null);
       }
     });
 
@@ -203,12 +269,30 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
     };
     document.addEventListener("visibilitychange", handleVisibility);
 
+    // Cross-tab logout: when another tab clears the cache via
+    // writeCachedNavProfile(null), drop our state and re-validate. Supabase's
+    // onAuthStateChange does propagate across tabs eventually, but the
+    // `storage` event fires synchronously the moment localStorage changes,
+    // closing the stale-render window. The `storage` event only fires in
+    // OTHER tabs (not the one that wrote the change), so we won't loop.
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key !== NAV_PROFILE_CACHE_KEY) return;
+      if (e.newValue === null) {
+        isLoggedInRef.current = false;
+        setIsLoggedIn(false);
+        setUserProfile(null);
+        setHasUnloggedActivity(false);
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
     return () => {
       cancelled = true;
       subscription.unsubscribe();
       window.removeEventListener("profile-updated", handleProfileUpdated);
       window.removeEventListener("streak-updated", checkTodayLogged);
       document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("storage", handleStorage);
     };
   }, [checkTodayLogged, initialIsLoggedIn]);
 
@@ -264,13 +348,14 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
     await supabase.auth.signOut();
     setIsLoggedIn(false);
     setUserProfile(null);
+    writeCachedNavProfile(null);
     setProfileDropdownOpen(false);
     router.push("/");
   };
 
   const initials = userProfile?.username
     ? userProfile.username.slice(0, 2).toUpperCase()
-    : "??";
+    : "";
 
   return (
     <nav
