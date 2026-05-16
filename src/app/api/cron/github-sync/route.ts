@@ -71,10 +71,14 @@ export async function GET(req: NextRequest) {
     // first. The previous ASC ordering meant if the function timed out
     // partway through, the back of the queue (heavy users) was the first
     // thing dropped, leaving them stuck for days.
+    //
+    // github_id is also selected so the rename-detection logic below can
+    // verify the username we have on file still points at the same GitHub
+    // account (catches handle reclaims after a rename).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: usersWithGithub, error: usersError } = await (supabase as any)
       .from("users")
-      .select("id, username, github_username, lifetime_contributions")
+      .select("id, username, github_username, github_id, lifetime_contributions")
       .not("github_username", "is", null)
       .neq("github_username", "")
       .order("lifetime_contributions", { ascending: false, nullsFirst: false });
@@ -98,7 +102,10 @@ export async function GET(req: NextRequest) {
     }
 
     // Build a map of user_id -> github_username
-    const userGithubMap = new Map<string, { userId: string; username: string; githubUsername: string }>();
+    const userGithubMap = new Map<
+      string,
+      { userId: string; username: string; githubUsername: string; githubId: number | null }
+    >();
 
     // Add users with github_username from users table
     for (const user of usersWithGithub || []) {
@@ -108,6 +115,7 @@ export async function GET(req: NextRequest) {
           userId: user.id,
           username: user.username || user.id,
           githubUsername: cleaned,
+          githubId: typeof user.github_id === "number" ? user.github_id : null,
         });
       }
     }
@@ -122,6 +130,7 @@ export async function GET(req: NextRequest) {
               userId: link.user_id,
               username: link.user_id, // We don't have username from social_links
               githubUsername: cleaned,
+              githubId: null,
             });
           }
         }
@@ -165,15 +174,138 @@ export async function GET(req: NextRequest) {
       const batchResults = await Promise.allSettled(
         batch.map(async (userInfo) => {
           try {
-            // Try the events API first (for the activity feed). Failure here
-            // is NON-fatal — we still fetch the heatmap below for lifetime
-            // and 30d totals. Previously a single 403 (rate-limit) on this
-            // call would skip a user entirely, so most users never got their
-            // volume scoring populated.
+            // Step 1: resolve the canonical GitHub identity via /users/{name}.
+            //
+            // Previously we tried to detect renames from events[0].actor.login
+            // on the events fetch, but that only fires when the user has
+            // recent public events AND GitHub's events redirect actually
+            // surfaces them — a user could rename and stay invisible to us
+            // until they generated activity on the new handle, OR if their
+            // old handle was reclaimed by someone else (404 path), we'd
+            // hard-skip and never recover.
+            //
+            // /users/{name} is reliable: it follows renames via stable
+            // numeric ID, always returns the canonical login + id, and
+            // 404s only on real deletion. Costs +1 API call per user per
+            // run — with GITHUB_TOKEN's 5000/hr ceiling, irrelevant.
+            let userNotFound = false;
+            let userInfoApiError: string | null = null;
+            let reclaimDetected = false;
+
+            const userInfoController = new AbortController();
+            const userInfoTimeoutId = setTimeout(
+              () => userInfoController.abort(),
+              EVENTS_API_TIMEOUT_MS
+            );
+            try {
+              const response = await fetch(
+                `https://api.github.com/users/${encodeURIComponent(userInfo.githubUsername)}`,
+                { headers: ghApiHeaders, signal: userInfoController.signal }
+              );
+
+              if (response.status === 404) {
+                userNotFound = true;
+              } else if (!response.ok) {
+                userInfoApiError = response.status === 403
+                  ? "rate limit exceeded"
+                  : `HTTP ${response.status}`;
+              } else {
+                const body = await response.json();
+                const apiLogin: string | undefined =
+                  typeof body?.login === "string" ? body.login : undefined;
+                const apiId: number | undefined =
+                  typeof body?.id === "number" ? body.id : undefined;
+
+                // Reclaim guard: if we have a github_id on file and the
+                // username's current owner has a *different* id, somebody
+                // took the old handle after our user renamed away. Bail
+                // out — we'd otherwise pull a stranger's commits into our
+                // user's feed. Admin can manually re-link with the new
+                // handle.
+                if (
+                  userInfo.githubId !== null &&
+                  typeof apiId === "number" &&
+                  apiId !== userInfo.githubId
+                ) {
+                  reclaimDetected = true;
+                  console.warn(
+                    `[github-sync] handle reclaim suspected for user ${userInfo.userId}: ` +
+                    `stored github_id=${userInfo.githubId}, "${userInfo.githubUsername}" now owned by id=${apiId}`
+                  );
+                } else {
+                  // Apply rename and/or backfill github_id from the response.
+                  const dbUpdates: Record<string, string | number> = {};
+                  const loginChanged =
+                    apiLogin &&
+                    apiLogin.toLowerCase() !== userInfo.githubUsername.toLowerCase();
+
+                  if (loginChanged) {
+                    console.log(
+                      `[github-sync] username rename for user ${userInfo.userId}: ` +
+                      `stored="${userInfo.githubUsername}" → canonical="${apiLogin}"`
+                    );
+                    dbUpdates.github_username = apiLogin!;
+                  }
+                  if (typeof apiId === "number" && userInfo.githubId === null) {
+                    dbUpdates.github_id = apiId;
+                  }
+
+                  if (Object.keys(dbUpdates).length > 0) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    await (supabase as any)
+                      .from("users")
+                      .update(dbUpdates)
+                      .eq("id", userInfo.userId);
+                  }
+                  if (loginChanged) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    await (supabase as any)
+                      .from("social_links")
+                      .upsert(
+                        { user_id: userInfo.userId, github: apiLogin! },
+                        { onConflict: "user_id" }
+                      );
+                    // Use the canonical handle for the rest of this iteration.
+                    userInfo.githubUsername = apiLogin!;
+                  }
+                  if (typeof apiId === "number") {
+                    userInfo.githubId = apiId;
+                  }
+                }
+              }
+            } catch (err) {
+              userInfoApiError = err instanceof Error && err.name === "AbortError"
+                ? `timeout after ${EVENTS_API_TIMEOUT_MS}ms`
+                : err instanceof Error
+                  ? err.message
+                  : "fetch failed";
+            } finally {
+              clearTimeout(userInfoTimeoutId);
+            }
+
+            if (userNotFound) {
+              return { userInfo, status: "skipped", reason: "GitHub user not found" };
+            }
+            if (reclaimDetected) {
+              return {
+                userInfo,
+                status: "skipped",
+                reason: "GitHub handle reclaimed by another account (github_id mismatch)",
+              };
+            }
+            // If user-info failed (rate limit / timeout / transient), fall
+            // through and try events with the stored handle anyway — the
+            // events redirect will still pick up activity in the common
+            // case. We just lose the rename-detection upside for this run.
+
+            // Step 2: events feed for the (now canonical) handle. Failure
+            // here is NON-fatal — we still fetch the heatmap below for
+            // lifetime and 30d totals. Previously a single 403 (rate-limit)
+            // on this call would skip a user entirely, so most users never
+            // got their volume scoring populated.
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             let recentEvents: any[] = [];
-            let eventsApiError: string | null = null;
-            let userNotFound = false;
+            let eventsApiError: string | null = userInfoApiError;
 
             const eventsController = new AbortController();
             const eventsTimeoutId = setTimeout(
@@ -186,50 +318,12 @@ export async function GET(req: NextRequest) {
                 { headers: ghApiHeaders, signal: eventsController.signal }
               );
 
-              if (response.status === 404) {
-                userNotFound = true;
-              } else if (!response.ok) {
+              if (!response.ok) {
                 eventsApiError = response.status === 403
                   ? "rate limit exceeded"
                   : `HTTP ${response.status}`;
               } else {
                 const events = await response.json();
-
-                // Detect GitHub username drift. When a user renames their
-                // GitHub handle, /users/{old}/events redirects transparently,
-                // but actor.login on the response carries the new canonical
-                // handle. Compare against what we have stored — if it's
-                // changed, refresh users.github_username and social_links.github
-                // so verify-backfill, share cards, and profile links stop
-                // pointing at the old name. Without this, the only way to
-                // sync was for the user to log out + back in via GitHub OAuth.
-                const canonicalLogin: string | undefined = events[0]?.actor?.login;
-                if (
-                  canonicalLogin &&
-                  canonicalLogin.toLowerCase() !== userInfo.githubUsername.toLowerCase()
-                ) {
-                  console.log(
-                    `[github-sync] username drift for user ${userInfo.userId}: ` +
-                    `stored="${userInfo.githubUsername}" → canonical="${canonicalLogin}"`
-                  );
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  await (supabase as any)
-                    .from("users")
-                    .update({ github_username: canonicalLogin })
-                    .eq("id", userInfo.userId);
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  await (supabase as any)
-                    .from("social_links")
-                    .upsert(
-                      { user_id: userInfo.userId, github: canonicalLogin },
-                      { onConflict: "user_id" }
-                    );
-                  // Use the canonical handle for the rest of this iteration —
-                  // mostly cosmetic since GitHub redirects, but keeps
-                  // fetchGitHubContributions and log lines on the right name.
-                  userInfo.githubUsername = canonicalLogin;
-                }
-
                 const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
                 recentEvents = events.filter(
                   (event: { type: string; created_at: string }) =>
@@ -245,11 +339,6 @@ export async function GET(req: NextRequest) {
                   : "fetch failed";
             } finally {
               clearTimeout(eventsTimeoutId);
-            }
-
-            // Hard skip only if GitHub explicitly says the user doesn't exist.
-            if (userNotFound) {
-              return { userInfo, status: "skipped", reason: "GitHub user not found" };
             }
 
             // Save events to feed_events table for the activity feed (only

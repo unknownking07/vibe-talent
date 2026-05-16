@@ -320,6 +320,15 @@ ALTER TABLE projects ADD COLUMN IF NOT EXISTS last_verify_attempt_at TIMESTAMPTZ
 -- Add github_username column to users (populated from GitHub OAuth on login)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS github_username TEXT;
 
+-- Stable GitHub numeric ID per user. Captured from OAuth identity_data on
+-- signup/login and verified by the github-sync cron. Lets us detect both
+-- renames (username changes, id stays) AND reclaims (username stays, id
+-- differs because someone else took the old handle).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS github_id BIGINT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_github_id_unique
+  ON users (github_id)
+  WHERE github_id IS NOT NULL;
+
 -- Add display_name column to users (Twitter-style "real name" above @username).
 -- Nullable — optional field. Auto-populated from OAuth metadata on first signup
 -- via the profile-setup flow, editable in settings afterwards.

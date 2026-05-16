@@ -58,6 +58,10 @@ export default function ProfileSetupPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [oauthAvatarUrl, setOauthAvatarUrl] = useState<string | null>(null);
   const [verifiedGithub, setVerifiedGithub] = useState<string | null>(null);
+  // GitHub's stable numeric ID, captured from OAuth identity. Persisted on
+  // the initial users row insert below so github-sync can use it to tell a
+  // rename apart from a reclaim.
+  const [verifiedGithubId, setVerifiedGithubId] = useState<number | null>(null);
   const [connectingGithub, setConnectingGithub] = useState(false);
   const [streakLogged, setStreakLogged] = useState(false);
 
@@ -117,7 +121,7 @@ export default function ProfileSetupPage() {
       // or a prior linkIdentity flow). This is the only trusted source.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: userRow } = await (supabase.from("users") as any)
-        .select("display_name, github_username")
+        .select("display_name, github_username, github_id")
         .eq("id", user.id)
         .single();
       if (userRow?.display_name) {
@@ -126,6 +130,9 @@ export default function ProfileSetupPage() {
       if (userRow?.github_username) {
         setVerifiedGithub(userRow.github_username);
         setSocials((s) => ({ ...s, github: userRow.github_username }));
+        if (typeof userRow.github_id === "number") {
+          setVerifiedGithubId(userRow.github_id);
+        }
       } else {
         // GitHub might be linked in Supabase auth but not yet synced to the
         // users table (happens when linkIdentity succeeds but the redirect
@@ -140,13 +147,26 @@ export default function ProfileSetupPage() {
           user.user_metadata?.user_name ||
           user.user_metadata?.preferred_username ||
           null;
+        // GitHub's stable numeric ID. Lives in identity_data.sub (OIDC-style
+        // subject id). github-sync uses it to distinguish a legitimate
+        // rename from a handle reclaim, so capturing it on every OAuth-
+        // mediated write keeps that guard accurate.
+        const rawGhId = ghData.sub ?? ghData.provider_id ?? null;
+        const ghId =
+          rawGhId != null && /^\d+$/.test(String(rawGhId)) ? Number(rawGhId) : null;
         if (ghUsername) {
           setVerifiedGithub(ghUsername);
           setSocials((s) => ({ ...s, github: ghUsername }));
+          if (ghId !== null && Number.isFinite(ghId)) {
+            setVerifiedGithubId(ghId);
+          }
           // Sync to DB so the rest of the app sees it
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await (supabase.from("users") as any)
-            .update({ github_username: ghUsername })
+            .update({
+              github_username: ghUsername,
+              ...(ghId !== null && Number.isFinite(ghId) ? { github_id: ghId } : {}),
+            })
             .eq("id", user.id);
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await (supabase.from("social_links") as any).upsert(
@@ -210,9 +230,10 @@ export default function ProfileSetupPage() {
     setLoading(true);
 
     try {
-      // github_username must be written here because this is the first INSERT
-      // for GitHub-first OAuth signups — users.username is NOT NULL, so no
-      // row exists when /auth/callback runs, and its UPDATE silently no-ops.
+      // github_username (and github_id) must be written here because this is
+      // the first INSERT for GitHub-first OAuth signups — users.username is
+      // NOT NULL, so no row exists when /auth/callback runs, and its UPDATE
+      // silently no-ops.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: dbError } = await (supabase.from("users") as any).upsert(
         {
@@ -222,6 +243,7 @@ export default function ProfileSetupPage() {
           bio: profile.bio || null,
           ...(oauthAvatarUrl ? { avatar_url: oauthAvatarUrl } : {}),
           ...(verifiedGithub ? { github_username: verifiedGithub } : {}),
+          ...(verifiedGithubId !== null ? { github_id: verifiedGithubId } : {}),
         },
         { onConflict: "id" }
       );
