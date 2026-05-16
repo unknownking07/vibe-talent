@@ -6,6 +6,12 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { ProfileProjectCard } from "@/components/profile/profile-project-card";
 import { siteUrl } from "@/lib/seo";
 
+// Mirror the same username shape we accept in the page handler below — keeps
+// metadata generation cheap for the obvious garbage paths (bots probing for
+// admin/.env/etc.) instead of round-tripping to Supabase first.
+const USERNAME_PATTERN = /^[a-zA-Z0-9_.\- ]+$/;
+const USERNAME_MAX_LENGTH = 50;
+
 export async function generateMetadata({
   params,
 }: {
@@ -13,6 +19,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { username: rawMeta } = await params;
   const username = rawMeta?.trim();
+  if (!username || username.length > USERNAME_MAX_LENGTH || !USERNAME_PATTERN.test(username)) {
+    return { title: "Builder Not Found" };
+  }
   const user = await fetchUserByUsernameCached(username);
 
   if (!user) {
@@ -62,7 +71,7 @@ export default async function UserProjectsPage({
   const { username: rawUsername } = await params;
   const username = rawUsername?.trim();
 
-  if (!username || username.length > 50 || !/^[a-zA-Z0-9_.\- ]+$/.test(username)) {
+  if (!username || username.length > USERNAME_MAX_LENGTH || !USERNAME_PATTERN.test(username)) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
         <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Invalid username</h1>

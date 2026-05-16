@@ -52,9 +52,19 @@ const FAQ_ITEMS = [
   },
 ];
 
+// The homepage's featuredProjects query joins users(username) onto each row
+// (see _fetchHomepageData), so the bare Project type was lying about the
+// shape and forced us to fall back to `any` at the map site. Capturing the
+// join in one local type lets the render site stay un-annotated and lets us
+// drop the `// eslint-disable-next-line @typescript-eslint/no-explicit-any`
+// pragma below.
+type HomepageFeaturedProject = import("@/lib/types/database").Project & {
+  users?: { username: string | null } | null;
+};
+
 export default async function HomePage() {
   let topVibecoders: import("@/lib/types/database").UserWithSocials[] = [];
-  let featuredProjects: import("@/lib/types/database").Project[] = [];
+  let featuredProjects: HomepageFeaturedProject[] = [];
   let totalBuilders = 0;
   let totalProjects = 0;
   let avgStreak = 0;
@@ -386,9 +396,13 @@ export default async function HomePage() {
             // grid on sm+. Keep stagger-children so the entrance animation
             // still cascades down the column.
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 stagger-children">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {featuredProjects.map((project: any) => (
-                <ProjectCard key={project.id} project={project} verified={!!project.verified} authorUsername={project.users?.username} />
+              {featuredProjects.map((project) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  verified={!!project.verified}
+                  authorUsername={project.users?.username ?? undefined}
+                />
               ))}
             </div>
           ) : (

@@ -53,9 +53,15 @@ export function ActiveBuilderRow(p: ActiveBuilderRowProps) {
               className="rounded-full border-2 border-[var(--border-hard)] w-10 h-10 sm:w-12 sm:h-12 shrink-0"
             />
           ) : (
+            // White-on-accent gradient (the previous `accent → #FFA07A` light
+            // salmon) failed WCAG AA — 3.59:1 at the dark end and 1.99:1 at
+            // the light end against white text. Switch to the solid
+            // `--bg-inverted` token already used by the navbar avatar
+            // fallback; white-on-dark clears AA / AAA easily and keeps the
+            // fallback visually consistent with the rest of the app.
             <div
               className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-[var(--border-hard)] flex items-center justify-center text-white font-extrabold text-[15px] sm:text-[17px] shrink-0"
-              style={{ background: "linear-gradient(135deg, var(--accent), #FFA07A)" }}
+              style={{ backgroundColor: "var(--bg-inverted)" }}
             >
               {p.username[0]?.toUpperCase()}
             </div>
