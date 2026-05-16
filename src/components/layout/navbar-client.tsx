@@ -104,11 +104,32 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(initialIsLoggedIn);
+  // Read the cached profile during the useState initializer (client-only
+  // path) so the FIRST client render after hydration already has the
+  // logged-in state for returning users. The useState callback is invoked
+  // once per component lifecycle — localStorage is hit at most twice on
+  // initial mount, which is cheap. On the server, `typeof window` is
+  // undefined and we fall back to the SSR-supplied props.
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    if (typeof window === "undefined") return initialIsLoggedIn;
+    return !!readCachedNavProfile() || initialIsLoggedIn;
+  });
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState<NavbarProfile | null>(initialProfile);
+  const [userProfile, setUserProfile] = useState<NavbarProfile | null>(() => {
+    if (typeof window === "undefined") return initialProfile;
+    return readCachedNavProfile() ?? initialProfile;
+  });
   const [hasUnloggedActivity, setHasUnloggedActivity] = useState(false);
   const [exploreOpen, setExploreOpen] = useState(false);
+  // Gates the auth-dependent right side of the navbar (desktop CTA / avatar,
+  // mobile bell / avatar). Stays false through SSR + the first client render
+  // so the served HTML matches hydration, then flips to true inside the mount
+  // effect. This kills the "Create Profile" flash that returning logged-in
+  // users hit on a hard refresh — before this gate, the SSR-rendered
+  // logged-out CTA was painted to the DOM before the cached profile state
+  // could be applied. A placeholder of the CTA's footprint is rendered in
+  // its place so the navbar doesn't reflow when the gate flips open.
+  const [authMounted, setAuthMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const exploreRef = useRef<HTMLDivElement>(null);
   // Reference to the avatar button so we can restore focus to it when the
@@ -151,23 +172,18 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
     // during fast route changes / auth flips.
     let cancelled = false;
 
-    // Hydrate from the localStorage snapshot so the first re-render after
-    // hydration shows the avatar for returning users instead of waiting on
-    // supabase.auth.getUser(). The setState is deferred to a microtask to
-    // satisfy react-hooks/set-state-in-effect — same pattern as the
-    // checkTodayLogged call below. The ref is set synchronously so any
-    // listener that reads it (visibilitychange, streak-updated) sees the
-    // correct logged-in state immediately. Auth check + profile fetch below
-    // still run and overwrite this if the cached snapshot is stale.
+    // The cache-aware useState initializers above already seeded isLoggedIn
+    // and userProfile from localStorage on the first client render. Re-read
+    // here only to sync the ref (useRef has no lazy initializer) and to
+    // know whether to kick off the dashboard-dot check eagerly.
     const cachedProfile = readCachedNavProfile();
-    if (cachedProfile) {
-      isLoggedInRef.current = true;
-      void Promise.resolve().then(() => {
-        if (cancelled) return;
-        setIsLoggedIn(true);
-        setUserProfile(cachedProfile);
-      });
-    }
+    isLoggedInRef.current = !!cachedProfile || initialIsLoggedIn;
+    // Open the gate so the resolved auth UI replaces the placeholder. This
+    // is the canonical "is the client mounted" pattern; the lint rule's
+    // suggestion to use a useState initializer doesn't apply here — we
+    // explicitly want false during SSR + hydration and true afterwards.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAuthMounted(true);
 
     async function fetchProfile(userId: string, email?: string) {
       try {
@@ -474,7 +490,18 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
           <div className="ml-2">
             <ThemeToggle />
           </div>
-          {isLoggedIn ? (
+          {!authMounted ? (
+            // Reserves the CTA's footprint until the cache check resolves
+            // the auth state. Width chosen to roughly match the "Create
+            // Profile" button so anonymous viewers don't see a layout
+            // shift when the gate opens; logged-in users see the avatar
+            // slot in (smaller, still no shift since it's right-aligned).
+            <div
+              className="ml-3"
+              aria-hidden="true"
+              style={{ width: 144, height: 40 }}
+            />
+          ) : isLoggedIn ? (
             <>
             <div className="ml-3">
               <NotificationBell />
@@ -638,8 +665,8 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
         {/* Mobile toggle */}
         <div className="flex items-center gap-2 sm:hidden">
           <ThemeToggle />
-          {isLoggedIn && <NotificationBell />}
-          {isLoggedIn && userProfile && (
+          {authMounted && isLoggedIn && <NotificationBell />}
+          {authMounted && isLoggedIn && userProfile && (
             <Link
               href={`/profile/${userProfile.username}`}
               aria-label="Profile"

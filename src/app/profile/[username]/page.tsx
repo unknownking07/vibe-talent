@@ -239,33 +239,43 @@ export default async function ProfilePage({
           </section>
 
           {/* Projects Section */}
-          <section>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-extrabold uppercase text-[var(--foreground)]">Featured Projects</h3>
-              <span
-                className="btn-brutal btn-brutal-dark text-xs py-1.5 px-4 cursor-pointer"
-              >
-                View All
-              </span>
-            </div>
-            {(user.projects ?? []).length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-                {(user.projects ?? []).map((project) => (
-                  <ProfileProjectCard key={project.id} project={project} verified={!!project.verified} isOwner={isOwner} />
-                ))}
-              </div>
-            ) : (
-              <div
-                className="p-8 text-center font-bold uppercase text-[var(--text-muted)]"
-                style={{
-                  backgroundColor: "var(--bg-surface)",
-                  border: "2px solid var(--border-hard)",
-                }}
-              >
-                No projects yet.
-              </div>
-            )}
-          </section>
+          {(() => {
+            const allProjects = user.projects ?? [];
+            const visibleProjects = allProjects.slice(0, 4);
+            const hasMore = allProjects.length > 4;
+            return (
+              <section>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-base font-extrabold uppercase text-[var(--foreground)]">Featured Projects</h3>
+                  {hasMore && (
+                    <Link
+                      href={`/profile/${user.username}/projects`}
+                      className="btn-brutal btn-brutal-dark text-xs py-1.5 px-4"
+                    >
+                      View All ({allProjects.length})
+                    </Link>
+                  )}
+                </div>
+                {visibleProjects.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+                    {visibleProjects.map((project) => (
+                      <ProfileProjectCard key={project.id} project={project} verified={!!project.verified} isOwner={isOwner} />
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className="p-8 text-center font-bold uppercase text-[var(--text-muted)]"
+                    style={{
+                      backgroundColor: "var(--bg-surface)",
+                      border: "2px solid var(--border-hard)",
+                    }}
+                  >
+                    No projects yet.
+                  </div>
+                )}
+              </section>
+            );
+          })()}
 
           {/* Reviews Section */}
           <ReviewsSection builderId={user.id} isOwner={isOwner} />

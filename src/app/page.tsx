@@ -52,9 +52,19 @@ const FAQ_ITEMS = [
   },
 ];
 
+// The homepage's featuredProjects query joins users(username) onto each row
+// (see _fetchHomepageData), so the bare Project type was lying about the
+// shape and forced us to fall back to `any` at the map site. Capturing the
+// join in one local type lets the render site stay un-annotated and lets us
+// drop the `// eslint-disable-next-line @typescript-eslint/no-explicit-any`
+// pragma below.
+type HomepageFeaturedProject = import("@/lib/types/database").Project & {
+  users?: { username: string | null } | null;
+};
+
 export default async function HomePage() {
   let topVibecoders: import("@/lib/types/database").UserWithSocials[] = [];
-  let featuredProjects: import("@/lib/types/database").Project[] = [];
+  let featuredProjects: HomepageFeaturedProject[] = [];
   let totalBuilders = 0;
   let totalProjects = 0;
   let avgStreak = 0;
@@ -345,11 +355,12 @@ export default async function HomePage() {
         </div>
 
         {topVibecoders.length > 0 ? (
-          <div className="-mx-4 px-4 sm:mx-0 sm:px-0 flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-6 sm:overflow-visible sm:pb-0 sm:snap-none stagger-children">
+          // Vertical stack on mobile (no more horizontal swipe carousel — was
+          // confusing on small screens because the second card was clipped
+          // off-screen and discoverability suffered), 2-up on sm, 3-up on lg.
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 stagger-children">
             {topVibecoders.map((user, i) => (
-              <div key={user.id} className="w-[240px] flex-shrink-0 snap-start sm:w-auto sm:flex-shrink">
-                <VibecoderCard user={user} rank={i + 1} />
-              </div>
+              <VibecoderCard key={user.id} user={user} rank={i + 1} />
             ))}
           </div>
         ) : (
@@ -381,12 +392,17 @@ export default async function HomePage() {
           </div>
 
           {featuredProjects.length > 0 ? (
-            <div className="-mx-4 px-4 sm:mx-0 sm:px-0 flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-6 sm:overflow-visible sm:pb-0 sm:snap-none stagger-children">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {featuredProjects.map((project: any) => (
-                <div key={project.id} className="w-[240px] flex-shrink-0 snap-start sm:w-auto sm:flex-shrink">
-                  <ProjectCard project={project} verified={!!project.verified} authorUsername={project.users?.username} />
-                </div>
+            // Same shape as Top Talent above — vertical stack on mobile,
+            // grid on sm+. Keep stagger-children so the entrance animation
+            // still cascades down the column.
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 stagger-children">
+              {featuredProjects.map((project) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  verified={!!project.verified}
+                  authorUsername={project.users?.username ?? undefined}
+                />
               ))}
             </div>
           ) : (
