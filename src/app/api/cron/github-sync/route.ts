@@ -174,20 +174,30 @@ export async function GET(req: NextRequest) {
       const batchResults = await Promise.allSettled(
         batch.map(async (userInfo) => {
           try {
-            // Step 1: resolve the canonical GitHub identity via /users/{name}.
+            // Step 1: resolve the canonical GitHub identity.
             //
-            // Previously we tried to detect renames from events[0].actor.login
-            // on the events fetch, but that only fires when the user has
-            // recent public events AND GitHub's events redirect actually
-            // surfaces them — a user could rename and stay invisible to us
-            // until they generated activity on the new handle, OR if their
-            // old handle was reclaimed by someone else (404 path), we'd
-            // hard-skip and never recover.
+            // We prefer GET /user/{id} when github_id is set: it's bulletproof
+            // against rename, handle reclaim, AND deletion of the old handle.
+            // The numeric ID is GitHub's stable primary key — it never changes
+            // for the life of the account. (Endpoint is undocumented but
+            // long-standing; api.github.com/user/{id} returns the same shape
+            // as /users/{login}, with the *current* canonical login.)
             //
-            // /users/{name} is reliable: it follows renames via stable
-            // numeric ID, always returns the canonical login + id, and
-            // 404s only on real deletion. Costs +1 API call per user per
-            // run — with GITHUB_TOKEN's 5000/hr ceiling, irrelevant.
+            // GET /users/{name} is the legacy fallback for rows that somehow
+            // lack a stored github_id. It works via GitHub's username-redirect
+            // chain for simple renames, but 404s if the old handle was deleted
+            // and silently returns the wrong user if the handle was reclaimed
+            // — both unfixable without an ID. So the reclaim guard below only
+            // applies on this fallback path.
+            //
+            // Previous attempts at this fix (PR #180, #181, #188) all relied
+            // on the username path and lost users whose old handle 404s. The
+            // ID-first lookup is the only way out.
+            const lookupByGithubId = userInfo.githubId !== null;
+            const lookupUrl = lookupByGithubId
+              ? `https://api.github.com/user/${userInfo.githubId}`
+              : `https://api.github.com/users/${encodeURIComponent(userInfo.githubUsername)}`;
+
             let userNotFound = false;
             let userInfoApiError: string | null = null;
             let reclaimDetected = false;
@@ -198,12 +208,15 @@ export async function GET(req: NextRequest) {
               EVENTS_API_TIMEOUT_MS
             );
             try {
-              const response = await fetch(
-                `https://api.github.com/users/${encodeURIComponent(userInfo.githubUsername)}`,
-                { headers: ghApiHeaders, signal: userInfoController.signal }
-              );
+              const response = await fetch(lookupUrl, {
+                headers: ghApiHeaders,
+                signal: userInfoController.signal,
+              });
 
               if (response.status === 404) {
+                // For ID lookups, 404 means the account was hard-deleted on
+                // GitHub. For username lookups, 404 means the handle no
+                // longer exists (rename + old handle gone, deletion, etc.).
                 userNotFound = true;
               } else if (!response.ok) {
                 userInfoApiError = response.status === 403
@@ -216,13 +229,13 @@ export async function GET(req: NextRequest) {
                 const apiId: number | undefined =
                   typeof body?.id === "number" ? body.id : undefined;
 
-                // Reclaim guard: if we have a github_id on file and the
-                // username's current owner has a *different* id, somebody
-                // took the old handle after our user renamed away. Bail
-                // out — we'd otherwise pull a stranger's commits into our
-                // user's feed. Admin can manually re-link with the new
-                // handle.
+                // Reclaim guard, fallback path only: if we somehow had a
+                // github_id but were forced to use the username path (e.g.
+                // ID-lookup transient error earlier — not reachable today,
+                // but cheap insurance), and the resolved id doesn't match
+                // what we have on file, treat as a reclaim and skip.
                 if (
+                  !lookupByGithubId &&
                   userInfo.githubId !== null &&
                   typeof apiId === "number" &&
                   apiId !== userInfo.githubId
@@ -241,7 +254,8 @@ export async function GET(req: NextRequest) {
 
                   if (loginChanged) {
                     console.log(
-                      `[github-sync] username rename for user ${userInfo.userId}: ` +
+                      `[github-sync] username rename for user ${userInfo.userId} ` +
+                      `(via ${lookupByGithubId ? "id" : "name"} lookup): ` +
                       `stored="${userInfo.githubUsername}" → canonical="${apiLogin}"`
                     );
                     dbUpdates.github_username = apiLogin!;
@@ -284,7 +298,13 @@ export async function GET(req: NextRequest) {
             }
 
             if (userNotFound) {
-              return { userInfo, status: "skipped", reason: "GitHub user not found" };
+              return {
+                userInfo,
+                status: "skipped",
+                reason: lookupByGithubId
+                  ? `GitHub account id=${userInfo.githubId} not found (deleted)`
+                  : `GitHub user "${userInfo.githubUsername}" not found and no github_id on file`,
+              };
             }
             if (reclaimDetected) {
               return {
