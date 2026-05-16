@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { hireApiLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
 import { getSiteUrl } from "@/lib/seo";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
-  "X-RateLimit-Limit": "30",
-  "X-RateLimit-Window": "60",
+  "X-RateLimit-Limit": "5",
+  "X-RateLimit-Window": "3600",
 };
 
 export async function OPTIONS() {
@@ -15,6 +17,14 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: NextRequest) {
+  const { success } = await checkRateLimit(hireApiLimiter, getIP(req));
+  if (!success) {
+    return NextResponse.json(
+      { error: "Rate limited" },
+      { status: 429, headers: corsHeaders }
+    );
+  }
+
   try {
     const body = await req.json();
     const builder_username =
@@ -97,6 +107,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Builder not found" },
         { status: 404, headers: corsHeaders }
+      );
+    }
+
+    // Per-sender-email cap mirrors /api/hire (5/day). IP-based limit above
+    // catches the high-volume case; this catches the slow-drip-from-many-IPs
+    // case where a single sender impersonates a stream of fake hires.
+    const adminClient = createAdminClient();
+    const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
+    const { data: recentRequests } = await adminClient
+      .from("hire_requests")
+      .select("id")
+      .eq("sender_email", sender_email.toLowerCase())
+      .gte("created_at", oneDayAgo);
+
+    if (recentRequests && recentRequests.length >= 5) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again tomorrow." },
+        { status: 429, headers: corsHeaders }
       );
     }
 

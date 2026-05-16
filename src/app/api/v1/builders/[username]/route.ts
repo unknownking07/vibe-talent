@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { buildersLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
 import { extractSocialHandle } from "@/lib/social-handles";
 import { getSiteUrl } from "@/lib/seo";
 
@@ -7,15 +8,23 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
-  "X-RateLimit-Limit": "100",
+  "X-RateLimit-Limit": "30",
   "X-RateLimit-Window": "60",
   "Cache-Control": "public, max-age=60",
 };
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ username: string }> }
 ) {
+  const { success } = await checkRateLimit(buildersLimiter, getIP(req));
+  if (!success) {
+    return NextResponse.json(
+      { error: "Rate limited" },
+      { status: 429, headers: corsHeaders }
+    );
+  }
+
   try {
     const { username } = await params;
     const supabase = await createServerSupabaseClient();
