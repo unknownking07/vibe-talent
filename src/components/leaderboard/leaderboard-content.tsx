@@ -150,7 +150,11 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
         })}
       </div>
 
-      {/* Table */}
+      {/* Table — Streak + Projects columns are `hidden sm:table-cell` so the
+          remaining 4 columns fit a 320px viewport without horizontal scroll.
+          Keeping `overflow-x-auto` as a safety net for the rare locale that
+          pushes a column wider, but the previous `min-w-[500px]` forced a
+          carousel on every mobile render and is gone. */}
       <div
         className="overflow-x-auto"
         style={{
@@ -158,7 +162,7 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        <table className="w-full min-w-[500px]">
+        <table className="w-full">
           <thead>
             <tr style={{ backgroundColor: "var(--bg-inverted)" }}>
               <th className="px-3 sm:px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-white">Rank</th>
