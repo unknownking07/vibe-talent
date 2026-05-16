@@ -73,13 +73,27 @@ export async function GET(request: Request) {
           user.user_metadata?.user_name ||
           user.user_metadata?.preferred_username ||
           null;
+        // GitHub's stable numeric ID lands in identity_data.sub (OIDC-style
+        // subject identifier — string-encoded). We coerce here once because
+        // github-sync uses this on every run to tell a legitimate rename
+        // apart from a handle reclaim; a missing or stale value silently
+        // disables that guard. provider_id on the row itself isn't exposed
+        // through Supabase's JS SDK so we don't depend on it.
+        const rawGithubId = ghData.sub ?? ghData.provider_id ?? null;
+        const parsedGithubId =
+          rawGithubId != null && /^\d+$/.test(String(rawGithubId))
+            ? Number(rawGithubId)
+            : null;
+        const githubId = parsedGithubId !== null && Number.isFinite(parsedGithubId)
+          ? parsedGithubId
+          : null;
 
         // Use service role client for DB operations to bypass RLS
         const adminSb = createAdminClient();
 
         const { data: profile } = await adminSb
           .from("users")
-          .select("username, avatar_url, github_username")
+          .select("username, avatar_url, github_username, github_id")
           .eq("id", user.id)
           .single();
 
@@ -90,7 +104,7 @@ export async function GET(request: Request) {
         // branch only fires for returning users whose row already exists —
         // e.g. avatar refresh or Google→GitHub linkIdentity recovery.
         if (profile) {
-          const updates: Record<string, string> = {};
+          const updates: Record<string, string | number> = {};
 
           // Always sync avatar from OAuth provider on login
           if (oauthAvatar) {
@@ -99,6 +113,13 @@ export async function GET(request: Request) {
 
           if (githubUsername) {
             updates.github_username = githubUsername;
+          }
+          // Backfill github_id once. Don't overwrite — a row with github_id
+          // already set has been canonicalized and the unique partial index
+          // would reject a conflicting value anyway.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if (githubId !== null && (profile as any).github_id == null) {
+            updates.github_id = githubId;
           }
 
           // NOTE: display_name is intentionally NOT touched here. Profile-setup
