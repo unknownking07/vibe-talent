@@ -73,3 +73,5 @@ export const feedLimiter = createRateLimiter("feed", 30, "1 m");
 export const statsLimiter = createRateLimiter("stats", 20, "1 m");
 export const projectsLimiter = createRateLimiter("projects", 30, "1 m");
 export const buildersLimiter = createRateLimiter("builders", 30, "1 m");
+export const hireApiLimiter = createRateLimiter("hire-api", 5, "1 h");
+export const feedbackLimiter = createRateLimiter("feedback", 10, "1 h");

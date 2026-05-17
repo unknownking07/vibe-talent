@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { hireApiLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
 import { getSiteUrl } from "@/lib/seo";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
-  "X-RateLimit-Limit": "30",
-  "X-RateLimit-Window": "60",
+  "X-RateLimit-Limit": "5",
+  "X-RateLimit-Window": "3600",
 };
 
 export async function OPTIONS() {
@@ -15,6 +17,14 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: NextRequest) {
+  const { success } = await checkRateLimit(hireApiLimiter, getIP(req));
+  if (!success) {
+    return NextResponse.json(
+      { error: "Rate limited" },
+      { status: 429, headers: corsHeaders }
+    );
+  }
+
   try {
     const body = await req.json();
     const builder_username =
@@ -25,9 +35,13 @@ export async function POST(req: NextRequest) {
       typeof body.sender_name === "string"
         ? body.sender_name.trim()
         : body.sender_name;
+    // Canonicalize sender_email at parse time so the per-sender daily cap
+     // lookup and the row we insert are guaranteed to match — without this,
+     // submitting "Foo@Example.com" stores mixed-case but the next lookup
+     // queries lowercase, missing the row and bypassing the cap.
     const sender_email =
       typeof body.sender_email === "string"
-        ? body.sender_email.trim()
+        ? body.sender_email.trim().toLowerCase()
         : body.sender_email;
     const message =
       typeof body.message === "string"
@@ -97,6 +111,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Builder not found" },
         { status: 404, headers: corsHeaders }
+      );
+    }
+
+    // Per-sender-email cap mirrors /api/hire (5/day). IP-based limit above
+    // catches the high-volume case; this catches the slow-drip-from-many-IPs
+    // case where a single sender impersonates a stream of fake hires.
+    // Known trade-off: this is a non-atomic read-then-insert (same pattern as
+    // /api/hire). Concurrent requests could let 6-7 through with perfect
+    // timing — acceptable given the IP-based 5/hour limit above and the cost
+    // of a Supabase RPC migration. Revisit if this surface gets abused.
+    const adminClient = createAdminClient();
+    const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
+    const { data: recentRequests, error: capLookupError } = await adminClient
+      .from("hire_requests")
+      .select("id")
+      .eq("sender_email", sender_email)
+      .gte("created_at", oneDayAgo);
+
+    // Fail closed on lookup failure — silently allowing the insert here would
+    // turn a transient DB error into a free spam window.
+    if (capLookupError) {
+      console.error("Failed to check sender daily cap:", capLookupError);
+      return NextResponse.json(
+        { error: "Failed to verify rate limit" },
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    if (recentRequests && recentRequests.length >= 5) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again tomorrow." },
+        { status: 429, headers: corsHeaders }
       );
     }
 
