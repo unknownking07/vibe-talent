@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { feedbackLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
 
 const VALID_REASONS = new Set([
   "not_useful", "confusing", "no_time",
@@ -8,7 +9,15 @@ const VALID_REASONS = new Set([
 
 const VALID_WOULD_RETURN = new Set(["yes", "maybe", "no"]);
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const { success } = await checkRateLimit(feedbackLimiter, getIP(req));
+  if (!success) {
+    return NextResponse.json(
+      { error: "Too many feedback submissions. Please try again later." },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await req.json();
     const { username, reason, details, would_return, source } = body;
