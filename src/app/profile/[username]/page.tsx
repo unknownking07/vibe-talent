@@ -97,8 +97,16 @@ export default async function ProfilePage({
   }
 
   const heatmapData = await fetchStreakLogsCached(user.id);
-  const achievementCounters = await fetchAchievementCounters(user);
-  const achievements = computeAchievements(achievementCounters);
+
+  // Achievements are non-core to profile rendering — if the aggregator
+  // fails (Supabase blip, etc.) we still want the profile page to load.
+  let achievements: ReturnType<typeof computeAchievements> = [];
+  try {
+    const achievementCounters = await fetchAchievementCounters(user);
+    achievements = computeAchievements(achievementCounters);
+  } catch (err) {
+    console.error("[profile] achievements compute failed:", err);
+  }
 
   // Fetch reviewer reputation data — kept outside the cached user fetch so we
   // don't bust the per-username cache when only review counts change.

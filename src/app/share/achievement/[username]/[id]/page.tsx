@@ -23,20 +23,24 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
   const a = achievements.find((x) => x.id === id);
   if (!a) return { title: "Achievement — VibeTalent" };
 
-  const title = `@${user.username} unlocked "${a.title}" — VibeTalent`;
+  const verb = a.earned ? "unlocked" : "is progressing toward";
+  const title = `@${user.username} ${verb} "${a.title}" — VibeTalent`;
   const description = `${a.description} See @${user.username}'s achievements on VibeTalent.`;
-  const ogUrl = `${siteUrl}/api/og/achievement/${user.username}/${a.id}`;
+  const encodedUser = encodeURIComponent(user.username);
+  const encodedId = encodeURIComponent(a.id);
+  const ogUrl = `${siteUrl}/api/og/achievement/${encodedUser}/${encodedId}`;
+  const shareUrl = `${siteUrl}/share/achievement/${encodedUser}/${encodedId}`;
 
   return {
     title,
     description,
     alternates: {
-      canonical: `${siteUrl}/share/achievement/${user.username}/${a.id}`,
+      canonical: shareUrl,
     },
     openGraph: {
       title,
       description,
-      url: `${siteUrl}/share/achievement/${user.username}/${a.id}`,
+      url: shareUrl,
       type: "article",
       images: [{ url: ogUrl, width: 1200, height: 630, alt: a.title }],
     },

@@ -22,17 +22,18 @@ export async function generateMetadata({
 
   const title = `@${user.username}'s Achievements — VibeTalent`;
   const description = `Badges earned by @${user.username} on VibeTalent — streaks, projects, endorsements, and more.`;
+  const encodedUsername = encodeURIComponent(user.username);
 
   return {
     title,
     description,
     alternates: {
-      canonical: `${siteUrl}/profile/${username}/achievements`,
+      canonical: `${siteUrl}/profile/${encodedUsername}/achievements`,
     },
     openGraph: {
       title,
       description,
-      url: `${siteUrl}/profile/${username}/achievements`,
+      url: `${siteUrl}/profile/${encodedUsername}/achievements`,
       type: "profile",
     },
     twitter: {

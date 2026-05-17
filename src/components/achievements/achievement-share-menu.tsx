@@ -138,7 +138,6 @@ export function AchievementShareMenu({ username, achievementId, title }: Achieve
       </button>
       {open ? (
         <div
-          role="menu"
           className="absolute right-0 top-9 z-20 w-56"
           style={{
             backgroundColor: "var(--bg-surface)",
@@ -149,8 +148,7 @@ export function AchievementShareMenu({ username, achievementId, title }: Achieve
           <button
             type="button"
             onClick={copyImage}
-            role="menuitem"
-            disabled={status === "copying-image"}
+disabled={status === "copying-image"}
             className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-extrabold uppercase tracking-wide"
             style={{ color: "var(--foreground)" }}
           >
@@ -168,8 +166,7 @@ export function AchievementShareMenu({ username, achievementId, title }: Achieve
           <button
             type="button"
             onClick={downloadImage}
-            role="menuitem"
-            disabled={status === "downloading"}
+disabled={status === "downloading"}
             className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-extrabold uppercase tracking-wide"
             style={{ color: "var(--foreground)" }}
           >
@@ -187,8 +184,7 @@ export function AchievementShareMenu({ username, achievementId, title }: Achieve
           <button
             type="button"
             onClick={copyLink}
-            role="menuitem"
-            disabled={status === "copying-link"}
+disabled={status === "copying-link"}
             className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-extrabold uppercase tracking-wide"
             style={{ color: "var(--foreground)" }}
           >
@@ -202,8 +198,7 @@ export function AchievementShareMenu({ username, achievementId, title }: Achieve
           <button
             type="button"
             onClick={shareOnX}
-            role="menuitem"
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-extrabold uppercase tracking-wide"
+className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-extrabold uppercase tracking-wide"
             style={{ color: "var(--foreground)" }}
           >
             <span aria-hidden="true" className="text-[15px] leading-none">𝕏</span>

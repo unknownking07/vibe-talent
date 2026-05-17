@@ -263,7 +263,11 @@ export function computeAchievements(c: AchievementCounters): AchievementState[] 
   return ACHIEVEMENTS.map((def) => {
     const current = def.progress(c);
     const earned = current >= def.threshold;
-    const percent = Math.min(100, Math.round((current / def.threshold) * 100));
+    const rawPercent =
+      def.threshold > 0 ? Math.round((current / def.threshold) * 100) : 0;
+    const percent = Number.isFinite(rawPercent)
+      ? Math.max(0, Math.min(100, rawPercent))
+      : 0;
     return { ...def, current, earned, percent };
   });
 }

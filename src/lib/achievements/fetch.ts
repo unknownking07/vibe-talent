@@ -60,13 +60,33 @@ export async function fetchAchievementCounters(
         .single(),
     ]);
 
-    hireRequestsReceived = hireAll?.count ?? 0;
-    completedHires = hireReplied?.count ?? 0;
-    reviewsGiven = reviewsCount?.count ?? 0;
-    referralCount = userRow?.data?.referral_count ?? 0;
+    // supabase-js v2 resolves with {data, error, count} — it doesn't throw
+    // on RLS/SQL errors. Check each .error explicitly and log; fall back
+    // to 0 so a partial outage on one counter doesn't zero out the rest.
+    if (hireAll?.error) {
+      console.error("[achievements] hire_requests count failed:", hireAll.error);
+    } else {
+      hireRequestsReceived = hireAll?.count ?? 0;
+    }
+    if (hireReplied?.error) {
+      console.error("[achievements] hire_replied count failed:", hireReplied.error);
+    } else {
+      completedHires = hireReplied?.count ?? 0;
+    }
+    if (reviewsCount?.error) {
+      console.error("[achievements] reviews count failed:", reviewsCount.error);
+    } else {
+      reviewsGiven = reviewsCount?.count ?? 0;
+    }
+    if (userRow?.error) {
+      console.error("[achievements] referral_count lookup failed:", userRow.error);
+    } else {
+      referralCount = userRow?.data?.referral_count ?? 0;
+    }
   } catch (err) {
-    // Counter queries are non-critical — fall through with zeros so the
-    // achievements page still renders if Supabase is briefly unavailable.
+    // Only thrown errors (network, client init) land here — query-level
+    // errors are already handled above. Fall through with zeros so the
+    // page still renders.
     console.error("[achievements] counter fetch failed:", err);
   }
 

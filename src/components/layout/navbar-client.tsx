@@ -809,6 +809,13 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   My Profile
                 </Link>
                 <Link
+                  href={`/profile/${userProfile.username}/achievements`}
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-4 py-3 text-sm font-bold uppercase tracking-wide text-[var(--foreground)]"
+                >
+                  Achievements
+                </Link>
+                <Link
                   href="/settings"
                   onClick={() => setMobileOpen(false)}
                   className="block px-4 py-3 text-sm font-bold uppercase tracking-wide text-[var(--foreground)]"

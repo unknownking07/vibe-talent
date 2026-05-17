@@ -13,6 +13,11 @@ export function AchievementCard({ achievement, username }: AchievementCardProps)
   const { id, title, description, threshold, current, earned, percent, unit } = achievement;
   const showProgressNumbers = threshold > 1;
   const art = getBadgeArt(id);
+  // Defensive clamp — `percent` is already clamped at compute time, but
+  // belt-and-suspenders before piping it into a CSS width.
+  const safePercent = Number.isFinite(percent)
+    ? Math.max(0, Math.min(100, percent))
+    : 0;
 
   return (
     <div
@@ -94,11 +99,17 @@ export function AchievementCard({ achievement, username }: AchievementCardProps)
               backgroundColor: "var(--bg-base)",
               border: "1px solid var(--border-hard)",
             }}
+            role="progressbar"
+            aria-label={`${title} progress`}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={safePercent}
+            aria-valuetext={`${current.toLocaleString()} of ${threshold.toLocaleString()} ${unit}`}
           >
             <div
               className="h-full"
               style={{
-                width: `${percent}%`,
+                width: `${safePercent}%`,
                 backgroundColor: earned
                   ? "var(--badge-gold, #EAB308)"
                   : "var(--text-muted)",
@@ -111,7 +122,7 @@ export function AchievementCard({ achievement, username }: AchievementCardProps)
               {current.toLocaleString()} / {threshold.toLocaleString()} {unit}
             </span>
             <span style={{ color: earned ? "var(--foreground)" : "var(--text-muted)" }}>
-              {percent}%
+              {safePercent}%
             </span>
           </div>
         </div>

@@ -223,6 +223,44 @@ export async function GET(
   );
 }
 
+/**
+ * Validate that an avatar URL is safe for server-side fetch in next/og.
+ *
+ * Defense-in-depth against SSRF: parse via URL, require https, and reject
+ * obvious localhost / private-network hostnames. Does not protect against
+ * DNS rebinding — for full coverage we'd need to resolve and check IP.
+ */
+function isSafeAvatarUrl(raw: unknown): raw is string {
+  if (typeof raw !== "string" || raw.length === 0) return false;
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== "https:") return false;
+  const host = parsed.hostname.toLowerCase();
+  if (
+    host === "localhost" ||
+    host === "0.0.0.0" ||
+    host.endsWith(".localhost") ||
+    host.endsWith(".internal") ||
+    host.endsWith(".local")
+  ) {
+    return false;
+  }
+  // Reject obvious private/loopback IP literals.
+  if (/^127\./.test(host)) return false;
+  if (/^10\./.test(host)) return false;
+  if (/^192\.168\./.test(host)) return false;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false;
+  if (/^169\.254\./.test(host)) return false; // link-local
+  if (host === "::1" || host.startsWith("[::1") || host.startsWith("fc") || host.startsWith("fd")) {
+    return false;
+  }
+  return true;
+}
+
 function Avatar({
   user,
   size,
@@ -231,7 +269,7 @@ function Avatar({
   size: number;
 }) {
   const url = user.avatar_url;
-  const valid = typeof url === "string" && /^https?:\/\//.test(url);
+  const valid = isSafeAvatarUrl(url);
   if (valid) {
     return (
       <div
