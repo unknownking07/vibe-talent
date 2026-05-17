@@ -5,6 +5,9 @@ import { ProfileSidebar } from "@/components/profile/profile-sidebar";
 import { StatsRibbon } from "@/components/profile/stats-ribbon";
 import { ProfileHeatmap } from "@/components/profile/profile-heatmap";
 import { ReviewerStats } from "@/components/profile/reviewer-stats";
+import { AchievementsTeaser } from "@/components/achievements/achievements-teaser";
+import { fetchAchievementCounters } from "@/lib/achievements/fetch";
+import { computeAchievements } from "@/lib/achievements/definitions";
 import type { ReviewerTier } from "@/lib/reviewer/tier";
 import { extractSocialHandle } from "@/lib/social-handles";
 import { ProfileProjectCard } from "@/components/profile/profile-project-card";
@@ -94,6 +97,16 @@ export default async function ProfilePage({
   }
 
   const heatmapData = await fetchStreakLogsCached(user.id);
+
+  // Achievements are non-core to profile rendering — if the aggregator
+  // fails (Supabase blip, etc.) we still want the profile page to load.
+  let achievements: ReturnType<typeof computeAchievements> = [];
+  try {
+    const achievementCounters = await fetchAchievementCounters(user);
+    achievements = computeAchievements(achievementCounters);
+  } catch (err) {
+    console.error("[profile] achievements compute failed:", err);
+  }
 
   // Fetch reviewer reputation data — kept outside the cached user fetch so we
   // don't bust the per-username cache when only review counts change.
@@ -216,6 +229,9 @@ export default async function ProfilePage({
             vibeScore={user.vibe_score}
             projectCount={(user.projects ?? []).length}
           />
+
+          {/* Achievements Teaser */}
+          <AchievementsTeaser achievements={achievements} username={user.username} />
 
           {/* Heatmap Section */}
           <section

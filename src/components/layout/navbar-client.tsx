@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, LogOut, Settings, Sparkles, User, Users, BadgeCheck, ChevronDown } from "lucide-react";
+import { Menu, X, LogOut, Settings, Sparkles, Trophy, User, Users, BadgeCheck, ChevronDown } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { NotificationBell } from "@/components/ui/notification-bell";
@@ -575,6 +575,16 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                     My Profile
                   </Link>
                   <Link
+                    href={`/profile/${userProfile?.username || ""}/achievements`}
+                    role="menuitem"
+                    onClick={() => setProfileDropdownOpen(false)}
+                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors"
+                    style={{ color: "var(--foreground)" }}
+                  >
+                    <Trophy size={16} />
+                    Achievements
+                  </Link>
+                  <Link
                     href={userProfile && !userProfile.display_name ? "/settings?complete=name" : "/settings"}
                     role="menuitem"
                     onClick={() => setProfileDropdownOpen(false)}
@@ -797,6 +807,13 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   className="block px-4 py-3 mt-1 text-sm font-bold uppercase tracking-wide text-[var(--foreground)]"
                 >
                   My Profile
+                </Link>
+                <Link
+                  href={`/profile/${userProfile.username}/achievements`}
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-4 py-3 text-sm font-bold uppercase tracking-wide text-[var(--foreground)]"
+                >
+                  Achievements
                 </Link>
                 <Link
                   href="/settings"
