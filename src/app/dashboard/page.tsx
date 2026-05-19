@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { fetchStreakLogs } from "@/lib/supabase/queries";
 import { siteUrl } from "@/lib/seo";
 import { normalizeExternalUrl, normalizeRepoUrl } from "@/lib/url-normalize";
-import { processProjectImage } from "@/lib/image-processing";
 import { BadgeDisplay } from "@/components/ui/badge-display";
 import type { UserWithSocials } from "@/lib/types/database";
 import { StreakCounter } from "@/components/ui/streak-counter";
@@ -15,7 +15,6 @@ import { ActivityHeatmap } from "@/components/ui/activity-heatmap";
 import { ProjectCard } from "@/components/ui/project-card";
 import { ProfileViewsWidget } from "@/components/dashboard/profile-views-widget";
 import { StreakMilestone } from "@/components/dashboard/streak-milestone";
-import { OnboardingTour } from "@/components/onboarding/onboarding-tour";
 import { consumeTourTrigger, TOUR_FLAG_ENABLED } from "@/lib/onboarding";
 import type { HireRequest, HireMessage } from "@/lib/types/database";
 import {
@@ -41,6 +40,13 @@ import {
   ShieldCheck,
   Zap,
 } from "lucide-react";
+
+// Lazy: only loaded when the tour is actually armed (post-signup or ?tour=force).
+// Keeps the ~300-line tour module + its deps out of the initial dashboard chunk.
+const OnboardingTour = dynamic(
+  () => import("@/components/onboarding/onboarding-tour").then((m) => m.OnboardingTour),
+  { ssr: false }
+);
 
 // Isolated 1Hz timer so it does not re-render the entire DashboardPage tree
 // (heatmap, project cards, milestone, etc.) every second. With this lifted
@@ -277,10 +283,16 @@ export default function DashboardPage() {
 
       // Calculate actual streak from streak_logs (in case DB trigger didn't run)
       const dates = Object.keys(streakData).sort().reverse();
+      const nowLocal = new Date();
+      const today = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, "0")}-${String(nowLocal.getDate()).padStart(2, "0")}`;
+      // Set todayLogged from the streakData we already fetched, instead of
+      // firing a second streak_logs query after first render. Eliminates one
+      // post-paint roundtrip on every dashboard visit.
+      if (streakData[today]) {
+        setTodayLogged(true);
+      }
       let calculatedStreak = 0;
       if (dates.length > 0) {
-        const nowLocal = new Date();
-        const today = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, "0")}-${String(nowLocal.getDate()).padStart(2, "0")}`;
         const yLocal = new Date(nowLocal.getTime() - 86400000);
         const yesterday = `${yLocal.getFullYear()}-${String(yLocal.getMonth() + 1).padStart(2, "0")}-${String(yLocal.getDate()).padStart(2, "0")}`;
         // Only count if latest log is today or yesterday
@@ -372,28 +384,55 @@ export default function DashboardPage() {
             .catch(console.error);
         }
 
-        // Fetch full GitHub contribution graph (runs in background)
-        fetch("/api/github/contributions")
-          .then(res => res.json())
-          .then(ghData => {
-            if (ghData.total) {
-              setGhTotal(ghData.total);
-            }
-            if (ghData.contributions && Object.keys(ghData.contributions).length > 0) {
-              setHeatmapData(prev => {
-                // Merge: GitHub contributions as base, streak_logs overlay
-                const merged = { ...ghData.contributions };
-                for (const [date, level] of Object.entries(prev)) {
-                  // Keep the higher value between GitHub data and streak logs
-                  if (!merged[date] || (level as number) > merged[date]) {
-                    merged[date] = level;
-                  }
+        // Fetch full GitHub contribution graph (runs in background).
+        // Cached in localStorage for 1 hour so revisits within the same hour
+        // paint the heatmap instantly without a GitHub API roundtrip. The
+        // server endpoint also has a 1hr s-maxage, so a stale client cache
+        // and a fresh server hit produce equivalent data.
+        const GH_CONTRIB_CACHE = "last_github_contributions_cache";
+        const GH_CONTRIB_TS = "last_github_contributions_ts";
+        const applyGhData = (ghData: { total?: number; contributions?: Record<string, number> }) => {
+          if (ghData.total) setGhTotal(ghData.total);
+          if (ghData.contributions && Object.keys(ghData.contributions).length > 0) {
+            setHeatmapData(prev => {
+              // Merge: GitHub contributions as base, streak_logs overlay
+              const merged: Record<string, number> = { ...ghData.contributions };
+              for (const [date, level] of Object.entries(prev)) {
+                // Keep the higher value between GitHub data and streak logs
+                if (!merged[date] || (level as number) > merged[date]) {
+                  merged[date] = level;
                 }
-                return merged;
-              });
-            }
-          })
-          .catch(console.error);
+              }
+              return merged;
+            });
+          }
+        };
+        const cachedTs = localStorage.getItem(GH_CONTRIB_TS);
+        const cachedRaw = localStorage.getItem(GH_CONTRIB_CACHE);
+        const oneHourAgoMs = Date.now() - 3_600_000;
+        let usedFreshCache = false;
+        if (cachedTs && Number(cachedTs) > oneHourAgoMs && cachedRaw) {
+          try {
+            applyGhData(JSON.parse(cachedRaw));
+            usedFreshCache = true;
+          } catch {
+            // Corrupt cache — fall through to network fetch.
+          }
+        }
+        if (!usedFreshCache) {
+          fetch("/api/github/contributions")
+            .then(res => res.json())
+            .then(ghData => {
+              try {
+                localStorage.setItem(GH_CONTRIB_CACHE, JSON.stringify(ghData));
+                localStorage.setItem(GH_CONTRIB_TS, Date.now().toString());
+              } catch {
+                // Quota / private mode — best-effort.
+              }
+              applyGhData(ghData);
+            })
+            .catch(console.error);
+        }
       }
 
       // Sync DB in background if streak was wrong (non-blocking)
@@ -569,6 +608,10 @@ export default function DashboardPage() {
     setImageError(null);
     setImageProcessing(true);
     try {
+      // Lazy-load the image processor — keeps the canvas/codec helpers
+      // out of the initial dashboard bundle. Users who never open the
+      // Add Project form never pay for this module.
+      const { processProjectImage } = await import("@/lib/image-processing");
       const processed = await processProjectImage(file);
       const processedFile = new File([processed], "image.jpg", {
         type: "image/jpeg",
@@ -788,22 +831,11 @@ export default function DashboardPage() {
     setSendingReply(false);
   };
 
-  // Check if already logged today on mount. Keyed on user.id (not the whole
-  // user object) so the query does not re-run on every setUser call — e.g.
-  // the optimistic streak/longest_streak update after Log Activity used to
-  // re-trigger this effect because setUser swapped the object reference.
-  useEffect(() => {
-    if (!user?.id) return;
-    const supabase = createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = supabase as any;
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    sb.from("streak_logs").select("id").eq("user_id", user.id).eq("activity_date", today)
-      .then(({ data }: { data: { id: string }[] | null }) => {
-        if (data && data.length > 0) setTodayLogged(true);
-      });
-  }, [user?.id]);
+  // `todayLogged` is seeded from the initial streakData fetch in loadUserData
+  // (no separate roundtrip), and kept in sync by:
+  //   - handleLogActivity (manual log) — sets true after a successful POST.
+  //   - GitHub auto-sync (line ~330+) — sets true if today shows up in fresh data.
+  //   - handleMidnight — resets to false at 00:00.
 
   // Midnight rollover handler — fires from <MidnightCountdown /> when the
   // countdown ticks past 00:00. Resets the local state so the user can log
@@ -1080,11 +1112,25 @@ export default function DashboardPage() {
   };
 
   if (loading) {
+    // Mirrors dashboard/loading.tsx so the route-segment skeleton and the
+    // client-state skeleton paint the same shape — no layout jump when the
+    // page hydrates with `loading=true` after the route loader unmounts.
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
-        <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-8">Dashboard</h1>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-          {[1, 2, 3, 4].map((i) => <div key={i} className="skeleton h-24" />)}
+        <div className="mb-8">
+          <div className="skeleton h-9 w-48 mb-3" />
+          <div className="skeleton h-5 w-72" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
+          <div className="flex flex-col gap-4">
+            <div className="skeleton h-40 w-full rounded-xl" />
+            <div className="skeleton h-24 w-full rounded-xl" />
+          </div>
+          <div className="flex flex-col gap-4">
+            <div className="skeleton h-20 w-full rounded-xl" />
+            <div className="skeleton h-64 w-full rounded-xl" />
+            <div className="skeleton h-48 w-full rounded-xl" />
+          </div>
         </div>
       </div>
     );
