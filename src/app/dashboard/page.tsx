@@ -389,8 +389,12 @@ export default function DashboardPage() {
         // paint the heatmap instantly without a GitHub API roundtrip. The
         // server endpoint also has a 1hr s-maxage, so a stale client cache
         // and a fresh server hit produce equivalent data.
-        const GH_CONTRIB_CACHE = "last_github_contributions_cache";
-        const GH_CONTRIB_TS = "last_github_contributions_ts";
+        //
+        // Keys are scoped by auth user id so a second account signing in on
+        // the same browser within the 1h window can't see the previous
+        // user's heatmap.
+        const GH_CONTRIB_CACHE = `last_github_contributions_cache:${authUser.id}`;
+        const GH_CONTRIB_TS = `last_github_contributions_ts:${authUser.id}`;
         const applyGhData = (ghData: { total?: number; contributions?: Record<string, number> }) => {
           if (ghData.total) setGhTotal(ghData.total);
           if (ghData.contributions && Object.keys(ghData.contributions).length > 0) {
@@ -421,8 +425,19 @@ export default function DashboardPage() {
         }
         if (!usedFreshCache) {
           fetch("/api/github/contributions")
-            .then(res => res.json())
+            .then(async res => {
+              // Only treat 2xx as fresh data. A 401/4xx/5xx body would
+              // otherwise get persisted as a "good" cache for an hour and
+              // mask transient outages.
+              if (!res.ok) return null;
+              try {
+                return await res.json();
+              } catch {
+                return null;
+              }
+            })
             .then(ghData => {
+              if (!ghData) return;
               try {
                 localStorage.setItem(GH_CONTRIB_CACHE, JSON.stringify(ghData));
                 localStorage.setItem(GH_CONTRIB_TS, Date.now().toString());
@@ -552,6 +567,12 @@ export default function DashboardPage() {
     ]);
     setUser({ ...profile, projects: projects || [], social_links: socials || null });
     setHeatmapData(streakData);
+    // Keep `todayLogged` in sync with the refreshed streak data. Callers like
+    // handleAddProject auto-upsert a streak_logs row for today, and without
+    // this the sidebar would still show "Log Activity" until the next mount.
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    if (streakData[today]) setTodayLogged(true);
   }, []);
 
   const verifyProject = async (projectId: string) => {
