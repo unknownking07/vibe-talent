@@ -133,6 +133,7 @@ export default async function PricingPage() {
   const faqLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
+    dateModified: "2026-05-22",
     mainEntity: faq.map(({ q, a }) => ({
       "@type": "Question",
       name: q,

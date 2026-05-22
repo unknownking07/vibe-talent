@@ -51,6 +51,8 @@ export const metadata: Metadata = {
     title: "VibeTalent — Find Vibe Coders Who Actually Ship",
     description: "The marketplace for vibe coders who ship consistently.",
     images: [`${siteUrl}/og-image-v2.jpg`],
+    site: "@vibetalentwork",
+    creator: "@abhiontwt",
   },
   alternates: {
     canonical: siteUrl,

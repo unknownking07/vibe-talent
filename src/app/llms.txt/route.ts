@@ -91,6 +91,8 @@ This is the existing USDC-based featuring product. The $VIBE-token-based featuri
 
 - Built by @abhiontwt
 - Website: https://www.vibetalent.work
+- X / Twitter: https://x.com/vibetalentwork
+- Telegram: https://t.me/vibetalentwork
 - GitHub: https://github.com/unknownking07/vibe-talent
 `;
 }

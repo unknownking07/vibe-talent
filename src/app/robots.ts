@@ -26,6 +26,7 @@ export default function robots(): MetadataRoute.Robots {
       { userAgent: "PerplexityBot", allow: "/", disallow: privateDisallow },
       { userAgent: "CCBot", allow: "/", disallow: privateDisallow },
       { userAgent: "OAI-SearchBot", allow: "/", disallow: privateDisallow },
+      { userAgent: "Applebot-Extended", allow: "/", disallow: privateDisallow },
       { userAgent: "Bingbot", allow: "/", disallow: privateDisallow },
     ],
     sitemap: `${siteUrl}/sitemap.xml`,
