@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { siteUrl } from "@/lib/seo";
+import { GLOSSARY_TERMS } from "@/lib/glossary";
 
 // Regenerate hourly. Google polls sitemaps on its own schedule and the
 // per-user `<lastmod>` below already signals freshness to crawlers — no
@@ -19,6 +20,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/roadmap`, lastModified: new Date("2026-04-23") },
     { url: `${siteUrl}/privacy`, lastModified: new Date("2026-04-06") },
     { url: `${siteUrl}/terms`, lastModified: new Date("2026-04-06") },
+    { url: `${siteUrl}/glossary`, lastModified: new Date("2026-05-22") },
+    ...GLOSSARY_TERMS.map((t) => ({
+      url: `${siteUrl}/glossary/${t.slug}`,
+      lastModified: new Date("2026-05-22"),
+    })),
+    { url: `${siteUrl}/vs/upwork`, lastModified: new Date("2026-05-22") },
   ];
 
   try {

@@ -146,7 +146,9 @@ export default async function HomePage() {
                   contactType: "customer service",
                 },
                 sameAs: [
+                  "https://x.com/vibetalentwork",
                   "https://x.com/abhiontwt",
+                  "https://t.me/vibetalentwork",
                   "https://github.com/unknownking07/vibe-talent",
                 ],
               },
@@ -289,7 +291,7 @@ export default async function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
           <div className="grid sm:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">Why Streaks Matter</h2>
+              <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">Why do coding streaks matter?</h2>
               <p className="mt-4 text-[var(--text-secondary)] font-medium leading-relaxed">
                 Anyone can build a portfolio in a weekend. But maintaining a 90-day coding streak?
                 That takes real dedication. Streaks prove you are not just talented — you are consistent.
@@ -343,7 +345,7 @@ export default async function HomePage() {
       <section className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">Top Talent</h2>
+            <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">Who are the top vibe coders?</h2>
             <p className="mt-2 text-[var(--text-secondary)] font-medium">The most consistent builders on the platform</p>
           </div>
           <Link
@@ -380,8 +382,8 @@ export default async function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">Featured Projects</h2>
-              <p className="mt-2 text-[var(--text-secondary)] font-medium">Built by vibe coders, shipped fast</p>
+              <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">What are vibe coders building?</h2>
+              <p className="mt-2 text-[var(--text-secondary)] font-medium">Featured projects built by vibe coders, shipped fast</p>
             </div>
             <Link
               href="/projects"
@@ -422,7 +424,7 @@ export default async function HomePage() {
       >
         <div className="py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 mb-8">
-            <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">What People Say</h2>
+            <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">What do builders say about VibeTalent?</h2>
             <p className="mt-2 text-[var(--text-secondary)] font-medium">Real feedback from the community on X</p>
           </div>
           <TestimonialScroll />
@@ -463,6 +465,7 @@ export default async function HomePage() {
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "FAQPage",
+              dateModified: "2026-05-22",
               mainEntity: FAQ_ITEMS.map((faq) => ({
                 "@type": "Question",
                 name: faq.q,
