@@ -20,9 +20,9 @@
  */
 
 import { Fragment } from "react";
-import Link from "next/link";
 import { ArrowRight, Github, Flame, Trophy, Mail } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { EndGameLadderCTA } from "./end-game-ladder-cta";
 
 interface Step {
   number: string;
@@ -112,15 +112,10 @@ export function EndGameLadder() {
 
       {/* Bottom CTA — gives the ladder a clear close-out instead of just
           dangling. Same destination as the hero's primary CTA so we don't
-          fork the funnel. */}
+          fork the funnel. Auth-aware: logged-in users skip /auth/signup and
+          go straight to /dashboard. */}
       <div className="mt-10 text-center">
-        <Link
-          href="/auth/signup"
-          className="btn-brutal btn-brutal-primary text-sm sm:text-base inline-flex"
-        >
-          Start your streak today
-          <ArrowRight size={16} />
-        </Link>
+        <EndGameLadderCTA />
       </div>
     </section>
   );
