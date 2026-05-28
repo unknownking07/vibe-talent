@@ -10,6 +10,7 @@ import { normalizeSocialHandle } from "@/lib/social-handles";
 import { normalizeExternalUrl } from "@/lib/url-normalize";
 import type { UserWithSocials } from "@/lib/types/database";
 import { EmailPreferences } from "@/components/dashboard/email-preferences";
+import { PrivacyPreferences } from "@/components/dashboard/privacy-preferences";
 import {
   Save,
   Camera,
@@ -604,6 +605,11 @@ export default function SettingsPage() {
       {/* Email Notifications */}
       <div className="mb-8">
         <EmailPreferences />
+      </div>
+
+      {/* Private Repo Privacy */}
+      <div className="mb-8">
+        <PrivacyPreferences />
       </div>
 
       {/* Referral */}

@@ -54,6 +54,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // GitHub provider token from the current session — required for private
+    // repos. Stale sessions may not have it; we fall back to unauthenticated
+    // requests, which is fine for public repos but will 404 on private.
+    const { data: { session } } = await supabase.auth.getSession();
+    const providerToken = session?.provider_token ?? undefined;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
 
@@ -140,7 +146,21 @@ export async function POST(request: Request) {
     // Method 1: Owner match
     if (repoOwner.toLowerCase() === githubUsername.toLowerCase()) {
       // Run quality analysis on the repo
-      const qualityResult = await analyzeRepository(repoOwner, repoName);
+      const qualityResult = await analyzeRepository(repoOwner, repoName, providerToken);
+
+      // Private repo + token lacks `repo` scope → ask the user to reconnect
+      // before falling through to the file-based verification path (which
+      // also can't read private repos with the current scope).
+      if (qualityResult.errorCode === "needs_repo_scope") {
+        return NextResponse.json(
+          {
+            verified: false,
+            reason: "Looks like a private repo. Reconnect GitHub to grant private access and try again.",
+            code: "needs_repo_scope",
+          },
+          { status: 200 }
+        );
+      }
       const qualityScore = qualityResult.success ? (qualityResult.metrics?.quality_score ?? 0) : 0;
       const qualityMetrics = (qualityResult.success && qualityResult.metrics)
         ? {
@@ -177,6 +197,7 @@ export async function POST(request: Request) {
           quality_score: qualityScore,
           quality_metrics: qualityMetrics,
           live_url_ok,
+          is_private: qualityResult.metrics?.is_private ?? false,
         })
         .eq("id", project_id);
 
@@ -240,7 +261,7 @@ export async function POST(request: Request) {
           fileContent.includes(user.id)
         ) {
           // Run quality analysis on the repo
-          const qualityResult = await analyzeRepository(repoOwner, repoName);
+          const qualityResult = await analyzeRepository(repoOwner, repoName, providerToken);
           const qualityScore = qualityResult.success ? (qualityResult.metrics?.quality_score ?? 0) : 0;
           const qualityMetrics = (qualityResult.success && qualityResult.metrics)
             ? {
@@ -277,6 +298,7 @@ export async function POST(request: Request) {
               quality_score: qualityScore,
               quality_metrics: qualityMetrics,
               live_url_ok,
+              is_private: qualityResult.metrics?.is_private ?? false,
             })
             .eq("id", project_id);
 

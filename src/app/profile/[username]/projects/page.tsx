@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
-import { fetchUserByUsernameCached } from "@/lib/supabase/server-queries";
+import { fetchUserByUsernameCached, fetchPrivateProjectsForOwner } from "@/lib/supabase/server-queries";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { ProfileProjectCard } from "@/components/profile/profile-project-card";
 import { siteUrl } from "@/lib/seo";
@@ -98,6 +98,14 @@ export default async function UserProjectsPage({
     isOwner = authUser?.id === user.id;
   } catch {
     // not logged in
+  }
+
+  // Owner sees their private projects merged in with the public ones.
+  if (isOwner) {
+    const privateProjects = await fetchPrivateProjectsForOwner(user.id);
+    if (privateProjects.length > 0) {
+      user.projects = [...privateProjects, ...(user.projects ?? [])];
+    }
   }
 
   const breadcrumbLd = {

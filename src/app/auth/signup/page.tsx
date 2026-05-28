@@ -67,7 +67,13 @@ export default function SignUpPage() {
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
       provider: "github",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        // `repo` covers both public + private repos so users can verify a
+        // private codebase. GitHub renders this as "Repositories: Public
+        // and private" on the consent screen.
+        scopes: "read:user user:email repo",
+      },
     });
   };
 

@@ -22,11 +22,12 @@ import {
 import type { UserWithSocials, Project } from "../types/database";
 import type { TaskRequest } from "../types/agent";
 
-const projectDefaults: Pick<Project, "quality_score" | "quality_metrics" | "live_url_ok" | "endorsement_count"> = {
+const projectDefaults: Pick<Project, "quality_score" | "quality_metrics" | "live_url_ok" | "endorsement_count" | "is_private"> = {
   quality_score: 0,
   quality_metrics: null,
   live_url_ok: null,
   endorsement_count: 0,
+  is_private: false,
 };
 
 function mkProject(overrides: Partial<Project> = {}): Project {
@@ -63,6 +64,7 @@ function mkUser(overrides: Partial<UserWithSocials> = {}): UserWithSocials {
     streak_freezes_remaining: 0,
     streak_freezes_used: 0,
     referral_count: 0,
+    share_private_activity: false,
     created_at: "2025-01-01T00:00:00Z",
     social_links: null,
     projects: [],

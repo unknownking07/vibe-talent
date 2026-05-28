@@ -24,6 +24,8 @@ export interface RepoQualityMetrics {
   last_commit_date: string | null;
   created_at: string | null;
   repo_age_days: number;
+  // GitHub repo visibility — drives privacy gating across the app.
+  is_private: boolean;
 
   // Computed scores (0-100 each)
   community_score: number;
@@ -34,10 +36,32 @@ export interface RepoQualityMetrics {
   quality_score: number;
 }
 
+// Discriminated error codes so callers can branch on what went wrong without
+// brittle string parsing. `needs_repo_scope` is the signal the project-add
+// flow uses to surface the "Reconnect GitHub" CTA — it means the GitHub API
+// returned 404 for a syntactically valid repo URL while the caller's token
+// only carried `public_repo`, which is what existing pre-migration users have.
+export type RepoAnalysisErrorCode =
+  | "not_found"
+  | "rate_limited"
+  | "needs_repo_scope"
+  | "network_error"
+  | "unknown";
+
 export interface RepoAnalysisResult {
   success: boolean;
   metrics: RepoQualityMetrics | null;
   error?: string;
+  errorCode?: RepoAnalysisErrorCode;
+}
+
+// Parse the comma-separated scope list GitHub returns in X-OAuth-Scopes on
+// every authenticated response (including 404s). An empty/missing header
+// means the request was unauthenticated, not that the token has no scopes.
+function parseOAuthScopes(res: Response): string[] | null {
+  const header = res.headers.get("x-oauth-scopes");
+  if (header === null) return null;
+  return header.split(",").map((s) => s.trim()).filter(Boolean);
 }
 
 const GITHUB_API = "https://api.github.com";
@@ -87,7 +111,11 @@ export function parseGithubRepoUrl(
 
 /**
  * Analyze a GitHub repository and return quality metrics.
- * Uses only public API endpoints — no extra OAuth scopes needed.
+ *
+ * Pass the caller's GitHub OAuth `token` to access their private repos. The
+ * `repo` scope is required for private access; with only `public_repo`, the
+ * API returns 404 for private repos and we surface that as `needs_repo_scope`
+ * so the caller can prompt for a re-auth.
  */
 export async function analyzeRepository(
   owner: string,
@@ -104,9 +132,37 @@ export async function analyzeRepository(
     ]);
 
     if (!repoRes.ok) {
-      if (repoRes.status === 404) return { success: false, metrics: null, error: "Repository not found" };
-      if (repoRes.status === 403) return { success: false, metrics: null, error: "GitHub API rate limit exceeded" };
-      return { success: false, metrics: null, error: `GitHub API error: ${repoRes.status}` };
+      if (repoRes.status === 404) {
+        // A 404 from an authenticated request whose token lacks `repo` is the
+        // signature of a private repo the caller could reach if they re-auth.
+        // We can't be certain without a second probe, but it's the only
+        // actionable signal we have and the false-positive case (truly
+        // missing public repo) still surfaces a useful CTA.
+        const scopes = parseOAuthScopes(repoRes);
+        if (token && scopes && !scopes.includes("repo")) {
+          return {
+            success: false,
+            metrics: null,
+            error: "Private repo — reconnect GitHub to grant private access.",
+            errorCode: "needs_repo_scope",
+          };
+        }
+        return { success: false, metrics: null, error: "Repository not found", errorCode: "not_found" };
+      }
+      if (repoRes.status === 403) {
+        return {
+          success: false,
+          metrics: null,
+          error: "GitHub API rate limit exceeded",
+          errorCode: "rate_limited",
+        };
+      }
+      return {
+        success: false,
+        metrics: null,
+        error: `GitHub API error: ${repoRes.status}`,
+        errorCode: "unknown",
+      };
     }
 
     const repoData = await repoRes.json();
@@ -279,6 +335,7 @@ export async function analyzeRepository(
       last_commit_date: lastPush?.toISOString() || null,
       created_at: repoData.created_at || null,
       repo_age_days: repoAgeDays,
+      is_private: Boolean(repoData.private),
       community_score,
       substance_score,
       maintenance_score,
@@ -291,6 +348,7 @@ export async function analyzeRepository(
       success: false,
       metrics: null,
       error: error instanceof Error ? error.message : "Unknown error analyzing repository",
+      errorCode: "network_error",
     };
   }
 }

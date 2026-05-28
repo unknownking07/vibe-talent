@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ExternalLink, Flag, CheckCircle, Undo2, Github, ShieldCheck } from "lucide-react";
+import { ExternalLink, Flag, CheckCircle, Undo2, Github, ShieldCheck, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import type { Project } from "@/lib/types/database";
@@ -43,7 +43,8 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
   const [undoing, setUndoing] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const [verifyMessage, setVerifyMessage] = useState<{ success: boolean; text: string } | null>(null);
+  const [verifyMessage, setVerifyMessage] = useState<{ success: boolean; text: string; needsReconnect?: boolean } | null>(null);
+  const [reconnectingGithub, setReconnectingGithub] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
   const isLongDescription = (project.description?.length ?? 0) > 280;
 
@@ -62,12 +63,28 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
         setVerifyMessage({ success: true, text: data.reason || "Project verified!" });
         router.refresh();
       } else {
-        setVerifyMessage({ success: false, text: data.reason || data.error || "Verification failed." });
+        setVerifyMessage({
+          success: false,
+          text: data.reason || data.error || "Verification failed.",
+          needsReconnect: data.code === "needs_repo_scope",
+        });
       }
     } catch {
       setVerifyMessage({ success: false, text: "Verification request failed." });
     }
     setVerifying(false);
+  }
+
+  async function handleReconnectGithub() {
+    setReconnectingGithub(true);
+    const supabase = createClient();
+    await supabase.auth.signInWithOAuth({
+      provider: "github",
+      options: {
+        redirectTo: `${window.location.origin}${window.location.pathname}`,
+        scopes: "read:user user:email repo",
+      },
+    });
   }
 
   useEffect(() => {
@@ -231,12 +248,21 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
         </div>
       </div>
 
-      {(verified || project.quality_score > 0) && (
+      {(verified || project.quality_score > 0 || project.is_private) && (
         <div className="flex items-center gap-2 flex-wrap">
           {verified && (
             <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600" title="Verified owner">
               <CheckCircle size={14} />
               Verified
+            </span>
+          )}
+          {project.is_private && (
+            <span
+              className="inline-flex items-center gap-1 text-xs font-bold text-[var(--text-secondary)]"
+              title="Private repo — only you can see this card. The repo name and URL are hidden from everyone else."
+            >
+              <Lock size={12} />
+              Private
             </span>
           )}
           <QualityScoreBadge project={project} />
@@ -302,6 +328,15 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
               role="status"
             >
               {verifyMessage.text}
+              {verifyMessage.needsReconnect && (
+                <button
+                  onClick={handleReconnectGithub}
+                  disabled={reconnectingGithub}
+                  className="ml-2 underline disabled:opacity-50"
+                >
+                  {reconnectingGithub ? "Redirecting..." : "Reconnect GitHub"}
+                </button>
+              )}
             </p>
           )}
         </div>

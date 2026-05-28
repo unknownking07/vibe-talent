@@ -15,11 +15,16 @@ export async function GET(request: NextRequest) {
 
   try {
     const supabase = await createServerSupabaseClient();
+    // Public listing — never expose private repos here, regardless of caller.
+    // (The RLS policy enforces the same constraint for direct Supabase JS
+    // clients, but this endpoint runs server-side and would otherwise need
+    // to rely on RLS, which depends on the session being attached.)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from("projects")
-      .select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, live_url_ok, endorsement_count, created_at")
+      .select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, live_url_ok, endorsement_count, is_private, created_at")
       .eq("flagged", false)
+      .eq("is_private", false)
       .order("created_at", { ascending: false })
       .limit(100);
 
@@ -95,6 +100,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "github_url must be a valid GitHub repo URL" }, { status: 400 });
     }
 
+    // Pull the GitHub OAuth provider token from the current Supabase session so
+    // we can hit the GitHub API as the user. This is what lets a private repo
+    // resolve (with `repo` scope) instead of 404'ing. The token is only present
+    // immediately after sign-in; on stale sessions it's null and we fall back
+    // to unauthenticated probing, which surfaces the same `needs_repo_scope`
+    // CTA via the 404 path.
+    const { data: { session } } = await supabase.auth.getSession();
+    const providerToken = session?.provider_token ?? undefined;
+
+    // If the user pasted a GitHub URL and we can probe it before insert, we
+    // can capture `is_private` and the reconnect signal up front instead of
+    // creating an unverified row that 404s in the background.
+    let isPrivateOnCreate = false;
+    if (normalizedGithubUrl) {
+      const parsed = parseGithubRepoUrl(normalizedGithubUrl);
+      if (parsed) {
+        const probe = await analyzeRepository(parsed.owner, parsed.repo, providerToken);
+        if (probe.success && probe.metrics) {
+          isPrivateOnCreate = probe.metrics.is_private;
+        } else if (probe.errorCode === "needs_repo_scope") {
+          // Block create with an actionable error. The client renders a
+          // "Reconnect GitHub" button that re-runs OAuth with `repo` scope.
+          return NextResponse.json(
+            {
+              error: "This looks like a private repo. Reconnect GitHub to grant private repo access, then try again.",
+              code: "needs_repo_scope",
+            },
+            { status: 403 }
+          );
+        }
+        // Other errors (rate_limited, not_found, network_error) fall through —
+        // the cron backfill will retry analysis, and the project is created
+        // unverified just like before. `is_private` stays false; if it turns
+        // out to be private, the backfill will flip the flag once it succeeds.
+      }
+    }
+
     // Use authenticated user's ID, NOT client-supplied user_id
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any).from("projects").insert({
@@ -106,6 +148,7 @@ export async function POST(request: NextRequest) {
       github_url: normalizedGithubUrl,
       build_time: build_time ? String(build_time).trim().slice(0, 50) : null,
       tags: Array.isArray(tags) ? tags.slice(0, 10).map((t: string) => String(t).trim().slice(0, 30)) : [],
+      is_private: isPrivateOnCreate,
     }).select().single();
 
     if (error) {
@@ -140,7 +183,7 @@ export async function POST(request: NextRequest) {
           try {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const sb = supabase as any;
-            const qualityResult = await analyzeRepository(repoOwner, repoName);
+            const qualityResult = await analyzeRepository(repoOwner, repoName, providerToken);
 
             // If GitHub analysis fails (rate limit, transient API error, etc.)
             // leave the project unverified so the cron backfill can retry it.
@@ -182,6 +225,9 @@ export async function POST(request: NextRequest) {
               quality_score: qualityScore,
               quality_metrics: qualityMetrics,
               live_url_ok,
+              // Re-sync from the full analysis — the create-time probe may
+              // have failed silently while the post-response probe succeeded.
+              is_private: qualityResult.metrics.is_private,
             }).eq("id", data.id);
 
             if (!updateError) {
