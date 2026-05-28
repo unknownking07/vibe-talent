@@ -50,21 +50,26 @@ export async function GET(request: NextRequest) {
       if (topUserIds.length === 0) {
         return NextResponse.json(
           { leaderboard: [], range: "week", mode: "active" },
-          { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" } },
+          { headers: { "Cache-Control": "public, max-age=30, s-maxage=60, stale-while-revalidate=120" } },
         );
       }
 
-      const { data: users } = await sb
-        .from("users")
-        .select("id, username, avatar_url, vibe_score, streak")
-        .in("id", topUserIds)
-        .not("username", "is", null);
+      // Top-user details and the full ranking list are independent — run them in parallel.
+      const [usersRes, allRankedRes] = await Promise.all([
+        sb
+          .from("users")
+          .select("id, username, avatar_url, vibe_score, streak")
+          .in("id", topUserIds)
+          .not("username", "is", null),
+        sb
+          .from("users")
+          .select("id")
+          .not("username", "is", null)
+          .order("vibe_score", { ascending: false }),
+      ]);
+      const users = usersRes.data;
+      const allRanked = allRankedRes.data;
 
-      const { data: allRanked } = await sb
-        .from("users")
-        .select("id")
-        .not("username", "is", null)
-        .order("vibe_score", { ascending: false });
       const rankByUserId = new Map<string, number>();
       (allRanked ?? []).forEach((u: { id: string }, i: number) => rankByUserId.set(u.id, i + 1));
 
@@ -81,7 +86,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json(
         { leaderboard: builders, range: "week", mode: "active" },
-        { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" } },
+        { headers: { "Cache-Control": "public, max-age=30, s-maxage=60, stale-while-revalidate=120" } },
       );
     }
 
@@ -115,7 +120,7 @@ export async function GET(request: NextRequest) {
       { leaderboard },
       {
         headers: {
-          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+          "Cache-Control": "public, max-age=30, s-maxage=60, stale-while-revalidate=120",
         },
       }
     );

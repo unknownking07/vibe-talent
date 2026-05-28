@@ -1,49 +1,11 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { ActiveBuilderRow, type ActiveBuilderRowProps } from "./active-builder-row";
 
-export function WeeklyTab() {
-  const [rows, setRows] = useState<ActiveBuilderRowProps[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+interface Props {
+  rows: ActiveBuilderRowProps[] | null;
+  error: string | null;
+}
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/leaderboard?range=week&limit=50");
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        if (cancelled) return;
-        const props: ActiveBuilderRowProps[] = (json.leaderboard ?? []).map(
-          (r: {
-            username: string;
-            avatar_url: string | null;
-            currentRank: number;
-            activeDays7d: number;
-            commits7d: number;
-            streak: number;
-            vibeScore: number;
-          }, idx: number) => ({
-            position: idx + 1,
-            username: r.username,
-            avatarUrl: r.avatar_url,
-            currentRank: r.currentRank,
-            activeDays7d: r.activeDays7d,
-            commits7d: r.commits7d,
-            streak: r.streak,
-            vibeScore: r.vibeScore,
-            isCrown: idx === 0,
-          }),
-        );
-        setRows(props);
-      } catch (e) {
-        if (!cancelled) setError((e as Error).message);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
+export function WeeklyTab({ rows, error }: Props) {
   if (error) {
     return (
       <div className="text-[13px] text-[var(--status-error-text)] bg-[var(--status-error-bg)] border border-[var(--status-error-border)] p-4 rounded">
