@@ -64,30 +64,6 @@ export default function ProfileSetupPage() {
   const [verifiedGithubId, setVerifiedGithubId] = useState<number | null>(null);
   const [connectingGithub, setConnectingGithub] = useState(false);
   const [streakLogged, setStreakLogged] = useState(false);
-  // Set when the user pastes a private repo URL but their OAuth token only
-  // has `public_repo` — onboarding renders a "Reconnect GitHub" button next
-  // to the error so they can re-grant scope without leaving the page.
-  const [needsRepoReconnect, setNeedsRepoReconnect] = useState(false);
-  const [reconnectingGithub, setReconnectingGithub] = useState(false);
-
-  async function handleReconnectGithubForRepoScope() {
-    setReconnectingGithub(true);
-    // Create the client inside the handler (self-contained, matches the
-    // reconnect handlers in dashboard/page.tsx and profile-project-card.tsx)
-    // rather than reaching for the component-scope instance defined later.
-    const supabase = createClient();
-    // Routing back to /auth/profile-setup keeps the user in the onboarding
-    // flow after GitHub redirects them home. The form state will reset, but
-    // the project URL they pasted lives in localStorage if we cared to
-    // restore it — for v1, ask them to paste it again.
-    await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        redirectTo: `${window.location.origin}/auth/profile-setup`,
-        scopes: "read:user user:email repo",
-      },
-    });
-  }
 
   // Step 1
   const [profile, setProfile] = useState<ProfileData>({
@@ -435,16 +411,6 @@ export default function ProfileSetupPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        // Surface the reconnect path explicitly so a denied private-repo
-        // consent doesn't dead-end the onboarding flow.
-        if (data.code === "needs_repo_scope") {
-          setError(
-            (data.error || "Private repo detected.") +
-              " Reconnect GitHub with private-repo access to continue."
-          );
-          setNeedsRepoReconnect(true);
-          return;
-        }
         throw new Error(data.error || "Failed to save project");
       }
 
@@ -530,15 +496,6 @@ export default function ProfileSetupPage() {
       }}
     >
       {error}
-      {needsRepoReconnect && (
-        <button
-          onClick={handleReconnectGithubForRepoScope}
-          disabled={reconnectingGithub}
-          className="ml-2 underline disabled:opacity-50"
-        >
-          {reconnectingGithub ? "Redirecting..." : "Reconnect GitHub"}
-        </button>
-      )}
     </div>
   ) : null;
 

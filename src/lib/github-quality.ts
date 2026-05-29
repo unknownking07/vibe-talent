@@ -37,10 +37,11 @@ export interface RepoQualityMetrics {
 }
 
 // Discriminated error codes so callers can branch on what went wrong without
-// brittle string parsing. `needs_repo_scope` is the signal the project-add
-// flow uses to surface the "Reconnect GitHub" CTA — it means the GitHub API
-// returned 404 for a syntactically valid repo URL while the caller's token
-// only carried `public_repo`, which is what existing pre-migration users have.
+// brittle string parsing. `needs_repo_scope` means the GitHub API returned 404
+// for a syntactically valid repo URL while the caller's token only carried
+// public scope — i.e. it's almost certainly a private repo we can't read.
+// Callers map this to a "private repos aren't supported yet" message (we use
+// public-only OAuth; read-only private access is coming via a GitHub App).
 export type RepoAnalysisErrorCode =
   | "not_found"
   | "rate_limited"
@@ -110,12 +111,14 @@ export function parseGithubRepoUrl(
 }
 
 /**
- * Analyze a GitHub repository and return quality metrics.
+ * Analyze a GitHub repository and return quality metrics. Reads only — repo
+ * metadata, languages, contributors, file tree, README, commit count.
  *
- * Pass the caller's GitHub OAuth `token` to access their private repos. The
- * `repo` scope is required for private access; with only `public_repo`, the
- * API returns 404 for private repos and we surface that as `needs_repo_scope`
- * so the caller can prompt for a re-auth.
+ * Pass the caller's GitHub OAuth `token` (public scope) to read public repos
+ * as the user and dodge unauthenticated rate limits. Private repos return 404
+ * under public scope; we surface that as `needs_repo_scope` so callers can
+ * show a "private repos aren't supported yet" message. (Read-only private
+ * access will come from a fine-grained GitHub App, not the OAuth `repo` scope.)
  */
 export async function analyzeRepository(
   owner: string,
@@ -133,17 +136,16 @@ export async function analyzeRepository(
 
     if (!repoRes.ok) {
       if (repoRes.status === 404) {
-        // A 404 from an authenticated request whose token lacks `repo` is the
-        // signature of a private repo the caller could reach if they re-auth.
-        // We can't be certain without a second probe, but it's the only
-        // actionable signal we have and the false-positive case (truly
-        // missing public repo) still surfaces a useful CTA.
+        // A 404 from an authenticated request whose token carries only public
+        // scope is the signature of a private repo we can't read. Flag it as
+        // needs_repo_scope so callers can show the "not supported yet" message
+        // rather than a generic "not found".
         const scopes = parseOAuthScopes(repoRes);
         if (token && scopes && !scopes.includes("repo")) {
           return {
             success: false,
             metrics: null,
-            error: "Private repo — reconnect GitHub to grant private access.",
+            error: "Private repository — not supported yet.",
             errorCode: "needs_repo_scope",
           };
         }

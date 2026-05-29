@@ -49,12 +49,12 @@ export default function LoginPage() {
 
   const handleGitHubLogin = async () => {
     const supabase = createClient();
+    // Public-only OAuth (Supabase default). See the note in signup/page.tsx:
+    // we intentionally don't request `repo` — read-only private access will
+    // come from a GitHub App, not the all-or-nothing OAuth `repo` scope.
     await supabase.auth.signInWithOAuth({
       provider: "github",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: "read:user user:email repo",
-      },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
   };
 

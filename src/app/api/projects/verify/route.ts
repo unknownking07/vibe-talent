@@ -148,15 +148,16 @@ export async function POST(request: Request) {
       // Run quality analysis on the repo
       const qualityResult = await analyzeRepository(repoOwner, repoName, providerToken);
 
-      // Private repo + token lacks `repo` scope → ask the user to reconnect
-      // before falling through to the file-based verification path (which
-      // also can't read private repos with the current scope).
+      // Detected a private repo (our public-only OAuth can't read it). Private
+      // repos aren't supported yet — read-only support is coming via a GitHub
+      // App. Give an honest message rather than prompting a scope grant that
+      // doesn't exist for OAuth Apps.
       if (qualityResult.errorCode === "needs_repo_scope") {
         return NextResponse.json(
           {
             verified: false,
-            reason: "Looks like a private repo. Reconnect GitHub to grant private access and try again.",
-            code: "needs_repo_scope",
+            reason: "Private repositories aren't supported yet — support is coming soon. Public repos verify automatically.",
+            code: "private_unsupported",
           },
           { status: 200 }
         );
