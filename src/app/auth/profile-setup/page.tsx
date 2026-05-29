@@ -72,6 +72,10 @@ export default function ProfileSetupPage() {
 
   async function handleReconnectGithubForRepoScope() {
     setReconnectingGithub(true);
+    // Create the client inside the handler (self-contained, matches the
+    // reconnect handlers in dashboard/page.tsx and profile-project-card.tsx)
+    // rather than reaching for the component-scope instance defined later.
+    const supabase = createClient();
     // Routing back to /auth/profile-setup keeps the user in the onboarding
     // flow after GitHub redirects them home. The form state will reset, but
     // the project URL they pasted lives in localStorage if we cared to

@@ -18,6 +18,7 @@ export function PrivacyPreferences() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,20 +51,24 @@ export function PrivacyPreferences() {
     setEnabled(next);
     setSaving(true);
     setSaved(false);
+    setError(false);
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("not signed in");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any)
+      const { error: updateError } = await (supabase as any)
         .from("users")
         .update({ share_private_activity: next })
         .eq("id", user.id);
-      if (error) throw error;
+      if (updateError) throw updateError;
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
+      // Revert the optimistic flip and tell the user it didn't stick.
       setEnabled(previous);
+      setError(true);
+      setTimeout(() => setError(false), 4000);
     }
     setSaving(false);
   };
@@ -85,6 +90,11 @@ export function PrivacyPreferences() {
         {saved && (
           <span className="flex items-center gap-1 text-xs font-bold text-emerald-600">
             <Check size={12} /> Saved
+          </span>
+        )}
+        {error && (
+          <span className="text-xs font-bold text-red-500" role="status">
+            Couldn&apos;t save — try again
           </span>
         )}
       </div>
@@ -115,7 +125,8 @@ export function PrivacyPreferences() {
             border: "2px solid var(--border-hard)",
           }}
           aria-label="Toggle private repo activity sharing"
-          aria-pressed={enabled}
+          role="switch"
+          aria-checked={enabled}
         >
           <span
             className="absolute top-0.5 w-3.5 h-3.5 rounded-full bg-[var(--bg-surface)] transition-all"
