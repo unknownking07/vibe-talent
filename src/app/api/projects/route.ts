@@ -100,18 +100,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "github_url must be a valid GitHub repo URL" }, { status: 400 });
     }
 
-    // Pull the GitHub OAuth provider token from the current Supabase session so
-    // we can hit the GitHub API as the user. This is what lets a private repo
-    // resolve (with `repo` scope) instead of 404'ing. The token is only present
-    // immediately after sign-in; on stale sessions it's null and we fall back
-    // to unauthenticated probing, which surfaces the same `needs_repo_scope`
-    // CTA via the 404 path.
+    // Pull the GitHub OAuth provider token from the current Supabase session
+    // (present briefly right after sign-in) to read repo metadata as the user
+    // and avoid unauthenticated rate limits. We only ever READ — never write.
     const { data: { session } } = await supabase.auth.getSession();
     const providerToken = session?.provider_token ?? undefined;
 
-    // If the user pasted a GitHub URL and we can probe it before insert, we
-    // can capture `is_private` and the reconnect signal up front instead of
-    // creating an unverified row that 404s in the background.
+    // Probe the repo before insert so we capture is_private up front. Note:
+    // private repos aren't supported yet — our OAuth is public-only (GitHub
+    // OAuth Apps can't grant read-only private access; the `repo` scope is
+    // read+write+admin, which we won't ask users for). Read-only private
+    // support is coming via a fine-grained GitHub App. Until then, a private
+    // repo is detected here and rejected with a clear message.
     let isPrivateOnCreate = false;
     if (normalizedGithubUrl) {
       const parsed = parseGithubRepoUrl(normalizedGithubUrl);
@@ -120,14 +120,15 @@ export async function POST(request: NextRequest) {
         if (probe.success && probe.metrics) {
           isPrivateOnCreate = probe.metrics.is_private;
         } else if (probe.errorCode === "needs_repo_scope") {
-          // Block create with an actionable error. The client renders a
-          // "Reconnect GitHub" button that re-runs OAuth with `repo` scope.
+          // We could see this is a private repo (token had public-only scope).
+          // Don't create a misleading "public" row — reject with an honest,
+          // non-actionable message (there's no scope for the user to grant).
           return NextResponse.json(
             {
-              error: "This looks like a private repo. Reconnect GitHub to grant private repo access, then try again.",
-              code: "needs_repo_scope",
+              error: "Private repositories aren't supported yet — support is coming soon. Add a public repo or a live URL for now.",
+              code: "private_unsupported",
             },
-            { status: 403 }
+            { status: 400 }
           );
         }
         // Other errors (rate_limited, not_found, network_error) fall through —

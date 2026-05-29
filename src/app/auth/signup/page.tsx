@@ -65,15 +65,15 @@ export default function SignUpPage() {
 
   const handleGitHubSignUp = async () => {
     const supabase = createClient();
+    // Public-only OAuth (Supabase default scope). We deliberately do NOT
+    // request the `repo` scope: GitHub OAuth Apps can't grant read-only
+    // private access — `repo` is read+write+admin, which is more than we
+    // need (we only ever read repo metadata) and scares users off. Read-only
+    // private-repo support is coming via a GitHub App with fine-grained
+    // permissions instead.
     await supabase.auth.signInWithOAuth({
       provider: "github",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        // `repo` covers both public + private repos so users can verify a
-        // private codebase. GitHub renders this as "Repositories: Public
-        // and private" on the consent screen.
-        scopes: "read:user user:email repo",
-      },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
   };
 

@@ -521,24 +521,7 @@ export default function DashboardPage() {
   const chatPollRef = useRef<NodeJS.Timeout | null>(null);
   const [badgeCopied, setBadgeCopied] = useState<string | null>(null);
   const [verifyingProjectId, setVerifyingProjectId] = useState<string | null>(null);
-  const [verifyMessage, setVerifyMessage] = useState<{ projectId: string; success: boolean; text: string; needsReconnect?: boolean } | null>(null);
-  const [reconnectingGithub, setReconnectingGithub] = useState(false);
-
-  // Re-runs GitHub OAuth with the `repo` scope so private repos resolve. Used
-  // when the verify endpoint hits a 404 + token-lacks-scope condition, which
-  // is the signature of existing users whose pre-migration token only carries
-  // `public_repo`.
-  const handleReconnectGithub = async () => {
-    setReconnectingGithub(true);
-    const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`,
-        scopes: "read:user user:email repo",
-      },
-    });
-  };
+  const [verifyMessage, setVerifyMessage] = useState<{ projectId: string; success: boolean; text: string } | null>(null);
   const [showVerifyGuide, setShowVerifyGuide] = useState(true);
   const [projectImageFile, setProjectImageFile] = useState<File | null>(null);
   const [projectImagePreview, setProjectImagePreview] = useState<string | null>(null);
@@ -606,15 +589,10 @@ export default function DashboardPage() {
         setVerifyMessage({ projectId, success: true, text: data.reason || "Project verified!" });
         await reloadUser();
       } else {
-        // `needs_repo_scope` means GitHub returned 404 while the user's token
-        // doesn't have `repo` — almost always a private repo on a stale
-        // pre-migration session. Surface a one-click reconnect rather than
-        // a generic "verification failed".
         setVerifyMessage({
           projectId,
           success: false,
           text: data.reason || "Verification failed.",
-          needsReconnect: data.code === "needs_repo_scope",
         });
       }
     } catch {
@@ -1616,15 +1594,6 @@ export default function DashboardPage() {
               {verifyMessage && verifyMessage.projectId === project.id && (
                 <div className={`mt-1 px-4 py-1.5 text-[10px] font-bold uppercase ${verifyMessage.success ? "text-green-600" : "text-orange-600"}`}>
                   {verifyMessage.text}
-                  {verifyMessage.needsReconnect && (
-                    <button
-                      onClick={handleReconnectGithub}
-                      disabled={reconnectingGithub}
-                      className="ml-2 underline disabled:opacity-50"
-                    >
-                      {reconnectingGithub ? "Redirecting..." : "Reconnect GitHub"}
-                    </button>
-                  )}
                 </div>
               )}
             </div>

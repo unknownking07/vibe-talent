@@ -43,8 +43,7 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
   const [undoing, setUndoing] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const [verifyMessage, setVerifyMessage] = useState<{ success: boolean; text: string; needsReconnect?: boolean } | null>(null);
-  const [reconnectingGithub, setReconnectingGithub] = useState(false);
+  const [verifyMessage, setVerifyMessage] = useState<{ success: boolean; text: string } | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
   const isLongDescription = (project.description?.length ?? 0) > 280;
 
@@ -66,25 +65,12 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
         setVerifyMessage({
           success: false,
           text: data.reason || data.error || "Verification failed.",
-          needsReconnect: data.code === "needs_repo_scope",
         });
       }
     } catch {
       setVerifyMessage({ success: false, text: "Verification request failed." });
     }
     setVerifying(false);
-  }
-
-  async function handleReconnectGithub() {
-    setReconnectingGithub(true);
-    const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
-      provider: "github",
-      options: {
-        redirectTo: `${window.location.origin}${window.location.pathname}`,
-        scopes: "read:user user:email repo",
-      },
-    });
   }
 
   useEffect(() => {
@@ -328,15 +314,6 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
               role="status"
             >
               {verifyMessage.text}
-              {verifyMessage.needsReconnect && (
-                <button
-                  onClick={handleReconnectGithub}
-                  disabled={reconnectingGithub}
-                  className="ml-2 underline disabled:opacity-50"
-                >
-                  {reconnectingGithub ? "Redirecting..." : "Reconnect GitHub"}
-                </button>
-              )}
             </p>
           )}
         </div>
