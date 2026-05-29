@@ -68,6 +68,24 @@ function truncate(s: string | null, max: number): string | undefined {
   return trimmed.slice(0, max - 1).trimEnd() + "…";
 }
 
+/** Replacement message text for a private-repo feed event when the owner has
+ *  opted into sharing activity. Intentionally generic — no repo name, no
+ *  commit subject, no file paths. Even the verb is kept fuzzy so commit
+ *  cadence can't be back-derived. */
+function anonymizePrivateEventMessage(eventType: string | null | undefined): string {
+  switch (eventType) {
+    case "pr":
+      return "opened a pull request in a private repo";
+    case "create":
+      return "made changes in a private repo";
+    case "issue":
+      return "opened an issue in a private repo";
+    case "push":
+    default:
+      return "pushed to a private repo";
+  }
+}
+
 function getPublicClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -125,7 +143,7 @@ async function _fetchFeed(mode: FeedMode): Promise<FeedItem[]> {
     badgeNotificationsResult,
   ] = await Promise.all([
     sb.from("feed_events")
-      .select("id, event_type, repo_name, message, github_url, created_at, user_id")
+      .select("id, event_type, repo_name, message, github_url, created_at, user_id, is_private")
       .order("created_at", { ascending: false })
       .limit(limits.events)
       .then(
@@ -140,6 +158,8 @@ async function _fetchFeed(mode: FeedMode): Promise<FeedItem[]> {
     sb.from("projects")
       .select("id, title, description, tech_stack, live_url, github_url, created_at, user_id")
       .eq("flagged", false)
+      // Projects in the public feed never include private repos.
+      .eq("is_private", false)
       .order("created_at", { ascending: false })
       .limit(limits.projects),
     sb.from("users")
@@ -147,7 +167,10 @@ async function _fetchFeed(mode: FeedMode): Promise<FeedItem[]> {
       .order("created_at", { ascending: false })
       .limit(limits.recent),
     sb.from("project_endorsements")
-      .select("id, created_at, user_id, project_id, projects!inner(id, title, user_id, flagged)")
+      // `is_private` in the inner-join shape lets the renderer drop endorsements
+      // whose target project is private, so an outsider can never infer the
+      // existence of a private repo from an endorsement event.
+      .select("id, created_at, user_id, project_id, projects!inner(id, title, user_id, flagged, is_private)")
       .order("created_at", { ascending: false })
       .limit(limits.endorsements)
       .then(
@@ -201,7 +224,7 @@ async function _fetchFeed(mode: FeedMode): Promise<FeedItem[]> {
   const usersResult = referencedUserIds.size > 0
     ? await sb
         .from("users")
-        .select("id, username, display_name, avatar_url, badge_level, streak, github_username")
+        .select("id, username, display_name, avatar_url, badge_level, streak, github_username, share_private_activity")
         .in("id", [...referencedUserIds])
     : { data: [] };
 
@@ -215,6 +238,7 @@ async function _fetchFeed(mode: FeedMode): Promise<FeedItem[]> {
     badge_level: string;
     streak: number;
     github_verified: boolean;
+    share_private_activity: boolean;
   }>();
   for (const u of (usersResult.data || [])) {
     userMap.set(u.id, {
@@ -224,16 +248,21 @@ async function _fetchFeed(mode: FeedMode): Promise<FeedItem[]> {
       badge_level: u.badge_level || "none",
       streak: u.streak || 0,
       github_verified: Boolean(u.github_username),
+      share_private_activity: Boolean(u.share_private_activity),
     });
   }
 
   const feed: FeedItem[] = [];
 
-  // 1. GitHub events
+  // 1. GitHub events — private events are dropped unless the owner has
+  // opted in via settings; even then, the event is anonymized (no repo
+  // name, no commit message, no clickable URL).
   if (eventsResult.data && !eventsResult.error) {
     for (const event of eventsResult.data) {
       const user = userMap.get(event.user_id);
       if (!user) continue;
+      if (event.is_private && !user.share_private_activity) continue;
+      const isAnonymized = Boolean(event.is_private);
       feed.push({
         id: `event-${event.id}`,
         type: event.event_type || "push",
@@ -244,9 +273,14 @@ async function _fetchFeed(mode: FeedMode): Promise<FeedItem[]> {
         streak: user.streak,
         github_verified: user.github_verified,
         date: event.created_at,
-        repo_name: event.repo_name,
-        message: event.message,
-        github_url: event.github_url,
+        // For anonymized events we drop the repo identity entirely (undefined,
+        // not empty string) so the renderer treats them as if no repo was
+        // attached — same path as events from sources without a repo link.
+        repo_name: isAnonymized ? undefined : event.repo_name,
+        message: isAnonymized
+          ? anonymizePrivateEventMessage(event.event_type)
+          : event.message,
+        github_url: isAnonymized ? undefined : event.github_url,
       });
     }
   }
@@ -312,7 +346,8 @@ async function _fetchFeed(mode: FeedMode): Promise<FeedItem[]> {
     });
   }
 
-  // 5. Endorsements
+  // 5. Endorsements — drop endorsements whose target project is private so
+  // the endorsement event doesn't leak the existence of the repo.
   if (endorsementsResult.data && !endorsementsResult.error) {
     for (const endorsement of endorsementsResult.data) {
       const actor = userMap.get(endorsement.user_id);
@@ -320,6 +355,7 @@ async function _fetchFeed(mode: FeedMode): Promise<FeedItem[]> {
         ? endorsement.projects[0]
         : endorsement.projects;
       if (!actor || !projectRow || projectRow.flagged) continue;
+      if (projectRow.is_private) continue;
       if (endorsement.user_id === projectRow.user_id) continue;
       const owner = userMap.get(projectRow.user_id);
       if (!owner) continue;

@@ -103,7 +103,9 @@ export async function GET(request: NextRequest) {
     }
 
     const userIds = users.map((u: { id: string }) => u.id);
-    const { data: projects } = await sb.from("projects").select("user_id").in("user_id", userIds).eq("flagged", false);
+    // Leaderboard project_count counts public work only — private repos
+    // shouldn't be visible as a number even if they boost the score.
+    const { data: projects } = await sb.from("projects").select("user_id").in("user_id", userIds).eq("flagged", false).eq("is_private", false);
 
     const leaderboard = users.map((user: { id: string; username: string; avatar_url: string | null; vibe_score: number; streak: number; longest_streak: number; badge_level: string }, index: number) => ({
       rank: index + 1,

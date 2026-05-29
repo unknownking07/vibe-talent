@@ -1,4 +1,4 @@
-import { fetchUserByUsernameCached, fetchStreakLogsCached } from "@/lib/supabase/server-queries";
+import { fetchUserByUsernameCached, fetchStreakLogsCached, fetchPrivateProjectsForOwner } from "@/lib/supabase/server-queries";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ProfileSidebar } from "@/components/profile/profile-sidebar";
@@ -184,6 +184,16 @@ export default async function ProfilePage({
     isOwner = authUser?.id === user.id;
   } catch {
     // Not logged in — isOwner stays false
+  }
+
+  // Merge in the owner's private projects so they see their own work with a
+  // 🔒 badge. Non-owners never get here — the cached fetch above already
+  // stripped private projects.
+  if (isOwner) {
+    const privateProjects = await fetchPrivateProjectsForOwner(user.id);
+    if (privateProjects.length > 0) {
+      user.projects = [...privateProjects, ...(user.projects ?? [])];
+    }
   }
 
   return (

@@ -14,6 +14,7 @@ export interface User {
   streak_freezes_remaining: number;
   streak_freezes_used: number;
   referral_count: number;
+  share_private_activity: boolean;
   created_at: string;
 }
 
@@ -33,6 +34,7 @@ export interface Project {
   quality_metrics: RepoQualityData | null;
   live_url_ok: boolean | null;
   endorsement_count: number;
+  is_private: boolean;
   created_at: string;
 }
 
@@ -188,6 +190,7 @@ export interface Database {
           streak_freezes_remaining?: number;
           streak_freezes_used?: number;
           referral_count?: number;
+          share_private_activity?: boolean;
         };
         Update: Partial<User>;
       };
@@ -201,6 +204,7 @@ export interface Database {
           quality_metrics?: RepoQualityData | null;
           live_url_ok?: boolean | null;
           endorsement_count?: number;
+          is_private?: boolean;
         };
         Update: Partial<Project>;
       };

@@ -61,6 +61,9 @@ export async function GET(req: NextRequest) {
         .select("user_id")
         .eq("verified", true)
         .eq("flagged", false)
+        // Verified-only public filter shouldn't count private repos —
+        // exposing them via project totals would defeat the whole feature.
+        .eq("is_private", false)
         .order("user_id", { ascending: true })
         .range(0, MAX_VERIFIED_PROJECTS - 1);
       if (verifiedErr) {
@@ -119,7 +122,9 @@ export async function GET(req: NextRequest) {
       .from("projects")
       .select("user_id, tech_stack, verified")
       .in("user_id", userIds)
-      .eq("flagged", false);
+      .eq("flagged", false)
+      // Builder tech-stack aggregation runs over visible work only.
+      .eq("is_private", false);
 
     if (projectsError) {
       console.error("Failed to fetch projects:", projectsError);

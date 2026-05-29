@@ -57,6 +57,8 @@ export async function GET(
         )
         .eq("user_id", user.id)
         .eq("flagged", false)
+        // Public API — strip private repos from the projects list.
+        .eq("is_private", false)
         .order("created_at", { ascending: false }),
       (supabase as any)
         .from("social_links")

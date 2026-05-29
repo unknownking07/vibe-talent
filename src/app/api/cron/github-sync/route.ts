@@ -397,6 +397,14 @@ export async function GET(req: NextRequest) {
                 message: message.slice(0, 500),
                 github_url: githubUrl,
                 created_at: event.created_at,
+                // This cron uses GitHub's *public* Events API (no user token),
+                // which by definition never returns private-repo events. So
+                // every row written here is_private=false. If we later add a
+                // user-token-based fetch for private activity, set is_private
+                // from the payload's `public` flag (false ⇒ is_private=true)
+                // and the feed's share-toggle logic in api/feed/route.ts will
+                // pick it up automatically.
+                is_private: false,
               };
             });
 

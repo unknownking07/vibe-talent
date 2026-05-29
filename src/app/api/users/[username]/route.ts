@@ -29,6 +29,8 @@ export async function GET(
         .select("id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at")
         .eq("user_id", user.id)
         .eq("flagged", false)
+        // Public API — strip private repos from the projects list.
+        .eq("is_private", false)
         .order("created_at", { ascending: false }),
       sb
         .from("social_links")

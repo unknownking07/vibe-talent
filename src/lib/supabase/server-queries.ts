@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { UserWithSocials } from "@/lib/types/database";
 
 const USER_FIELDS = "id, username, display_name, bio, avatar_url, github_username, vibe_score, streak, longest_streak, badge_level, created_at";
-const PROJECT_FIELDS = "id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, endorsement_count, created_at";
+const PROJECT_FIELDS = "id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, endorsement_count, is_private, created_at";
 const SOCIAL_FIELDS = "id, user_id, twitter, telegram, github, website, farcaster";
 
 // Cookie-free client for use inside unstable_cache (no auth context needed for public reads)
@@ -33,10 +33,12 @@ async function _fetchAllUsers(): Promise<UserWithSocials[]> {
   const userIds = users.map((u: UserWithSocials) => u.id);
 
   const [{ data: projects }, { data: socialLinks }, { data: latestLogs }] = await Promise.all([
+    // Listings + leaderboard never expose private repos.
     sb
       .from("projects")
       .select(PROJECT_FIELDS)
-      .in("user_id", userIds),
+      .in("user_id", userIds)
+      .eq("is_private", false),
     sb
       .from("social_links")
       .select(SOCIAL_FIELDS)
@@ -89,11 +91,15 @@ async function _fetchUserByUsername(username: string): Promise<UserWithSocials |
   if (!user) return null;
 
   const [{ data: projects }, { data: socialLinks }] = await Promise.all([
+    // Public profile fetch: private repos are excluded here. The profile page
+    // does a separate uncached read for owners so they still see their own
+    // private projects with a 🔒 badge.
     sb
       .from("projects")
       .select(PROJECT_FIELDS)
       .eq("user_id", user.id)
-            .order("created_at", { ascending: false }),
+      .eq("is_private", false)
+      .order("created_at", { ascending: false }),
     sb
       .from("social_links")
       .select(SOCIAL_FIELDS)
@@ -133,9 +139,9 @@ async function _fetchHomepageData() {
 
   const [usersResult, projectsResult, builderCountResult, projectCountResult, streakResult] = await Promise.all([
     sb.from("users").select(USER_FIELDS).not("username", "is", null).order("vibe_score", { ascending: false }).limit(20),
-    sb.from("projects").select(`${PROJECT_FIELDS}, users!projects_user_id_fkey(username)`).not("live_url", "is", null).order("created_at", { ascending: false }).limit(3),
+    sb.from("projects").select(`${PROJECT_FIELDS}, users!projects_user_id_fkey(username)`).not("live_url", "is", null).eq("is_private", false).order("created_at", { ascending: false }).limit(3),
     sb.from("users").select("id", { count: "exact", head: true }).not("username", "is", null),
-    sb.from("projects").select("id", { count: "exact", head: true }),
+    sb.from("projects").select("id", { count: "exact", head: true }).eq("is_private", false),
     sb.from("users").select("streak").not("username", "is", null),
   ]);
 
@@ -162,7 +168,7 @@ async function _fetchHomepageData() {
   if (allUsers && allUsers.length > 0) {
     const allUserIds = allUsers.map((u: { id: string }) => u.id);
     const [{ data: allProjects }, { data: socials }] = await Promise.all([
-      sb.from("projects").select(PROJECT_FIELDS).in("user_id", allUserIds),
+      sb.from("projects").select(PROJECT_FIELDS).in("user_id", allUserIds).eq("is_private", false),
       sb.from("social_links").select(SOCIAL_FIELDS).in("user_id", allUserIds),
     ]);
 
@@ -203,6 +209,7 @@ async function _fetchAllProjects() {
     .from("projects")
     .select(`${PROJECT_FIELDS}, users!projects_user_id_fkey(username, display_name, avatar_url, badge_level)`)
     .eq("flagged", false)
+    .eq("is_private", false)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -231,6 +238,25 @@ export const fetchUserByUsernameCached = (username: string) =>
     [`user-${username}`],
     { revalidate: 60, tags: [`user-${username}`] }
   )();
+
+/**
+ * Owner-only fetch for a user's private projects. Kept out of the cached
+ * profile fetch so the same cached response can never leak to a non-owner
+ * viewer. Callers must verify the requesting user owns the row before
+ * merging the results into a profile view.
+ */
+export async function fetchPrivateProjectsForOwner(userId: string): Promise<import("@/lib/types/database").Project[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = getPublicClient() as any;
+  const { data, error } = await sb
+    .from("projects")
+    .select(PROJECT_FIELDS)
+    .eq("user_id", userId)
+    .eq("is_private", true)
+    .order("created_at", { ascending: false });
+  if (error || !data) return [];
+  return data;
+}
 
 export const fetchStreakLogsCached = (userId: string) =>
   unstable_cache(

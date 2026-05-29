@@ -32,6 +32,7 @@ const mockProjects: Project[] = [
     quality_metrics: null,
     live_url_ok: null,
     endorsement_count: 0,
+    is_private: false,
     created_at: "2026-02-15T00:00:00Z",
   },
   {
@@ -50,6 +51,7 @@ const mockProjects: Project[] = [
     quality_metrics: null,
     live_url_ok: null,
     endorsement_count: 0,
+    is_private: false,
     created_at: "2026-01-20T00:00:00Z",
   },
   {
@@ -68,6 +70,7 @@ const mockProjects: Project[] = [
     quality_metrics: null,
     live_url_ok: null,
     endorsement_count: 0,
+    is_private: false,
     created_at: "2026-03-01T00:00:00Z",
   },
   {
@@ -86,6 +89,7 @@ const mockProjects: Project[] = [
     quality_metrics: null,
     live_url_ok: null,
     endorsement_count: 0,
+    is_private: false,
     created_at: "2026-02-28T00:00:00Z",
   },
   {
@@ -104,6 +108,7 @@ const mockProjects: Project[] = [
     quality_metrics: null,
     live_url_ok: null,
     endorsement_count: 0,
+    is_private: false,
     created_at: "2026-01-10T00:00:00Z",
   },
   {
@@ -122,6 +127,7 @@ const mockProjects: Project[] = [
     quality_metrics: null,
     live_url_ok: null,
     endorsement_count: 0,
+    is_private: false,
     created_at: "2026-02-10T00:00:00Z",
   },
   {
@@ -140,6 +146,7 @@ const mockProjects: Project[] = [
     quality_metrics: null,
     live_url_ok: null,
     endorsement_count: 0,
+    is_private: false,
     created_at: "2026-01-25T00:00:00Z",
   },
   {
@@ -158,6 +165,7 @@ const mockProjects: Project[] = [
     quality_metrics: null,
     live_url_ok: null,
     endorsement_count: 0,
+    is_private: false,
     created_at: "2026-03-05T00:00:00Z",
   },
   {
@@ -176,6 +184,7 @@ const mockProjects: Project[] = [
     quality_metrics: null,
     live_url_ok: null,
     endorsement_count: 0,
+    is_private: false,
     created_at: "2026-02-20T00:00:00Z",
   },
   {
@@ -194,6 +203,7 @@ const mockProjects: Project[] = [
     quality_metrics: null,
     live_url_ok: null,
     endorsement_count: 0,
+    is_private: false,
     created_at: "2026-01-05T00:00:00Z",
   },
   {
@@ -212,6 +222,7 @@ const mockProjects: Project[] = [
     quality_metrics: null,
     live_url_ok: null,
     endorsement_count: 0,
+    is_private: false,
     created_at: "2026-03-10T00:00:00Z",
   },
 ];
@@ -231,6 +242,7 @@ export const mockUsers: UserWithSocials[] = [
     streak_freezes_remaining: 2,
     streak_freezes_used: 0,
     referral_count: 0,
+    share_private_activity: false,
     created_at: "2025-10-01T00:00:00Z",
     social_links: {
       id: "s1",
@@ -257,6 +269,7 @@ export const mockUsers: UserWithSocials[] = [
     streak_freezes_remaining: 2,
     streak_freezes_used: 0,
     referral_count: 0,
+    share_private_activity: false,
     created_at: "2025-11-15T00:00:00Z",
     social_links: {
       id: "s2",
@@ -283,6 +296,7 @@ export const mockUsers: UserWithSocials[] = [
     streak_freezes_remaining: 2,
     streak_freezes_used: 0,
     referral_count: 0,
+    share_private_activity: false,
     created_at: "2025-12-01T00:00:00Z",
     social_links: {
       id: "s3",
@@ -309,6 +323,7 @@ export const mockUsers: UserWithSocials[] = [
     streak_freezes_remaining: 2,
     streak_freezes_used: 0,
     referral_count: 0,
+    share_private_activity: false,
     created_at: "2025-08-15T00:00:00Z",
     social_links: {
       id: "s4",
@@ -335,6 +350,7 @@ export const mockUsers: UserWithSocials[] = [
     streak_freezes_remaining: 2,
     streak_freezes_used: 0,
     referral_count: 0,
+    share_private_activity: false,
     created_at: "2025-03-01T00:00:00Z",
     social_links: {
       id: "s5",
@@ -361,6 +377,7 @@ export const mockUsers: UserWithSocials[] = [
     streak_freezes_remaining: 2,
     streak_freezes_used: 0,
     referral_count: 0,
+    share_private_activity: false,
     created_at: "2026-01-15T00:00:00Z",
     social_links: {
       id: "s6",
@@ -387,6 +404,7 @@ export const mockUsers: UserWithSocials[] = [
     streak_freezes_remaining: 2,
     streak_freezes_used: 0,
     referral_count: 0,
+    share_private_activity: false,
     created_at: "2025-09-20T00:00:00Z",
     social_links: {
       id: "s7",
@@ -413,6 +431,7 @@ export const mockUsers: UserWithSocials[] = [
     streak_freezes_remaining: 2,
     streak_freezes_used: 0,
     referral_count: 0,
+    share_private_activity: false,
     created_at: "2025-05-10T00:00:00Z",
     social_links: {
       id: "s8",
@@ -439,6 +458,7 @@ export const mockUsers: UserWithSocials[] = [
     streak_freezes_remaining: 2,
     streak_freezes_used: 0,
     referral_count: 0,
+    share_private_activity: false,
     created_at: "2026-01-02T00:00:00Z",
     social_links: {
       id: "s9",
@@ -465,6 +485,7 @@ export const mockUsers: UserWithSocials[] = [
     streak_freezes_remaining: 2,
     streak_freezes_used: 0,
     referral_count: 0,
+    share_private_activity: false,
     created_at: "2025-07-01T00:00:00Z",
     social_links: {
       id: "s10",
@@ -491,6 +512,7 @@ export const mockUsers: UserWithSocials[] = [
     streak_freezes_remaining: 2,
     streak_freezes_used: 0,
     referral_count: 0,
+    share_private_activity: false,
     created_at: "2026-02-01T00:00:00Z",
     social_links: {
       id: "s11",
@@ -517,6 +539,7 @@ export const mockUsers: UserWithSocials[] = [
     streak_freezes_remaining: 2,
     streak_freezes_used: 0,
     referral_count: 0,
+    share_private_activity: false,
     created_at: "2025-06-15T00:00:00Z",
     social_links: {
       id: "s12",
