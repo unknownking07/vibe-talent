@@ -35,6 +35,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
+  // Logged-in users visiting auth pages get bounced to /dashboard immediately,
+  // server-side — no client-side flash of the signup/login form.
+  // Uses the cookie heuristic (fast, no network call). Edge case: an expired
+  // cookie triggers a redirect to /dashboard which the dashboard middleware
+  // then redirects back to /auth/login — two hops, but graceful.
+  const isAuthPage =
+    request.nextUrl.pathname === "/auth/signup" ||
+    request.nextUrl.pathname === "/auth/login";
+  if (isAuthPage && hasSupabaseAuthCookie(request)) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
   // Anonymous visitors on non-protected routes skip updateSession entirely.
   // updateSession calls supabase.auth.getUser() and writes Set-Cookie, which
   // forces `cache-control: no-store` and bypasses both Vercel ISR and the
