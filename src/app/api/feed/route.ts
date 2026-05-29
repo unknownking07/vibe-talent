@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { feedLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
 import type { FeedItem, BadgeTier } from "@/components/feed/feed-types";
+import { anonymizePrivateEventMessage } from "@/lib/feed-utils";
 
 function getPublicClient() {
   return createClient(
@@ -57,22 +58,6 @@ function truncate(s: string | null, max: number): string | undefined {
   return trimmed.slice(0, max - 1).trimEnd() + "…";
 }
 
-/** Replacement message text for a private-repo event when the owner has
- *  opted into sharing activity. Intentionally generic — no repo name, no
- *  commit subject, no clickable URL. Mirrors the helper in homepage-feed.ts. */
-function anonymizePrivateEventMessage(eventType: string | null | undefined): string {
-  switch (eventType) {
-    case "pr":
-      return "opened a pull request in a private repo";
-    case "create":
-      return "made changes in a private repo";
-    case "issue":
-      return "opened an issue in a private repo";
-    case "push":
-    default:
-      return "pushed to a private repo";
-  }
-}
 
 export async function GET(request: NextRequest) {
   const rawLimit = parseInt(request.nextUrl.searchParams.get("limit") || "100");

@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { UserWithSocials } from "@/lib/types/database";
 
 const USER_FIELDS = "id, username, display_name, bio, avatar_url, github_username, vibe_score, streak, longest_streak, badge_level, created_at";
@@ -244,10 +245,18 @@ export const fetchUserByUsernameCached = (username: string) =>
  * profile fetch so the same cached response can never leak to a non-owner
  * viewer. Callers must verify the requesting user owns the row before
  * merging the results into a profile view.
+ *
+ * Uses the cookie-aware server client (NOT the anon getPublicClient) on
+ * purpose: the projects RLS policy only returns private rows when
+ * `auth.uid() = user_id`, and that predicate is null under the anon key —
+ * so an anon client would always return [] here and silently hide the
+ * owner's own private projects. The authenticated client carries the
+ * owner's session JWT so RLS matches. This is also why it can't be wrapped
+ * in unstable_cache (cookies() isn't allowed there).
  */
 export async function fetchPrivateProjectsForOwner(userId: string): Promise<import("@/lib/types/database").Project[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sb = getPublicClient() as any;
+  const sb = (await createServerSupabaseClient()) as any;
   const { data, error } = await sb
     .from("projects")
     .select(PROJECT_FIELDS)
