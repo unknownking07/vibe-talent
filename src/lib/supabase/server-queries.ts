@@ -255,8 +255,10 @@ export const fetchUserByUsernameCached = (username: string) =>
  * in unstable_cache (cookies() isn't allowed there).
  */
 export async function fetchPrivateProjectsForOwner(userId: string): Promise<import("@/lib/types/database").Project[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sb = (await createServerSupabaseClient()) as any;
+  // Keep the generic SupabaseClient<Database> typing from
+  // createServerSupabaseClient — no `as any` cast — so the projects query is
+  // type-checked against the schema.
+  const sb = await createServerSupabaseClient();
   const { data, error } = await sb
     .from("projects")
     .select(PROJECT_FIELDS)
@@ -264,7 +266,7 @@ export async function fetchPrivateProjectsForOwner(userId: string): Promise<impo
     .eq("is_private", true)
     .order("created_at", { ascending: false });
   if (error || !data) return [];
-  return data;
+  return data as unknown as import("@/lib/types/database").Project[];
 }
 
 export const fetchStreakLogsCached = (userId: string) =>
