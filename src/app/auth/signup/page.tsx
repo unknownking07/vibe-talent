@@ -20,6 +20,16 @@ export default function SignUpPage() {
   const [success, setSuccess] = useState(false);
   const [consentProvider, setConsentProvider] = useState<"github" | "google" | null>(null);
 
+  // Redirect already-authenticated users to dashboard
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        window.location.href = "/dashboard";
+      }
+    });
+  }, []);
+
   // Store referral code in localStorage so it persists through the auth flow
   useEffect(() => {
     if (ref) {
