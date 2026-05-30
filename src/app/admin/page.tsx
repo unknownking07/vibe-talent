@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Shield, Plus, Trash2, Rocket, Target, BarChart3, Calendar, TrendingUp, Users, Code2, Flame, RefreshCw } from "lucide-react";
-
-const ADMIN_USERS = ["unknownking07", "stuart5915"];
+import { ADMIN_USERNAMES } from "@/lib/admin";
 
 type Initiative = { id: string; title: string; status: "active" | "planned" | "done" | "paused"; owner: string; notes: string; deadline: string };
 type RoadmapItem = { id: string; title: string; priority: "high" | "medium" | "low"; status: "todo" | "in-progress" | "done"; notes: string };
@@ -47,7 +46,7 @@ export default function AdminPage() {
     supabase.auth.getUser().then(({ data: { user: u } }) => {
       if (!u) { setLoading(false); return; }
       const un = u.user_metadata?.user_name || u.user_metadata?.preferred_username || "";
-      if (ADMIN_USERS.includes(un.toLowerCase())) { setUser({ username: un }); setAuthorized(true); }
+      if (ADMIN_USERNAMES.includes(un.toLowerCase())) { setUser({ username: un }); setAuthorized(true); }
       setLoading(false);
     });
   }, []);
@@ -55,7 +54,9 @@ export default function AdminPage() {
   const fetchLiveStats = useCallback(async () => {
     setStatsLoading(true);
     try {
-      const res = await fetch("/api/admin-stats");
+      // Distinct URL + no-store so the admin (full) payload is never served
+      // from the public CDN cache that backs the homepage's stats fetch.
+      const res = await fetch("/api/admin-stats?scope=admin", { cache: "no-store" });
       if (res.ok) { const data = await res.json(); setLiveStats(data); }
     } catch { /* ignore */ }
     setStatsLoading(false);
