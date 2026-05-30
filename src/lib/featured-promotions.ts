@@ -164,6 +164,20 @@ export function msUntilNextExpiry(promos: Pick<Promotion, "expiresAt">[]): numbe
   return Math.min(Math.min(...future) - nowMs + 1000, 2_000_000_000);
 }
 
+// Ownership verification for audit finding #8. The on-chain promote(projectId,…)
+// call accepts an arbitrary projectId, so a payer can pay to feature a project
+// they don't own. We render a promotion only if its on-chain payer was
+// authorized by the project's owner (recorded server-side in featured_promotions,
+// keyed by `${project_id}:${promoter_wallet}`). Pure + exported for unit testing.
+export function filterAuthorizedPromotions<T extends { projectId: string; promoter: string }>(
+  promotions: T[],
+  authorizedKeys: Set<string>,
+): T[] {
+  return promotions.filter((p) =>
+    authorizedKeys.has(`${p.projectId}:${(p.promoter || "").toLowerCase()}`),
+  );
+}
+
 // Optional `client` lets callers (e.g. server components running inside
 // `unstable_cache`) pass a cookie-free Supabase client — Next.js disallows
 // reading `cookies()` inside cached scopes, which would happen if we always
@@ -178,10 +192,27 @@ export async function enrichPromotions(
     const supabase = client ?? createClient();
     const projectIds = [...new Set(promotions.map((p) => p.projectId))];
 
+    // Ownership gate (#8): drop any promotion whose on-chain payer wasn't
+    // authorized by the project's owner. featured_promotions isn't in the
+    // generated DB types yet, so the query is cast.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: auths } = await (supabase as any)
+      .from("featured_promotions")
+      .select("project_id, promoter_wallet")
+      .in("project_id", projectIds);
+    const authorizedKeys = new Set(
+      ((auths ?? []) as Array<{ project_id: string; promoter_wallet: string }>).map(
+        (a) => `${a.project_id}:${a.promoter_wallet.toLowerCase()}`,
+      ),
+    );
+    const verified = filterAuthorizedPromotions(promotions, authorizedKeys);
+    if (verified.length === 0) return [];
+
+    const verifiedProjectIds = [...new Set(verified.map((p) => p.projectId))];
     const { data: projects } = await supabase
       .from("projects")
       .select("id, title, description, tech_stack, live_url, github_url, image_url, verified, quality_score, endorsement_count, user_id")
-      .in("id", projectIds);
+      .in("id", verifiedProjectIds);
 
     // Supabase's typed client narrows the row to `never` when the select
     // string can't be resolved against the generated Database type — cast
@@ -204,13 +235,15 @@ export async function enrichPromotions(
       userMap.set(u.id, u);
     }
 
-    return promotions.map((promo) => {
+    return verified.map((promo) => {
       const proj = projectMap.get(promo.projectId) || null;
       const author = proj ? userMap.get(proj.user_id) || null : null;
       return { ...promo, project: proj, author };
     });
   } catch {
-    // Graceful fallback — show basic promotion data
-    return promotions.map((promo) => ({ ...promo, project: null, author: null }));
+    // Fail closed: if we can't verify ownership, render nothing rather than risk
+    // showing an unverified (possibly hijacked) promotion. Promotions are
+    // non-critical UI.
+    return [];
   }
 }

@@ -304,7 +304,7 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
     await privyLogout();
   }
 
-  async function handlePromoteEVM(project: UserProject, price: bigint, chainConfig: EVMChainConfig) {
+  async function handlePromoteEVM(project: UserProject, price: bigint, chainConfig: EVMChainConfig): Promise<string> {
     if (!connectedWallet) throw new Error("No EVM wallet connected");
     const provider = (await connectedWallet.getEthereumProvider()) as EthereumProvider;
     const walletAddr = connectedWallet.address.toLowerCase();
@@ -369,6 +369,7 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
     });
     setStatus({ msg: "Waiting for confirmation...", type: "info" });
     await waitForTx(txHash as string, chainConfig.rpc);
+    return txHash as string;
   }
 
   async function handlePromoteSolana(project: UserProject, price: bigint, chainConfig: SolanaChainConfig) {
@@ -395,6 +396,26 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
     await confirmSolanaTransaction(chainConfig.rpc, signatureToString(signature));
   }
 
+  // Record the owner->wallet authorization so the featured grid will render this
+  // promotion (audit #8). Best-effort with one retry; the server gate (owner-only)
+  // is what secures it. If it ultimately fails, the promotion is briefly hidden
+  // until re-recorded.
+  async function recordPromotionAuthorization(projectId: string, walletAddress: string, txHash: string) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch("/api/promotions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ project_id: projectId, wallet_address: walletAddress, tx_ref: txHash, chain: "base" }),
+        });
+        if (res.ok) return;
+      } catch {
+        // retry
+      }
+    }
+    console.error("Failed to record promotion authorization for project", projectId);
+  }
+
   async function handlePromote() {
     const project = projects.find((p) => p.id === selectedProject);
     if (!project) {
@@ -417,8 +438,14 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
     const price = prices[selectedPkg];
     setBusy(true);
     try {
-      if (isEVM) await handlePromoteEVM(project, price, chainConfig);
-      else if (isSol) await handlePromoteSolana(project, price, chainConfig);
+      if (isEVM) {
+        const txHash = await handlePromoteEVM(project, price, chainConfig);
+        if (connectedWallet) {
+          await recordPromotionAuthorization(project.id, connectedWallet.address, txHash);
+        }
+      } else if (isSol) {
+        await handlePromoteSolana(project, price, chainConfig);
+      }
 
       setStatus({ msg: `"${project.title}" is now featured!`, type: "success" });
       setSelectedProject("");
