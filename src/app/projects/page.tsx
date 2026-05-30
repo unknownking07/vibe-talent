@@ -1,4 +1,5 @@
 import { fetchAllProjectsCached } from "@/lib/supabase/server-queries";
+import { jsonLdHtml } from "@/lib/json-ld";
 import { ProjectsContent } from "@/components/projects/projects-content";
 import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
 import type { Metadata } from "next";
@@ -46,7 +47,7 @@ export default async function ProjectsPage() {
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
       />
       <div className="mb-8">
         <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">All Projects</h1>

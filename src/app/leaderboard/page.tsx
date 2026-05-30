@@ -1,4 +1,5 @@
 import { fetchAllUsersCached } from "@/lib/supabase/server-queries";
+import { jsonLdHtml } from "@/lib/json-ld";
 import { LeaderboardTabs } from "@/components/leaderboard/leaderboard-tabs";
 import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
 import { Trophy } from "lucide-react";
@@ -61,7 +62,7 @@ export default async function LeaderboardPage() {
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
       />
       <div className="text-center mb-10">
         <div

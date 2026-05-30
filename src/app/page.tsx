@@ -1,4 +1,5 @@
 import { LiveActivityFeed } from "@/components/ui/live-activity-feed";
+import { jsonLdHtml } from "@/lib/json-ld";
 import { NetworkFeed } from "@/components/feed/network-feed";
 import { EndGameLadder } from "@/components/homepage/end-game-ladder";
 import { FeaturedCarousel } from "@/components/ui/featured-carousel";
@@ -112,7 +113,7 @@ export default async function HomePage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: jsonLdHtml({
             "@context": "https://schema.org",
             "@graph": [
               {
@@ -462,7 +463,7 @@ export default async function HomePage() {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: jsonLdHtml({
               "@context": "https://schema.org",
               "@type": "FAQPage",
               dateModified: "2026-05-22",

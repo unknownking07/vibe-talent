@@ -1,4 +1,5 @@
 import { fetchAllUsersCached } from "@/lib/supabase/server-queries";
+import { jsonLdHtml } from "@/lib/json-ld";
 import { ExploreContent } from "@/components/explore/explore-content";
 import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
 import type { Metadata } from "next";
@@ -60,7 +61,7 @@ export default async function ExplorePage() {
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
       />
       <div className="mb-8">
         <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">Explore Talent</h1>
