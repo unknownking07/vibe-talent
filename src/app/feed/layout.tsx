@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { jsonLdHtml } from "@/lib/json-ld";
 import { siteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -65,11 +66,11 @@ export default function FeedLayout({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(collectionLd) }}
       />
       {children}
     </>

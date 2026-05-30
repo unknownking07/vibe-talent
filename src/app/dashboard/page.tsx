@@ -325,12 +325,14 @@ export default function DashboardPage() {
       });
       setLoading(false);
 
-      // Sync streak back to DB if it differs, so profile page shows the same value
+      // Recompute streak/score server-side so the profile page stays in sync.
+      // Routed through the SECURITY DEFINER update_user_streak RPC rather than a
+      // direct column write: reputation columns (streak / vibe_score /
+      // badge_level) are no longer client-writable (see the 20260529 security
+      // migration), and the RPC derives them authoritatively from streak_logs.
       if (actualStreak !== (profile.streak || 0) || actualLongest !== (profile.longest_streak || 0)) {
-        sb.from("users").update({
-          streak: actualStreak,
-          longest_streak: actualLongest,
-        }).eq("id", authUser.id).then(() => {});
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sb as any).rpc("update_user_streak", { p_user_id: authUser.id }).then(() => {});
       }
 
       // Auto-sync GitHub if configured and hasn't synced recently
@@ -450,13 +452,13 @@ export default function DashboardPage() {
         }
       }
 
-      // Sync DB in background if streak was wrong (non-blocking)
-      // Don't write vibe_score — the DB trigger is the single source of truth
+      // Recompute streak/score server-side if our computed value differs
+      // (non-blocking). Routed through the SECURITY DEFINER update_user_streak
+      // RPC — reputation columns are no longer client-writable (see the
+      // 20260529 security migration); the RPC is the single source of truth.
       if (profile && (actualStreak !== profile.streak || actualLongest !== profile.longest_streak)) {
-        sb.from("users").update({
-          streak: actualStreak,
-          longest_streak: actualLongest,
-        }).eq("id", authUser.id);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sb as any).rpc("update_user_streak", { p_user_id: authUser.id });
       }
       } catch (err) {
         console.error("Dashboard loadUserData failed:", err);

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { jsonLdHtml } from "@/lib/json-ld";
 import { siteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -57,11 +58,11 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(softwareAppLd) }}
       />
       {children}
     </>

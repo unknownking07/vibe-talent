@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { statsLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { isAdminUsername } from "@/lib/admin";
 
 export async function GET(request: NextRequest) {
   const { success } = await checkRateLimit(statsLimiter, getIP(request));
@@ -72,25 +74,49 @@ export async function GET(request: NextRequest) {
     const lastWeek = recent.filter(u => new Date(u.created_at) >= twoWeeksAgo && new Date(u.created_at) < weekAgo).length;
     const growthPct = lastWeek > 0 ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100) : thisWeek > 0 ? 100 : 0;
 
-    return NextResponse.json({
-      builders,
-      projects,
-      hires,
-      endorsements,
-      avgStreak,
-      maxStreak,
-      activeStreaks,
-      avgVibeScore,
-      badges,
-      growth: {
-        thisWeek,
-        lastWeek,
-        pct: growthPct,
+    const timestamp = new Date().toISOString();
+
+    // Public surfaces (homepage / network-velocity card) consume only these
+    // aggregate counters, so they stay anonymously cacheable.
+    const publicStats = { builders, projects, hires, endorsements, activeStreaks };
+
+    // The rest — week-over-week growth, badge histogram, score/streak averages
+    // — is internal business-health data and is admin-only. Authorize from the
+    // session, matching the GitHub username the admin page checks. The
+    // client-side gate is cosmetic; the server is the trust boundary.
+    let isAdmin = false;
+    try {
+      const authClient = await createServerSupabaseClient();
+      const { data: { user } } = await authClient.auth.getUser();
+      const ghUsername =
+        (user?.user_metadata?.user_name as string | undefined) ||
+        (user?.user_metadata?.preferred_username as string | undefined) ||
+        "";
+      isAdmin = isAdminUsername(ghUsername);
+    } catch {
+      isAdmin = false;
+    }
+
+    if (!isAdmin) {
+      return NextResponse.json(
+        { ...publicStats, timestamp },
+        { headers: { "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300" } }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        ...publicStats,
+        avgStreak,
+        maxStreak,
+        avgVibeScore,
+        badges,
+        growth: { thisWeek, lastWeek, pct: growthPct },
+        timestamp,
       },
-      timestamp: new Date().toISOString(),
-    }, {
-      headers: { "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300" },
-    });
+      // An admin-only response must never sit in a shared / CDN cache.
+      { headers: { "Cache-Control": "private, no-store" } }
+    );
   } catch (err) {
     console.error("Admin stats error:", err);
     return NextResponse.json({ error: "Failed to fetch stats" }, { status: 500 });

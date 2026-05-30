@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { jsonLdHtml } from "@/lib/json-ld";
 import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
 import { fetchUserByUsernameCached, fetchPrivateProjectsForOwner } from "@/lib/supabase/server-queries";
@@ -125,7 +126,7 @@ export default async function UserProjectsPage({
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 sm:py-12">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbLd) }}
       />
 
       <Link

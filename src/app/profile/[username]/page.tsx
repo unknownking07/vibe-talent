@@ -1,4 +1,5 @@
 import { fetchUserByUsernameCached, fetchStreakLogsCached, fetchPrivateProjectsForOwner } from "@/lib/supabase/server-queries";
+import { jsonLdHtml } from "@/lib/json-ld";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ProfileSidebar } from "@/components/profile/profile-sidebar";
@@ -201,11 +202,11 @@ export default async function ProfilePage({
       {!isOwner && <ProfileViewTracker viewedUserId={user.id} />}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
       />
       <div className="w-full max-w-[1200px] grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 items-start">
         {/* Sidebar column — primary profile sidebar + reviewer reputation block */}

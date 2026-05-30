@@ -24,6 +24,12 @@ function sleep(ms: number): Promise<void> {
  */
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
+  // Fail closed in production: a missing CRON_SECRET must never leave this
+  // route open to anonymous callers — it performs privileged batch mutations.
+  if (!cronSecret && process.env.NODE_ENV === "production") {
+    console.error("CRON_SECRET is not configured");
+    return NextResponse.json({ error: "Cron secret not configured" }, { status: 500 });
+  }
   if (cronSecret) {
     const authHeader = req.headers.get("authorization");
     if (authHeader !== `Bearer ${cronSecret}`) {

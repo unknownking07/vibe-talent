@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { jsonLdHtml } from "@/lib/json-ld";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookOpen, ArrowLeft, ArrowRight } from "lucide-react";
@@ -83,11 +84,11 @@ export default async function GlossaryTermPage({
     <article className="mx-auto max-w-3xl px-4 sm:px-6 py-16">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(definedTermLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(definedTermLd) }}
       />
 
       <Link

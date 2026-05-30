@@ -46,9 +46,14 @@ export async function GET(req: NextRequest) {
       ? Math.round((trustedReviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / trustedReviews.length) * 10) / 10
       : 0;
 
-    // Strip trust_score from public response to avoid exposing anti-abuse thresholds
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const publicReviews = reviews.map(({ trust_score: _ts, ...rest }: { trust_score?: number; [key: string]: unknown }) => rest);
+    // Strip trust_score (internal anti-abuse threshold) AND reviewer_email
+    // (PII) from the public response. reviewer_email must never leave the
+    // server — no client needs it, and returning it enabled email harvesting
+    // plus the old email-based delete bypass.
+    const publicReviews = reviews.map(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      ({ trust_score: _ts, reviewer_email: _re, ...rest }: { trust_score?: number; reviewer_email?: string; [key: string]: unknown }) => rest
+    );
 
     return NextResponse.json({
       reviews: publicReviews,
@@ -63,27 +68,31 @@ export async function GET(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { review_id, reviewer_email } = body;
-
-    if (!review_id || !reviewer_email) {
+    // Authorize by session only. The previous email-based check was bypassable:
+    // reviewer_email was readable from the public GET (and directly via the
+    // anon key), so "prove you own it by sending the email" proved nothing.
+    // Only the authenticated author of a review may delete it.
+    const authClient = await createServerSupabaseClient();
+    const { data: { user } } = await authClient.auth.getUser();
+    if (!user) {
       return NextResponse.json(
-        { error: "review_id and reviewer_email are required" },
-        { status: 400 }
+        { error: "You must be signed in to delete a review." },
+        { status: 401 }
       );
     }
 
-    if (!validateUUID(review_id)) {
+    const body = await req.json();
+    const { review_id } = body;
+
+    if (!review_id || !validateUUID(review_id)) {
       return NextResponse.json({ error: "Invalid review_id" }, { status: 400 });
     }
 
-    const emailClean = String(reviewer_email).trim().toLowerCase();
     const sb = createAdminClient();
 
-    // Verify the review exists and belongs to this email
     const { data: review, error: fetchErr } = await sb
       .from("reviews")
-      .select("id, reviewer_email")
+      .select("id, reviewer_user_id")
       .eq("id", review_id)
       .single();
 
@@ -91,9 +100,11 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Review not found" }, { status: 404 });
     }
 
-    if (review.reviewer_email !== emailClean) {
+    // Anonymous reviews (reviewer_user_id IS NULL) have no platform identity to
+    // match against the session, so they cannot be deleted through this route.
+    if (review.reviewer_user_id !== user.id) {
       return NextResponse.json(
-        { error: "Email does not match. You can only delete your own review." },
+        { error: "You can only delete your own review." },
         { status: 403 }
       );
     }

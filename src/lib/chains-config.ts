@@ -59,7 +59,17 @@ export const CHAIN_CONFIGS: Record<string, ChainConfig> = {
   // },
 };
 
-export const SUPPORTED_CHAINS = Object.keys(CHAIN_CONFIGS);
+// Solana is intentionally excluded from the selectable chains. Its payment
+// flow is an unverified, unrecorded wallet-to-wallet USDC transfer, and the
+// featured grid is read solely from the Base contract — so a Solana payment
+// would take the user's money and grant no promotion. Keeping it out of
+// SUPPORTED_CHAINS removes it from the picker, which is the only place
+// `selectedChain` can be set, so the broken Solana path can never run.
+// Re-add it ONLY once a server-side flow verifies the transaction
+// (success + recipient + USDC mint + amount + signature uniqueness) and
+// records the grant. The `solana` entry in CHAIN_CONFIGS is retained for
+// that future work.
+export const SUPPORTED_CHAINS = Object.keys(CHAIN_CONFIGS).filter((k) => k !== "solana");
 export const DEFAULT_CHAIN = "base";
 
 export function getChainConfig(chainKey: string): ChainConfig {

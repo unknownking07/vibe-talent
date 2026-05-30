@@ -98,10 +98,10 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleteEmail, setDeleteEmail] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Auto-fetch logged-in user's name and email
   useEffect(() => {
@@ -110,6 +110,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setIsLoggedIn(true);
+        setCurrentUserId(user.id);
         setFormEmail(user.email || "");
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: profile } = await (supabase as any)
@@ -195,27 +196,22 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
   };
 
   const handleDeleteReview = async () => {
-    if (!deleteId || !deleteEmail.trim()) {
-      setDeleteError("Please enter your email to confirm deletion.");
-      return;
-    }
+    if (!deleteId) return;
 
     setDeleteError("");
     setDeleting(true);
 
     try {
+      // The server authorizes deletion from the session — only the review's
+      // authenticated author may delete it — so we send no client identity.
       const res = await fetch("/api/reviews", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          review_id: deleteId,
-          reviewer_email: deleteEmail.trim(),
-        }),
+        body: JSON.stringify({ review_id: deleteId }),
       });
 
       if (res.ok) {
         setDeleteId(null);
-        setDeleteEmail("");
 
         // Reload reviews
         const reviewsRes = await fetch(`/api/reviews?builder_id=${builderId}`);
@@ -274,7 +270,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
               ({reviews.length})
             </span>
           )}
-          {!isOwner && !showForm && !(isLoggedIn && reviews.some((r) => r.reviewer_email === formEmail)) && (
+          {!isOwner && !showForm && !(currentUserId !== null && reviews.some((r) => r.reviewer_user_id === currentUserId)) && (
             <button
               onClick={() => setShowForm(true)}
               className="btn-brutal text-xs py-1.5 px-3"
@@ -424,9 +420,9 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
                   <span className="text-[var(--text-muted-soft)] text-xs font-mono">
                     {timeAgo(review.created_at)}
                   </span>
-                  {isLoggedIn && formEmail === review.reviewer_email && (
+                  {currentUserId !== null && currentUserId === review.reviewer_user_id && (
                     <button
-                      onClick={() => { setDeleteId(review.id); setDeleteEmail(""); setDeleteError(""); }}
+                      onClick={() => { setDeleteId(review.id); setDeleteError(""); }}
                       className="text-[var(--text-muted-soft)] hover:text-red-500 transition-colors"
                       title="Delete your review"
                     >
@@ -446,15 +442,8 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
                   style={{ backgroundColor: "var(--status-error-bg)", border: "2px solid var(--border-hard)" }}
                 >
                   <p className="text-xs font-bold text-[var(--foreground)]">
-                    Enter the email you used when writing this review to confirm deletion:
+                    Delete this review? This can&apos;t be undone.
                   </p>
-                  <input
-                    type="email"
-                    value={deleteEmail}
-                    onChange={(e) => setDeleteEmail(e.target.value)}
-                    placeholder="your@email.com"
-                    className="input-brutal w-full text-sm"
-                  />
                   {deleteError && (
                     <p className="text-xs font-bold text-red-600">{deleteError}</p>
                   )}

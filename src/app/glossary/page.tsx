@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { jsonLdHtml } from "@/lib/json-ld";
 import Link from "next/link";
 import { BookOpen, ArrowRight } from "lucide-react";
 import { siteUrl } from "@/lib/seo";
@@ -55,11 +56,11 @@ export default function GlossaryIndexPage() {
     <div className="mx-auto max-w-4xl px-4 sm:px-6 py-16">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(itemListLd) }}
       />
 
       <div className="mb-12">

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { jsonLdHtml } from "@/lib/json-ld";
 import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -20,7 +21,7 @@ export default function TermsOfServicePage() {
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-16">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbLd) }}
       />
       <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-8">Terms of Service</h1>
       <p className="text-sm text-[var(--text-muted)] mb-8">Last updated: April 1, 2026</p>
