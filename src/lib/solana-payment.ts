@@ -10,6 +10,7 @@ import {
   createTransferInstruction,
   createAssociatedTokenAccountInstruction,
   getAccount,
+  TokenAccountNotFoundError,
 } from "@solana/spl-token";
 
 const MEMO_PROGRAM_ID = new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");
@@ -45,11 +46,18 @@ export async function buildSolanaTokenTransfer({
 
   const tx = new Transaction();
 
-  // Create the receiver's associated token account if it doesn't exist yet.
+  // Create the receiver's associated token account only if it's genuinely
+  // missing. Other failures (RPC error, invalid owner/size) must propagate —
+  // blindly adding a create instruction would make the tx fail when the ATA
+  // already exists.
   try {
     await getAccount(connection, receiverAta);
-  } catch {
-    tx.add(createAssociatedTokenAccountInstruction(sender, receiverAta, receiver, mint));
+  } catch (e) {
+    if (e instanceof TokenAccountNotFoundError) {
+      tx.add(createAssociatedTokenAccountInstruction(sender, receiverAta, receiver, mint));
+    } else {
+      throw e;
+    }
   }
 
   tx.add(createTransferInstruction(senderAta, receiverAta, sender, amount));

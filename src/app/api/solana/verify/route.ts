@@ -46,7 +46,10 @@ export async function POST(req: NextRequest) {
     if (!Number.isInteger(pkg) || !isValidPackageId(pkg)) {
       return NextResponse.json({ error: "Invalid package_id" }, { status: 400 });
     }
-    const tok: PaymentToken = token === "vibe" ? "vibe" : "usdc";
+    if (token !== "usdc" && token !== "vibe") {
+      return NextResponse.json({ error: "Invalid token" }, { status: 400 });
+    }
+    const tok: PaymentToken = token;
 
     const solana = CHAIN_CONFIGS.solana;
     if (!isSolanaChain(solana)) {
@@ -97,7 +100,17 @@ export async function POST(req: NextRequest) {
         ],
       }),
     });
+    if (!txRes.ok) {
+      return NextResponse.json(
+        { error: "Couldn't reach the Solana network. Please retry." },
+        { status: 503 }
+      );
+    }
     const txJson = await txRes.json();
+    if (txJson?.error) {
+      // JSON-RPC error from the node — a provider failure, not a missing tx.
+      return NextResponse.json({ error: "Solana RPC error. Please retry." }, { status: 503 });
+    }
     const tx = txJson?.result;
     if (!tx) {
       return NextResponse.json(
@@ -119,7 +132,15 @@ export async function POST(req: NextRequest) {
     }
 
     // 7. Expected amount for the package.
-    const prices = await fetchContractPricesCached();
+    let prices: bigint[];
+    try {
+      prices = await fetchContractPricesCached();
+    } catch {
+      return NextResponse.json(
+        { error: "Pricing unavailable right now. Please retry." },
+        { status: 503 }
+      );
+    }
     const usdcPrice = prices[pkg];
     if (usdcPrice == null) {
       return NextResponse.json({ error: "Price unavailable" }, { status: 500 });

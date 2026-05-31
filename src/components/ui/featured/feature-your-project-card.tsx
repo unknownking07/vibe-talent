@@ -426,7 +426,8 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
         verified = true;
         break;
       }
-      if (res.status !== 404) {
+      // Retry transient states: 404 (tx not visible yet) and 503 (RPC hiccup).
+      if (res.status !== 404 && res.status !== 503) {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error || "Payment verification failed.");
       }
@@ -513,6 +514,41 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
   // If admin reorders packages someday, this assumption breaks.
   const fromPerDay = `$${(Number(prices[0]) / 1e6).toFixed(2)}`;
 
+  // Solana token (USDC / $VIBE) picker. Rendered in BOTH the idle and the
+  // expanded payment stages so the choice is always visible when paying.
+  // Only relevant to the Solana lane.
+  const solanaTokenToggle = isSol ? (
+    <div className="mb-4">
+      <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">
+        Token
+      </label>
+      <div className="grid grid-cols-2 gap-2">
+        {(["usdc", "vibe"] as const).map((t) => {
+          const active = selectedToken === t;
+          return (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setSelectedToken(t)}
+              className="px-3 py-2 text-xs font-extrabold uppercase transition-all"
+              style={{
+                border: `2px solid ${active ? "var(--accent)" : "var(--border-hard)"}`,
+                backgroundColor: active
+                  ? "color-mix(in srgb, var(--accent) 14%, var(--bg-surface))"
+                  : "var(--bg-surface)",
+                color: "var(--foreground)",
+                boxShadow: active ? "var(--shadow-brutal-xs)" : "none",
+              }}
+              aria-pressed={active}
+            >
+              {t === "usdc" ? "USDC" : "$VIBE"}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div
       ref={ref}
@@ -571,32 +607,7 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
               })}
             </div>
 
-            {isSol && (
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                {(["usdc", "vibe"] as const).map((t) => {
-                  const active = selectedToken === t;
-                  return (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setSelectedToken(t)}
-                      className="px-3 py-2 text-xs font-extrabold uppercase transition-all"
-                      style={{
-                        border: `2px solid ${active ? "var(--accent)" : "var(--border-hard)"}`,
-                        backgroundColor: active
-                          ? "color-mix(in srgb, var(--accent) 14%, var(--bg-surface))"
-                          : "var(--bg-surface)",
-                        color: "var(--foreground)",
-                        boxShadow: active ? "var(--shadow-brutal-xs)" : "none",
-                      }}
-                      aria-pressed={active}
-                    >
-                      {t === "usdc" ? "USDC" : "$VIBE"}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            {solanaTokenToggle}
 
             <div className="flex-1" />
 
@@ -676,6 +687,8 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
                 </select>
               )}
             </div>
+
+            {solanaTokenToggle}
 
             <div className="mb-3">
               <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">

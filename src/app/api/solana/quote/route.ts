@@ -16,17 +16,29 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const pkg = Number(searchParams.get("package_id"));
-    const tok: PaymentToken = searchParams.get("token") === "vibe" ? "vibe" : "usdc";
+    const tokenParam = searchParams.get("token");
 
     if (!Number.isInteger(pkg) || !isValidPackageId(pkg)) {
       return NextResponse.json({ error: "Invalid package_id" }, { status: 400 });
     }
+    if (tokenParam !== "usdc" && tokenParam !== "vibe") {
+      return NextResponse.json({ error: "Invalid token" }, { status: 400 });
+    }
+    const tok: PaymentToken = tokenParam;
     const solana = CHAIN_CONFIGS.solana;
     if (!isSolanaChain(solana)) {
       return NextResponse.json({ error: "Solana not configured" }, { status: 500 });
     }
 
-    const prices = await fetchContractPricesCached();
+    let prices: bigint[];
+    try {
+      prices = await fetchContractPricesCached();
+    } catch {
+      return NextResponse.json(
+        { error: "Pricing unavailable right now. Please retry." },
+        { status: 503 }
+      );
+    }
     const usdcPrice = prices[pkg];
     if (usdcPrice == null) {
       return NextResponse.json({ error: "Price unavailable" }, { status: 500 });

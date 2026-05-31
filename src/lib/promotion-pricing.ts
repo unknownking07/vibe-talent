@@ -104,45 +104,40 @@ export function extractMemos(instructions: ParsedInstruction[]): string[] {
 
 // ── Cached network fetchers (server-side only) ──
 
-const FALLBACK_PRICES_USDC: bigint[] = [
-  BigInt(2_000_000), // 0 Day    $2
-  BigInt(5_000_000), // 1 3-day  $5 (hidden)
-  BigInt(10_000_000), // 2 Week   $10
-  BigInt(29_000_000), // 3 Month  $29
-  BigInt(199_000_000), // 4 Annual $199
-];
-
 let pricesCache: { at: number; prices: bigint[] } | null = null;
 
-/** Package prices (USDC base units) from the Base contract's getPrices(), cached 60s. */
+/**
+ * Package prices (USDC base units) from the Base contract's getPrices(), cached
+ * 60s. THROWS on RPC / decoding failure — this is a payment path, so it fails
+ * closed rather than quoting/granting against stale fallback prices that could
+ * undercharge if the admin has changed on-chain prices since. Callers should
+ * surface a 503.
+ */
 export async function fetchContractPricesCached(): Promise<bigint[]> {
   const now = Date.now();
   if (pricesCache && now - pricesCache.at < 60_000) return pricesCache.prices;
   const base = CHAIN_CONFIGS.base;
-  if (!isEVMChain(base)) return FALLBACK_PRICES_USDC;
-  try {
-    const res = await fetch(base.rpc, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "eth_call",
-        params: [{ to: base.contractAddr, data: "0xbd9a548b" }, "latest"],
-      }),
-    });
-    const json = await res.json();
-    const result: unknown = json?.result;
-    if (typeof result !== "string") return FALLBACK_PRICES_USDC;
-    const data = result.startsWith("0x") ? result.slice(2) : result;
-    if (data.length < 5 * 64) return FALLBACK_PRICES_USDC;
-    const prices: bigint[] = [];
-    for (let i = 0; i < 5; i++) prices.push(BigInt("0x" + data.slice(i * 64, i * 64 + 64)));
-    pricesCache = { at: now, prices };
-    return prices;
-  } catch {
-    return FALLBACK_PRICES_USDC;
-  }
+  if (!isEVMChain(base)) throw new Error("Base chain is not configured");
+  const res = await fetch(base.rpc, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "eth_call",
+      params: [{ to: base.contractAddr, data: "0xbd9a548b" }, "latest"],
+    }),
+  });
+  if (!res.ok) throw new Error("Base RPC request failed");
+  const json = await res.json();
+  const result: unknown = json?.result;
+  if (typeof result !== "string") throw new Error("Invalid getPrices() response");
+  const data = result.startsWith("0x") ? result.slice(2) : result;
+  if (data.length < 5 * 64) throw new Error("Truncated getPrices() response");
+  const prices: bigint[] = [];
+  for (let i = 0; i < 5; i++) prices.push(BigInt("0x" + data.slice(i * 64, i * 64 + 64)));
+  pricesCache = { at: now, prices };
+  return prices;
 }
 
 let vibeCache: { at: number; price: number } | null = null;
