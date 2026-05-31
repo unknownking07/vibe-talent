@@ -21,7 +21,7 @@ import {
   type EVMChainConfig,
   type SolanaChainConfig,
 } from "@/lib/chains-config";
-import { buildSolanaUSDCTransfer, confirmSolanaTransaction, signatureToString } from "@/lib/solana-payment";
+import { buildSolanaTokenTransfer, signatureToString } from "@/lib/solana-payment";
 import { ChainDot, type ChainKey } from "./chain-dot";
 
 const BASE_CONFIG = CHAIN_CONFIGS.base;
@@ -243,6 +243,7 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
   const [status, setStatus] = useState<{ msg: string; type: "info" | "error" | "success" } | null>(null);
   const [busy, setBusy] = useState(false);
   const [selectedChain, setSelectedChain] = useState<ChainKey>(DEFAULT_CHAIN as ChainKey);
+  const [selectedToken, setSelectedToken] = useState<"usdc" | "vibe">("usdc");
 
   useEffect(() => {
     fetchPrices().then(setPrices);
@@ -372,28 +373,68 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
     return txHash as string;
   }
 
-  async function handlePromoteSolana(project: UserProject, price: bigint, chainConfig: SolanaChainConfig) {
+  async function handlePromoteSolana(project: UserProject, chainConfig: SolanaChainConfig) {
     if (!connectedSolanaWallet) throw new Error("No Solana wallet connected");
-    setStatus({ msg: `Building USDC transfer on Solana...`, type: "info" });
-    void project;
+    const token = selectedToken;
+    const label = token === "vibe" ? "$VIBE" : "USDC";
 
-    const serializedTx = await buildSolanaUSDCTransfer({
+    // Ask the server for the exact amount to send — same price source the
+    // verifier uses, so the payment clears verification.
+    const quoteRes = await fetch(`/api/solana/quote?package_id=${selectedPkg}&token=${token}`);
+    if (!quoteRes.ok) {
+      const e = await quoteRes.json().catch(() => ({}));
+      throw new Error(e.error || "Couldn't get a Solana quote. Try again.");
+    }
+    const quote = await quoteRes.json();
+    const amount = BigInt(quote.amount as string);
+    const mint = token === "vibe" ? chainConfig.vibeMint : chainConfig.usdcMint;
+
+    setStatus({ msg: `Building ${label} transfer on Solana...`, type: "info" });
+    const serializedTx = await buildSolanaTokenTransfer({
       senderAddress: connectedSolanaWallet.address,
       rpcUrl: chainConfig.rpc,
-      usdcMint: chainConfig.usdcMint,
+      mint,
       receivingWallet: chainConfig.receivingWallet,
-      amount: price,
+      amount,
+      memo: project.id, // binds the payment to this project for server verification
     });
 
-    setStatus({ msg: `Sending $${(Number(price) / 1e6).toFixed(2)} USDC on Solana...`, type: "info" });
+    setStatus({ msg: `Sending ${label} on Solana...`, type: "info" });
     const { signature } = await privySignAndSend({
       transaction: serializedTx,
       wallet: connectedSolanaWallet,
       chain: "solana:mainnet",
     });
+    const sig = signatureToString(signature);
 
-    setStatus({ msg: `Confirming transaction...`, type: "info" });
-    await confirmSolanaTransaction(chainConfig.rpc, signatureToString(signature));
+    // Verify + record server-side. Retry on 404 while the tx propagates.
+    setStatus({ msg: "Verifying payment...", type: "info" });
+    let verified = false;
+    for (let attempt = 0; attempt < 6; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 2500));
+      const res = await fetch("/api/solana/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_id: project.id,
+          signature: sig,
+          package_id: selectedPkg,
+          token,
+        }),
+      });
+      if (res.ok) {
+        verified = true;
+        break;
+      }
+      // Retry transient states: 404 (tx not visible yet) and 503 (RPC hiccup).
+      if (res.status !== 404 && res.status !== 503) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.error || "Payment verification failed.");
+      }
+    }
+    if (!verified) {
+      throw new Error("Payment sent but not confirmed yet — it'll appear once the network finalizes it.");
+    }
   }
 
   // Record the owner->wallet authorization so the featured grid will render this
@@ -444,7 +485,7 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
           await recordPromotionAuthorization(project.id, connectedWallet.address, txHash);
         }
       } else if (isSol) {
-        await handlePromoteSolana(project, price, chainConfig);
+        await handlePromoteSolana(project, chainConfig);
       }
 
       setStatus({ msg: `"${project.title}" is now featured!`, type: "success" });
@@ -473,6 +514,41 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
   // If admin reorders packages someday, this assumption breaks.
   const fromPerDay = `$${(Number(prices[0]) / 1e6).toFixed(2)}`;
 
+  // Solana token (USDC / $VIBE) picker. Rendered in BOTH the idle and the
+  // expanded payment stages so the choice is always visible when paying.
+  // Only relevant to the Solana lane.
+  const solanaTokenToggle = isSol ? (
+    <div className="mb-4">
+      <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">
+        Token
+      </label>
+      <div className="grid grid-cols-2 gap-2">
+        {(["usdc", "vibe"] as const).map((t) => {
+          const active = selectedToken === t;
+          return (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setSelectedToken(t)}
+              className="px-3 py-2 text-xs font-extrabold uppercase transition-all"
+              style={{
+                border: `2px solid ${active ? "var(--accent)" : "var(--border-hard)"}`,
+                backgroundColor: active
+                  ? "color-mix(in srgb, var(--accent) 14%, var(--bg-surface))"
+                  : "var(--bg-surface)",
+                color: "var(--foreground)",
+                boxShadow: active ? "var(--shadow-brutal-xs)" : "none",
+              }}
+              aria-pressed={active}
+            >
+              {t === "usdc" ? "USDC" : "$VIBE"}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div
       ref={ref}
@@ -494,7 +570,7 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
             {/* Idle stage */}
             <div className="flex items-center justify-between mb-2">
               <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                Pay with USDC on
+                Pay on
               </label>
               <span
                 className="font-mono text-[10px] font-bold px-2 py-0.5"
@@ -530,6 +606,8 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
                 );
               })}
             </div>
+
+            {solanaTokenToggle}
 
             <div className="flex-1" />
 
@@ -609,6 +687,8 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
                 </select>
               )}
             </div>
+
+            {solanaTokenToggle}
 
             <div className="mb-3">
               <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">

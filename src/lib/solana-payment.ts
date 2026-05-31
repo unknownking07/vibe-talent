@@ -1,57 +1,76 @@
+import { Buffer } from "buffer";
 import {
   Connection,
   PublicKey,
   Transaction,
+  TransactionInstruction,
 } from "@solana/web3.js";
 import {
   getAssociatedTokenAddress,
   createTransferInstruction,
   createAssociatedTokenAccountInstruction,
   getAccount,
+  TokenAccountNotFoundError,
 } from "@solana/spl-token";
 
+const MEMO_PROGRAM_ID = new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");
+
 /**
- * Build a Solana USDC transfer transaction (serialized as Uint8Array).
- * Handles associated token account creation if the receiver doesn't have one yet.
- * Returns the serialized transaction ready for wallet signing.
+ * Build a Solana SPL-token transfer (USDC or $VIBE), serialized for signing.
+ * Creates the receiver's associated token account if needed, and attaches an
+ * optional memo. The memo binds the payment to a specific project so the server
+ * can verify it belongs to the submitting owner (see /api/solana/verify).
  */
-export async function buildSolanaUSDCTransfer({
+export async function buildSolanaTokenTransfer({
   senderAddress,
   rpcUrl,
-  usdcMint,
+  mint: mintAddress,
   receivingWallet,
   amount,
+  memo,
 }: {
   senderAddress: string;
   rpcUrl: string;
-  usdcMint: string;
+  mint: string;
   receivingWallet: string;
   amount: bigint;
+  memo?: string;
 }): Promise<Uint8Array> {
   const connection = new Connection(rpcUrl, "confirmed");
-  const mint = new PublicKey(usdcMint);
+  const mint = new PublicKey(mintAddress);
   const sender = new PublicKey(senderAddress);
   const receiver = new PublicKey(receivingWallet);
 
-  // Get associated token accounts
   const senderAta = await getAssociatedTokenAddress(mint, sender);
   const receiverAta = await getAssociatedTokenAddress(mint, receiver);
 
   const tx = new Transaction();
 
-  // Check if receiver ATA exists, create if not
+  // Create the receiver's associated token account only if it's genuinely
+  // missing. Other failures (RPC error, invalid owner/size) must propagate —
+  // blindly adding a create instruction would make the tx fail when the ATA
+  // already exists.
   try {
     await getAccount(connection, receiverAta);
-  } catch {
-    tx.add(
-      createAssociatedTokenAccountInstruction(sender, receiverAta, receiver, mint)
-    );
+  } catch (e) {
+    if (e instanceof TokenAccountNotFoundError) {
+      tx.add(createAssociatedTokenAccountInstruction(sender, receiverAta, receiver, mint));
+    } else {
+      throw e;
+    }
   }
 
-  // Add transfer instruction
-  tx.add(
-    createTransferInstruction(senderAta, receiverAta, sender, amount)
-  );
+  tx.add(createTransferInstruction(senderAta, receiverAta, sender, amount));
+
+  if (memo) {
+    tx.add(
+      new TransactionInstruction({
+        keys: [],
+        programId: MEMO_PROGRAM_ID,
+        data: Buffer.from(memo, "utf8"),
+      })
+    );
+  }
 
   const { blockhash } = await connection.getLatestBlockhash();
   tx.recentBlockhash = blockhash;
