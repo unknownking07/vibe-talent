@@ -315,11 +315,31 @@ export function NetworkFeed({
   const visibleRows = grouped.slice(0, effectiveLimit);
 
   if (loading) {
+    // Skeleton rows mirroring FeedRow (circular avatar + two text lines)
+    // instead of a bare "Loading feed..." string.
     return (
       <>
         <style>{FEED_STYLES}</style>
-        <div style={{ minHeight: "40vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ color: "var(--text-muted, #8A8B94)", fontSize: "0.85rem" }}>Loading feed...</div>
+        <div style={{ display: "flex", flexDirection: "column", paddingTop: 8 }}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "auto 1fr",
+                gap: "0.875rem",
+                alignItems: "center",
+                padding: "0.875rem 0",
+                borderBottom: "1px solid var(--border-subtle, #2a2a2a)",
+              }}
+            >
+              <div className="skeleton" style={{ width: 44, height: 44, borderRadius: "50%" }} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div className="skeleton" style={{ height: 12, width: "42%" }} />
+                <div className="skeleton" style={{ height: 14, width: "68%" }} />
+              </div>
+            </div>
+          ))}
         </div>
       </>
     );
