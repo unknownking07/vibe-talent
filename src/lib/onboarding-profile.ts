@@ -49,6 +49,13 @@ export interface ProfileWriteClient {
   };
 }
 
+/** Pull the SQLSTATE code off a Postgrest-style error object, if present. */
+function errorCode(error: unknown): string | undefined {
+  return typeof error === "object" && error !== null && "code" in error
+    ? (error as { code?: string }).code
+    : undefined;
+}
+
 /**
  * Create or update the caller's `users` row during onboarding WITHOUT a
  * PostgREST upsert.
@@ -66,10 +73,12 @@ export interface ProfileWriteClient {
  * Splitting the write keeps `id` out of every SET clause:
  *   1. UPDATE the existing row (granted columns only; `id` is just the filter).
  *   2. If no row matched, it's a brand-new signup → INSERT (the `id` column is
- *      fine on an INSERT — no UPDATE grant is consulted).
+ *      fine on an INSERT — no UPDATE grant is consulted). If a concurrent
+ *      request wins the insert first, that's a 23505 on the `id` PK — we
+ *      converge by retrying the UPDATE rather than failing onboarding.
  *
  * Throws the underlying Postgrest error so the caller's existing try/catch can
- * surface it.
+ * surface it (including a genuine username-uniqueness collision).
  */
 export async function saveOnboardingProfile(
   client: ProfileWriteClient,
@@ -92,6 +101,26 @@ export async function saveOnboardingProfile(
     const { error: insertError } = await client
       .from("users")
       .insert({ id, ...fields });
-    if (insertError) throw insertError;
+    if (!insertError) return;
+
+    // A unique violation (23505) here is ambiguous. Either:
+    //   (a) a concurrent request created THIS row between our UPDATE and INSERT
+    //       (conflict on the `id` primary key) → converge by UPDATE-ing it, or
+    //   (b) the chosen username belongs to a different user (conflict on the
+    //       username unique index) → a real error the user must see.
+    // Retrying the UPDATE disambiguates without parsing constraint names: if it
+    // now matches our row the race resolved; if it matches nothing, the row for
+    // this id still doesn't exist, so the conflict was the username — re-throw
+    // so the caller surfaces "Failed to save profile" rather than silently
+    // sending the user onward with no row.
+    if (errorCode(insertError) !== "23505") throw insertError;
+
+    const { data: retried, error: retryError } = await client
+      .from("users")
+      .update(fields)
+      .eq("id", id)
+      .select("id");
+    if (retryError) throw retryError;
+    if (!retried || retried.length === 0) throw insertError;
   }
 }

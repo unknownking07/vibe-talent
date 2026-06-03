@@ -30,17 +30,24 @@ interface RecordedUpdate {
  */
 function makeClient(
   updateRows: unknown[] | null,
-  errors: { update?: unknown; insert?: unknown } = {}
+  errors: { update?: unknown; insert?: unknown } = {},
+  // Result for the *retry* UPDATE (2nd+ update call). Defaults to `updateRows`.
+  // Used to model the insert-race: 1st UPDATE sees no row, INSERT loses the
+  // race (23505), retry UPDATE now finds the row a concurrent request created.
+  retryUpdateRows?: unknown[] | null
 ) {
   const calls = {
     update: [] as RecordedUpdate[],
     insert: [] as (OnboardingProfileFields & { id: string })[],
   };
+  let updateCalls = 0;
 
   const client: ProfileWriteClient = {
     from() {
       return {
         update(values: OnboardingProfileFields) {
+          updateCalls += 1;
+          const callIndex = updateCalls;
           const recorded: RecordedUpdate = { values };
           calls.update.push(recorded);
           return {
@@ -48,8 +55,12 @@ function makeClient(
               recorded.id = value;
               return {
                 select() {
+                  const data =
+                    callIndex === 1 || retryUpdateRows === undefined
+                      ? updateRows
+                      : retryUpdateRows;
                   return Promise.resolve({
-                    data: updateRows,
+                    data,
                     error: errors.update ?? null,
                   });
                 },
@@ -129,13 +140,52 @@ describe("saveOnboardingProfile", () => {
     expect(calls.insert).toHaveLength(0);
   });
 
-  it("propagates an INSERT error", async () => {
-    const { client } = makeClient([], {
-      insert: { code: "23505", message: "duplicate key value" },
+  it("propagates a non-unique INSERT error without retrying", async () => {
+    const { client, calls } = makeClient([], {
+      insert: { code: "23502", message: "null value in column violates not-null" },
+    });
+
+    await expect(
+      saveOnboardingProfile(client, "new-user", FIELDS)
+    ).rejects.toMatchObject({ code: "23502" });
+    // Only the initial UPDATE — a non-23505 error is not a race, so no retry.
+    expect(calls.update).toHaveLength(1);
+  });
+
+  it("converges on a concurrent-insert race (23505 on id PK → retry UPDATE finds the row)", async () => {
+    // 1st UPDATE: no row. INSERT loses the race (23505). Retry UPDATE: a
+    // concurrent request created the row, so it now matches → resolve, no throw.
+    const { client, calls } = makeClient(
+      [],
+      { insert: { code: "23505", message: 'duplicate key value violates unique constraint "users_pkey"' } },
+      [{ id: "raced-user" }]
+    );
+
+    await expect(
+      saveOnboardingProfile(client, "raced-user", FIELDS)
+    ).resolves.toBeUndefined();
+
+    expect(calls.insert).toHaveLength(1);
+    // Initial UPDATE + the convergence retry.
+    expect(calls.update).toHaveLength(2);
+    // The retry UPDATE also keeps `id` out of its SET payload.
+    expect("id" in calls.update[1].values).toBe(false);
+  });
+
+  it("re-throws a username-uniqueness collision (23505, retry UPDATE still finds no row)", async () => {
+    // INSERT fails 23505 because the username is taken by ANOTHER user. The
+    // retry UPDATE matches no row (this id still has none) → surface the error
+    // rather than silently sending the user on with no profile.
+    const { client, calls } = makeClient([], {
+      insert: {
+        code: "23505",
+        message: 'duplicate key value violates unique constraint "users_username_key"',
+      },
     });
 
     await expect(
       saveOnboardingProfile(client, "new-user", FIELDS)
     ).rejects.toMatchObject({ code: "23505" });
+    expect(calls.update).toHaveLength(2);
   });
 });
