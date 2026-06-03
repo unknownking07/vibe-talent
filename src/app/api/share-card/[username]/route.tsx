@@ -25,8 +25,18 @@ export async function GET(
   const initial = user.username.slice(0, 1).toUpperCase();
   const avatarSrc = user.avatar_url;
   const bio = user.bio
-    ? (user.bio.length > 30 ? user.bio.slice(0, 30) + "..." : user.bio)
+    ? (user.bio.length > 22 ? user.bio.slice(0, 22) + "..." : user.bio)
     : "vibecoder";
+  const displayName = user.display_name || `@${user.username}`;
+  // Dynamic font size: available width ~390px, uppercase system-ui ~0.62× fontSize + 4px letter-spacing per char
+  // Names >12 chars: subtract 50px for verified badge (36px icon + 14px gap)
+  const NAME_AVAILABLE_PX = displayName.length > 12 ? 340 : 390;
+  const CHAR_WIDTH_RATIO = 0.62;
+  const LETTER_SPACING_PX = 4;
+  const nameFontSize = Math.max(
+    16,
+    Math.min(42, Math.floor((NAME_AVAILABLE_PX / displayName.length - LETTER_SPACING_PX) / CHAR_WIDTH_RATIO))
+  );
   const streakStr = String(user.streak).padStart(2, "0");
   const longestStr = String(user.longest_streak).padStart(2, "0");
   const projectsStr = String((user.projects ?? []).length).padStart(2, "0");
@@ -225,19 +235,20 @@ export async function GET(
               </div>
 
               {/* Name + badge */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minWidth: 0, overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
                   <span
                     style={{
-                      fontSize: 42,
+                      fontSize: nameFontSize,
                       fontWeight: 300,
                       color: TEXT,
                       textTransform: "uppercase",
                       letterSpacing: "4px",
                       lineHeight: 1,
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    {user.display_name || `@${user.username}`}
+                    {displayName}
                   </span>
                   {user.github_username && (
                     <svg
@@ -279,6 +290,8 @@ export async function GET(
                     borderRadius: 999,
                     letterSpacing: "3px",
                     textTransform: "uppercase",
+                    maxWidth: "100%",
+                    overflow: "hidden",
                   }}
                 >
                   {bio}
