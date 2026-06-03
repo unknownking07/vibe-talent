@@ -8,6 +8,10 @@ import { normalizeSocialHandle } from "@/lib/social-handles";
 import { normalizeExternalUrl, normalizeRepoUrl } from "@/lib/url-normalize";
 import { armTourTrigger, TOUR_FLAG_ENABLED } from "@/lib/onboarding";
 import {
+  saveOnboardingProfile,
+  type ProfileWriteClient,
+} from "@/lib/onboarding-profile";
+import {
   Flame,
   Github,
   Globe,
@@ -225,30 +229,37 @@ export default function ProfileSetupPage() {
       setError(displayNameError);
       return;
     }
+    if (!userId) {
+      setError("Your session isn't ready yet — refresh the page and try again.");
+      return;
+    }
 
     setError("");
     setLoading(true);
 
     try {
-      // github_username (and github_id) must be written here because this is
-      // the first INSERT for GitHub-first OAuth signups — users.username is
-      // NOT NULL, so no row exists when /auth/callback runs, and its UPDATE
-      // silently no-ops.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: dbError } = await (supabase.from("users") as any).upsert(
+      // Create-or-update the row WITHOUT a PostgREST upsert. An upsert lists the
+      // conflict-target `id` in its DO UPDATE SET clause, which the post-2026-05-29
+      // column-level UPDATE grant denies for existing rows (42501 "permission
+      // denied for table users"). saveOnboardingProfile splits the write so `id`
+      // never lands in a SET clause — see it for the full rationale.
+      //
+      // github_username/github_id are written here because this is the first
+      // write for GitHub-first OAuth signups — users.username is NOT NULL, so no
+      // row exists when /auth/callback runs and its UPDATE silently no-ops.
+      await saveOnboardingProfile(
+        supabase as unknown as ProfileWriteClient,
+        userId,
         {
-          id: userId,
           username: profile.username,
           display_name: profile.display_name.trim() || null,
           bio: profile.bio || null,
           ...(oauthAvatarUrl ? { avatar_url: oauthAvatarUrl } : {}),
           ...(verifiedGithub ? { github_username: verifiedGithub } : {}),
           ...(verifiedGithubId !== null ? { github_id: verifiedGithubId } : {}),
-        },
-        { onConflict: "id" }
+        }
       );
 
-      if (dbError) throw dbError;
       // Ensure baseline vibe score is set for new users (non-fatal)
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
