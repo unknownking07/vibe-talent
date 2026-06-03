@@ -34,7 +34,10 @@ function makeClient(
   // Result for the *retry* UPDATE (2nd+ update call). Defaults to `updateRows`.
   // Used to model the insert-race: 1st UPDATE sees no row, INSERT loses the
   // race (23505), retry UPDATE now finds the row a concurrent request created.
-  retryUpdateRows?: unknown[] | null
+  retryUpdateRows?: unknown[] | null,
+  // Error for the *retry* UPDATE only. Lets a test fail the retry without
+  // failing the initial UPDATE. Defaults to `errors.update`.
+  retryUpdateError?: unknown
 ) {
   const calls = {
     update: [] as RecordedUpdate[],
@@ -55,14 +58,16 @@ function makeClient(
               recorded.id = value;
               return {
                 select() {
+                  const isFirst = callIndex === 1;
                   const data =
-                    callIndex === 1 || retryUpdateRows === undefined
+                    isFirst || retryUpdateRows === undefined
                       ? updateRows
                       : retryUpdateRows;
-                  return Promise.resolve({
-                    data,
-                    error: errors.update ?? null,
-                  });
+                  const error =
+                    isFirst || retryUpdateError === undefined
+                      ? errors.update ?? null
+                      : retryUpdateError;
+                  return Promise.resolve({ data, error });
                 },
               };
             },
@@ -186,6 +191,23 @@ describe("saveOnboardingProfile", () => {
     await expect(
       saveOnboardingProfile(client, "new-user", FIELDS)
     ).rejects.toMatchObject({ code: "23505" });
+    expect(calls.update).toHaveLength(2);
+  });
+
+  it("propagates a retry UPDATE error (23505 insert, then retry UPDATE fails)", async () => {
+    // Initial UPDATE: no row. INSERT: 23505. Retry UPDATE: its own failure
+    // (e.g. an RLS denial or network blip) → surface it, don't swallow.
+    const { client, calls } = makeClient(
+      [],
+      { insert: { code: "23505", message: 'duplicate key value violates unique constraint "users_pkey"' } },
+      undefined,
+      { code: "42501", message: "permission denied on retry" }
+    );
+
+    await expect(
+      saveOnboardingProfile(client, "user-1", FIELDS)
+    ).rejects.toMatchObject({ code: "42501" });
+    // Initial UPDATE + the retry UPDATE that failed.
     expect(calls.update).toHaveLength(2);
   });
 });
