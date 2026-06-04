@@ -48,7 +48,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Is VibeTalent free to use?",
-    a: "Yes, VibeTalent is free for developers. Creating a profile, connecting your GitHub account, building your streak, earning badges, adding projects, and getting discovered by clients costs nothing. Rankings are based entirely on merit — your vibe score, streak, and project quality determine your visibility. The one optional paid feature is Featured Projects: developers can pay with USDC (on Base network) to pin a project to the homepage carousel for extra visibility. This is purely optional and does not affect your vibe score, badge level, or search ranking. Simply sign up, start coding every day, add your best projects, and let your proof of work attract opportunities.",
+    a: "Yes, VibeTalent is free for developers. Creating a profile, connecting your GitHub account, building your streak, earning badges, adding projects, and getting discovered by clients costs nothing. Rankings are based entirely on merit — your vibe score, streak, and project quality determine your visibility. The one optional paid feature is Featured Projects: developers can pay to feature a project for extra visibility where people browse projects. This is purely optional and does not affect your vibe score, badge level, or search ranking. Simply sign up, start coding every day, add your best projects, and let your proof of work attract opportunities.",
   },
 ];
 
@@ -275,7 +275,7 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* Featured Projects */}
+      {/* Recent projects — organic (paid featuring lives on /projects) */}
       <section
         style={{
           borderTop: "2px solid var(--border-hard)",
@@ -286,7 +286,7 @@ export default async function HomePage() {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">What are vibe coders building?</h2>
-              <p className="mt-2 text-[var(--text-secondary)] font-medium">Featured projects built by vibe coders, shipped fast</p>
+              <p className="mt-2 text-[var(--text-secondary)] font-medium">Latest projects built by vibe coders, shipped fast</p>
             </div>
             <Link
               href="/projects"
