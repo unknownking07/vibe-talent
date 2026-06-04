@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { X, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -40,6 +41,12 @@ export function SignupBar() {
   // We start hidden and only flip to visible after we've confirmed the
   // viewer is anon AND not dismissed. Avoids a flash on logged-in pages.
   const [visible, setVisible] = useState(false);
+  // The homepage hero already owns the "Create profile" CTA, so this sticky
+  // bar would duplicate it and overlap the landing content. Suppress it there
+  // (every other route is unchanged). Call site is before the early returns;
+  // the guard itself runs after all hooks below to respect rules-of-hooks.
+  const pathname = usePathname();
+  const isHomepage = pathname === "/";
 
   useEffect(() => {
     let cancelled = false;
@@ -98,10 +105,12 @@ export function SignupBar() {
 
   // Reflect visibility on the body so global CSS can add bottom padding to
   // <main>. We keep the attribute even after the bar mounts so any layout-
-  // dependent rules can react synchronously.
+  // dependent rules can react synchronously. On the homepage the bar never
+  // renders, so we must not mark the body either — otherwise it'd reserve
+  // 72px of padding for a bar that isn't there.
   useEffect(() => {
     if (typeof document === "undefined") return;
-    if (visible) {
+    if (visible && !isHomepage) {
       document.body.setAttribute("data-signup-bar", "visible");
     } else {
       document.body.removeAttribute("data-signup-bar");
@@ -109,9 +118,11 @@ export function SignupBar() {
     return () => {
       document.body.removeAttribute("data-signup-bar");
     };
-  }, [visible]);
+  }, [visible, isHomepage]);
 
-  if (!visible) return null;
+  // All hooks above run unconditionally; only now is it safe to bail. The
+  // homepage hero owns the CTA, so render nothing there.
+  if (isHomepage || !visible) return null;
 
   const handleDismiss = () => {
     try {
