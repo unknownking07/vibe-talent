@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import type { ReactNode, CSSProperties } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -70,51 +71,27 @@ function actionText(item: GroupedItem): string {
 
 const AVATAR_COLORS = ["#ff4400", "#4a4a4a", "#ffffff", "#ff4400", "#4a4a4a", "#ffffff"];
 
-export function LiveActivityFeed() {
-  const [feed, setFeed] = useState<FeedItem[]>([]);
-  const [loaded, setLoaded] = useState(false);
+const FRAME_STYLE: CSSProperties = {
+  width: "100%",
+  maxWidth: 480,
+  margin: "0 auto",
+  backgroundColor: "var(--bg-surface, #0a0a0a)",
+  border: "2px solid var(--border-hard, #fff)",
+  boxShadow: "6px 6px 0px #000",
+  display: "flex",
+  flexDirection: "column",
+};
 
-  useEffect(() => {
-    function fetchFeed() {
-      fetch("/api/feed?limit=20")
-        .then((r) => r.json())
-        .then((d) => {
-          // Drop any event types this snippet can't render correctly.
-          const items: FeedItem[] = (d.feed || []).filter(
-            (i: FeedItem) => SUPPORTED_LEGACY_TYPES.has(i.type),
-          );
-          setFeed(items);
-          setLoaded(true);
-        })
-        .catch(() => setLoaded(true));
-    }
-    fetchFeed();
-    const interval = setInterval(fetchFeed, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const grouped = useMemo(() => groupFeedItems(feed).slice(0, 6), [feed]);
-
-  if (!loaded) return (
-    <section className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
-      <div style={{ textAlign: "center", padding: "20px", color: "var(--text-muted, #8a8a8a)", fontSize: "0.85rem" }}>Loading activity...</div>
-    </section>
-  );
-  if (grouped.length === 0) return null;
-
-  // v2: white text + green blinking dot
+/**
+ * Card frame + header shared by the loading skeleton and the loaded feed so
+ * the skeleton reserves the exact layout the real rows drop into (no shift
+ * when the fetch resolves). The "Live Activity" header is static chrome, so it
+ * renders immediately rather than shimmering.
+ */
+function FeedShell({ children }: { children: ReactNode }) {
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
-      <article style={{
-        width: "100%",
-        maxWidth: 480,
-        margin: "0 auto",
-        backgroundColor: "var(--bg-surface, #0a0a0a)",
-        border: "2px solid var(--border-hard, #fff)",
-        boxShadow: "6px 6px 0px #000",
-        display: "flex",
-        flexDirection: "column",
-      }}>
+      <article style={FRAME_STYLE}>
         <header style={{
           backgroundColor: "var(--accent, #ff4400)",
           color: "var(--text-on-inverted, #0F0F0F)",
@@ -148,68 +125,149 @@ export function LiveActivityFeed() {
         </header>
 
         <div style={{ display: "flex", flexDirection: "column", maxHeight: 500, overflowY: "auto" }}>
-          {grouped.map((item, idx) => {
-            const initials = item.username.slice(0, 2).toUpperCase();
-            const bgColor = AVATAR_COLORS[idx % AVATAR_COLORS.length];
-            const textColor = bgColor === "#ffffff" ? "#000" : bgColor === "#4a4a4a" ? "#fff" : "#000";
-            const name = item.type === "project" ? item.project_title : item.repo_name;
-
-            return (
-              <Link
-                key={item.id}
-                href={`/profile/${item.username}`}
-                style={{
-                  padding: "1rem 1.25rem",
-                  display: "grid",
-                  gridTemplateColumns: "auto 1fr",
-                  gap: "1rem",
-                  borderBottom: idx < grouped.length - 1 ? "1px solid #2a2a2a" : "none",
-                  transition: "background-color 0.15s ease",
-                  textDecoration: "none",
-                  color: "inherit",
-                }}
-              >
-                <div style={{
-                  width: 40, height: 40, backgroundColor: bgColor,
-                  border: "2px solid var(--border-hard, #fff)",
-                  display: "flex", justifyContent: "center", alignItems: "center",
-                  fontWeight: 800, color: textColor, fontSize: "1rem",
-                  textTransform: "uppercase", boxShadow: "2px 2px 0px #000",
-                  overflow: "hidden",
-                  fontFamily: "var(--font-space-grotesk, 'Space Grotesk', sans-serif)",
-                }}>
-                  {item.avatar_url ? (
-                    <Image src={item.avatar_url} alt={item.username} width={40} height={40} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : initials}
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-                    <div style={{ fontSize: "0.875rem", lineHeight: 1.2 }}>
-                      <span style={{ fontWeight: 700, color: "var(--foreground, #fff)" }}>@{item.username}</span>{" "}
-                      <span style={{ color: "var(--text-muted, #8a8a8a)" }}>{actionText(item)}</span>
-                    </div>
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #8a8a8a)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
-                      {relativeTime(item.date)}
-                    </span>
-                  </div>
-                  {name && (
-                    <div style={{
-                      fontSize: "1rem", fontWeight: 800, fontStyle: "italic",
-                      color: "var(--accent, #ff4400)", textTransform: "uppercase",
-                      letterSpacing: "-0.5px", lineHeight: 1.1,
-                      fontFamily: "var(--font-space-grotesk, 'Space Grotesk', sans-serif)",
-                    }}>
-                      {name}
-                    </div>
-                  )}
-                </div>
-              </Link>
-            );
-          })}
+          {children}
         </div>
       </article>
-      {/* blink keyframe defined in globals.css */}
     </section>
+  );
+}
+
+/** One placeholder row mirroring a real feed row (avatar + two text lines). */
+function ActivitySkeletonRow({ last }: { last: boolean }) {
+  return (
+    <div style={{
+      padding: "1rem 1.25rem",
+      display: "grid",
+      gridTemplateColumns: "auto 1fr",
+      gap: "1rem",
+      alignItems: "center",
+      borderBottom: last ? "none" : "1px solid #2a2a2a",
+    }}>
+      <div className="skeleton" style={{ width: 40, height: 40, boxShadow: "2px 2px 0px #000" }} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+          <div className="skeleton" style={{ height: 12, width: 120 }} />
+          <div className="skeleton" style={{ height: 10, width: 44 }} />
+        </div>
+        <div className="skeleton" style={{ height: 14, width: "55%" }} />
+      </div>
+    </div>
+  );
+}
+
+export function LiveActivityFeed() {
+  const [feed, setFeed] = useState<FeedItem[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    function fetchFeed() {
+      fetch("/api/feed?limit=20")
+        .then((r) => r.json())
+        .then((d) => {
+          // Drop any event types this snippet can't render correctly.
+          const items: FeedItem[] = (d.feed || []).filter(
+            (i: FeedItem) => SUPPORTED_LEGACY_TYPES.has(i.type),
+          );
+          setFeed(items);
+          setLoaded(true);
+          setError(null);
+        })
+        .catch(() => {
+          setError("Couldn't load live activity");
+          setLoaded(true);
+        });
+    }
+    fetchFeed();
+    const interval = setInterval(fetchFeed, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const grouped = useMemo(() => groupFeedItems(feed).slice(0, 6), [feed]);
+
+  // Skeleton placeholder rows inside the real frame — no layout shift when the
+  // feed arrives.
+  if (!loaded) return (
+    <FeedShell>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <ActivitySkeletonRow key={i} last={i === 4} />
+      ))}
+    </FeedShell>
+  );
+  // Failed fetch with nothing cached to show — give explicit feedback rather
+  // than silently rendering an empty section. (Stale items survive a transient
+  // refetch error: the rows path below still wins when `grouped` is non-empty.)
+  if (error && grouped.length === 0) return (
+    <FeedShell>
+      <div style={{ padding: "1.5rem 1.25rem", textAlign: "center", color: "var(--text-muted, #8a8a8a)", fontSize: "0.85rem" }}>
+        Couldn&apos;t load live activity.
+      </div>
+    </FeedShell>
+  );
+  if (grouped.length === 0) return null;
+
+  // v2: white text + green blinking dot
+  return (
+    <FeedShell>
+      {grouped.map((item, idx) => {
+        const initials = item.username.slice(0, 2).toUpperCase();
+        const bgColor = AVATAR_COLORS[idx % AVATAR_COLORS.length];
+        const textColor = bgColor === "#ffffff" ? "#000" : bgColor === "#4a4a4a" ? "#fff" : "#000";
+        const name = item.type === "project" ? item.project_title : item.repo_name;
+
+        return (
+          <Link
+            key={item.id}
+            href={`/profile/${item.username}`}
+            style={{
+              padding: "1rem 1.25rem",
+              display: "grid",
+              gridTemplateColumns: "auto 1fr",
+              gap: "1rem",
+              borderBottom: idx < grouped.length - 1 ? "1px solid #2a2a2a" : "none",
+              transition: "background-color 0.15s ease",
+              textDecoration: "none",
+              color: "inherit",
+            }}
+          >
+            <div style={{
+              width: 40, height: 40, backgroundColor: bgColor,
+              border: "2px solid var(--border-hard, #fff)",
+              display: "flex", justifyContent: "center", alignItems: "center",
+              fontWeight: 800, color: textColor, fontSize: "1rem",
+              textTransform: "uppercase", boxShadow: "2px 2px 0px #000",
+              overflow: "hidden",
+              fontFamily: "var(--font-space-grotesk, 'Space Grotesk', sans-serif)",
+            }}>
+              {item.avatar_url ? (
+                <Image src={item.avatar_url} alt={item.username} width={40} height={40} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : initials}
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                <div style={{ fontSize: "0.875rem", lineHeight: 1.2 }}>
+                  <span style={{ fontWeight: 700, color: "var(--foreground, #fff)" }}>@{item.username}</span>{" "}
+                  <span style={{ color: "var(--text-muted, #8a8a8a)" }}>{actionText(item)}</span>
+                </div>
+                <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #8a8a8a)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                  {relativeTime(item.date)}
+                </span>
+              </div>
+              {name && (
+                <div style={{
+                  fontSize: "1rem", fontWeight: 800, fontStyle: "italic",
+                  color: "var(--accent, #ff4400)", textTransform: "uppercase",
+                  letterSpacing: "-0.5px", lineHeight: 1.1,
+                  fontFamily: "var(--font-space-grotesk, 'Space Grotesk', sans-serif)",
+                }}>
+                  {name}
+                </div>
+              )}
+            </div>
+          </Link>
+        );
+      })}
+    </FeedShell>
   );
 }
