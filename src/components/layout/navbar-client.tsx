@@ -515,7 +515,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               ref={moreTriggerRef}
               type="button"
               onClick={() => setMoreOpen((v) => !v)}
-              aria-haspopup="menu"
+              aria-haspopup="true"
               aria-expanded={moreOpen}
               className="flex items-center gap-1 px-4 py-2 text-sm font-bold uppercase tracking-wide transition-colors"
               style={{
@@ -526,7 +526,6 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               More <ChevronDown size={12} />
             </button>
             <div
-              role="menu"
               className={`absolute right-0 top-full mt-0 ${moreOpen ? "flex" : "hidden"} flex-col min-w-[160px] py-1 z-50`}
               style={{
                 border: "2px solid var(--border-hard)",
@@ -538,7 +537,6 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                 <Link
                   key={link.href}
                   href={link.href}
-                  role="menuitem"
                   onClick={() => setMoreOpen(false)}
                   className="px-4 py-2.5 text-sm font-bold uppercase tracking-wide transition-colors hover:bg-[var(--accent)]/10"
                   style={{
@@ -552,7 +550,6 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                 href={DOCS_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                role="menuitem"
                 onClick={() => setMoreOpen(false)}
                 className="px-4 py-2.5 text-sm font-bold uppercase tracking-wide transition-colors hover:bg-[var(--accent)]/10"
                 style={{ color: "var(--foreground)" }}
