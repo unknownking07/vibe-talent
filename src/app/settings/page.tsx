@@ -11,6 +11,8 @@ import { normalizeExternalUrl } from "@/lib/url-normalize";
 import type { UserWithSocials } from "@/lib/types/database";
 import { EmailPreferences } from "@/components/dashboard/email-preferences";
 import { PrivacyPreferences } from "@/components/dashboard/privacy-preferences";
+import { isUsernameTakenError, validateUsername } from "@/lib/username";
+import { useUsernameAvailability } from "@/lib/use-username-availability";
 import {
   Save,
   Camera,
@@ -50,6 +52,13 @@ export default function SettingsPage() {
   const [highlightName, setHighlightName] = useState(false);
   const displayNameRef = useRef<HTMLInputElement>(null);
 
+  // Live, debounced availability for the username field. The user's own current
+  // handle reads as `idle` (unchanged), never a redundant "taken".
+  const usernameAvailability = useUsernameAvailability(profileForm.username, {
+    currentUsername: user?.username ?? null,
+    currentUserId: user?.id ?? null,
+  });
+
   useEffect(() => {
     let cancelled = false;
     let loaded = false;
@@ -63,9 +72,9 @@ export default function SettingsPage() {
 
       try {
         const results = await Promise.allSettled([
-          sb.from("users").select("*").eq("id", authUser.id).single(),
+          sb.from("users").select("*").eq("id", authUser.id).maybeSingle(),
           sb.from("projects").select("*").eq("user_id", authUser.id).order("created_at", { ascending: false }),
-          sb.from("social_links").select("*").eq("user_id", authUser.id).single(),
+          sb.from("social_links").select("*").eq("user_id", authUser.id).maybeSingle(),
         ]);
 
         const profile = results[0].status === "fulfilled" ? results[0].value?.data : null;
@@ -222,6 +231,11 @@ export default function SettingsPage() {
       alert("Username contains inappropriate language");
       return;
     }
+    const usernameError = validateUsername(profileForm.username.trim());
+    if (usernameError) {
+      alert(usernameError);
+      return;
+    }
     const twitterResult = normalizeSocialHandle(profileForm.twitter, "twitter");
     if (!twitterResult.ok) {
       alert(twitterResult.error);
@@ -278,7 +292,7 @@ export default function SettingsPage() {
     // initial signup: the OAuth callback sets it, but earlier flows could
     // leave it null while the GitHub identity was already attached, which
     // kept the blue verified badge from rendering.
-    await sb
+    const { error: usersError } = await sb
       .from("users")
       .update({
         username: profileForm.username.trim(),
@@ -287,6 +301,17 @@ export default function SettingsPage() {
         github_username: verifiedGithub,
       })
       .eq("id", user.id);
+    if (usersError) {
+      // Surface a clear, recoverable message instead of silently failing and
+      // then optimistically rendering the new handle as if it had saved.
+      alert(
+        isUsernameTakenError(usersError)
+          ? `@${profileForm.username.trim()} is already taken — please choose another.`
+          : `Couldn't save your profile: ${usersError.message ?? "please try again."}`
+      );
+      setSaving(false);
+      return;
+    }
 
     await sb.from("social_links").upsert({
       user_id: user.id,
@@ -417,9 +442,33 @@ export default function SettingsPage() {
             <input
               type="text"
               value={profileForm.username}
-              onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
+              onChange={(e) =>
+                setProfileForm({
+                  ...profileForm,
+                  username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""),
+                })
+              }
               className="input-brutal"
             />
+            {(usernameAvailability.status === "checking" ||
+              usernameAvailability.status === "available" ||
+              usernameAvailability.status === "taken") && (
+              <p
+                className="text-[10px] font-bold mt-1"
+                style={{
+                  color:
+                    usernameAvailability.status === "available"
+                      ? "var(--status-success-text)"
+                      : usernameAvailability.status === "taken"
+                      ? "var(--status-error-text)"
+                      : "var(--text-muted)",
+                }}
+              >
+                {usernameAvailability.status === "checking" && "Checking availability…"}
+                {usernameAvailability.status === "available" && "✓ Available"}
+                {usernameAvailability.status === "taken" && usernameAvailability.message}
+              </p>
+            )}
           </div>
           <div>
             <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 flex items-center gap-2">
