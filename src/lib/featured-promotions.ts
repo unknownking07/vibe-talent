@@ -183,67 +183,102 @@ export function filterAuthorizedPromotions<T extends { projectId: string; promot
 // reading `cookies()` inside cached scopes, which would happen if we always
 // instantiated the request-bound browser/SSR client here.
 type PromotionsClient = ReturnType<typeof createClient>;
+type SolanaPromoRow = {
+  project_id: string;
+  promoter_wallet: string;
+  package_id: number | null;
+  expires_at: string | null;
+  created_at: string;
+};
+
 export async function enrichPromotions(
   promotions: Promotion[],
   client?: PromotionsClient,
 ): Promise<EnrichedPromotion[]> {
-  if (promotions.length === 0) return [];
   try {
     const supabase = client ?? createClient();
-    const projectIds = [...new Set(promotions.map((p) => p.projectId))];
 
-    // Ownership gate (#8): drop any promotion whose on-chain payer wasn't
-    // authorized by the project's owner. featured_promotions isn't in the
-    // generated DB types yet, so the query is cast.
+    // EVM (Base) ownership gate (#8): keep only on-chain promotions whose payer
+    // was authorized by the project's owner. featured_promotions isn't in the
+    // generated DB types yet, so these queries are cast.
+    let verifiedEvm: Promotion[] = [];
+    if (promotions.length > 0) {
+      const evmProjectIds = [...new Set(promotions.map((p) => p.projectId))];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: auths } = await (supabase as any)
+        .from("featured_promotions")
+        .select("project_id, promoter_wallet")
+        .in("project_id", evmProjectIds);
+      const authorizedKeys = new Set(
+        ((auths ?? []) as Array<{ project_id: string; promoter_wallet: string }>).map(
+          (a) => `${a.project_id}:${a.promoter_wallet.toLowerCase()}`,
+        ),
+      );
+      verifiedEvm = filterAuthorizedPromotions(promotions, authorizedKeys);
+    }
+
+    // Solana promotions: featured_promotions IS the registry (no contract).
+    // Render rows that are still active (lifetime = null expiry, else future).
+    const nowIso = new Date().toISOString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: auths } = await (supabase as any)
+    const { data: solData } = await (supabase as any)
       .from("featured_promotions")
-      .select("project_id, promoter_wallet")
-      .in("project_id", projectIds);
-    const authorizedKeys = new Set(
-      ((auths ?? []) as Array<{ project_id: string; promoter_wallet: string }>).map(
-        (a) => `${a.project_id}:${a.promoter_wallet.toLowerCase()}`,
-      ),
-    );
-    const verified = filterAuthorizedPromotions(promotions, authorizedKeys);
-    if (verified.length === 0) return [];
+      .select("project_id, promoter_wallet, package_id, expires_at, created_at")
+      .eq("chain", "solana")
+      .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+      .order("created_at", { ascending: false });
+    const solana = (solData ?? []) as SolanaPromoRow[];
 
-    const verifiedProjectIds = [...new Set(verified.map((p) => p.projectId))];
+    if (verifiedEvm.length === 0 && solana.length === 0) return [];
+
+    // Resolve project + author for everything we'll render, in one pair of queries.
+    const allProjectIds = [
+      ...new Set([...verifiedEvm.map((p) => p.projectId), ...solana.map((s) => s.project_id)]),
+    ];
     const { data: projects } = await supabase
       .from("projects")
       .select("id, title, description, tech_stack, live_url, github_url, image_url, verified, quality_score, endorsement_count, user_id")
-      .in("id", verifiedProjectIds);
-
-    // Supabase's typed client narrows the row to `never` when the select
-    // string can't be resolved against the generated Database type — cast
-    // to the projection we actually requested.
+      .in("id", allProjectIds);
     const projectRows = (projects ?? []) as Array<EnrichedProject & { user_id: string }>;
     const projectMap = new Map<string, EnrichedProject & { user_id: string }>();
-    for (const p of projectRows) {
-      projectMap.set(p.id, p);
-    }
+    for (const p of projectRows) projectMap.set(p.id, p);
 
     const userIds = [...new Set(projectRows.map((p) => p.user_id))];
     const { data: users } = await supabase
       .from("users")
       .select("id, username, display_name, avatar_url, vibe_score, streak, badge_level")
       .in("id", userIds);
-
     const userRows = (users ?? []) as Array<EnrichedAuthor & { id: string }>;
     const userMap = new Map<string, EnrichedAuthor>();
-    for (const u of userRows) {
-      userMap.set(u.id, u);
-    }
+    for (const u of userRows) userMap.set(u.id, u);
 
-    return verified.map((promo) => {
+    const evmEnriched: EnrichedPromotion[] = verifiedEvm.map((promo) => {
       const proj = projectMap.get(promo.projectId) || null;
       const author = proj ? userMap.get(proj.user_id) || null : null;
       return { ...promo, project: proj, author };
     });
+
+    const solEnriched: EnrichedPromotion[] = solana.map((row, i) => {
+      const proj = projectMap.get(row.project_id) || null;
+      const author = proj ? userMap.get(proj.user_id) || null : null;
+      return {
+        // Solana rows have no on-chain id; synthesize a stable, collision-free one.
+        id: 1_000_000_000 + i,
+        promoter: row.promoter_wallet,
+        projectId: row.project_id,
+        projectName: proj?.title ?? "",
+        // EnrichedPromotion.expiresAt is Unix seconds; 0 = lifetime (matches EVM).
+        expiresAt: row.expires_at ? Math.floor(new Date(row.expires_at).getTime() / 1000) : 0,
+        paidAmount: 0,
+        project: proj,
+        author,
+      };
+    });
+
+    return [...evmEnriched, ...solEnriched];
   } catch {
-    // Fail closed: if we can't verify ownership, render nothing rather than risk
-    // showing an unverified (possibly hijacked) promotion. Promotions are
-    // non-critical UI.
+    // Fail closed: if we can't verify, render nothing rather than risk showing an
+    // unverified (possibly hijacked) promotion. Promotions are non-critical UI.
     return [];
   }
 }

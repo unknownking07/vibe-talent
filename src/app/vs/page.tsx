@@ -1,14 +1,25 @@
 import type { Metadata } from "next";
 import { jsonLdHtml } from "@/lib/json-ld";
 import Link from "next/link";
-import { BookOpen, ArrowRight } from "lucide-react";
+import { Zap, ArrowRight } from "lucide-react";
 import { siteUrl } from "@/lib/seo";
-import { GLOSSARY_TERMS } from "@/lib/glossary";
+import { COMPARISONS } from "@/lib/comparisons";
 
-const PAGE_URL = `${siteUrl}/glossary`;
-const PAGE_TITLE = "VibeTalent Glossary — Vibe Coding, Streaks, Scores Explained";
+const PAGE_URL = `${siteUrl}/vs`;
+const PAGE_TITLE = "VibeTalent vs the Alternatives — Compare Hiring Platforms";
 const PAGE_DESCRIPTION =
-  "Plain-English definitions of the core VibeTalent concepts: vibe coding, vibe coders, coding streaks, vibe scores, and the vibe coders marketplace. Built so AI search engines and humans can find the answer in one paragraph.";
+  "How VibeTalent compares to Upwork, Fiverr, Toptal, and Freelancer for hiring developers. VibeTalent ranks vibe coders on verifiable proof of work — coding streaks, shipped projects, and GitHub activity — instead of resumes and reviews.";
+
+// Upwork predates the data-driven /vs/[slug] system and lives as a standalone
+// page; list it here explicitly alongside the data-driven comparisons.
+const ALL_COMPARISONS = [
+  {
+    slug: "upwork",
+    name: "Upwork",
+    tagline: "Proof-of-work hiring vs resumes and client reviews.",
+  },
+  ...COMPARISONS.map((c) => ({ slug: c.slug, name: c.name, tagline: c.tagline })),
+];
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -28,27 +39,26 @@ export const metadata: Metadata = {
   },
 };
 
-export default function GlossaryIndexPage() {
+export default function CompareIndexPage() {
   const breadcrumbLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
-      { "@type": "ListItem", position: 2, name: "Glossary", item: PAGE_URL },
+      { "@type": "ListItem", position: 2, name: "Compare", item: PAGE_URL },
     ],
   };
 
   const itemListLd = {
     "@context": "https://schema.org",
-    "@type": "DefinedTermSet",
-    name: "VibeTalent Glossary",
+    "@type": "ItemList",
+    name: "VibeTalent platform comparisons",
     url: PAGE_URL,
-    hasDefinedTerm: GLOSSARY_TERMS.map((t) => ({
-      "@type": "DefinedTerm",
-      "@id": `${siteUrl}/glossary/${t.slug}`,
-      name: t.shortLabel,
-      description: t.summary,
-      url: `${siteUrl}/glossary/${t.slug}`,
+    itemListElement: ALL_COMPARISONS.map((c, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: `VibeTalent vs ${c.name}`,
+      url: `${siteUrl}/vs/${c.slug}`,
     })),
   };
 
@@ -72,23 +82,25 @@ export default function GlossaryIndexPage() {
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
-          <BookOpen size={14} className="text-[var(--accent)]" />
-          Glossary
+          <Zap size={14} className="text-[var(--accent)]" />
+          Compare
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold uppercase text-[var(--foreground)] leading-tight">
-          The vocabulary of <span className="text-[var(--accent)]">vibe coding.</span>
+          VibeTalent <span className="text-[var(--text-muted)]">vs</span>{" "}
+          <span className="text-[var(--accent)]">the alternatives.</span>
         </h1>
         <p className="mt-4 text-[var(--text-secondary)] font-medium leading-relaxed max-w-2xl">
-          Core terms used across VibeTalent — vibe coding, vibe coders, coding streaks, vibe scores,
-          and the vibe coders marketplace — defined in one paragraph each so you can find the answer fast.
+          Every platform below can connect you with developers. Only VibeTalent ranks them on
+          verifiable proof of work — coding streaks, shipped projects, and GitHub activity — instead
+          of resumes, bids, and reviews. Here is how it stacks up.
         </p>
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
-        {GLOSSARY_TERMS.map((term) => (
+        {ALL_COMPARISONS.map((c) => (
           <Link
-            key={term.slug}
-            href={`/glossary/${term.slug}`}
+            key={c.slug}
+            href={`/vs/${c.slug}`}
             className="block p-6 transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
             style={{
               backgroundColor: "var(--bg-surface)",
@@ -97,13 +109,13 @@ export default function GlossaryIndexPage() {
             }}
           >
             <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-2">
-              {term.shortLabel}
+              VibeTalent vs {c.name}
             </h2>
-            <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed mb-3 line-clamp-4">
-              {term.summary}
+            <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed mb-3">
+              {c.tagline}
             </p>
             <span className="inline-flex items-center gap-1 text-xs font-bold uppercase text-[var(--accent)]">
-              Read definition <ArrowRight size={12} />
+              Read comparison <ArrowRight size={12} />
             </span>
           </Link>
         ))}

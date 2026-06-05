@@ -19,6 +19,8 @@ export type SolanaChainConfig = {
   receivingWallet: string;
   usdcMint: string;
   usdcDecimals: number;
+  vibeMint: string;
+  vibeDecimals: number;
   explorerUrl: string;
 };
 
@@ -43,6 +45,9 @@ export const CHAIN_CONFIGS: Record<string, ChainConfig> = {
     receivingWallet: "DYp2cUmgoBEYPxN9xPwiqKZoi5WR4SRAWJnLD1d5QAdT",
     usdcMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
     usdcDecimals: 6,
+    // $VIBE (Bags-launched, "VIBE TALENT"). Priced via GeckoTerminal — not on Jupiter.
+    vibeMint: "FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS",
+    vibeDecimals: 9,
     explorerUrl: "https://solscan.io/tx/",
   },
   // Future EVM chains — add contract addresses once deployed:
@@ -59,17 +64,12 @@ export const CHAIN_CONFIGS: Record<string, ChainConfig> = {
   // },
 };
 
-// Solana is intentionally excluded from the selectable chains. Its payment
-// flow is an unverified, unrecorded wallet-to-wallet USDC transfer, and the
-// featured grid is read solely from the Base contract — so a Solana payment
-// would take the user's money and grant no promotion. Keeping it out of
-// SUPPORTED_CHAINS removes it from the picker, which is the only place
-// `selectedChain` can be set, so the broken Solana path can never run.
-// Re-add it ONLY once a server-side flow verifies the transaction
-// (success + recipient + USDC mint + amount + signature uniqueness) and
-// records the grant. The `solana` entry in CHAIN_CONFIGS is retained for
-// that future work.
-export const SUPPORTED_CHAINS = Object.keys(CHAIN_CONFIGS).filter((k) => k !== "solana");
+// Solana payments are verified server-side before a promotion is granted:
+// POST /api/solana/verify checks the on-chain transfer (success, correct mint,
+// destination = receivingWallet, amount ≥ slippage floor, signature uniqueness)
+// and records the promotion in featured_promotions. Both USDC and $VIBE are
+// accepted on Solana. See docs/superpowers/specs/2026-05-30-solana-vibe-payments.
+export const SUPPORTED_CHAINS = Object.keys(CHAIN_CONFIGS);
 export const DEFAULT_CHAIN = "base";
 
 export function getChainConfig(chainKey: string): ChainConfig {

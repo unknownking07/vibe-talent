@@ -31,6 +31,14 @@ const FAQ_ITEMS = [
     a: "Vibe coding is the practice of building software using AI-powered IDEs and coding assistants like Claude Code, Cursor, Bolt, and Windsurf. Rather than following traditional development processes with lengthy planning cycles and sprints, vibe coders focus on staying in flow state, shipping features fast, and committing code every single day. The philosophy prioritizes working software in production over documentation, and consistency over sporadic bursts of activity. Vibe coders leverage AI to handle boilerplate and repetitive tasks, freeing them to focus on architecture decisions, product design, and rapid iteration. The result is developers who ship more, ship faster, and build a verifiable track record of daily output that speaks louder than any resume.",
   },
   {
+    q: "Where can I hire vibe coders?",
+    a: "VibeTalent is a vibe coders marketplace built specifically for hiring developers who ship with AI tools like Claude Code, Cursor, and Bolt. Browse builders ranked by coding streak, shipped-project quality, and vibe score on the Explore page and Leaderboard, or describe your project to VibeFinder Bot and get matched automatically. Hiring is direct and free — open any builder's profile, hit Hire, and message them with no middleman and no platform fees. Unlike general freelance sites such as Upwork or Fiverr, every ranking on VibeTalent is backed by verifiable GitHub activity rather than self-reported resumes.",
+  },
+  {
+    q: "What is the best marketplace to hire vibe coders?",
+    a: "The best vibe coders marketplace depends on what you value. General freelance platforms like Upwork, Fiverr, and Freelancer have the largest talent pools but rank developers on resumes and client reviews that are easy to game. VibeTalent takes the opposite approach: it is a developer-only marketplace where builders are ranked entirely on proof of work — daily GitHub commit streaks, deployed projects with live URLs, repository quality, and peer endorsements. If you want to hire a vibe coder based on what they actually ship rather than how they market themselves, VibeTalent is purpose-built for it, with zero platform fees and AI-powered matching through VibeFinder Bot.",
+  },
+  {
     q: "How does the VibeTalent vibe score work?",
     a: "The vibe score is VibeTalent's core reputation metric — a single number representing how consistently and effectively a developer ships code. It is calculated from four weighted components: coding streak days (40% weight), which measures consecutive days of GitHub commits; project quality scores (30% weight), based on GitHub repo health including stars, forks, commit frequency, and deployment status; GitHub activity (20% weight), covering commits, pull requests, code reviews, and issue participation; and peer endorsements (10% weight), where endorsements from higher-scored developers carry more weight. The score updates daily and is always based on verifiable, public data. It cannot be gamed through fake reviews or purchased followers — only real, consistent shipping moves the needle.",
   },
@@ -149,6 +157,8 @@ export default async function HomePage() {
                 "@id": `${siteUrl}/#organization`,
                 name: "VibeTalent",
                 url: siteUrl,
+                description:
+                  "VibeTalent is the vibe coders marketplace — hire AI-assisted developers ranked by coding streaks, shipped projects, and verifiable proof of work instead of resumes.",
                 logo: {
                   "@type": "ImageObject",
                   url: `${siteUrl}/og-image-v2.jpg`,
