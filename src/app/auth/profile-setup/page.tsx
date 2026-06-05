@@ -11,6 +11,8 @@ import {
   saveOnboardingProfile,
   type ProfileWriteClient,
 } from "@/lib/onboarding-profile";
+import { isUsernameTakenError, validateUsername } from "@/lib/username";
+import { useUsernameAvailability } from "@/lib/use-username-availability";
 import {
   Flame,
   Github,
@@ -127,7 +129,7 @@ export default function ProfileSetupPage() {
       const { data: userRow } = await (supabase.from("users") as any)
         .select("display_name, github_username, github_id")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
       if (userRow?.display_name) {
         setProfile((p) => ({ ...p, display_name: userRow.display_name }));
       }
@@ -187,7 +189,7 @@ export default function ProfileSetupPage() {
         const { data } = await (supabase.from("social_links") as any)
           .select("*")
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
         if (data) {
           setSocials({
             github: data.github || "",
@@ -205,12 +207,8 @@ export default function ProfileSetupPage() {
 
   const supabase = createClient();
 
-  const validateUsername = (value: string) => {
-    if (value.length < 3) return "Username must be at least 3 characters";
-    if (!/^[a-z0-9_]+$/.test(value))
-      return "Only lowercase letters, numbers, and underscores allowed";
-    return null;
-  };
+  // Live, debounced availability for the username field (shared with settings).
+  const usernameAvailability = useUsernameAvailability(profile.username);
 
   /* ── Step handlers ───────────────────────────────────────── */
 
@@ -269,9 +267,11 @@ export default function ProfileSetupPage() {
       }
       setStep(2);
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Failed to save profile";
-      setError(message);
+      if (isUsernameTakenError(err)) {
+        setError(`@${profile.username} is already taken — please choose another.`);
+      } else {
+        setError(err instanceof Error ? err.message : "Failed to save profile");
+      }
     } finally {
       setLoading(false);
     }
@@ -554,6 +554,25 @@ export default function ProfileSetupPage() {
         <p className="text-[10px] text-[var(--text-secondary)] mt-1">
           Min 3 chars. Lowercase letters, numbers, and underscores only.
         </p>
+        {(usernameAvailability.status === "checking" ||
+          usernameAvailability.status === "available" ||
+          usernameAvailability.status === "taken") && (
+          <p
+            className="text-[10px] font-bold mt-1"
+            style={{
+              color:
+                usernameAvailability.status === "available"
+                  ? "var(--status-success-text)"
+                  : usernameAvailability.status === "taken"
+                  ? "var(--status-error-text)"
+                  : "var(--text-secondary)",
+            }}
+          >
+            {usernameAvailability.status === "checking" && "Checking availability…"}
+            {usernameAvailability.status === "available" && "✓ Available"}
+            {usernameAvailability.status === "taken" && usernameAvailability.message}
+          </p>
+        )}
       </div>
 
       <div>
@@ -1001,7 +1020,7 @@ export default function ProfileSetupPage() {
                     .from("users")
                     .select("id, referral_count")
                     .eq("username", refCode)
-                    .single();
+                    .maybeSingle();
                   if (referrer) {
                     // Create referral record
                     await sb.from("referrals").insert({

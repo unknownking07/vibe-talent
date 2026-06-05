@@ -190,9 +190,9 @@ export default function DashboardPage() {
       try {
       // Fetch profile + projects + socials + streaks + inbox ALL in parallel (single round trip)
       const results = await Promise.allSettled([
-        sb.from("users").select("*").eq("id", authUser.id).single(),
+        sb.from("users").select("*").eq("id", authUser.id).maybeSingle(),
         sb.from("projects").select("*").eq("user_id", authUser.id).order("created_at", { ascending: false }),
-        sb.from("social_links").select("*").eq("user_id", authUser.id).single(),
+        sb.from("social_links").select("*").eq("user_id", authUser.id).maybeSingle(),
         fetchStreakLogs(authUser.id),
         sb.from("hire_requests").select("*").eq("builder_id", authUser.id).order("created_at", { ascending: false }),
       ]);
@@ -560,11 +560,11 @@ export default function DashboardPage() {
     if (!authUser) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
-    const { data: profile } = await sb.from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, referral_count, created_at").eq("id", authUser.id).single();
+    const { data: profile } = await sb.from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, referral_count, created_at").eq("id", authUser.id).maybeSingle();
     if (!profile) return;
     const [{ data: projects }, { data: socials }, streakData] = await Promise.all([
       sb.from("projects").select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at").eq("user_id", authUser.id).order("created_at", { ascending: false }),
-      sb.from("social_links").select("id, user_id, twitter, telegram, github, website, farcaster").eq("user_id", authUser.id).single(),
+      sb.from("social_links").select("id, user_id, twitter, telegram, github, website, farcaster").eq("user_id", authUser.id).maybeSingle(),
       fetchStreakLogs(authUser.id),
     ]);
     setUser({ ...profile, projects: projects || [], social_links: socials || null });
