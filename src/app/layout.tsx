@@ -23,7 +23,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "VibeTalent — Find Vibe Coders Who Actually Ship",
+    default: "Vibe Coders Marketplace — Hire Builders Who Ship | VibeTalent",
     template: "%s | VibeTalent",
   },
   description:
