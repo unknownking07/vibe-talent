@@ -327,13 +327,14 @@ export function NetworkFeed({
               style={{
                 display: "grid",
                 gridTemplateColumns: "auto 1fr",
-                gap: "0.875rem",
+                gap: "16px",
                 alignItems: "center",
-                padding: "0.875rem 0",
+                padding: "24px 0 24px 16px",
+                borderLeft: "3px solid transparent",
                 borderBottom: "1px solid var(--border-subtle, #2a2a2a)",
               }}
             >
-              <div className="skeleton" style={{ width: 44, height: 44, borderRadius: "50%" }} />
+              <div className="skeleton" style={{ width: 48, height: 48, borderRadius: "50%" }} />
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div className="skeleton" style={{ height: 12, width: "42%" }} />
                 <div className="skeleton" style={{ height: 14, width: "68%" }} />

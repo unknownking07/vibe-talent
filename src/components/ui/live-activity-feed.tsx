@@ -158,6 +158,7 @@ function ActivitySkeletonRow({ last }: { last: boolean }) {
 export function LiveActivityFeed() {
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     function fetchFeed() {
@@ -170,8 +171,12 @@ export function LiveActivityFeed() {
           );
           setFeed(items);
           setLoaded(true);
+          setError(null);
         })
-        .catch(() => setLoaded(true));
+        .catch(() => {
+          setError("Couldn't load live activity");
+          setLoaded(true);
+        });
     }
     fetchFeed();
     const interval = setInterval(fetchFeed, 30000);
@@ -187,6 +192,16 @@ export function LiveActivityFeed() {
       {Array.from({ length: 5 }).map((_, i) => (
         <ActivitySkeletonRow key={i} last={i === 4} />
       ))}
+    </FeedShell>
+  );
+  // Failed fetch with nothing cached to show — give explicit feedback rather
+  // than silently rendering an empty section. (Stale items survive a transient
+  // refetch error: the rows path below still wins when `grouped` is non-empty.)
+  if (error && grouped.length === 0) return (
+    <FeedShell>
+      <div style={{ padding: "1.5rem 1.25rem", textAlign: "center", color: "var(--text-muted, #8a8a8a)", fontSize: "0.85rem" }}>
+        Couldn&apos;t load live activity.
+      </div>
     </FeedShell>
   );
   if (grouped.length === 0) return null;

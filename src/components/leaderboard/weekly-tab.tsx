@@ -12,9 +12,14 @@ interface Props {
  * weekly fetch resolves. The "ACTIVE BUILDERS / LAST 7 DAYS" header is static
  * chrome, so it renders immediately rather than shimmering.
  */
-function WeeklyShell({ children }: { children: ReactNode }) {
+function WeeklyShell({ children, loading }: { children: ReactNode; loading?: boolean }) {
   return (
-    <div className="bg-[var(--bg-surface)] border-2 border-[var(--border-hard)] rounded overflow-hidden" style={{ boxShadow: "var(--shadow-brutal)" }}>
+    <div
+      className="bg-[var(--bg-surface)] border-2 border-[var(--border-hard)] rounded overflow-hidden"
+      style={{ boxShadow: "var(--shadow-brutal)" }}
+      aria-busy={loading || undefined}
+      aria-label={loading ? "Loading active builders" : undefined}
+    >
       <header className="bg-[var(--bg-inverted)] text-[var(--text-on-inverted)] px-5 py-4 flex justify-between items-center">
         <h3 className="text-[15px] font-extrabold tracking-wider">ACTIVE BUILDERS</h3>
         <span className="bg-[var(--accent)] text-white px-3 py-1 text-[12px] font-extrabold rounded-sm">LAST 7 DAYS</span>
@@ -70,7 +75,7 @@ export function WeeklyTab({ rows, error }: Props) {
   }
   if (rows == null) {
     return (
-      <WeeklyShell>
+      <WeeklyShell loading>
         {Array.from({ length: 6 }).map((_, i) => (
           <SkeletonRow key={i} />
         ))}
