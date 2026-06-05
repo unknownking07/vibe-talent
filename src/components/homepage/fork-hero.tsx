@@ -28,7 +28,7 @@ export function ForkHero({ stats }: ForkHeroProps) {
             className="inline-flex items-center gap-2 px-4 py-1.5 text-sm font-bold uppercase tracking-wide text-[var(--foreground)] mb-6"
             style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)", boxShadow: "var(--shadow-brutal-sm)" }}
           >
-            <span>Proof of work, not résumés</span>
+            <span>The vibe coders marketplace</span>
           </div>
 
           <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight uppercase text-[var(--foreground)]">
