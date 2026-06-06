@@ -138,10 +138,10 @@ async function waitForTx(txHash: string, rpcUrl: string = BASE_RPC, timeout = 60
 
 type UserProject = { id: string; title: string };
 
-type Props = { onSuccess: () => void; isLoggedIn: boolean };
+type Props = { onSuccess: () => void; isLoggedIn: boolean; preselectedProjectId?: string };
 
 export const FeatureYourProjectCard = forwardRef<HTMLDivElement, Props>(function FeatureYourProjectCard(
-  { onSuccess, isLoggedIn },
+  { onSuccess, isLoggedIn, preselectedProjectId },
   ref,
 ) {
   if (!PRIVY_CONFIGURED) {
@@ -213,13 +213,18 @@ export const FeatureYourProjectCard = forwardRef<HTMLDivElement, Props>(function
         },
       }}
     >
-      <FeatureCardBody ref={ref} onSuccess={onSuccess} isLoggedIn={isLoggedIn} />
+      <FeatureCardBody
+        ref={ref}
+        onSuccess={onSuccess}
+        isLoggedIn={isLoggedIn}
+        preselectedProjectId={preselectedProjectId}
+      />
     </PrivyProvider>
   );
 });
 
 const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBody(
-  { onSuccess, isLoggedIn },
+  { onSuccess, isLoggedIn, preselectedProjectId },
   ref,
 ) {
   const {
@@ -259,7 +264,14 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .then(({ data }) => {
-          setProjects(data || []);
+          const loaded: UserProject[] = data || [];
+          setProjects(loaded);
+          // Default the dropdown to the preselected project (deep link from
+          // /pricing's ?project= param) when it belongs to this user; otherwise
+          // leave the placeholder selected.
+          if (preselectedProjectId && loaded.some((p) => p.id === preselectedProjectId)) {
+            setSelectedProject(preselectedProjectId);
+          }
           setLoadingProjects(false);
         });
     };
@@ -285,7 +297,7 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [preselectedProjectId]);
 
   async function handleConnectWallet() {
     if (!isLoggedIn) {

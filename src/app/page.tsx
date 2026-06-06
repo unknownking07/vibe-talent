@@ -1,8 +1,7 @@
 import { LiveActivityFeed } from "@/components/ui/live-activity-feed";
 import { jsonLdHtml } from "@/lib/json-ld";
 import { NetworkFeed } from "@/components/feed/network-feed";
-import { EndGameLadder } from "@/components/homepage/end-game-ladder";
-import { FeaturedCarousel } from "@/components/ui/featured-carousel";
+import { ForkHero } from "@/components/homepage/fork-hero";
 import Link from "next/link";
 import { VibecoderCard } from "@/components/ui/vibecoder-card";
 import { ProjectCard } from "@/components/ui/project-card";
@@ -15,7 +14,7 @@ import {
   type HomepageFeedItem,
 } from "@/lib/homepage-feed";
 import { siteUrl } from "@/lib/seo";
-import { Flame, TrendingUp, Award, Zap, ArrowRight, Code2, Target, Users } from "lucide-react";
+import { Flame, Trophy, GitCommitHorizontal, Zap, ArrowRight } from "lucide-react";
 
 // Feature flag: gates the new homepage feed section. When false (or unset),
 // the homepage renders the existing `<LiveActivityFeed />` snippet exactly
@@ -57,7 +56,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Is VibeTalent free to use?",
-    a: "Yes, VibeTalent is free for developers. Creating a profile, connecting your GitHub account, building your streak, earning badges, adding projects, and getting discovered by clients costs nothing. Rankings are based entirely on merit — your vibe score, streak, and project quality determine your visibility. The one optional paid feature is Featured Projects: developers can pay with USDC (on Base network) to pin a project to the homepage carousel for extra visibility. This is purely optional and does not affect your vibe score, badge level, or search ranking. Simply sign up, start coding every day, add your best projects, and let your proof of work attract opportunities.",
+    a: "Yes, VibeTalent is free for developers. Creating a profile, connecting your GitHub account, building your streak, earning badges, adding projects, and getting discovered by clients costs nothing. Rankings are based entirely on merit — your vibe score, streak, and project quality determine your visibility. The one optional paid feature is Featured Projects: developers can pay to feature a project for extra visibility where people browse projects. This is purely optional and does not affect your vibe score, badge level, or search ranking. Simply sign up, start coding every day, add your best projects, and let your proof of work attract opportunities.",
   },
 ];
 
@@ -116,6 +115,21 @@ export default async function HomePage() {
   const showFeedV2 =
     HOMEPAGE_FEED_V2_ENABLED && homepageFeed.length >= SPARSE_THRESHOLD;
 
+  // "How it works" — three steps that merge the old "What is Vibe Coding",
+  // "Why Streaks Matter", and end-game-ladder sections into one story.
+  const steps = [
+    { icon: GitCommitHorizontal, n: "01", title: "Ship daily", desc: "Commit every day. VibeTalent verifies your GitHub and builds your streak automatically." },
+    { icon: Flame, n: "02", title: "Build your Vibe Score", desc: "Streaks, project quality, and endorsements roll into one reputation number that can't be faked." },
+    { icon: Trophy, n: "03", title: "Get discovered & earn badges", desc: "Climb the leaderboard, unlock Bronze → Diamond badges, and let clients find you by proof of work." },
+  ];
+
+  const badges = [
+    { label: "Bronze", days: 30, color: "#D97706", width: "8%" },
+    { label: "Silver", days: 90, color: "var(--text-muted)", width: "25%" },
+    { label: "Gold", days: 180, color: "#CA8A04", width: "50%" },
+    { label: "Diamond", days: 365, color: "#0891B2", width: "100%" },
+  ];
+
   return (
     <div>
       <script
@@ -168,65 +182,61 @@ export default async function HomePage() {
         }}
       />
 
-      {/* Hero */}
-      <section className="relative">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-14 pb-10 text-center">
-          <div
-            className="inline-flex items-center gap-2 px-4 py-1.5 text-sm font-bold uppercase tracking-wide text-[var(--foreground)] mb-6"
-            style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "2px solid var(--border-hard)",
-              boxShadow: "var(--shadow-brutal-sm)",
-            }}
-          >
-            <span>The vibe coders marketplace</span>
+      {/* Hero — explicit builder/hiring fork + shared proof strip */}
+      <ForkHero
+        stats={{
+          totalBuilders,
+          totalProjects,
+          avgStreak,
+          topVibers: topVibecoders.length,
+        }}
+      />
+
+      {/* How it works — merged from the old "What is Vibe Coding",
+          "Why Streaks Matter", and end-game-ladder sections into one
+          three-step story plus the streak-milestone badge ladder. */}
+      <section
+        style={{ borderTop: "2px solid var(--border-hard)", borderBottom: "2px solid var(--border-hard)", backgroundColor: "var(--bg-surface)" }}
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-16">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">How it works</h2>
+            <p className="mt-3 text-[var(--text-secondary)] font-medium max-w-2xl mx-auto">
+              Three steps. No resumes, no portfolios — just proof you show up and ship.
+            </p>
           </div>
 
-          <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight uppercase text-[var(--foreground)]">
-            Find Vibe Coders Who
-            <br />
-            <span className="text-accent-brutal">
-              Actually Ship.
-            </span>
-          </h1>
-
-          <p className="mx-auto mt-5 max-w-2xl text-lg text-[var(--text-secondary)] font-medium">
-            A marketplace built on consistency and proof of work. No resumes. No portfolios.
-            Just streaks, shipped projects, and vibe scores.
-          </p>
-
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <HeroCTA />
-            <Link
-              href="/explore"
-              className="btn-brutal btn-brutal-secondary text-base"
-            >
-              Explore Talent
-            </Link>
-          </div>
-
-          {/* Stats */}
-          <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto stagger-children">
-            {[
-              { label: "Active Builders", value: String(totalBuilders), icon: Users },
-              { label: "Projects Shipped", value: String(totalProjects), icon: Code2 },
-              { label: "Avg. Streak", value: `${avgStreak} ${avgStreak === 1 ? "day" : "days"}`, icon: Flame },
-              { label: "Top Vibers", value: String(topVibecoders.length), icon: Target },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className="text-center p-3"
-                style={{
-                  backgroundColor: "var(--bg-surface)",
-                  border: "2px solid var(--border-hard)",
-                  boxShadow: "var(--shadow-brutal-sm)",
-                }}
-              >
-                <stat.icon size={18} className="mx-auto text-[var(--accent)] mb-1.5" />
-                <div className="text-xl font-extrabold text-[var(--foreground)] font-mono">{stat.value}</div>
-                <div className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mt-0.5">{stat.label}</div>
+          <div className="grid gap-6 sm:grid-cols-3 stagger-children">
+            {steps.map((s) => (
+              <div key={s.n} className="card-brutal p-6">
+                <div className="flex items-center justify-between">
+                  <s.icon size={28} className="text-[var(--accent)]" />
+                  <span className="font-mono text-2xl font-black text-[var(--border-subtle)]">{s.n}</span>
+                </div>
+                <h3 className="mt-4 text-lg font-extrabold uppercase text-[var(--foreground)]">{s.title}</h3>
+                <p className="mt-2 text-sm text-[var(--text-secondary)] font-medium">{s.desc}</p>
               </div>
             ))}
+          </div>
+
+          {/* Badge ladder folded in as the visual for step 3 */}
+          <div className="mt-10 max-w-3xl mx-auto">
+            <p className="text-center text-[11px] font-extrabold uppercase tracking-widest text-[var(--text-muted)] mb-4">
+              Streak milestones
+            </p>
+            <div className="grid sm:grid-cols-2 gap-x-8 gap-y-4">
+              {badges.map((b) => (
+                <div key={b.label}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-bold uppercase text-[var(--foreground)]">{b.label}</span>
+                    <span className="font-bold text-[var(--text-muted)]">{b.days} days</span>
+                  </div>
+                  <div className="h-3.5" style={{ backgroundColor: "var(--border-subtle)", border: "2px solid var(--border-hard)" }}>
+                    <div className="h-full" style={{ backgroundColor: b.color, width: b.width }} />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -242,114 +252,6 @@ export default async function HomePage() {
         ) : (
           <LiveActivityFeed />
         )}
-      </section>
-
-      {/* End-game ladder — answers Meta Alchemist's "what's the goal" gap.
-          Always rendered (no flag): it's purely additive marketing copy
-          that complements every variant of the feed above it. */}
-      <EndGameLadder />
-
-      <FeaturedCarousel />
-
-      {/* What is Vibe Coding */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">What is Vibe Coding?</h2>
-          <p className="mt-3 text-[var(--text-secondary)] font-medium max-w-2xl mx-auto">
-            Vibe coding is the art of building software in flow state — shipping fast,
-            staying consistent, and letting the code speak for itself.
-          </p>
-        </div>
-
-        <div className="grid sm:grid-cols-3 gap-6">
-          {[
-            {
-              icon: Flame,
-              title: "Ship Every Day",
-              description: "Build a streak by coding and shipping consistently. Your streak is your proof of commitment.",
-            },
-            {
-              icon: TrendingUp,
-              title: "Build Your Score",
-              description: "Your Vibe Score combines streaks, projects, and badges into a single reputation metric.",
-            },
-            {
-              icon: Award,
-              title: "Earn Badges",
-              description: "Unlock Bronze, Silver, Gold, and Diamond badges as your streak grows. Proof of consistency.",
-            },
-          ].map((item) => (
-            <div
-              key={item.title}
-              className="card-brutal p-6 transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
-            >
-              <item.icon size={28} className="text-[var(--accent)]" />
-              <h3 className="mt-4 text-lg font-extrabold uppercase text-[var(--foreground)]">{item.title}</h3>
-              <p className="mt-2 text-sm text-[var(--text-secondary)] font-medium">{item.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Why Streaks Matter */}
-      <section
-        style={{
-          borderTop: "2px solid var(--border-hard)",
-          borderBottom: "2px solid var(--border-hard)",
-          backgroundColor: "var(--bg-surface)",
-        }}
-      >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
-          <div className="grid sm:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">Why do coding streaks matter?</h2>
-              <p className="mt-4 text-[var(--text-secondary)] font-medium leading-relaxed">
-                Anyone can build a portfolio in a weekend. But maintaining a 90-day coding streak?
-                That takes real dedication. Streaks prove you are not just talented — you are consistent.
-              </p>
-              <div className="mt-6 space-y-3">
-                {[
-                  "Consistency beats talent in the long run",
-                  "Streaks show discipline, not just skill",
-                  "Clients want builders who show up every day",
-                  "Your streak is your unfakeable resume",
-                ].map((point) => (
-                  <div key={point} className="flex items-center gap-3">
-                    <div
-                      className="h-3 w-3 shrink-0"
-                      style={{ backgroundColor: "var(--accent)", border: "1px solid var(--border-hard)" }}
-                    />
-                    <span className="text-sm font-semibold text-[var(--foreground)]">{point}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-4">
-              {[
-                { label: "Bronze Badge", days: 30, color: "#D97706", width: "8%" },
-                { label: "Silver Badge", days: 90, color: "var(--text-muted)", width: "25%" },
-                { label: "Gold Badge", days: 180, color: "#CA8A04", width: "50%" },
-                { label: "Diamond Badge", days: 365, color: "#0891B2", width: "100%" },
-              ].map((badge) => (
-                <div key={badge.label}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-bold text-[var(--foreground)] uppercase">{badge.label}</span>
-                    <span className="font-bold text-[var(--text-muted)]">{badge.days} days</span>
-                  </div>
-                  <div
-                    className="h-4"
-                    style={{ backgroundColor: "var(--border-subtle)", border: "2px solid var(--border-hard)" }}
-                  >
-                    <div
-                      className="h-full"
-                      style={{ backgroundColor: badge.color, width: badge.width }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* Top Vibecoders */}
@@ -383,7 +285,7 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* Featured Projects */}
+      {/* Recent projects — organic (paid featuring lives on /projects) */}
       <section
         style={{
           borderTop: "2px solid var(--border-hard)",
@@ -394,7 +296,7 @@ export default async function HomePage() {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">What are vibe coders building?</h2>
-              <p className="mt-2 text-[var(--text-secondary)] font-medium">Featured projects built by vibe coders, shipped fast</p>
+              <p className="mt-2 text-[var(--text-secondary)] font-medium">Latest projects built by vibe coders, shipped fast</p>
             </div>
             <Link
               href="/projects"
@@ -501,7 +403,7 @@ export default async function HomePage() {
           <h2 className="text-3xl sm:text-4xl font-extrabold uppercase text-white">Join the Marketplace</h2>
           <p className="mt-4 text-[var(--text-muted-soft)] font-medium max-w-xl mx-auto">
             Start building your vibe coding reputation today. Create a profile,
-            start your streak, and let VibeFinder Bot match you with clients.
+            start your streak, and let your proof of work get you discovered.
           </p>
           <HeroCTA
             className="mt-8 inline-flex"

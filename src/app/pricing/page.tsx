@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { jsonLdHtml } from "@/lib/json-ld";
 import Link from "next/link";
 import { Megaphone, Wallet, Shield, ArrowRight, HelpCircle } from "lucide-react";
 import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
 import { getPriceSnapshot, formatUsd, type PriceSnapshot } from "@/lib/pricing";
 import { PricingTiers } from "./pricing-tiers";
+import { FeatureCheckout } from "./feature-checkout";
 
 const PAGE_TITLE = "Featured Project Pricing & Guidelines";
 const PAGE_URL = `${siteUrl}/pricing`;
@@ -192,8 +194,11 @@ export default async function PricingPage() {
         </div>
         <ol className="list-decimal pl-6 space-y-2 text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
           <li>
-            Click <strong className="text-[var(--foreground)]">Connect Wallet</strong> on the homepage Featured
-            Projects card. We support Privy-managed EVM (MetaMask, Rabby, Coinbase, Rainbow) and Solana (Phantom,
+            Click <strong className="text-[var(--foreground)]">Connect Wallet</strong> in the{" "}
+            <Link href="#feature-checkout" className="underline" style={{ color: "var(--accent)" }}>
+              Feature Your Project
+            </Link>{" "}
+            section below. We support Privy-managed EVM (MetaMask, Rabby, Coinbase, Rainbow) and Solana (Phantom,
             Backpack, Solflare) wallets.
           </li>
           <li>Pick the project you want to promote and a tier from the live pricing above.</li>
@@ -206,6 +211,13 @@ export default async function PricingPage() {
           </li>
         </ol>
       </section>
+
+      {/* On-page checkout — re-homed here after the homepage's sponsored carousel
+          was removed, so featured slots stay purchasable. Suspense boundary is
+          required because FeatureCheckout reads search params (?project=). */}
+      <Suspense fallback={null}>
+        <FeatureCheckout />
+      </Suspense>
 
       {/* Guidelines */}
       <section
@@ -277,7 +289,7 @@ export default async function PricingPage() {
       {/* CTA */}
       <div className="mt-10 flex flex-col sm:flex-row items-center gap-3">
         <Link
-          href="/#featured-projects"
+          href="#feature-checkout"
           className="btn-brutal btn-brutal-primary btn-notched text-sm flex items-center gap-2"
         >
           Feature My Project <ArrowRight size={14} />
