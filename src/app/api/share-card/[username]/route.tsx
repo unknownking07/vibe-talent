@@ -28,15 +28,8 @@ export async function GET(
     ? (user.bio.length > 22 ? user.bio.slice(0, 22) + "..." : user.bio)
     : "vibecoder";
   const displayName = user.display_name || `@${user.username}`;
-  // Dynamic font size: available width ~390px, uppercase system-ui ~0.62× fontSize + 4px letter-spacing per char
-  // Names >12 chars: subtract 50px for verified badge (36px icon + 14px gap)
-  const NAME_AVAILABLE_PX = displayName.length > 12 ? 340 : 390;
-  const CHAR_WIDTH_RATIO = 0.62;
-  const LETTER_SPACING_PX = 4;
-  const nameFontSize = Math.max(
-    16,
-    Math.min(42, Math.floor((NAME_AVAILABLE_PX / displayName.length - LETTER_SPACING_PX) / CHAR_WIDTH_RATIO))
-  );
+  const hasBadge = Boolean(user.github_username);
+  const nameFontSize = fitNameFontSize(displayName, hasBadge);
   const streakStr = String(user.streak).padStart(2, "0");
   const longestStr = String(user.longest_streak).padStart(2, "0");
   const projectsStr = String((user.projects ?? []).length).padStart(2, "0");
@@ -236,7 +229,7 @@ export async function GET(
 
               {/* Name + badge */}
               <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minWidth: 0, overflow: "hidden" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0, overflow: "hidden" }}>
                   <span
                     style={{
                       fontSize: nameFontSize,
@@ -246,6 +239,7 @@ export async function GET(
                       letterSpacing: "4px",
                       lineHeight: 1,
                       whiteSpace: "nowrap",
+                      overflow: "hidden",
                     }}
                   >
                     {displayName}
@@ -419,4 +413,12 @@ export async function GET(
     ),
     { width: 1200, height: 630 }
   );
+}
+
+/** Estimate a clamped font size so the name fits within the profile card. */
+function fitNameFontSize(name: string, hasBadge: boolean): number {
+  const available = hasBadge ? 340 : 390; // 50px reserved for badge (36px icon + 14px gap)
+  const charWidth = 0.62; // uppercase system-ui glyph ratio
+  const spacing = 4; // letter-spacing per char
+  return Math.max(16, Math.min(42, Math.floor((available / name.length - spacing) / charWidth)));
 }
