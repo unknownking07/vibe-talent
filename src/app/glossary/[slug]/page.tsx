@@ -73,7 +73,7 @@ export default async function GlossaryTermPage({
       name: "VibeTalent Glossary",
       url: `${siteUrl}/glossary`,
     },
-    dateModified: "2026-05-22",
+    dateModified: term.dateModified ?? "2026-05-22",
   };
 
   const related = term.related

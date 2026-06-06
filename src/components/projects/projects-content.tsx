@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, ChevronDown } from "lucide-react";
 import { ProjectCard } from "@/components/ui/project-card";
 import { Pagination } from "@/components/ui/pagination";
 import type { Project } from "@/lib/types/database";
@@ -101,15 +101,21 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
           />
         </div>
         <div className="flex gap-3">
-          <select
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value as SortOption)}
-            className="px-4 py-2.5 border-2 border-[var(--border-hard)] bg-[var(--card-bg)] text-[var(--foreground)] font-bold text-sm uppercase cursor-pointer focus:outline-none focus:border-[var(--accent)]"
-          >
-            <option value="newest">Newest</option>
-            <option value="endorsements">Most Endorsed</option>
-            <option value="quality">Highest Quality</option>
-          </select>
+          <div className="relative">
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value as SortOption)}
+              className="appearance-none pl-4 pr-10 py-2.5 border-2 border-[var(--border-hard)] bg-[var(--card-bg)] text-[var(--foreground)] font-bold text-sm uppercase cursor-pointer focus:outline-none focus:border-[var(--accent)]"
+            >
+              <option value="newest">Newest</option>
+              <option value="endorsements">Most Endorsed</option>
+              <option value="quality">Highest Quality</option>
+            </select>
+            <ChevronDown
+              size={16}
+              className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-secondary)]"
+            />
+          </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-4 py-2.5 border-2 font-bold text-sm uppercase transition-colors ${

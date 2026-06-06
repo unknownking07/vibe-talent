@@ -18,11 +18,15 @@ const exploreSubLinks = [
 const navLinks = [
   { href: "/feed", label: "Feed" },
   { href: "/leaderboard", label: "Leaderboard" },
-  { href: "/agent", label: "AI Agents" },
   { href: "/dashboard", label: "Dashboard" },
 ];
 
 const DOCS_URL = "https://vibe-talent.gitbook.io/untitled";
+
+// Secondary routes demoted out of the primary bar into the "More" overflow
+// dropdown — still reachable, just not competing with the core nav. AI Agents
+// is an internal route; Docs is the external GitBook (rendered as an <a>).
+const moreLinks = [{ href: "/agent", label: "AI Agents" }];
 
 export type NavbarProfile = {
   username: string;
@@ -121,6 +125,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
   });
   const [hasUnloggedActivity, setHasUnloggedActivity] = useState(false);
   const [exploreOpen, setExploreOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   // Gates the auth-dependent right side of the navbar (desktop CTA / avatar,
   // mobile bell / avatar). Stays false through SSR + the first client render
   // so the served HTML matches hydration, then flips to true inside the mount
@@ -132,10 +137,12 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
   const [authMounted, setAuthMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const exploreRef = useRef<HTMLDivElement>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
   // Reference to the avatar button so we can restore focus to it when the
   // dropdown closes via Escape — required for keyboard / screen-reader users.
   const avatarTriggerRef = useRef<HTMLButtonElement>(null);
   const exploreTriggerRef = useRef<HTMLButtonElement>(null);
+  const moreTriggerRef = useRef<HTMLButtonElement>(null);
   // Mirror isLoggedIn into a ref so checkTodayLogged (a stable useCallback)
   // can read the latest auth state without going stale across re-renders.
   // Critical for the visibilitychange / streak-updated listeners — without
@@ -359,6 +366,28 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
     };
   }, [exploreOpen]);
 
+  // Same outside-click + Escape handling for the "More" overflow dropdown.
+  useEffect(() => {
+    if (!moreOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
+    }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setMoreOpen(false);
+        moreTriggerRef.current?.focus();
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [moreOpen]);
+
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -473,20 +502,62 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               )}
             </Link>
           ))}
-          <a
-            href={DOCS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-brutal ml-2 text-xs py-1.5 px-3 font-bold uppercase tracking-wide whitespace-nowrap"
-            style={{
-              backgroundColor: "var(--accent)",
-              color: "var(--text-on-inverted)",
-              border: "2px solid var(--border-hard)",
-              boxShadow: "var(--shadow-brutal-sm)",
-            }}
+          {/* "More" overflow dropdown — holds secondary routes (AI Agents,
+              Docs) demoted out of the primary bar. Same state-driven pattern
+              as Explore above so it works for pointer + keyboard users. */}
+          <div
+            className="relative"
+            ref={moreRef}
+            onMouseEnter={() => setMoreOpen(true)}
+            onMouseLeave={() => setMoreOpen(false)}
           >
-            Docs
-          </a>
+            <button
+              ref={moreTriggerRef}
+              type="button"
+              onClick={() => setMoreOpen((v) => !v)}
+              aria-haspopup="true"
+              aria-expanded={moreOpen}
+              className="flex items-center gap-1 px-4 py-2 text-sm font-bold uppercase tracking-wide transition-colors"
+              style={{
+                color: pathname === "/agent" ? "var(--accent)" : "var(--foreground)",
+                borderBottom: pathname === "/agent" ? "2px solid var(--accent)" : "2px solid transparent",
+              }}
+            >
+              More <ChevronDown size={12} />
+            </button>
+            <div
+              className={`absolute right-0 top-full mt-0 ${moreOpen ? "flex" : "hidden"} flex-col min-w-[160px] py-1 z-50`}
+              style={{
+                border: "2px solid var(--border-hard)",
+                boxShadow: "var(--shadow-brutal-sm)",
+                backgroundColor: "var(--bg-surface)",
+              }}
+            >
+              {moreLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMoreOpen(false)}
+                  className="px-4 py-2.5 text-sm font-bold uppercase tracking-wide transition-colors hover:bg-[var(--accent)]/10"
+                  style={{
+                    color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
+                  }}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <a
+                href={DOCS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMoreOpen(false)}
+                className="px-4 py-2.5 text-sm font-bold uppercase tracking-wide transition-colors hover:bg-[var(--accent)]/10"
+                style={{ color: "var(--foreground)" }}
+              >
+                Docs
+              </a>
+            </div>
+          </div>
           <div className="ml-2">
             <ThemeToggle />
           </div>
@@ -787,16 +858,39 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               )}
             </Link>
           ))}
-          <a
-            href={DOCS_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => setMobileOpen(false)}
-            className="block px-4 py-3 text-sm font-bold uppercase tracking-wide"
-            style={{ color: "var(--accent)" }}
-          >
-            How to Use
-          </a>
+          {/* Secondary routes grouped under a "More" label so the primary
+              mobile set (Explore, Feed, Leaderboard, Dashboard) stays clean. */}
+          <div className="mt-1 pt-1" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+            <span
+              className="block px-4 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-widest"
+              style={{ color: "var(--text-muted)" }}
+            >
+              More
+            </span>
+            {moreLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileOpen(false)}
+                className="relative inline-block px-4 py-3 text-sm font-bold uppercase tracking-wide"
+                style={{
+                  color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
+                }}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <a
+              href={DOCS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setMobileOpen(false)}
+              className="block px-4 py-3 text-sm font-bold uppercase tracking-wide"
+              style={{ color: "var(--foreground)" }}
+            >
+              Docs
+            </a>
+          </div>
           {isLoggedIn ? (
             <>
             {userProfile && (

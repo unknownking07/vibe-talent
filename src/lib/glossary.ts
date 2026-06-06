@@ -13,6 +13,10 @@ export type GlossaryTerm = {
   body: string[];
   related: string[];
   metaDescription: string;
+  // Optional ISO date for this term's last meaningful content change. Drives
+  // the DefinedTerm `dateModified` and the sitemap `<lastmod>` so newer terms
+  // signal freshness for crawling/indexing. Falls back to the glossary-wide date.
+  dateModified?: string;
 };
 
 export const GLOSSARY_TERMS: GlossaryTerm[] = [
@@ -27,7 +31,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       "The philosophy treats AI coding tools as the new primitive. Claude Code, Cursor, Bolt, and Windsurf handle boilerplate, scaffolding, and repetitive logic, freeing the developer to focus on product decisions, architecture, and rapid iteration. The result is that one motivated vibe coder can ship what previously took a full team — but only if they actually do it every day.",
       "Consistency matters more than raw talent in this model. A vibe coder with a 200-day coding streak is more valuable than one with a polished resume but irregular output, because the streak is verifiable proof of work that cannot be faked. That is why VibeTalent ranks developers on shipping signals — streaks, deployed projects, and repo health — instead of credentials.",
     ],
-    related: ["vibe-coder", "coding-streak", "vibe-score"],
+    related: ["vibe-coder", "vibe-coders-marketplace", "coding-streak", "vibe-score"],
     metaDescription:
       "Vibe coding means building software with AI tools like Claude Code, Cursor, and Bolt — staying in flow, shipping every day, and letting working code be the resume.",
   },
@@ -42,7 +46,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       "The most distinctive trait is daily shipping. A vibe coder commits to GitHub every day, deploys updates frequently, and treats their public repos as a living portfolio. This is fundamentally different from a developer with a strong resume but sporadic output — clients can verify a vibe coder's work in seconds by checking their commit history, demo links, and project quality.",
       "VibeTalent surfaces vibe coders by ranking them on verifiable signals: coding streak length, project shipping rate, repo health (stars, forks, deployment status), and peer endorsements from other vibe coders. The leaderboard rewards builders who show up every day, not those who interview well.",
     ],
-    related: ["vibe-coding", "coding-streak", "vibe-score"],
+    related: ["vibe-coding", "vibe-coders-marketplace", "coding-streak", "vibe-score"],
     metaDescription:
       "A vibe coder is a developer who ships code daily using AI tools and proves their skill through coding streaks, deployed projects, and public GitHub activity.",
   },
@@ -75,6 +79,22 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     related: ["coding-streak", "vibe-coder", "vibe-coding"],
     metaDescription:
       "A vibe score is VibeTalent's reputation metric: 40% streak + 30% project quality + 20% GitHub activity + 10% peer endorsements. Updated daily from verifiable data.",
+  },
+  {
+    slug: "vibe-coders-marketplace",
+    title: "What is a vibe coders marketplace?",
+    shortLabel: "Vibe Coders Marketplace",
+    summary:
+      "A vibe coders marketplace is a hiring platform that connects clients with developers who build using AI coding tools — and ranks them by verifiable proof of work instead of resumes. On VibeTalent, builders are surfaced by their coding streak, shipped-project quality, and GitHub activity, so clients can hire vibe coders based on what they actually ship rather than how well they interview.",
+    body: [
+      "A vibe coders marketplace is where clients go to find and hire developers who work in the vibe coding style — shipping software fast with AI assistants like Claude Code, Cursor, Bolt, and Windsurf. The phrase is sometimes written \"vibe coding marketplace,\" but the two can mean different things: some marketplaces sell finished vibe-coded apps and templates, while a vibe coders marketplace like VibeTalent is about hiring the people who build them.",
+      "What separates a vibe coders marketplace from a traditional freelance platform is the ranking signal. Sites like Upwork, Fiverr, and Toptal rank talent on self-reported resumes, client reviews, and interview screens — all of which can be gamed. VibeTalent ranks developers on data that cannot be faked: consecutive-day GitHub commit streaks, the quality and deployment status of shipped projects, broader GitHub activity, and peer endorsements weighted by each endorser's own reputation.",
+      "For clients, that means you can evaluate a builder in seconds — open a profile and see a live streak, real deployed projects, and a transparent vibe score instead of a polished pitch. Hiring is direct and free: no platform fees and no middleman, and VibeFinder Bot can match a project brief to the right builders automatically. For developers, it means your daily shipping becomes a public, compounding reputation that wins work on merit.",
+    ],
+    related: ["vibe-coder", "vibe-coding", "vibe-score"],
+    metaDescription:
+      "A vibe coders marketplace connects clients with AI-native developers ranked by proof of work — coding streaks, shipped projects, and GitHub activity, not resumes.",
+    dateModified: "2026-06-05",
   },
 ];
 
