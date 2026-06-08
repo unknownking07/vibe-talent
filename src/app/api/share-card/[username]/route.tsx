@@ -25,8 +25,11 @@ export async function GET(
   const initial = user.username.slice(0, 1).toUpperCase();
   const avatarSrc = user.avatar_url;
   const bio = user.bio
-    ? (user.bio.length > 30 ? user.bio.slice(0, 30) + "..." : user.bio)
+    ? (user.bio.length > 22 ? user.bio.slice(0, 22) + "..." : user.bio)
     : "vibecoder";
+  const displayName = user.display_name || `@${user.username}`;
+  const hasBadge = Boolean(user.github_username);
+  const nameFontSize = fitNameFontSize(displayName, hasBadge);
   const streakStr = String(user.streak).padStart(2, "0");
   const longestStr = String(user.longest_streak).padStart(2, "0");
   const projectsStr = String((user.projects ?? []).length).padStart(2, "0");
@@ -225,19 +228,21 @@ export async function GET(
               </div>
 
               {/* Name + badge */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minWidth: 0, overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0, overflow: "hidden" }}>
                   <span
                     style={{
-                      fontSize: 42,
+                      fontSize: nameFontSize,
                       fontWeight: 300,
                       color: TEXT,
                       textTransform: "uppercase",
                       letterSpacing: "4px",
                       lineHeight: 1,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
                     }}
                   >
-                    {user.display_name || `@${user.username}`}
+                    {displayName}
                   </span>
                   {user.github_username && (
                     <svg
@@ -279,6 +284,8 @@ export async function GET(
                     borderRadius: 999,
                     letterSpacing: "3px",
                     textTransform: "uppercase",
+                    maxWidth: "100%",
+                    overflow: "hidden",
                   }}
                 >
                   {bio}
@@ -406,4 +413,12 @@ export async function GET(
     ),
     { width: 1200, height: 630 }
   );
+}
+
+/** Estimate a clamped font size so the name fits within the profile card. */
+function fitNameFontSize(name: string, hasBadge: boolean): number {
+  const available = hasBadge ? 340 : 390; // 50px reserved for badge (36px icon + 14px gap)
+  const charWidth = 0.62; // uppercase system-ui glyph ratio
+  const spacing = 4; // letter-spacing per char
+  return Math.max(16, Math.min(42, Math.floor((available / name.length - spacing) / charWidth)));
 }
