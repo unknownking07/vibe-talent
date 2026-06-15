@@ -32,7 +32,7 @@ export async function generateMetadata({
     return { title: "Builder Not Found" };
   }
 
-  const title = `@${user.username} — VibeTalent`;
+  const title = `@${user.username} — Vibe Coder`;
   const description = user.bio
     ? `${user.bio.slice(0, 150)} | ${user.streak}-day streak, ${(user.projects ?? []).length} projects`
     : `${user.streak}-day streak, ${(user.projects ?? []).length} projects on VibeTalent`;
@@ -47,6 +47,7 @@ export async function generateMetadata({
       title,
       description,
       url: `${siteUrl}/profile/${username}`,
+      siteName: "VibeTalent",
       type: "profile",
       images: [
         {

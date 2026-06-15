@@ -16,15 +16,15 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
   const { username, id } = await params;
   const user = await fetchUserByUsernameCached(username);
 
-  if (!user) return { title: "Achievement — VibeTalent" };
+  if (!user) return { title: "Achievement" };
 
   const counters = await fetchAchievementCounters(user);
   const achievements = computeAchievements(counters);
   const a = achievements.find((x) => x.id === id);
-  if (!a) return { title: "Achievement — VibeTalent" };
+  if (!a) return { title: "Achievement" };
 
   const verb = a.earned ? "unlocked" : "is progressing toward";
-  const title = `@${user.username} ${verb} "${a.title}" — VibeTalent`;
+  const title = `@${user.username} ${verb} "${a.title}"`;
   const description = `${a.description} See @${user.username}'s achievements on VibeTalent.`;
   const encodedUser = encodeURIComponent(user.username);
   const encodedId = encodeURIComponent(a.id);
@@ -41,6 +41,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
       title,
       description,
       url: shareUrl,
+      siteName: "VibeTalent",
       type: "article",
       images: [{ url: ogUrl, width: 1200, height: 630, alt: a.title }],
     },

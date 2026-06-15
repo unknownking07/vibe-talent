@@ -142,6 +142,7 @@ export default async function HomePage() {
                 "@type": "WebSite",
                 "@id": `${siteUrl}/#website`,
                 name: "VibeTalent",
+                alternateName: "Vibe Talent",
                 url: siteUrl,
                 description:
                   "The marketplace for vibe coders who ship consistently. Find developers based on streaks, shipped projects, and vibe scores.",
@@ -156,6 +157,7 @@ export default async function HomePage() {
                 "@type": "Organization",
                 "@id": `${siteUrl}/#organization`,
                 name: "VibeTalent",
+                alternateName: "Vibe Talent",
                 url: siteUrl,
                 description:
                   "VibeTalent is the vibe coders marketplace — hire AI-assisted developers ranked by coding streaks, shipped projects, and verifiable proof of work instead of resumes.",

@@ -20,7 +20,7 @@ import {
 import { siteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Roadmap — VibeTalent 2026 | $VIBE Utility, Multichain USDC, Squad Hiring",
+  title: { absolute: "VibeTalent Roadmap 2026 — $VIBE, Multichain USDC & Squad Hiring" },
   description:
     "The VibeTalent public roadmap for 2026. $VIBE is live on Solana (CA: FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS). USDC payments already live on Base and Solana. Q2: $VIBE utility (streak protect, project featuring). Q3: stake-to-vouch profiles + Ethereum USDC. Q4: try-before-you-hire, squad hiring, retainers, auto-generated portfolios, shipping radar, and GitHub PR badges.",
   keywords: [

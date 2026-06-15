@@ -6,10 +6,13 @@ import type { Metadata } from "next";
 export async function generateMetadata({ params }: { params: Promise<{ username: string; slug: string }> }): Promise<Metadata> {
   const { username, slug } = await params;
   const og = `${siteUrl}/api/og/receipt/shipped/${username}?slug=${slug}`;
+  const cardTitle = `@${username} shipped ${slug}`;
+  const description = `@${username} shipped ${slug} — built and verified on VibeTalent.`;
   return {
-    title: `@${username} shipped ${slug}`,
-    openGraph: { images: [{ url: og, width: 1200, height: 630 }] },
-    twitter:   { card: "summary_large_image", images: [og] },
+    title: cardTitle,
+    description,
+    openGraph: { title: cardTitle, description, images: [{ url: og, width: 1200, height: 630 }] },
+    twitter:   { card: "summary_large_image", title: cardTitle, description, images: [og] },
   };
 }
 

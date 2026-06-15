@@ -30,7 +30,7 @@ export async function generateMetadata({
   }
 
   const projectCount = (user.projects ?? []).length;
-  const title = `@${user.username}'s projects — VibeTalent`;
+  const title = `@${user.username}'s Projects`;
   const description = `All ${projectCount} project${projectCount === 1 ? "" : "s"} shipped by @${user.username} on VibeTalent.`;
 
   return {

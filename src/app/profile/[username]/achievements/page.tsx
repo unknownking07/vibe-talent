@@ -20,7 +20,7 @@ export async function generateMetadata({
     return { title: "Achievements" };
   }
 
-  const title = `@${user.username}'s Achievements — VibeTalent`;
+  const title = `@${user.username}'s Achievements`;
   const description = `Badges earned by @${user.username} on VibeTalent — streaks, projects, endorsements, and more.`;
   const encodedUsername = encodeURIComponent(user.username);
 
