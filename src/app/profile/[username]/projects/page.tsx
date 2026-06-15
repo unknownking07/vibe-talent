@@ -43,6 +43,7 @@ export async function generateMetadata({
       title,
       description,
       url: `${siteUrl}/profile/${username}/projects`,
+      siteName: "VibeTalent",
       type: "profile",
       images: [
         {

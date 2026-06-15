@@ -34,6 +34,7 @@ export async function generateMetadata({
       title,
       description,
       url: `${siteUrl}/profile/${encodedUsername}/achievements`,
+      siteName: "VibeTalent",
       type: "profile",
     },
     twitter: {
