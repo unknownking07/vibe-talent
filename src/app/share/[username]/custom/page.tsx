@@ -15,10 +15,13 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
   const { range } = await searchParams;
   const r = normalizeRange(range);
   const og = `${siteUrl}/api/og/receipt/custom/${username}?range=${r}`;
+  const cardTitle = `@${username} on VibeTalent`;
+  const description = `@${username}'s builder receipt — vibe score, streak, and shipped projects, verified on VibeTalent.`;
   return {
-    title: `@${username} on VibeTalent`,
-    openGraph: { images: [{ url: og, width: 1200, height: 630 }] },
-    twitter:   { card: "summary_large_image", images: [og] },
+    title: `@${username}`,
+    description,
+    openGraph: { title: cardTitle, description, images: [{ url: og, width: 1200, height: 630 }] },
+    twitter:   { card: "summary_large_image", title: cardTitle, description, images: [og] },
   };
 }
 

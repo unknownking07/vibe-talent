@@ -5,7 +5,7 @@ import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "All Projects — Shipped by Vibe Coders | VibeTalent",
+  title: "All Projects — Shipped by Vibe Coders",
   description:
     "Browse all projects shipped by vibe coders. Filter by tech stack, quality score, and more to discover what builders are shipping.",
   alternates: {

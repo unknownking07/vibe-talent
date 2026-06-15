@@ -5,7 +5,7 @@ import { Flame, Zap, Github, ExternalLink, Code2, Trophy, Users } from "lucide-r
 import { siteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "About VibeTalent — Built by @abhiontwt",
+  title: { absolute: "About VibeTalent — Built by @abhiontwt" },
   description:
     "VibeTalent is a developer talent marketplace built on proof of work — coding streaks, shipped projects, and vibe scores. Built by Abhinav, a crypto-native builder and AI maximalist.",
   alternates: { canonical: `${siteUrl}/about` },

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-// Canonical site URL — always use www; Vercel redirects non-www with 307 which breaks social media crawlers
+// Canonical site URL — always use www. Vercel 308-redirects the bare apex to www (vercel.json),
+// so www is the stable canonical Google indexes and social crawlers unfurl.
 export const siteUrl = "https://www.vibetalent.work";
 const siteName = "VibeTalent";
 
