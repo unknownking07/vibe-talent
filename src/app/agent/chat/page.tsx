@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { fetchUsers } from "@/lib/supabase/queries";
 import { matchUsers } from "@/lib/agent-scoring";
+import { getBadgeInfo } from "@/lib/streak";
 import type { UserWithSocials } from "@/lib/types/database";
 import { ChatMessage } from "@/components/agent/chat-message";
 import { ChatInput } from "@/components/agent/chat-input";
@@ -129,10 +130,23 @@ export default function AgentChatPage() {
       case "evaluate":
         addMessage("user", "I want to evaluate a builder");
         simulateThinking(() => {
-          addMessage(
-            "agent",
-            "Sure! You can evaluate any builder on the platform. Head to their profile and click the \"VibeFinder Evaluate\" button, or visit /agent/evaluate/[username].\n\nWho would you like to evaluate? Here are some popular builders:\n\n• @indie_hacker (Diamond, 380-day streak)\n• @web3_builder (Gold, 210-day streak)\n• @vibemaster (Silver, 127-day streak)"
-          );
+          const intro =
+            'Sure! You can evaluate any builder on the platform. Head to their profile and click the "VibeFinder Evaluate" button, or visit /agent/evaluate/[username].';
+          // Suggest REAL top builders from live platform data — never invent users.
+          const topBuilders = [...allUsers]
+            .sort((a, b) => b.vibe_score - a.vibe_score || b.longest_streak - a.longest_streak)
+            .slice(0, 3);
+          if (topBuilders.length === 0) {
+            addMessage("agent", `${intro}\n\nWho would you like to evaluate? Just send me their @username.`);
+          } else {
+            const list = topBuilders
+              .map((u) => {
+                const tier = u.badge_level !== "none" ? `${getBadgeInfo(u.badge_level).label}, ` : "";
+                return `• @${u.username} (${tier}${u.longest_streak}-day streak)`;
+              })
+              .join("\n");
+            addMessage("agent", `${intro}\n\nWho would you like to evaluate? Here are some of the top builders right now:\n\n${list}`);
+          }
           setStage("results");
         });
         break;
@@ -144,7 +158,7 @@ export default function AgentChatPage() {
         });
         break;
     }
-  }, [addMessage, simulateThinking]);
+  }, [allUsers, addMessage, simulateThinking]);
 
   const showQuickActions = messages.length === 1 && stage === "greeting";
 
