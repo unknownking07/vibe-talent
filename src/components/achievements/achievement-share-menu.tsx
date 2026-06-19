@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Share2,
   Link as LinkIcon,
@@ -31,6 +31,10 @@ export function AchievementShareMenu({ username, achievementId, title }: Achieve
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const containerRef = useRef<HTMLDivElement | null>(null);
+  // Memoized, de-duped fetch of the generated share image. Warmed when the
+  // menu opens so Copy/Download resolve instantly instead of kicking off a
+  // multi-second OG render on click.
+  const imageBlobRef = useRef<Promise<Blob> | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -51,18 +55,39 @@ export function AchievementShareMenu({ username, achievementId, title }: Achieve
   const sharePath = `/share/achievement/${encodeURIComponent(username)}/${encodeURIComponent(achievementId)}`;
   const imagePath = `/api/og/achievement/${encodeURIComponent(username)}/${encodeURIComponent(achievementId)}`;
 
+  // Fetch the share image once and reuse the in-flight/resolved promise for
+  // both Copy and Download. On failure we drop the cached rejection so a
+  // later click can retry cleanly.
+  const fetchImageBlob = useCallback((): Promise<Blob> => {
+    if (!imageBlobRef.current) {
+      imageBlobRef.current = fetch(imagePath)
+        .then((r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.blob();
+        })
+        .catch((err) => {
+          imageBlobRef.current = null;
+          throw err;
+        });
+    }
+    return imageBlobRef.current;
+  }, [imagePath]);
+
+  // Warm the image as soon as the menu opens so the OG render overlaps the
+  // user reading the menu rather than blocking their click on Copy/Download.
+  useEffect(() => {
+    if (!open) return;
+    void fetchImageBlob().catch(() => {});
+  }, [open, fetchImageBlob]);
+
   async function copyImage() {
     setStatus("copying-image");
     try {
-      // Safari requires the ClipboardItem to be created synchronously
-      // in the user-gesture handler — pass the Promise directly.
-      const blobPromise = fetch(imagePath).then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.blob();
-      });
-      // ClipboardItem with a Promise is supported by Chrome/Edge/Safari.
-      // Firefox lacks image clipboard support and will throw — we surface
-      // that as an error and let the user fall back to Download.
+      // Reuse the prewarmed fetch. ClipboardItem must be created synchronously
+      // in the gesture for Safari — passing the Promise (even one already in
+      // flight) satisfies that. Firefox lacks image clipboard support and will
+      // throw; we surface that and let the user fall back to Download.
+      const blobPromise = fetchImageBlob();
       await navigator.clipboard.write([
         new ClipboardItem({ "image/png": blobPromise }),
       ]);
@@ -77,9 +102,7 @@ export function AchievementShareMenu({ username, achievementId, title }: Achieve
   async function downloadImage() {
     setStatus("downloading");
     try {
-      const res = await fetch(imagePath);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const blob = await res.blob();
+      const blob = await fetchImageBlob();
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = blobUrl;

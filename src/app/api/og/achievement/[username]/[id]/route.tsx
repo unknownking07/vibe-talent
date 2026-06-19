@@ -219,7 +219,18 @@ export async function GET(
         </div>
       </div>
     ),
-    { ...size },
+    {
+      ...size,
+      // Cache the rendered PNG at the CDN so Copy/Download and social-preview
+      // hits after the first are served instantly instead of re-rendering
+      // (4 DB queries + Satori + avatar fetch). The card only changes when the
+      // user's stats cross a threshold, so an hour of CDN freshness — served
+      // stale for a day while it revalidates — is plenty.
+      headers: {
+        "Cache-Control":
+          "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400",
+      },
+    },
   );
 }
 
