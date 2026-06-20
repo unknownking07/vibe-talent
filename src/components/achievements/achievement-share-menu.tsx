@@ -31,10 +31,13 @@ export function AchievementShareMenu({ username, achievementId, title }: Achieve
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const containerRef = useRef<HTMLDivElement | null>(null);
-  // Memoized, de-duped fetch of the generated share image. Warmed when the
-  // menu opens so Copy/Download resolve instantly instead of kicking off a
-  // multi-second OG render on click.
-  const imageBlobRef = useRef<Promise<Blob> | null>(null);
+  // Memoized, de-duped fetch of the generated share image, keyed by image URL.
+  // Warmed when the menu opens so Copy/Download resolve instantly instead of
+  // kicking off a multi-second OG render on click. Keying by path invalidates
+  // the cache when username/achievementId change — the same card instance is
+  // reused across client-side profile navigations (cards are keyed by
+  // achievement id), so without this Copy could serve the previous user's image.
+  const imageBlobRef = useRef<{ path: string; blob: Promise<Blob> } | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -55,22 +58,28 @@ export function AchievementShareMenu({ username, achievementId, title }: Achieve
   const sharePath = `/share/achievement/${encodeURIComponent(username)}/${encodeURIComponent(achievementId)}`;
   const imagePath = `/api/og/achievement/${encodeURIComponent(username)}/${encodeURIComponent(achievementId)}`;
 
-  // Fetch the share image once and reuse the in-flight/resolved promise for
-  // both Copy and Download. On failure we drop the cached rejection so a
+  // Fetch the share image once per URL and reuse the in-flight/resolved promise
+  // for both Copy and Download. On failure we drop the cached rejection so a
   // later click can retry cleanly.
   const fetchImageBlob = useCallback((): Promise<Blob> => {
-    if (!imageBlobRef.current) {
-      imageBlobRef.current = fetch(imagePath)
+    const cached = imageBlobRef.current;
+    if (cached && cached.path === imagePath) return cached.blob;
+    const entry = {
+      path: imagePath,
+      blob: fetch(imagePath)
         .then((r) => {
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           return r.blob();
         })
         .catch((err) => {
-          imageBlobRef.current = null;
+          // Only drop the cache if this entry is still current, so a newer
+          // fetch for a different URL isn't clobbered by a stale rejection.
+          if (imageBlobRef.current === entry) imageBlobRef.current = null;
           throw err;
-        });
-    }
-    return imageBlobRef.current;
+        }),
+    };
+    imageBlobRef.current = entry;
+    return entry.blob;
   }, [imagePath]);
 
   // Warm the image as soon as the menu opens so the OG render overlaps the
