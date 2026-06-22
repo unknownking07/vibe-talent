@@ -31,6 +31,15 @@ export async function GET(
   const palette = PALETTES[art.palette];
   const statusLabel = achievement.earned ? "UNLOCKED" : "IN PROGRESS";
 
+  // Earned cards are effectively immutable — title, badge and "earned" copy
+  // never change again — so cache them hard at the CDN. In-progress cards render
+  // live counts that move as the user progresses, and the same URL must flip to
+  // the earned design the moment they unlock it, so keep their TTL short (~1 min)
+  // to bound how long a stale "IN PROGRESS" PNG can linger after they earn it.
+  const cacheControl = achievement.earned
+    ? "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400"
+    : "public, max-age=60, s-maxage=60, stale-while-revalidate=120";
+
   return new ImageResponse(
     (
       <div
@@ -219,7 +228,10 @@ export async function GET(
         </div>
       </div>
     ),
-    { ...size },
+    {
+      ...size,
+      headers: { "Cache-Control": cacheControl },
+    },
   );
 }
 
