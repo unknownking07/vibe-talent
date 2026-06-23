@@ -92,6 +92,7 @@ export default async function ShareAchievementPage({ params }: PageParams) {
               chipLabel={art.chipLabel}
               size={180}
               earned={achievement.earned}
+              animate
             />
           </div>
           <div className="flex flex-col items-center gap-2">

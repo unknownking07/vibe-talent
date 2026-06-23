@@ -44,6 +44,28 @@ export interface AchievementState extends AchievementDefinition {
   percent: number;
 }
 
+/**
+ * Serializable projection of {@link AchievementState} — drops the
+ * non-serializable `progress` function so the state can cross the
+ * server → client component boundary (e.g. into the interactive
+ * achievements view) without a React serialization error.
+ */
+export type AchievementView = Omit<AchievementState, "progress">;
+
+export function toAchievementView(s: AchievementState): AchievementView {
+  return {
+    id: s.id,
+    title: s.title,
+    description: s.description,
+    category: s.category,
+    threshold: s.threshold,
+    unit: s.unit,
+    current: s.current,
+    earned: s.earned,
+    percent: s.percent,
+  };
+}
+
 const FOUNDING_CUTOFF = "2026-01-01";
 
 export const ACHIEVEMENTS: AchievementDefinition[] = [

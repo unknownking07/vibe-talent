@@ -462,3 +462,67 @@ body:has(.chat-page-wrapper) main {
     animation: none !important;
   }
 }
+
+/* ─── Achievement badges + unlock celebration ─────────────────────── */
+
+/* Gentle idle float for earned medallions (opt-in via the `animate` prop). */
+@keyframes badge-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+.medallion-float {
+  animation: badge-float 4.8s ease-in-out infinite;
+}
+
+/* Celebration modal entrance animations. Applied inline by the celebration
+   component and skipped entirely when the user prefers reduced motion (the
+   component checks the media query in JS), so no override is needed here. */
+@keyframes cel-scrim-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes cel-pop-in {
+  0% { opacity: 0; transform: scale(0.3) rotate(-18deg); }
+  60% { opacity: 1; transform: scale(1.12) rotate(5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes cel-up-fade {
+  0% { opacity: 0; transform: translateY(18px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes cel-spray-in {
+  0% { opacity: 0; transform: scale(0.2); }
+  100% { opacity: 0.8; transform: scale(1); }
+}
+@keyframes cel-splat-in {
+  0% { opacity: 0; transform: scale(0) rotate(var(--r, 0deg)); }
+  70% { opacity: 1; transform: scale(1.18) rotate(var(--r, 0deg)); }
+  100% { opacity: 0.92; transform: scale(1) rotate(var(--r, 0deg)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .medallion-float {
+    animation: none;
+  }
+}
+
+/* "Tap an earned badge to replay its celebration" affordance. */
+.medallion-replay {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.14s ease-out;
+}
+.medallion-replay:hover {
+  transform: scale(1.06);
+}
+.medallion-replay:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .medallion-replay:hover {
+    transform: none;
+  }
+}

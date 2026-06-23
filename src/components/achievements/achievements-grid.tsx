@@ -1,16 +1,23 @@
+import { memo } from "react";
 import { AchievementCard } from "@/components/achievements/achievement-card";
 import {
   CATEGORY_LABELS,
   CATEGORY_ORDER,
-  type AchievementState,
+  type AchievementView,
 } from "@/lib/achievements/definitions";
 
 interface AchievementsGridProps {
-  achievements: AchievementState[];
+  achievements: AchievementView[];
   username: string;
+  /** Called with an earned achievement when its badge is tapped, to replay the celebration. */
+  onCelebrate: (achievement: AchievementView) => void;
 }
 
-export function AchievementsGrid({ achievements, username }: AchievementsGridProps) {
+function AchievementsGridImpl({
+  achievements,
+  username,
+  onCelebrate,
+}: AchievementsGridProps) {
   const grouped = CATEGORY_ORDER.map((cat) => ({
     cat,
     items: achievements.filter((a) => a.category === cat),
@@ -36,9 +43,22 @@ export function AchievementsGrid({ achievements, username }: AchievementsGridPro
                 {earnedInCat} / {items.length} unlocked
               </span>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div
+              className="grid gap-4"
+              style={{
+                gridTemplateColumns:
+                  "repeat(auto-fill, minmax(min(100%, 340px), 1fr))",
+              }}
+            >
               {items.map((a) => (
-                <AchievementCard key={a.id} achievement={a} username={username} />
+                <AchievementCard
+                  key={a.id}
+                  achievement={a}
+                  username={username}
+                  onCelebrate={
+                    a.earned ? () => onCelebrate(a) : undefined
+                  }
+                />
               ))}
             </div>
           </section>
@@ -47,3 +67,11 @@ export function AchievementsGrid({ achievements, username }: AchievementsGridPro
     </div>
   );
 }
+
+/**
+ * Memoized so the header count-up (which re-renders the parent view ~60×/sec
+ * during the intro animation) doesn't re-render all 20 medallion SVGs each
+ * frame. Props are stable: `achievements` is the server-passed array and
+ * `onCelebrate` is a stable setState updater.
+ */
+export const AchievementsGrid = memo(AchievementsGridImpl);
