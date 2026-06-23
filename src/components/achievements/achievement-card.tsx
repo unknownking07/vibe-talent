@@ -1,15 +1,17 @@
 import { Check, Lock } from "lucide-react";
-import type { AchievementState } from "@/lib/achievements/definitions";
+import type { AchievementView } from "@/lib/achievements/definitions";
 import { getBadgeArt } from "@/lib/achievements/badge-art";
 import { BadgeMedallion } from "@/components/achievements/badge-medallion";
 import { AchievementShareMenu } from "@/components/achievements/achievement-share-menu";
 
 interface AchievementCardProps {
-  achievement: AchievementState;
+  achievement: AchievementView;
   username: string;
+  /** When provided on an earned badge, tapping the medallion replays its celebration. */
+  onCelebrate?: () => void;
 }
 
-export function AchievementCard({ achievement, username }: AchievementCardProps) {
+export function AchievementCard({ achievement, username, onCelebrate }: AchievementCardProps) {
   const { id, title, description, threshold, current, earned, percent, unit } = achievement;
   const showProgressNumbers = threshold > 1;
   const art = getBadgeArt(id);
@@ -32,13 +34,31 @@ export function AchievementCard({ achievement, username }: AchievementCardProps)
       }}
     >
       <div className="flex items-start gap-4">
-        <BadgeMedallion
-          paletteKey={art.palette}
-          icon={art.icon}
-          chipLabel={art.chipLabel}
-          size={72}
-          earned={earned}
-        />
+        {earned && onCelebrate ? (
+          <button
+            type="button"
+            onClick={onCelebrate}
+            aria-label={`Replay ${title} unlock celebration`}
+            className="medallion-replay shrink-0"
+          >
+            <BadgeMedallion
+              paletteKey={art.palette}
+              icon={art.icon}
+              chipLabel={art.chipLabel}
+              size={78}
+              earned
+              animate
+            />
+          </button>
+        ) : (
+          <BadgeMedallion
+            paletteKey={art.palette}
+            icon={art.icon}
+            chipLabel={art.chipLabel}
+            size={78}
+            earned={earned}
+          />
+        )}
         <div className="flex min-w-0 flex-1 flex-col gap-1.5 pt-1">
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-wrap items-center gap-2">

@@ -44,13 +44,16 @@ const ICONS: Record<IconSlug, LucideIcon> = {
   sunrise: Sunrise,
 };
 
+// Desaturated, dimmed palette for locked badges — reads as "not yet yours".
 const LOCKED_PALETTE = {
-  ring: "#52525B",
-  inner: "#A1A1AA",
-  glow: "#D4D4D8",
-  chip: "#52525B",
-  chipText: "#F4F4F5",
+  ring: "#3A3633",
+  inner: "#56514B",
+  glow: "#6B655E",
+  chip: "#46413B",
+  chipText: "#A8A29B",
 };
+
+const CENTER_DISC = "#FBFAF8";
 
 interface BadgeMedallionProps {
   paletteKey: PaletteKey;
@@ -58,14 +61,30 @@ interface BadgeMedallionProps {
   chipLabel?: string;
   size?: number;
   earned?: boolean;
+  /**
+   * Enables the gentle idle float (earned badges only). Off by default so
+   * static surfaces — the next/og edge image, the compact teaser shelf —
+   * stay still. Pure CSS, so it's safe on server-rendered surfaces and
+   * is disabled under `prefers-reduced-motion` via the global stylesheet.
+   */
+  animate?: boolean;
+}
+
+/** A 4-point sparkle star centered at (x, y) with reach `r`, in the 0–100 viewBox. */
+function sparklePath(x: number, y: number, r: number): string {
+  const i = r * 0.3;
+  return `M${x} ${y - r}L${x + i} ${y - i}L${x + r} ${y}L${x + i} ${y + i}L${x} ${y + r}L${x - i} ${y + i}L${x - r} ${y}L${x - i} ${y - i}Z`;
 }
 
 /**
- * Custom SVG medallion shown for each achievement.
+ * Custom SVG medallion shown for each achievement — a glossy enamel badge:
+ * a coloured outer ring, a coloured disc with a top-down gloss sheen and
+ * sparkles, and a cream centre disc holding the (coloured) achievement icon.
  *
- * Renders as a div wrapper (for absolute positioning of the icon) + an
- * inline SVG for the rings. This composition works in both the DOM and
- * the next/og edge runtime (Satori supports flex + absolute positioning).
+ * Renders as a div wrapper (for absolute positioning of the icon + chip) plus
+ * an inline SVG for the rings. Deliberately Satori-friendly — flat structure,
+ * rgba gradient stops, no clipPath — so the exact same component renders in the
+ * DOM and in the next/og edge runtime (the share OG image).
  */
 export function BadgeMedallion({
   paletteKey,
@@ -73,17 +92,19 @@ export function BadgeMedallion({
   chipLabel,
   size = 96,
   earned = true,
+  animate = false,
 }: BadgeMedallionProps) {
   const palette = earned ? PALETTES[paletteKey] : LOCKED_PALETTE;
   const Icon = ICONS[icon] ?? Star;
-  const gradId = `bm-${paletteKey}-${icon}-${earned ? "on" : "off"}`;
-  const iconSize = Math.round(size * 0.42);
+  const glossId = `bm-gloss-${paletteKey}-${icon}-${earned ? "on" : "off"}-${size}`;
+  const iconSize = Math.round(size * 0.24);
   const chipFontSize = Math.max(9, Math.round(size * 0.13));
   const chipHeight = Math.round(size * 0.22);
   const chipMinWidth = Math.round(size * 0.32);
 
   return (
     <div
+      className={animate && earned ? "medallion-float" : undefined}
       style={{
         position: "relative",
         width: size,
@@ -99,51 +120,38 @@ export function BadgeMedallion({
         viewBox="0 0 100 100"
         width={size}
         height={size}
-        style={{ position: "absolute", top: 0, left: 0, display: "flex" }}
+        style={{ position: "absolute", top: 0, left: 0, display: "flex", overflow: "visible" }}
       >
         <defs>
-          <radialGradient id={gradId} cx="50%" cy="40%" r="60%">
-            <stop offset="0%" stopColor={palette.glow} />
-            <stop offset="100%" stopColor={palette.inner} />
-          </radialGradient>
+          <linearGradient id={glossId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.34)" />
+            <stop offset="52%" stopColor="rgba(255,255,255,0.04)" />
+            <stop offset="100%" stopColor="rgba(0,0,0,0.14)" />
+          </linearGradient>
         </defs>
         {/* Outer ring */}
-        <circle
-          cx="50"
-          cy="50"
-          r="46"
-          fill={palette.ring}
-          stroke="#0F0F0F"
-          strokeWidth="3"
-        />
-        {/* Inner gradient disc */}
-        <circle
-          cx="50"
-          cy="50"
-          r="34"
-          fill={`url(#${gradId})`}
-          stroke="#0F0F0F"
-          strokeWidth="2"
-        />
-        {/* Subtle inner highlight arc on top */}
-        <path
-          d="M 28 38 A 26 26 0 0 1 72 38"
-          fill="none"
-          stroke={palette.glow}
-          strokeWidth="2"
-          strokeLinecap="round"
-          opacity={earned ? 0.55 : 0.25}
-        />
+        <circle cx="50" cy="50" r="48" fill={palette.ring} stroke="#0F0F0F" strokeWidth="2" />
+        {/* Coloured inner disc + gloss sheen */}
+        <circle cx="50" cy="50" r="39" fill={palette.inner} />
+        <circle cx="50" cy="50" r="39" fill={`url(#${glossId})`} />
+        {/* Sparkles (earned only). Grouped in a <g> — not a React fragment —
+            because Satori (next/og) serializes SVG children to a string and a
+            fragment's Symbol type throws "Cannot convert a Symbol value". */}
+        {earned ? (
+          <g>
+            <path d={sparklePath(30, 31, 3.4)} fill="#fff" opacity="0.9" />
+            <path d={sparklePath(72, 66, 2.6)} fill="#fff" opacity="0.7" />
+            <path d={sparklePath(69, 33, 1.8)} fill="#fff" opacity="0.6" />
+          </g>
+        ) : null}
+        {/* Cream centre disc */}
+        <circle cx="50" cy="50" r="22" fill={CENTER_DISC} stroke="#0F0F0F" strokeWidth="2" />
       </svg>
       <Icon
         size={iconSize}
-        color="#FFFFFF"
-        strokeWidth={2.5}
-        style={{
-          position: "relative",
-          zIndex: 1,
-          filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.45))",
-        }}
+        color={palette.ring}
+        strokeWidth={2.4}
+        style={{ position: "relative", zIndex: 1 }}
       />
       {chipLabel ? (
         <div

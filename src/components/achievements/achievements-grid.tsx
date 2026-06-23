@@ -2,15 +2,21 @@ import { AchievementCard } from "@/components/achievements/achievement-card";
 import {
   CATEGORY_LABELS,
   CATEGORY_ORDER,
-  type AchievementState,
+  type AchievementView,
 } from "@/lib/achievements/definitions";
 
 interface AchievementsGridProps {
-  achievements: AchievementState[];
+  achievements: AchievementView[];
   username: string;
+  /** Called with an earned achievement when its badge is tapped, to replay the celebration. */
+  onCelebrate: (achievement: AchievementView) => void;
 }
 
-export function AchievementsGrid({ achievements, username }: AchievementsGridProps) {
+export function AchievementsGrid({
+  achievements,
+  username,
+  onCelebrate,
+}: AchievementsGridProps) {
   const grouped = CATEGORY_ORDER.map((cat) => ({
     cat,
     items: achievements.filter((a) => a.category === cat),
@@ -36,9 +42,22 @@ export function AchievementsGrid({ achievements, username }: AchievementsGridPro
                 {earnedInCat} / {items.length} unlocked
               </span>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div
+              className="grid gap-4"
+              style={{
+                gridTemplateColumns:
+                  "repeat(auto-fill, minmax(min(100%, 340px), 1fr))",
+              }}
+            >
               {items.map((a) => (
-                <AchievementCard key={a.id} achievement={a} username={username} />
+                <AchievementCard
+                  key={a.id}
+                  achievement={a}
+                  username={username}
+                  onCelebrate={
+                    a.earned ? () => onCelebrate(a) : undefined
+                  }
+                />
               ))}
             </div>
           </section>
