@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 interface ShareButtonProps {
   url: string;
@@ -16,6 +16,26 @@ export function ShareButton({ url, text, imageUrl }: ShareButtonProps) {
   const absUrl = typeof window !== "undefined" ? new URL(url, window.location.origin).toString() : url;
   const absImageUrl = imageUrl && typeof window !== "undefined" ? new URL(imageUrl, window.location.origin).toString() : imageUrl;
 
+  // Hold the (in-flight) image blob so a hover/focus can start generating it
+  // before the click — the copy then resolves an already-warm promise instead
+  // of waiting on a cold Satori render. Null until warmed.
+  const blobRef = useRef<Promise<Blob> | null>(null);
+  function fetchBlob(u: string): Promise<Blob> {
+    return fetch(u).then((r) => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.blob();
+    });
+  }
+  function prewarm() {
+    if (!absImageUrl || blobRef.current) return;
+    const p = fetchBlob(absImageUrl);
+    blobRef.current = p;
+    // Drop a failed warm so the click can retry from scratch.
+    void p.catch(() => {
+      if (blobRef.current === p) blobRef.current = null;
+    });
+  }
+
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(absUrl);
@@ -30,17 +50,19 @@ export function ShareButton({ url, text, imageUrl }: ShareButtonProps) {
   async function copyImage() {
     if (!absImageUrl) return;
     setStatus("copying");
+    // Reuse the prewarmed blob if present; otherwise start now. The
+    // ClipboardItem is built synchronously with the promise so Safari keeps it
+    // tied to the click gesture. next/og emits image/png.
+    const blobPromise = blobRef.current ?? (blobRef.current = fetchBlob(absImageUrl));
     try {
-      const res = await fetch(absImageUrl);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const blob = await res.blob();
-      // Clipboard API in some browsers requires a PNG specifically.
-      // ImageResponse from next/og emits image/png.
-      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+      await navigator.clipboard.write([
+        new ClipboardItem({ "image/png": blobPromise }),
+      ]);
       setStatus("copied-image");
       setTimeout(() => setStatus("idle"), 1500);
     } catch (e) {
       console.error("copy image failed:", e);
+      blobRef.current = null; // allow a fresh retry
       setStatus("image-error");
       setTimeout(() => setStatus("idle"), 2000);
     }
@@ -60,6 +82,9 @@ export function ShareButton({ url, text, imageUrl }: ShareButtonProps) {
       {absImageUrl && (
         <button
           onClick={copyImage}
+          onMouseEnter={prewarm}
+          onFocus={prewarm}
+          onPointerDown={prewarm}
           disabled={status === "copying"}
           className="bg-[var(--accent)] text-white px-4 py-2 text-[13px] font-extrabold rounded-sm hover:opacity-90 disabled:opacity-60"
           aria-label="Copy receipt image to clipboard"

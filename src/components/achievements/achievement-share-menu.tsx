@@ -154,6 +154,8 @@ export function AchievementShareMenu({ username, achievementId, title }: Achieve
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        onMouseEnter={() => void fetchImageBlob().catch(() => {})}
+        onFocus={() => void fetchImageBlob().catch(() => {})}
         aria-label={`Share ${title} achievement`}
         aria-expanded={open}
         className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide"
