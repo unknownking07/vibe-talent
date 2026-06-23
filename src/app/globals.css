@@ -462,3 +462,61 @@ body:has(.chat-page-wrapper) main {
     animation: none !important;
   }
 }
+
+/* ── Achievements page: medallion float + unlock celebration ─────────── */
+@keyframes ach-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@keyframes ach-pop-in {
+  0% { opacity: 0; transform: scale(.3) rotate(-18deg); }
+  60% { opacity: 1; transform: scale(1.12) rotate(5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes ach-spray-in {
+  0% { opacity: 0; transform: scale(.2); }
+  100% { opacity: .8; transform: scale(1); }
+}
+@keyframes ach-splat-in {
+  0% { opacity: 0; transform: scale(0) rotate(var(--r, 0deg)); }
+  70% { opacity: 1; transform: scale(1.18) rotate(var(--r, 0deg)); }
+  100% { opacity: .92; transform: scale(1) rotate(var(--r, 0deg)); }
+}
+@keyframes ach-up-fade {
+  0% { opacity: 0; transform: translateY(18px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes ach-scrim-fade {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes ach-wiggle {
+  0%, 100% { transform: rotate(-3.5deg); }
+  50% { transform: rotate(3.5deg); }
+}
+
+.ach-float { animation: ach-float 4.8s ease-in-out infinite; }
+.ach-wiggle { animation: ach-wiggle 1.8s ease-in-out infinite; }
+.ach-scrim { animation: ach-scrim-fade .28s ease-out; }
+.ach-spray { animation: ach-spray-in .6s ease-out both; }
+.ach-splat { animation: ach-splat-in .55s ease-out both; }
+.ach-pop { animation: ach-pop-in .75s cubic-bezier(.2, 1.35, .4, 1) both; }
+.ach-up { animation: ach-up-fade .5s both; }
+
+.ach-card { transition: transform .14s ease, box-shadow .14s ease; }
+.ach-card-earned { cursor: pointer; }
+.ach-card-earned:hover { transform: translate(2px, 2px); box-shadow: var(--shadow-brutal-hover); }
+.ach-btn { transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease; }
+.ach-btn:hover { transform: translate(1px, 1px); box-shadow: var(--shadow-brutal-hover); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ach-float,
+  .ach-wiggle,
+  .ach-scrim,
+  .ach-spray,
+  .ach-splat,
+  .ach-pop,
+  .ach-up {
+    animation: none !important;
+  }
+}

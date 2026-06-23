@@ -1,15 +1,35 @@
+"use client";
+
 import { Check, Lock } from "lucide-react";
-import type { AchievementState } from "@/lib/achievements/definitions";
+import type { AchievementCategory } from "@/lib/achievements/definitions";
 import { getBadgeArt } from "@/lib/achievements/badge-art";
 import { BadgeMedallion } from "@/components/achievements/badge-medallion";
 import { AchievementShareMenu } from "@/components/achievements/achievement-share-menu";
 
-interface AchievementCardProps {
-  achievement: AchievementState;
-  username: string;
+/**
+ * Serializable view of an achievement — the subset of `AchievementState` that
+ * crosses the server→client boundary (no `progress` function).
+ */
+export interface AchievementView {
+  id: string;
+  title: string;
+  description: string;
+  category: AchievementCategory;
+  current: number;
+  threshold: number;
+  unit: string;
+  earned: boolean;
+  percent: number;
 }
 
-export function AchievementCard({ achievement, username }: AchievementCardProps) {
+interface AchievementCardProps {
+  achievement: AchievementView;
+  username: string;
+  /** Replay the unlock celebration. Only wired up for earned achievements. */
+  onCelebrate?: () => void;
+}
+
+export function AchievementCard({ achievement, username, onCelebrate }: AchievementCardProps) {
   const { id, title, description, threshold, current, earned, percent, unit } = achievement;
   const showProgressNumbers = threshold > 1;
   const art = getBadgeArt(id);
@@ -21,7 +41,21 @@ export function AchievementCard({ achievement, username }: AchievementCardProps)
 
   return (
     <div
-      className="relative flex flex-col gap-3 p-5"
+      className={`ach-card relative flex flex-col gap-3 p-5${earned ? " ach-card-earned" : ""}`}
+      onClick={earned ? onCelebrate : undefined}
+      role={earned ? "button" : undefined}
+      tabIndex={earned ? 0 : undefined}
+      aria-label={earned ? `Replay ${title} unlock celebration` : undefined}
+      onKeyDown={
+        earned
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onCelebrate?.();
+              }
+            }
+          : undefined
+      }
       style={{
         backgroundColor: earned
           ? "var(--bg-surface)"
@@ -38,6 +72,7 @@ export function AchievementCard({ achievement, username }: AchievementCardProps)
           chipLabel={art.chipLabel}
           size={72}
           earned={earned}
+          float={earned}
         />
         <div className="flex min-w-0 flex-1 flex-col gap-1.5 pt-1">
           <div className="flex items-start justify-between gap-2">
@@ -75,11 +110,15 @@ export function AchievementCard({ achievement, username }: AchievementCardProps)
               )}
             </div>
             {earned ? (
-              <AchievementShareMenu
-                username={username}
-                achievementId={id}
-                title={title}
-              />
+              // Stop propagation so opening the share menu doesn't also trigger
+              // the card's replay-celebration click handler.
+              <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                <AchievementShareMenu
+                  username={username}
+                  achievementId={id}
+                  title={title}
+                />
+              </div>
             ) : null}
           </div>
           <p
@@ -113,11 +152,11 @@ export function AchievementCard({ achievement, username }: AchievementCardProps)
                 backgroundColor: earned
                   ? "var(--badge-gold, #EAB308)"
                   : "var(--text-muted)",
-                transition: "width 200ms ease-out",
+                transition: "width 800ms cubic-bezier(.2,.8,.2,1)",
               }}
             />
           </div>
-          <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wide">
+          <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wide font-mono">
             <span style={{ color: "var(--text-secondary)" }}>
               {current.toLocaleString()} / {threshold.toLocaleString()} {unit}
             </span>
