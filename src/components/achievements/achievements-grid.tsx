@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { AchievementCard } from "@/components/achievements/achievement-card";
 import {
   CATEGORY_LABELS,
@@ -12,7 +13,7 @@ interface AchievementsGridProps {
   onCelebrate: (achievement: AchievementView) => void;
 }
 
-export function AchievementsGrid({
+function AchievementsGridImpl({
   achievements,
   username,
   onCelebrate,
@@ -66,3 +67,11 @@ export function AchievementsGrid({
     </div>
   );
 }
+
+/**
+ * Memoized so the header count-up (which re-renders the parent view ~60×/sec
+ * during the intro animation) doesn't re-render all 20 medallion SVGs each
+ * frame. Props are stable: `achievements` is the server-passed array and
+ * `onCelebrate` is a stable setState updater.
+ */
+export const AchievementsGrid = memo(AchievementsGridImpl);

@@ -53,7 +53,24 @@ const LOCKED_PALETTE = {
   chipText: "#A8A29B",
 };
 
-const CENTER_DISC = "#FBFAF8";
+/**
+ * Points for the cog/seal outline — 22 teeth alternating between an outer and
+ * inner radius, in the 0–100 viewBox. Computed once at module load.
+ */
+const SEAL_POINTS = (() => {
+  const teeth = 22;
+  const ro = 47;
+  const ri = 42;
+  const pts: string[] = [];
+  for (let i = 0; i < teeth * 2; i++) {
+    const ang = (Math.PI / teeth) * i - Math.PI / 2;
+    const rr = i % 2 ? ri : ro;
+    pts.push(
+      `${(50 + Math.cos(ang) * rr).toFixed(1)},${(50 + Math.sin(ang) * rr).toFixed(1)}`,
+    );
+  }
+  return pts.join(" ");
+})();
 
 interface BadgeMedallionProps {
   paletteKey: PaletteKey;
@@ -77,14 +94,14 @@ function sparklePath(x: number, y: number, r: number): string {
 }
 
 /**
- * Custom SVG medallion shown for each achievement — a glossy enamel badge:
- * a coloured outer ring, a coloured disc with a top-down gloss sheen and
- * sparkles, and a cream centre disc holding the (coloured) achievement icon.
+ * Custom SVG medallion shown for each achievement — a brutalist enamel "seal":
+ * a coloured cog/seal outline, a coloured disc with a top-down gloss sheen and
+ * sparkles, and the achievement icon punched out in white at the centre.
  *
  * Renders as a div wrapper (for absolute positioning of the icon + chip) plus
- * an inline SVG for the rings. Deliberately Satori-friendly — flat structure,
- * rgba gradient stops, no clipPath — so the exact same component renders in the
- * DOM and in the next/og edge runtime (the share OG image).
+ * an inline SVG for the seal. Deliberately Satori-friendly — flat structure,
+ * a <polygon> (not a fragment), rgba gradient stops, no clipPath — so the exact
+ * same component renders in the DOM and in the next/og edge runtime.
  */
 export function BadgeMedallion({
   paletteKey,
@@ -97,7 +114,7 @@ export function BadgeMedallion({
   const palette = earned ? PALETTES[paletteKey] : LOCKED_PALETTE;
   const Icon = ICONS[icon] ?? Star;
   const glossId = `bm-gloss-${paletteKey}-${icon}-${earned ? "on" : "off"}-${size}`;
-  const iconSize = Math.round(size * 0.24);
+  const iconSize = Math.round(size * 0.34);
   const chipFontSize = Math.max(9, Math.round(size * 0.13));
   const chipHeight = Math.round(size * 0.22);
   const chipMinWidth = Math.round(size * 0.32);
@@ -129,29 +146,37 @@ export function BadgeMedallion({
             <stop offset="100%" stopColor="rgba(0,0,0,0.14)" />
           </linearGradient>
         </defs>
-        {/* Outer ring */}
-        <circle cx="50" cy="50" r="48" fill={palette.ring} stroke="#0F0F0F" strokeWidth="2" />
+        {/* Cog / seal outline */}
+        <polygon
+          points={SEAL_POINTS}
+          fill={palette.ring}
+          stroke="#0F0F0F"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+        />
         {/* Coloured inner disc + gloss sheen */}
-        <circle cx="50" cy="50" r="39" fill={palette.inner} />
-        <circle cx="50" cy="50" r="39" fill={`url(#${glossId})`} />
+        <circle cx="50" cy="50" r="37" fill={palette.inner} stroke="#0F0F0F" strokeWidth="2" />
+        <circle cx="50" cy="50" r="37" fill={`url(#${glossId})`} />
         {/* Sparkles (earned only). Grouped in a <g> — not a React fragment —
             because Satori (next/og) serializes SVG children to a string and a
             fragment's Symbol type throws "Cannot convert a Symbol value". */}
         {earned ? (
           <g>
-            <path d={sparklePath(30, 31, 3.4)} fill="#fff" opacity="0.9" />
-            <path d={sparklePath(72, 66, 2.6)} fill="#fff" opacity="0.7" />
-            <path d={sparklePath(69, 33, 1.8)} fill="#fff" opacity="0.6" />
+            <path d={sparklePath(33, 30, 3.2)} fill="#fff" opacity="0.85" />
+            <path d={sparklePath(68, 41, 2.4)} fill="#fff" opacity="0.7" />
+            <path d={sparklePath(40, 67, 2.2)} fill="#fff" opacity="0.6" />
           </g>
         ) : null}
-        {/* Cream centre disc */}
-        <circle cx="50" cy="50" r="22" fill={CENTER_DISC} stroke="#0F0F0F" strokeWidth="2" />
       </svg>
       <Icon
         size={iconSize}
-        color={palette.ring}
-        strokeWidth={2.4}
-        style={{ position: "relative", zIndex: 1 }}
+        color="#FFFFFF"
+        strokeWidth={2.3}
+        style={{
+          position: "relative",
+          zIndex: 1,
+          filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.45))",
+        }}
       />
       {chipLabel ? (
         <div
