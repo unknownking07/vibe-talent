@@ -83,7 +83,15 @@ export async function GET(
         </div>
       </div>
     ),
-    { ...size },
+    {
+      ...size,
+      headers: {
+        // Cache at the CDN so repeat shares (and the prewarmed copy fetch) are
+        // instant instead of re-rendering via Satori each time.
+        "Cache-Control":
+          "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400",
+      },
+    },
   );
 }
 

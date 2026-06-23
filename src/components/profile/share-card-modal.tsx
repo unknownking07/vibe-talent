@@ -63,10 +63,15 @@ export function ShareCardModal({ username, isOpen, onClose }: ShareCardModalProp
 
   const handleCopy = async () => {
     try {
-      const res = await fetch(cardUrl);
-      const blob = await res.blob();
+      // Build the ClipboardItem synchronously with the fetch promise so Safari
+      // keeps it tied to the click gesture. The preview <img> already warmed the
+      // (now cacheable) image, so this resolves from cache near-instantly.
+      const blobPromise = fetch(cardUrl).then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.blob();
+      });
       await navigator.clipboard.write([
-        new ClipboardItem({ "image/png": blob }),
+        new ClipboardItem({ "image/png": blobPromise }),
       ]);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
