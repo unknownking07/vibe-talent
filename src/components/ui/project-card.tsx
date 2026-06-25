@@ -281,9 +281,9 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
         const overflow = tech.length - shown.length;
         return (
           <div className="mt-2 flex flex-wrap gap-1">
-            {shown.map((t) => (
+            {shown.map((t, i) => (
               <span
-                key={t}
+                key={`${t}-${i}`}
                 className="px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--text-tertiary)]"
                 style={PILL_STYLE}
               >
@@ -296,7 +296,8 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
                 style={PILL_STYLE}
                 title={tech.slice(MAX_TECH).join(", ")}
               >
-                +{overflow}
+                <span aria-hidden="true">+{overflow}</span>
+                <span className="sr-only">{overflow} more technologies: {tech.slice(MAX_TECH).join(", ")}</span>
               </span>
             )}
           </div>
@@ -327,7 +328,12 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
             <span className="flex items-center gap-1 min-w-0" title={tags.join(", ")}>
               <Tag size={10} className="shrink-0" />
               <span className="truncate">{shown.join(", ")}</span>
-              {overflow > 0 && <span className="shrink-0">+{overflow}</span>}
+              {overflow > 0 && (
+                <span className="shrink-0">
+                  <span aria-hidden="true">+{overflow}</span>
+                  <span className="sr-only">{overflow} more tags: {tags.slice(MAX_TAGS).join(", ")}</span>
+                </span>
+              )}
             </span>
           );
         })()}
