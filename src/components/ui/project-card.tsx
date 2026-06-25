@@ -50,6 +50,17 @@ function clearReportData(projectId: string) {
   localStorage.removeItem(`report_${projectId}`);
 }
 
+// Keep cards uniform: cap how many tech/tag chips render before collapsing
+// the rest into a "+N" overflow chip. Unbounded lists made card heights wildly
+// uneven on the homepage grid.
+const MAX_TECH = 6;
+const MAX_TAGS = 3;
+
+const PILL_STYLE = {
+  backgroundColor: "var(--bg-surface-light)",
+  border: "1px solid var(--border-hard)",
+} as const;
+
 interface ProjectCardProps {
   project: Project;
   authorUsername?: string;
@@ -263,22 +274,35 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
         </Link>
       )}
 
-      {(project.tech_stack ?? []).length > 0 && (
-      <div className="mt-2 flex flex-wrap gap-1">
-        {(project.tech_stack ?? []).map((tech) => (
-          <span
-            key={tech}
-            className="px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--text-tertiary)]"
-            style={{
-              backgroundColor: "var(--bg-surface-light)",
-              border: "1px solid var(--border-hard)",
-            }}
-          >
-            {tech}
-          </span>
-        ))}
-      </div>
-      )}
+      {(() => {
+        const tech = project.tech_stack ?? [];
+        if (tech.length === 0) return null;
+        const shown = tech.slice(0, MAX_TECH);
+        const overflow = tech.length - shown.length;
+        return (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {shown.map((t, i) => (
+              <span
+                key={`${t}-${i}`}
+                className="px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--text-tertiary)]"
+                style={PILL_STYLE}
+              >
+                {t}
+              </span>
+            ))}
+            {overflow > 0 && (
+              <span
+                className="px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--text-muted)]"
+                style={PILL_STYLE}
+                title={tech.slice(MAX_TECH).join(", ")}
+              >
+                <span aria-hidden="true">+{overflow}</span>
+                <span className="sr-only">{overflow} more technologies: {tech.slice(MAX_TECH).join(", ")}</span>
+              </span>
+            )}
+          </div>
+        );
+      })()}
 
       <GithubSignal
         commits7d={null}
@@ -295,12 +319,24 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
             {project.build_time}
           </span>
         )}
-        {(project.tags ?? []).length > 0 && (
-          <span className="flex items-center gap-1">
-            <Tag size={10} />
-            {project.tags.join(", ")}
-          </span>
-        )}
+        {(() => {
+          const tags = project.tags ?? [];
+          if (tags.length === 0) return null;
+          const shown = tags.slice(0, MAX_TAGS);
+          const overflow = tags.length - shown.length;
+          return (
+            <span className="flex items-center gap-1 min-w-0" title={tags.join(", ")}>
+              <Tag size={10} className="shrink-0" />
+              <span className="truncate">{shown.join(", ")}</span>
+              {overflow > 0 && (
+                <span className="shrink-0">
+                  <span aria-hidden="true">+{overflow}</span>
+                  <span className="sr-only">{overflow} more tags: {tags.slice(MAX_TAGS).join(", ")}</span>
+                </span>
+              )}
+            </span>
+          );
+        })()}
       </div>
 
       {reportError && (
