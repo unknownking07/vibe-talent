@@ -4,7 +4,77 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Notification } from "@/lib/types/database";
-import { NOTIFICATION_ICONS, NOTIFICATION_COLORS, notificationTimeAgo } from "@/lib/notification-display";
+import { NOTIFICATION_ICONS, notificationTimeAgo, extractNotificationAvatar } from "@/lib/notification-display";
+
+// JetBrains Mono is loaded as a CSS var by the root layout; fall back gracefully.
+const MONO = "var(--font-jetbrains-mono), 'JetBrains Mono', monospace";
+
+/** Compact (34px) version of the notifications-page chip: avatar with a type
+ *  badge when present, otherwise a bordered type icon. Read items mute. */
+function BellChip({ n }: { n: Notification }) {
+  const Icon = NOTIFICATION_ICONS[n.type] || Bell;
+  const avatar = extractNotificationAvatar(n.metadata as Record<string, unknown> | null);
+  const read = n.read;
+  const ring = read ? "var(--border-subtle)" : "var(--border-hard)";
+
+  if (avatar) {
+    return (
+      <div style={{ position: "relative", width: 34, height: 34, flexShrink: 0 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- free-form metadata URL; plain img avoids next/image remote-host config */}
+        <img
+          src={avatar}
+          alt=""
+          width={34}
+          height={34}
+          style={{
+            display: "block",
+            width: 34,
+            height: 34,
+            objectFit: "cover",
+            border: `2px solid ${ring}`,
+            filter: read ? "grayscale(1) opacity(0.7)" : "none",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            right: -5,
+            bottom: -5,
+            width: 16,
+            height: 16,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: read ? "var(--bg-surface-light)" : "var(--accent)",
+            border: `1.5px solid ${ring}`,
+            color: read ? "var(--text-muted-soft)" : "#fff",
+          }}
+        >
+          <Icon size={9} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        width: 34,
+        height: 34,
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        border: `2px solid ${ring}`,
+        color: read ? "var(--text-muted-soft)" : "var(--accent)",
+        background: "var(--bg-surface)",
+        boxShadow: read ? "none" : "2px 2px 0 var(--border-hard)",
+      }}
+    >
+      <Icon size={16} />
+    </div>
+  );
+}
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
@@ -144,36 +214,29 @@ export function NotificationBell() {
             </div>
           ) : (
             <div>
-              {notifications.slice(0, 10).map((n) => {
-                const Icon = NOTIFICATION_ICONS[n.type] || Bell;
-                const color = NOTIFICATION_COLORS[n.type] || "var(--text-muted)";
-                return (
-                  <button
-                    key={n.id}
-                    onClick={() => handleClickNotification(n)}
-                    className="w-full text-left px-4 py-3 flex gap-3 items-start transition-colors hover:bg-[var(--bg-surface-light)] cursor-pointer"
-                    style={{
-                      borderLeft: `3px solid ${color}`,
-                      backgroundColor: n.read ? "transparent" : "var(--bg-surface-light, #FFFBEB)",
-                    }}
-                  >
-                    <Icon size={16} style={{ color, marginTop: 2, flexShrink: 0 }} />
-                    <div className="min-w-0 flex-1">
-                      <p className={`text-sm leading-tight ${n.read ? "font-medium text-[var(--text-secondary)]" : "font-bold text-[var(--foreground)]"}`}>
-                        {n.title}
-                      </p>
-                      <p className="text-xs mt-0.5 truncate" style={{ color: n.read ? "var(--text-muted)" : "var(--text-secondary)" }}>{n.message}</p>
-                      <p className="text-[10px] mt-1 font-medium" style={{ color: "var(--text-muted)" }}>{notificationTimeAgo(n.created_at)}</p>
-                    </div>
-                    {!n.read && (
-                      <span
-                        className="w-2 h-2 rounded-full mt-1.5 shrink-0"
-                        style={{ backgroundColor: "var(--accent)" }}
-                      />
-                    )}
-                  </button>
-                );
-              })}
+              {notifications.slice(0, 10).map((n) => (
+                <button
+                  key={n.id}
+                  role="menuitem"
+                  onClick={() => handleClickNotification(n)}
+                  className={`ntf-row${n.read ? "" : " ntf-row-unread"} w-full text-left px-3.5 py-3 flex gap-3 items-start cursor-pointer`}
+                >
+                  <BellChip n={n} />
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-sm leading-tight ${n.read ? "font-semibold text-[var(--text-muted)]" : "font-bold text-[var(--foreground)]"}`}>
+                      {n.title}
+                    </p>
+                    <p className="text-xs mt-0.5 truncate" style={{ color: n.read ? "var(--text-muted-soft)" : "var(--text-secondary)" }}>{n.message}</p>
+                    <p className="text-[10px] mt-1.5 font-bold uppercase tracking-wide" style={{ fontFamily: MONO, color: "var(--text-muted-soft)" }}>{notificationTimeAgo(n.created_at)}</p>
+                  </div>
+                  {!n.read && (
+                    <span
+                      className="w-2 h-2 rounded-full mt-1.5 shrink-0"
+                      style={{ backgroundColor: "var(--accent)", border: "1.5px solid var(--border-hard)" }}
+                    />
+                  )}
+                </button>
+              ))}
               <button
                 onClick={() => {
                   setOpen(false);
