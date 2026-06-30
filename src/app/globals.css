@@ -15,6 +15,7 @@
 
   --bg-surface: #FFFFFF;
   --bg-surface-light: #F5F5F5;
+  --bg-unread: #FFF8F6;
   --bg-pill: #0F0F0F;
   --bg-pill-hover: #2a2a2a;
   --border-hard: #0F0F0F;
@@ -70,6 +71,7 @@
 
   --bg-surface: hsl(14, 4%, 10%);
   --bg-surface-light: hsl(14, 4%, 15%);
+  --bg-unread: hsl(14, 5%, 12%);
   --bg-pill: hsl(14, 4%, 15%);
   --bg-pill-hover: hsl(14, 4%, 23%);
   --border-hard: hsl(14, 10%, 45%);
@@ -145,6 +147,32 @@ body {
 
 html {
   scroll-behavior: smooth;
+}
+
+/* Notification card hover-lift (brutalist offset stays fixed → card lifts off its shadow) */
+.ntf-card {
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+.ntf-card:hover {
+  transform: translate(-2px, -2px);
+}
+/* Title link stretches over the whole card so the card is clickable, with no
+   visible "open" button. Interactive children (Mark read) sit above it via
+   position:relative;z-index:1. */
+.ntf-stretched-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+/* Notification-bell dropdown rows (compact variant of the page cards). */
+.ntf-row {
+  transition: background-color 0.12s ease;
+}
+.ntf-row:hover {
+  background: var(--bg-surface-light);
+}
+.ntf-row-unread {
+  background: var(--bg-unread);
 }
 
 /* Brutalist button base */

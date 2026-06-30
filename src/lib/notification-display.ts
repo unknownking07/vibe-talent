@@ -31,6 +31,32 @@ export const NOTIFICATION_COLORS: Record<string, string> = {
 };
 
 /**
+ * Short, uppercase category label shown as a tag pill on each notification card.
+ * Keep in sync with the `type` CHECK constraint in supabase/schema.sql.
+ */
+export const NOTIFICATION_TAGS: Record<string, string> = {
+  hire_request: "Hire",
+  streak_milestone: "Streak",
+  streak_warning: "Warning",
+  badge_earned: "Badge",
+  project_verified: "Project",
+  project_flagged: "Flagged",
+  new_review: "Review",
+  profile_view_summary: "Views",
+  weekly_digest: "Digest",
+  vibe_score_milestone: "Score",
+  project_missing_links: "Project",
+  referral_prompt: "Referral",
+};
+
+/**
+ * Notification types that belong to the "Hires" filter tab. Everything not in
+ * this set is treated as "Activity" — so new types automatically fall under
+ * Activity without needing to be enumerated.
+ */
+export const HIRE_NOTIFICATION_TYPES = new Set<string>(["hire_request", "hire_message"]);
+
+/**
  * Returns a safe URL extracted from a notification's metadata.link, or null if
  * the field is missing/unsafe. Defends against `javascript:`, `data:`,
  * `vbscript:`, protocol-relative (`//evil.com`), and backslash-trick URLs.
@@ -63,6 +89,47 @@ export function extractNotificationLink(
     // unparseable
   }
   return null;
+}
+
+/**
+ * Returns a safe avatar URL from a notification's metadata.avatar_url, or null
+ * when absent/unsafe. Mirrors {@link extractNotificationLink}: metadata is a
+ * free-form jsonb column, so we validate at the render boundary rather than
+ * trust the producer. Accepts same-origin paths ("/avatars/x.jpg") and absolute
+ * http(s) URLs; rejects javascript:/data:/protocol-relative/backslash tricks.
+ *
+ * People-driven notifications (a review, a hire request) can carry the actor's
+ * photo here; system events have none and fall back to a type icon.
+ */
+export function extractNotificationAvatar(
+  metadata: Record<string, unknown> | null | undefined
+): string | null {
+  if (!metadata) return null;
+  const url = metadata.avatar_url;
+  if (typeof url !== "string" || url.length === 0) return null;
+  if (url.startsWith("/")) {
+    if (url.startsWith("//") || url.includes("\\")) return null;
+    return url;
+  }
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") return url;
+  } catch {
+    // unparseable
+  }
+  return null;
+}
+
+export type NotificationBucket = "Today" | "This week" | "Earlier";
+
+/** Buckets a notification by age for the grouped list: <24h, <7d, older. */
+export function notificationBucket(dateStr: string): NotificationBucket {
+  const timestamp = new Date(dateStr).getTime();
+  if (Number.isNaN(timestamp)) return "Earlier";
+  const diff = Date.now() - timestamp;
+  if (diff < 86_400_000) return "Today";
+  if (diff < 7 * 86_400_000) return "This week";
+  return "Earlier";
 }
 
 export function notificationTimeAgo(dateStr: string): string {
