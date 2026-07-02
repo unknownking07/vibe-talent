@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ThumbsUp } from "lucide-react";
 
 interface EndorseButtonProps {
@@ -13,8 +13,10 @@ interface EndorseButtonProps {
 export function EndorseButton({ projectId, initialCount, isOwner = false }: EndorseButtonProps) {
   const [count, setCount] = useState(initialCount);
   const [endorsed, setEndorsed] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Guards against overlapping requests without blocking the optimistic UI —
+  // a click mid-flight is dropped rather than racing a POST against a DELETE.
+  const inFlight = useRef(false);
 
   // Check endorsement state on mount so button shows correct state after refresh
   useEffect(() => {
@@ -35,56 +37,47 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
   }, [projectId, isOwner]);
 
   async function handleToggle() {
-    if (loading) return;
+    if (inFlight.current) return;
+    inFlight.current = true;
     setError(null);
-    setLoading(true);
+
+    // Snapshot for rollback, then update the UI immediately so the click feels
+    // instant — the network request runs in the background and only reconciles
+    // (or reverts) the count once the server responds.
+    const wasEndorsed = endorsed;
+    const prevCount = count;
+    const nextEndorsed = !wasEndorsed;
+    setEndorsed(nextEndorsed);
+    setCount((c) => c + (nextEndorsed ? 1 : -1));
 
     try {
-      if (endorsed) {
-        // Remove endorsement
-        const res = await fetch("/api/endorsements", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ project_id: projectId }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setEndorsed(false);
-          setCount(data.count ?? count - 1);
-        } else {
-          const data = await res.json();
-          setError(data.error || "Failed to remove endorsement");
-        }
+      const res = await fetch("/api/endorsements", {
+        method: wasEndorsed ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: projectId }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        // Reconcile the optimistic count with the server's authoritative value.
+        if (typeof data.count === "number") setCount(data.count);
+      } else if (res.status === 409) {
+        // Already endorsed — server agrees with the optimistic state; just sync.
+        setEndorsed(true);
+        if (typeof data.count === "number") setCount(data.count);
       } else {
-        // Add endorsement
-        const res = await fetch("/api/endorsements", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ project_id: projectId }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setEndorsed(true);
-          setCount(data.count ?? count + 1);
-        } else {
-          const data = await res.json();
-          if (res.status === 401) {
-            setError("Sign in to endorse");
-          } else if (res.status === 403) {
-            setError("Can't endorse own project");
-          } else if (res.status === 409) {
-            // Already endorsed — sync state and count from response
-            setEndorsed(true);
-            if (data.count != null) setCount(data.count);
-          } else {
-            setError(data.error || "Failed to endorse");
-          }
-        }
+        // Roll back the optimistic update and surface the reason.
+        setEndorsed(wasEndorsed);
+        setCount(prevCount);
+        setError(res.status === 401 ? "Sign in to endorse" : (data.error || "Couldn't endorse"));
       }
     } catch {
+      setEndorsed(wasEndorsed);
+      setCount(prevCount);
       setError("Network error");
+    } finally {
+      inFlight.current = false;
     }
-    setLoading(false);
   }
 
   if (isOwner) {
@@ -101,12 +94,11 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
     <div className="inline-flex flex-col items-start">
       <button
         onClick={(e) => { e.stopPropagation(); handleToggle(); }}
-        disabled={loading}
         className={`inline-flex items-center gap-1 text-xs font-bold transition-all ${
           endorsed
             ? "text-emerald-600 hover:text-emerald-800"
             : "text-[var(--text-muted-soft)] hover:text-emerald-600"
-        } disabled:opacity-50`}
+        }`}
         title={endorsed ? "Remove endorsement" : "Endorse this project"}
       >
         <ThumbsUp size={12} className={endorsed ? "fill-current" : ""} />
