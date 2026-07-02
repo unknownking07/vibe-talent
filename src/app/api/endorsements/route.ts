@@ -83,15 +83,18 @@ export async function GET(req: NextRequest) {
 
 // POST /api/endorsements — Endorse a project
 export async function POST(req: NextRequest) {
-  const { success } = await checkRateLimit(endorsementsLimiter, getIP(req));
-  if (!success) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
-  }
-
   try {
     const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
+    // Rate-limit and auth don't depend on each other — resolve them together.
+    const [{ success }, { data: { user } }] = await Promise.all([
+      checkRateLimit(endorsementsLimiter, getIP(req)),
+      supabase.auth.getUser(),
+    ]);
+
+    if (!success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
     if (!user) {
       return NextResponse.json({ error: "Sign in to endorse projects" }, { status: 401 });
     }
@@ -104,28 +107,35 @@ export async function POST(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
 
-    // Check project exists and user doesn't own it
-    const { data: project, error: projErr } = await sb
-      .from("projects")
-      .select("id, user_id")
-      .eq("id", project_id)
-      .single();
+    // Every pre-insert check reads independent data, so fire them concurrently
+    // instead of one blocking round-trip at a time. The DB unique constraint is
+    // the real duplicate guard, so there's no separate pre-SELECT for one.
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const [
+      { data: project, error: projErr },
+      { data: endorserProfile },
+      { count: endorserProjectCount },
+      { count: recentEndorsements },
+    ] = await Promise.all([
+      sb.from("projects").select("id, user_id").eq("id", project_id).single(),
+      sb.from("users").select("created_at, streak, vibe_score").eq("id", user.id).single(),
+      sb.from("projects").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+      sb
+        .from("project_endorsements")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", oneDayAgo),
+    ]);
 
+    // Check project exists and user doesn't own it
     if (projErr || !project) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
-
     if (project.user_id === user.id) {
       return NextResponse.json({ error: "You cannot endorse your own project" }, { status: 403 });
     }
 
-    // Anti-gaming: check account age (must be at least 7 days old)
-    const { data: endorserProfile } = await sb
-      .from("users")
-      .select("created_at, streak, vibe_score")
-      .eq("id", user.id)
-      .single();
-
+    // Anti-gaming: account must be at least 7 days old
     if (endorserProfile) {
       const accountAge = Date.now() - new Date(endorserProfile.created_at).getTime();
       const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
@@ -137,12 +147,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Anti-gaming: check endorser has at least some activity (1+ projects or streak > 0)
-    const { count: endorserProjectCount } = await sb
-      .from("projects")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id);
-
+    // Anti-gaming: endorser needs some activity (1+ projects, a streak, or a score)
     if (
       endorserProfile &&
       (endorserProjectCount ?? 0) === 0 &&
@@ -155,14 +160,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Anti-gaming: limit total endorsements per user per day (max 10)
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { count: recentEndorsements } = await sb
-      .from("project_endorsements")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .gte("created_at", oneDayAgo);
-
+    // Anti-gaming: max 10 endorsements per user per day
     if ((recentEndorsements ?? 0) >= 10) {
       return NextResponse.json(
         { error: "You can endorse up to 10 projects per day" },
@@ -170,35 +168,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Explicit duplicate check before insert (belt and suspenders with DB unique constraint)
-    const { data: existingEndorsement } = await sb
-      .from("project_endorsements")
-      .select("id")
-      .eq("project_id", project_id)
-      .eq("user_id", user.id)
-      .single();
-
-    if (existingEndorsement) {
-      // Return current count so client can sync without extra fetch
-      const adminSb = createAdminClient();
-      const { count: currentCount } = await adminSb
-        .from("project_endorsements")
-        .select("id", { count: "exact", head: true })
-        .eq("project_id", project_id);
-      return NextResponse.json(
-        { error: "You already endorsed this project", count: currentCount || 0 },
-        { status: 409 }
-      );
-    }
-
-    // Insert endorsement (unique constraint prevents duplicates)
+    // Insert endorsement — the unique constraint is the source of truth for duplicates
     const { error } = await sb
       .from("project_endorsements")
       .insert({ project_id, user_id: user.id });
 
+    const adminSb = createAdminClient();
+
     if (error) {
       if (error.code === "23505") {
-        const adminSb = createAdminClient();
         const { count: currentCount } = await adminSb
           .from("project_endorsements")
           .select("id", { count: "exact", head: true })
@@ -212,27 +190,24 @@ export async function POST(req: NextRequest) {
     }
 
     // Update cached count on project using service role to bypass RLS
-    {
-      const adminSb = createAdminClient();
-      const { count } = await adminSb
-        .from("project_endorsements")
-        .select("id", { count: "exact", head: true })
-        .eq("project_id", project_id);
+    const { count } = await adminSb
+      .from("project_endorsements")
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", project_id);
 
-      const { error: updateErr } = await adminSb
-        .from("projects")
-        .update({ endorsement_count: count || 0 })
-        .eq("id", project_id);
+    const { error: updateErr } = await adminSb
+      .from("projects")
+      .update({ endorsement_count: count || 0 })
+      .eq("id", project_id);
 
-      if (updateErr) {
-        console.error("Failed to update endorsement cache:", updateErr);
-      }
-
-      // Invalidate the owner's profile cache so the +5 vibe_score shows up right away
-      await revalidateOwnerProfile(project.user_id);
-
-      return NextResponse.json({ success: true, count: count || 0 });
+    if (updateErr) {
+      console.error("Failed to update endorsement cache:", updateErr);
     }
+
+    // Invalidate the owner's profile cache so the +5 vibe_score shows up right away
+    await revalidateOwnerProfile(project.user_id);
+
+    return NextResponse.json({ success: true, count: count || 0 });
   } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
