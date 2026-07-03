@@ -1,0 +1,40 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vibetalent",
+  "main": "worker.ts",
+  "compatibility_date": "2025-08-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  // ISR output cache (reuses the existing namespace already in the account).
+  "kv_namespaces": [
+    { "binding": "NEXT_INC_CACHE_KV", "id": "2febea4c4d924795bc2825226b140456" }
+  ],
+  // revalidateTag / revalidatePath tag cache.
+  "d1_databases": [
+    {
+      "binding": "NEXT_TAG_CACHE_D1",
+      "database_name": "vibetalent-tag-cache",
+      "database_id": "757f6a0f-ae69-4243-81f1-e24eaa2412d3"
+    }
+  ],
+  // Time-based ISR revalidation queue (Durable Object) + self-reference the queue uses.
+  "durable_objects": {
+    "bindings": [{ "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DOQueueHandler"] }],
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "vibetalent" }]
+
+  // Cron Triggers — ENABLED AT DNS CUTOVER (Phase 3), at the same time Vercel crons
+  // are disabled, to avoid duplicate runs / double emails. Until then the scheduled()
+  // handler in worker.ts stays dormant (no triggers registered on the preview worker).
+  //
+  // "triggers": {
+  //   "crons": ["0 6 * * *", "0 3 * * 0", "0 4 * * *", "30 5 * * *", "0 15 * * 1,2"]
+  // }
+}

@@ -42,3 +42,9 @@ next-env.d.ts
 
 # duplicate project directory
 /vibecoders
+
+# cloudflare / opennext build output
+/.open-next/
+/.wrangler/
+/cloudflare-env.d.ts
+.dev.vars
