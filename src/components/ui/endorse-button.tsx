@@ -97,6 +97,7 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
   return (
     <div className="inline-flex flex-col items-start">
       <button
+        type="button"
         onClick={(e) => { e.stopPropagation(); handleToggle(); }}
         aria-pressed={endorsed}
         className={`inline-flex items-center gap-1 text-xs font-bold transition-all ${
