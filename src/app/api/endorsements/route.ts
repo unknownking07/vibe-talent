@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { endorsementsLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
@@ -84,17 +84,15 @@ export async function GET(req: NextRequest) {
 // POST /api/endorsements — Endorse a project
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
-
-    // Rate-limit and auth don't depend on each other — resolve them together.
-    const [{ success }, { data: { user } }] = await Promise.all([
-      checkRateLimit(endorsementsLimiter, getIP(req)),
-      supabase.auth.getUser(),
-    ]);
-
+    // Rate-limit is the cheap abuse gate — check it first so throttled traffic
+    // never reaches Supabase Auth or the database.
+    const { success } = await checkRateLimit(endorsementsLimiter, getIP(req));
     if (!success) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
+
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Sign in to endorse projects" }, { status: 401 });
     }
@@ -113,9 +111,9 @@ export async function POST(req: NextRequest) {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const [
       { data: project, error: projErr },
-      { data: endorserProfile },
+      { data: endorserProfile, error: profileErr },
       { count: endorserProjectCount },
-      { count: recentEndorsements },
+      { count: recentEndorsements, error: recentErr },
     ] = await Promise.all([
       sb.from("projects").select("id, user_id").eq("id", project_id).single(),
       sb.from("users").select("created_at, streak, vibe_score").eq("id", user.id).single(),
@@ -135,21 +133,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "You cannot endorse your own project" }, { status: 403 });
     }
 
+    // Fail closed: if we can't read the endorser's profile or their recent
+    // endorsement count, deny rather than silently skipping the anti-gaming
+    // gates — a dropped error would otherwise bypass the age/activity checks or
+    // reset the daily cap to 0.
+    if (profileErr || !endorserProfile) {
+      return NextResponse.json(
+        { error: "Couldn't verify your account, please try again" },
+        { status: 503 }
+      );
+    }
+    if (recentErr) {
+      return NextResponse.json(
+        { error: "Couldn't verify your endorsement limit, please try again" },
+        { status: 503 }
+      );
+    }
+
     // Anti-gaming: account must be at least 7 days old
-    if (endorserProfile) {
-      const accountAge = Date.now() - new Date(endorserProfile.created_at).getTime();
-      const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-      if (accountAge < SEVEN_DAYS) {
-        return NextResponse.json(
-          { error: "Your account must be at least 7 days old to endorse projects" },
-          { status: 403 }
-        );
-      }
+    const accountAge = Date.now() - new Date(endorserProfile.created_at).getTime();
+    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+    if (accountAge < SEVEN_DAYS) {
+      return NextResponse.json(
+        { error: "Your account must be at least 7 days old to endorse projects" },
+        { status: 403 }
+      );
     }
 
     // Anti-gaming: endorser needs some activity (1+ projects, a streak, or a score)
     if (
-      endorserProfile &&
       (endorserProjectCount ?? 0) === 0 &&
       endorserProfile.streak === 0 &&
       endorserProfile.vibe_score === 0
@@ -204,8 +216,10 @@ export async function POST(req: NextRequest) {
       console.error("Failed to update endorsement cache:", updateErr);
     }
 
-    // Invalidate the owner's profile cache so the +5 vibe_score shows up right away
-    await revalidateOwnerProfile(project.user_id);
+    // Invalidate the owner's profile cache (so their +5 vibe_score shows up
+    // right away) after the response is sent — keeps the extra read + cache
+    // busting off the request path.
+    after(() => revalidateOwnerProfile(project.user_id));
 
     return NextResponse.json({ success: true, count: count || 0 });
   } catch {
@@ -254,16 +268,19 @@ export async function DELETE(req: NextRequest) {
         console.error("Failed to update endorsement cache:", updateErr);
       }
 
-      // Look up the project owner so we can bust their profile cache
-      const { data: project } = await adminSb
-        .from("projects")
-        .select("user_id")
-        .eq("id", project_id)
-        .single();
+      // Bust the owner's profile cache after the response is sent — the owner
+      // lookup + revalidation don't need to be on the request path.
+      after(async () => {
+        const { data: project } = await adminSb
+          .from("projects")
+          .select("user_id")
+          .eq("id", project_id)
+          .single();
 
-      if (project?.user_id) {
-        await revalidateOwnerProfile(project.user_id);
-      }
+        if (project?.user_id) {
+          await revalidateOwnerProfile(project.user_id);
+        }
+      });
 
       return NextResponse.json({ success: true, count: count || 0 });
     }
