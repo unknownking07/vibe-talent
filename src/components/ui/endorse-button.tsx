@@ -17,6 +17,9 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
   // Guards against overlapping requests without blocking the optimistic UI —
   // a click mid-flight is dropped rather than racing a POST against a DELETE.
   const inFlight = useRef(false);
+  // Once the user interacts, the (slow) mount state-check must not overwrite
+  // their optimistic toggle with stale pre-click values.
+  const interacted = useRef(false);
 
   // Check endorsement state on mount so button shows correct state after refresh
   useEffect(() => {
@@ -25,7 +28,7 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
     fetch(`/api/endorsements?project_id=${projectId}`, { signal: controller.signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data) {
+        if (data && !interacted.current) {
           setEndorsed(data.user_endorsed);
           setCount(data.count);
         }
@@ -39,6 +42,7 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
   async function handleToggle() {
     if (inFlight.current) return;
     inFlight.current = true;
+    interacted.current = true;
     setError(null);
 
     // Snapshot for rollback, then update the UI immediately so the click feels
