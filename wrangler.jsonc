@@ -2,8 +2,14 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "vibetalent",
   "main": "worker.ts",
+  "routes": [
+    { "pattern": "beta.vibetalent.work", "custom_domain": true },
+    { "pattern": "www.vibetalent.work/*", "zone_name": "vibetalent.work" },
+    { "pattern": "vibetalent.work/*", "zone_name": "vibetalent.work" }
+  ],
   "compatibility_date": "2025-08-15",
   "compatibility_flags": ["nodejs_compat"],
+  "images": { "binding": "IMAGES" },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
@@ -28,13 +34,13 @@
     "bindings": [{ "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" }]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DOQueueHandler"] }],
-  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "vibetalent" }]
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "vibetalent" }],
 
-  // Cron Triggers — ENABLED AT DNS CUTOVER (Phase 3), at the same time Vercel crons
-  // are disabled, to avoid duplicate runs / double emails. Until then the scheduled()
-  // handler in worker.ts stays dormant (no triggers registered on the preview worker).
-  //
-  // "triggers": {
-  //   "crons": ["0 6 * * *", "0 3 * * 0", "0 4 * * *", "30 5 * * *", "0 15 * * 1,2"]
-  // }
+  // Cron Triggers — ENABLED at cutover. Vercel crons were disabled in the same step
+  // (vercel.json, PR #218) to avoid duplicate runs / double emails. Each firing invokes
+  // the matching /api/cron/* route via the scheduled() handler in worker.ts, which
+  // authenticates with the CRON_SECRET bearer token (mirrors the old Vercel setup).
+  "triggers": {
+    "crons": ["0 6 * * *", "0 3 * * SUN", "0 4 * * *", "30 5 * * *", "0 15 * * 1,2"]
+  }
 }

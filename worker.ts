@@ -26,7 +26,10 @@ type Env = {
 /** Cloudflare cron expression -> internal cron route (mirrors vercel.json crons). */
 const CRON_ROUTES: Record<string, string> = {
   "0 6 * * *": "/api/cron/daily",
-  "0 3 * * 0": "/api/cron/check-live-urls",
+  // Cloudflare's cron parser rejects "0" as Sunday (400 "invalid cron string"),
+  // so this schedule is registered as "SUN" — the key must match what Cloudflare
+  // passes back in controller.cron at runtime.
+  "0 3 * * SUN": "/api/cron/check-live-urls",
   "0 4 * * *": "/api/cron/quality-rescore",
   "30 5 * * *": "/api/cron/verify-backfill",
   "0 15 * * 1,2": "/api/cron/weekly-digest",
@@ -38,6 +41,13 @@ const handler = openNextWorker as {
 
 export default {
   fetch(request: Request, env: Env, ctx: unknown): Promise<Response> {
+    // apex -> www 301 redirect (replaces the vercel.json host redirect at cutover).
+    const url = new URL(request.url);
+    if (url.hostname === "vibetalent.work") {
+      return Promise.resolve(
+        Response.redirect(`https://www.vibetalent.work${url.pathname}${url.search}`, 301),
+      );
+    }
     return handler.fetch(request, env, ctx);
   },
 
