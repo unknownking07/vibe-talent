@@ -10,6 +10,8 @@ on:
       - "**.md"
       - "docs/**"
       - "infographics/**"
+      - "vercel.json"
+      - ".github/**"
 
 # Never run two deploys at once; let an in-flight deploy finish rather than cancel it.
 concurrency:
