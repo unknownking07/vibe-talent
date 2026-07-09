@@ -1,0 +1,71 @@
+name: Deploy to Cloudflare Workers
+
+# Push-to-deploy: every merge to main builds the OpenNext bundle and deploys the
+# Worker (www + apex + crons). Main is protected (PR + lint-and-test required), so
+# code reaching here has already passed CI — this workflow only builds & ships.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "infographics/**"
+
+# Never run two deploys at once; let an in-flight deploy finish rather than cancel it.
+concurrency:
+  group: deploy-cloudflare
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # NEXT_PUBLIC_* are inlined into the bundle at BUILD time, so they must be
+      # present here (repo Actions variables — public config, never the secret keys).
+      - name: Build (OpenNext → Cloudflare)
+        env:
+          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_PRIVY_APP_ID: ${{ vars.NEXT_PUBLIC_PRIVY_APP_ID }}
+          NEXT_PUBLIC_GA_ID: ${{ vars.NEXT_PUBLIC_GA_ID }}
+          NEXT_PUBLIC_RAZORPAY_KEY_ID: ${{ vars.NEXT_PUBLIC_RAZORPAY_KEY_ID }}
+          NEXT_PUBLIC_ENABLE_HOMEPAGE_FEED_V2: ${{ vars.NEXT_PUBLIC_ENABLE_HOMEPAGE_FEED_V2 }}
+          NEXT_PUBLIC_ENABLE_ONBOARDING_TOUR: ${{ vars.NEXT_PUBLIC_ENABLE_ONBOARDING_TOUR }}
+        run: npx opennextjs-cloudflare build
+
+      # Runtime secrets (SUPABASE_SERVICE_ROLE_KEY, RESEND, UPSTASH, CRON_SECRET,
+      # GITHUB_TOKEN, …) already live on the Worker and persist across deploys —
+      # `wrangler deploy` does not touch them, so they are NOT needed here.
+      - name: Deploy to Cloudflare Workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Bypass wrangler's auto-delegation to `opennextjs-cloudflare deploy`,
+          # whose KV/D1 cache-populate step is intermittently flaky on this account.
+          # Plain `wrangler deploy` uploads the Worker + routes + cron triggers; the
+          # incremental cache populates lazily at runtime. Retry on transient errors.
+          mv open-next.config.ts open-next.config.ts.bak
+          ok=0
+          for i in 1 2 3; do
+            if npx wrangler deploy; then ok=1; break; fi
+            echo "::warning::wrangler deploy attempt $i failed — retrying in 10s"
+            sleep 10
+          done
+          mv open-next.config.ts.bak open-next.config.ts
+          if [ "$ok" != 1 ]; then
+            echo "::error::wrangler deploy failed after 3 attempts"
+            exit 1
+          fi
