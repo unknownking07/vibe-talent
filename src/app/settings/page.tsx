@@ -11,15 +11,10 @@ import { normalizeExternalUrl } from "@/lib/url-normalize";
 import type { UserWithSocials } from "@/lib/types/database";
 import { EmailPreferences } from "@/components/dashboard/email-preferences";
 import { PrivacyPreferences } from "@/components/dashboard/privacy-preferences";
+import { GithubConnection } from "@/components/dashboard/github-connection";
 import { isUsernameTakenError, validateUsername } from "@/lib/username";
 import { useUsernameAvailability } from "@/lib/use-username-availability";
-import {
-  Save,
-  Camera,
-  Users,
-  Github,
-  CheckCircle2,
-} from "lucide-react";
+import { Save, Camera, Users } from "lucide-react";
 
 // Drives the "@" decoration inside the handle inputs: show it for empty
 // fields and bare usernames, hide it once the user pastes a URL so they
@@ -48,7 +43,6 @@ export default function SettingsPage() {
     website: "",
     ide: "",
   });
-  const [connectingGithub, setConnectingGithub] = useState(false);
   const [highlightName, setHighlightName] = useState(false);
   const displayNameRef = useRef<HTMLInputElement>(null);
 
@@ -354,20 +348,6 @@ export default function SettingsPage() {
     setSaving(false);
   };
 
-  const handleConnectGithub = async () => {
-    setConnectingGithub(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.linkIdentity({
-      provider: "github",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/settings` },
-    });
-    if (error) {
-      alert(`Couldn't connect GitHub: ${error.message}`);
-      setConnectingGithub(false);
-    }
-    // On success the browser redirects to GitHub, so no further UI update needed.
-  };
-
   if (loading) {
     return (
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
@@ -527,69 +507,23 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
-            <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">GitHub</label>
-              {searchParams.get("error_code") === "identity_already_exists" && user.github_username && (
-                <div
-                  className="mb-2 p-3 flex items-start gap-2 text-sm"
-                  style={{
-                    backgroundColor: "var(--status-success-bg)",
-                    border: "2px solid var(--border-hard)",
-                  }}
-                >
-                  <CheckCircle2 size={16} className="mt-0.5 shrink-0" style={{ color: "var(--status-success-text)" }} />
-                  <span className="font-bold text-[var(--status-success-text)]">
-                    GitHub connected successfully!
-                  </span>
-                </div>
-              )}
-              {searchParams.get("error_code") === "identity_already_exists" && !user.github_username && (
-                <div
-                  className="mb-2 p-3 flex items-start gap-2 text-sm"
-                  style={{
-                    backgroundColor: "var(--status-error-bg)",
-                    border: "2px solid var(--border-hard)",
-                  }}
-                >
-                  <Github size={16} className="mt-0.5 shrink-0" style={{ color: "var(--status-error-text)" }} />
-                  <span className="font-bold text-[var(--foreground)]">
-                    This GitHub account is already linked to another user. Use a different GitHub account or contact support.
-                  </span>
-                </div>
-              )}
-              {user.github_username ? (
-                <div
-                  className="flex items-center gap-2 px-3 py-2.5 text-sm"
-                  style={{
-                    backgroundColor: "var(--status-success-bg)",
-                    border: "2px solid var(--border-hard)",
-                  }}
-                >
-                  <CheckCircle2 size={16} className="text-[var(--status-success-text)] flex-shrink-0" />
-                  <span className="font-bold text-[var(--status-success-text)]">@{user.github_username}</span>
-                  <span className="text-xs font-bold uppercase text-[var(--status-success-text)] opacity-70 ml-auto">Verified</span>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleConnectGithub}
-                  disabled={connectingGithub}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-extrabold uppercase tracking-wide text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-[var(--bg-pill-hover)]"
-                  style={{
-                    backgroundColor: "var(--bg-inverted)",
-                    border: "2px solid var(--border-hard)",
-                  }}
-                >
-                  <Github size={16} />
-                  {connectingGithub ? "Connecting..." : "Connect GitHub"}
-                </button>
-              )}
-              <p className="mt-1.5 text-xs font-medium text-[var(--text-muted)]">
-                {user.github_username
-                  ? "Ownership verified via GitHub OAuth."
-                  : "Verify ownership to enable streak sync."}
-              </p>
-            </div>
+            <GithubConnection
+              githubUsername={user.github_username}
+              oauthErrorCode={searchParams.get("error_code")}
+              onUnlinked={() =>
+                setUser((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        github_username: null,
+                        social_links: prev.social_links
+                          ? { ...prev.social_links, github: null }
+                          : prev.social_links,
+                      }
+                    : prev
+                )
+              }
+            />
             <div>
               <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Telegram</label>
               <div className="relative">
