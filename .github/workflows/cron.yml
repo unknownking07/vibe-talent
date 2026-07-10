@@ -1,0 +1,57 @@
+name: Scheduled cron jobs
+
+# Reliable external scheduler for the /api/cron/* routes.
+#
+# Replaces the Cloudflare Worker `scheduled()` triggers, which fire inconsistently
+# on this OpenNext setup (the handler is invoked, but the in-process fetch to the
+# route doesn't reliably run the job). These routes work over plain HTTPS with the
+# CRON_SECRET bearer token — proven by manual invocation — so an external scheduler
+# is the dependable path. GitHub Actions cron is UTC and best-effort (may run a few
+# minutes late), which is fine for these daily maintenance jobs.
+on:
+  schedule:
+    - cron: "0 6 * * *" # daily — fans out to its child jobs internally
+    - cron: "0 3 * * 0" # check-live-urls (Sunday) — GH accepts 0 for Sunday
+    - cron: "0 4 * * *" # quality-rescore
+    - cron: "30 5 * * *" # verify-backfill
+    - cron: "0 15 * * 1,2" # weekly-digest (Mon + Tue)
+  workflow_dispatch:
+    inputs:
+      route:
+        description: "Cron route to run now (daily | check-live-urls | quality-rescore | verify-backfill | weekly-digest)"
+        required: true
+        default: "verify-backfill"
+
+concurrency:
+  group: cron-${{ github.event.schedule || github.event.inputs.route }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Resolve route from schedule (or manual input)
+        id: r
+        run: |
+          case "${{ github.event.schedule }}" in
+            "0 6 * * *")    ROUTE=daily ;;
+            "0 3 * * 0")    ROUTE=check-live-urls ;;
+            "0 4 * * *")    ROUTE=quality-rescore ;;
+            "30 5 * * *")   ROUTE=verify-backfill ;;
+            "0 15 * * 1,2") ROUTE=weekly-digest ;;
+            *)              ROUTE="${{ github.event.inputs.route }}" ;;
+          esac
+          echo "route=$ROUTE" >> "$GITHUB_OUTPUT"
+
+      - name: Run cron route
+        run: |
+          ROUTE="${{ steps.r.outputs.route }}"
+          echo "→ GET https://www.vibetalent.work/api/cron/$ROUTE"
+          CODE=$(curl -sS --max-time 600 -o /tmp/out -w "%{http_code}" \
+            "https://www.vibetalent.work/api/cron/$ROUTE" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          echo "HTTP $CODE"
+          echo "--- response body ---"
+          head -c 2000 /tmp/out; echo
+          [ "$CODE" = "200" ] || { echo "::error::cron $ROUTE returned HTTP $CODE"; exit 1; }
