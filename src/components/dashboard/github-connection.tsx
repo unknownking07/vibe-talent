@@ -92,8 +92,22 @@ export function GithubConnection({ githubUsername, onUnlinked, oauthErrorCode }:
     // newly-linked account and defeat github-sync's rename/reclaim guard.
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      await sb.from("users").update({ github_username: null, github_id: null }).eq("id", user.id);
-      await sb.from("social_links").update({ github: null }).eq("user_id", user.id);
+      const { error: usersError } = await sb
+        .from("users")
+        .update({ github_username: null, github_id: null })
+        .eq("id", user.id);
+      const { error: socialError } = await sb
+        .from("social_links")
+        .update({ github: null })
+        .eq("user_id", user.id);
+      // The auth identity is already removed, but if the mirror writes fail the
+      // DB still shows the old handle — don't report success. A retry is safe:
+      // the identity is gone, so the next attempt just re-clears the mirrors.
+      if (usersError || socialError) {
+        setError("Disconnected from GitHub, but clearing your profile failed. Reload and try again.");
+        setUnlinking(false);
+        return;
+      }
     }
 
     setConfirmingUnlink(false);
@@ -103,7 +117,7 @@ export function GithubConnection({ githubUsername, onUnlinked, oauthErrorCode }:
 
   return (
     <div>
-      <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">GitHub</label>
+      <span className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">GitHub</span>
 
       {/* Post-connect banners from the OAuth callback round-trip. Supabase
           returns error_code=identity_already_exists both when the link
@@ -152,6 +166,7 @@ export function GithubConnection({ githubUsername, onUnlinked, oauthErrorCode }:
               {error && <p className="text-xs font-bold text-red-600">{error}</p>}
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={handleUnlink}
                   disabled={unlinking}
                   className="btn-brutal text-xs py-1.5 px-3 bg-red-500 text-white hover:bg-red-600"
@@ -159,6 +174,7 @@ export function GithubConnection({ githubUsername, onUnlinked, oauthErrorCode }:
                   {unlinking ? "Unlinking..." : "Unlink"}
                 </button>
                 <button
+                  type="button"
                   onClick={() => { setConfirmingUnlink(false); setError(null); }}
                   disabled={unlinking}
                   className="btn-brutal text-xs py-1.5 px-3"

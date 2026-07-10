@@ -88,12 +88,16 @@ export default function SettingsPage() {
           const ghIdentity = authUser.identities?.find((i: any) => i.provider === "github");
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const ghData = (ghIdentity?.identity_data ?? {}) as any;
-          const ghUsername =
-            ghData.user_name ||
-            ghData.preferred_username ||
-            authUser.user_metadata?.user_name ||
-            authUser.user_metadata?.preferred_username ||
-            null;
+          // Only derive a handle when a GitHub identity is actually linked.
+          // user_metadata persists after unlinkIdentity, so trusting it
+          // unconditionally would resurrect an unlinked account on the next load.
+          const ghUsername = ghIdentity
+            ? ghData.user_name ||
+              ghData.preferred_username ||
+              authUser.user_metadata?.user_name ||
+              authUser.user_metadata?.preferred_username ||
+              null
+            : null;
           if (ghUsername) {
             profile.github_username = ghUsername;
             // Sync to DB in the background
@@ -274,12 +278,16 @@ export default function SettingsPage() {
     const ghIdentity = authUser?.identities?.find((i: any) => i.provider === "github");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const ghData = (ghIdentity?.identity_data ?? {}) as any;
-    const oauthGithub =
-      ghData.user_name ||
-      ghData.preferred_username ||
-      authUser?.user_metadata?.user_name ||
-      authUser?.user_metadata?.preferred_username ||
-      null;
+    // Only trust the OAuth handle when a GitHub identity is still linked;
+    // user_metadata lingers after unlinkIdentity and would otherwise re-verify
+    // an account the builder just disconnected.
+    const oauthGithub = ghIdentity
+      ? ghData.user_name ||
+        ghData.preferred_username ||
+        authUser?.user_metadata?.user_name ||
+        authUser?.user_metadata?.preferred_username ||
+        null
+      : null;
     const verifiedGithub = user.github_username || oauthGithub;
 
     // Backfill users.github_username for accounts that linked GitHub after
