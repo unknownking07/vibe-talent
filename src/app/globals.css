@@ -306,6 +306,25 @@ html {
   border-color: var(--accent);
 }
 
+/* Native <select> arrows render inconsistently across browsers and sit
+   misaligned inside the tall brutalist field. Swap in a custom chevron
+   pinned to the vertical center, 1rem in from the right edge. The extra
+   right padding keeps long option labels from sliding under the arrow. */
+select.input-brutal {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1rem;
+}
+
+[data-theme="dark"] select.input-brutal {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23A69A96' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
 /* Large accent numbers */
 .text-accent-brutal {
   color: var(--accent);
