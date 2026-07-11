@@ -1,11 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSiteUrl } from "@/lib/seo";
 import { runReviewerCalibration } from "@/lib/cron-jobs/reviewer-calibration";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 // Daily orchestrator awaits each child cron sequentially, so its own
 // timeout has to be long enough to cover the slowest child plus all
 // the others. github-sync alone can run up to 5 min at scale.
 export const maxDuration = 300;
+
+/**
+ * Fan out to a sibling cron route as its own Worker invocation.
+ *
+ * On Cloudflare, a plain fetch() to the Worker's own public hostname is an edge
+ * loopback that STRIPS the Authorization header, so every child cron 401s — even
+ * though this orchestrator authenticates fine (GitHub Actions calls it over real
+ * external HTTPS). The WORKER_SELF_REFERENCE service binding dispatches
+ * Worker-to-Worker directly, preserving the header. Off Cloudflare (Vercel/local)
+ * the binding is absent, so fall back to the public fetch.
+ */
+async function cronFetch(url: string, init: RequestInit): Promise<Response> {
+  try {
+    const { env } = getCloudflareContext();
+    const self = (env as {
+      WORKER_SELF_REFERENCE?: { fetch: (input: string, init?: RequestInit) => Promise<Response> };
+    }).WORKER_SELF_REFERENCE;
+    if (self) return await self.fetch(url, init);
+  } catch {
+    // Not running on Cloudflare (or context unavailable) — use the public URL.
+  }
+  return fetch(url, init);
+}
 
 /**
  * Daily orchestrator cron — fans out to individual cron job routes.
@@ -42,7 +66,7 @@ export async function GET(req: NextRequest) {
   // Run jobs sequentially to be predictable
   for (const job of jobs) {
     try {
-      const res = await fetch(`${siteUrl}${job.path}`, { headers });
+      const res = await cronFetch(`${siteUrl}${job.path}`, { headers });
       const data = await res.json().catch(() => ({}));
       results[job.name] = { status: res.status, data };
     } catch (error) {
