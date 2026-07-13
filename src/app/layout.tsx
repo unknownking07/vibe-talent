@@ -4,6 +4,7 @@ import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { SignupBar } from "@/components/layout/signup-bar";
+import { FloatingChat } from "@/components/layout/floating-chat";
 import { PromoBillboard } from "@/components/ui/promo-billboard";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { siteUrl } from "@/lib/seo";
@@ -112,6 +113,7 @@ export default function RootLayout({
         </ErrorBoundary>
         <Footer />
         <SignupBar />
+        <FloatingChat />
       </body>
     </html>
   );
