@@ -15,11 +15,12 @@ import { normalizeExternalUrl, normalizeRepoUrl } from "@/lib/url-normalize";
 function ProjectImageBanner({ url, alt }: { url: string; alt: string }) {
   const crop = parseImageCrop(url);
   return (
-    <div className="relative w-full h-28 border-b-2 border-[var(--border-hard)] overflow-hidden" style={{ backgroundColor: "#ffffff" }}>
+    <div className="relative w-full h-28 border-b-2 border-[var(--border-hard)] overflow-hidden bg-[var(--bg-surface-light)]">
       <Image
         src={url}
         alt={alt}
         fill
+        sizes="(max-width: 768px) 100vw, 360px"
         className="object-cover"
         style={{ objectPosition: crop.objectPosition, transform: `scale(${crop.scale})` }}
       />

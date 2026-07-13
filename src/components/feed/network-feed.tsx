@@ -109,7 +109,7 @@ const FEED_STYLES = `
 .fl-feed-item--badge-silver { border-left-color: var(--badge-silver, #c0c0c0); }
 .fl-feed-item--badge-gold { border-left-color: var(--badge-gold, #ffd700); }
 .fl-feed-item--badge-diamond { border-left-color: var(--badge-diamond, #b9f2ff); }
-.fl-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--bg-surface, #15151A); border: 1px solid var(--border-hard, #2A2A33); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+.fl-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--bg-surface-light, #15151A); border: 1px solid var(--border-hard, #2A2A33); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
 .fl-avatar img { width: 100%; height: 100%; object-fit: cover; opacity: 1; }
 .fl-avatar.orange { background: var(--accent, #FF4A2A); border-color: var(--accent, #FF4A2A); color: #0A0A0E; font-weight: 600; font-size: 14px; }
 .fl-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 500; vertical-align: middle; margin: 0 4px; }
