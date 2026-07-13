@@ -69,7 +69,7 @@ function actionText(item: GroupedItem): string {
   return item.count > 1 ? `${item.count} commits` : "pushed";
 }
 
-const AVATAR_COLORS = ["#ff4400", "#4a4a4a", "#ffffff", "#ff4400", "#4a4a4a", "#ffffff"];
+const AVATAR_COLORS = ["#ff4400", "#4a4a4a", "var(--bg-surface-light)", "#ff4400", "#4a4a4a", "var(--bg-surface-light)"];
 
 const FRAME_STYLE: CSSProperties = {
   width: "100%",
