@@ -26,8 +26,15 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   images: {
-    formats: ["image/avif", "image/webp"],
-    minimumCacheTTL: 2592000,
+    // Route next/image through Cloudflare Image Transformations (/cdn-cgi/image)
+    // so results are edge-cached instead of re-transformed per request by the
+    // OpenNext IMAGES binding. Format negotiation happens via format=auto in the
+    // loader; `formats`/`minimumCacheTTL` are ignored once a custom loader is set
+    // (minimumCacheTTL was already a no-op on @opennextjs/cloudflare). See
+    // image-loader.ts for the required Cloudflare dashboard setup.
+    loader: "custom",
+    loaderFile: "./image-loader.ts",
+    // Kept so <Image src> host validation stays strict even with the custom loader.
     remotePatterns: [
       {
         protocol: "https",
