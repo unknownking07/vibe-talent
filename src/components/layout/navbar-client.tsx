@@ -200,7 +200,14 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
           .eq("id", userId)
           .single();
         if (cancelled) return;
-        if (error) console.error("Navbar profile fetch error:", error);
+        if (error) {
+          // A transient query failure (network / auth blip on a rapid
+          // refresh) is not the same as "no profile" — do NOT fall through to
+          // the blanking fallback below. Keep whatever is already on screen
+          // (SSR / localStorage cache); the next successful fetch reconciles.
+          console.error("Navbar profile fetch error:", error);
+          return;
+        }
         if (profile && profile.username) {
           const next: NavbarProfile = {
             username: profile.username,
@@ -219,8 +226,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
       } catch (err) {
         if (cancelled) return;
         console.error("Navbar profile fetch failed:", err);
+        // Don't blank a known profile on a transient throw — only fall back to
+        // the email stub if we have nothing to show yet.
         if (email) {
-          setUserProfile({ username: email.split("@")[0], avatar_url: null, github_username: null, display_name: null });
+          setUserProfile((prev) => prev ?? { username: email.split("@")[0], avatar_url: null, github_username: null, display_name: null });
         }
       }
     }
@@ -238,15 +247,21 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
     // Check auth once on mount, then listen for changes. This still runs even
     // when SSR pre-populated state, in case the cookie changed between render
     // and hydration (e.g. user signed out in another tab).
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user }, error }) => {
       if (cancelled) return;
+      // A failed getUser() — a transient 500 from /auth/v1/user, a network
+      // blip, or token-refresh churn from rapid hard refreshes — is NOT a
+      // logout. Treating it as one blanks the avatar and (below) wipes the
+      // cached profile, so bail without touching state; onAuthStateChange's
+      // INITIAL_SESSION and the next check reconcile the real auth state.
+      if (error) return;
       isLoggedInRef.current = !!user;
       setIsLoggedIn(!!user);
       if (user) {
         fetchProfile(user.id, user.email);
         void checkTodayLogged();
       } else {
-        // Cookie expired or cleared between cache write and now — drop the
+        // Cookie genuinely expired or cleared (no error, no user) — drop the
         // cached profile so the next hard refresh doesn't flash it.
         setUserProfile(null);
         writeCachedNavProfile(null);
