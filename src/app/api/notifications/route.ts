@@ -13,7 +13,7 @@ const ALLOWED_NOTIFICATION_TYPES = [
   "referral_prompt",
 ] as const;
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -24,6 +24,19 @@ export async function GET() {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
+
+    // The bell polls this endpoint on an interval purely to keep its unread
+    // badge current; it doesn't need the (up to 50-row) list until the user
+    // opens the dropdown. `?count=1` returns just the count so background
+    // polls stay cheap on payload + Supabase egress.
+    if (req.nextUrl.searchParams.get("count") === "1") {
+      const { count } = await sb
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("read", false);
+      return NextResponse.json({ data: [], unread_count: count || 0 });
+    }
 
     const [{ data, error }, { count }] = await Promise.all([
       sb

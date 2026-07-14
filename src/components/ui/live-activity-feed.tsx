@@ -161,10 +161,14 @@ export function LiveActivityFeed() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    let interval: ReturnType<typeof setInterval> | null = null;
+
     function fetchFeed() {
       fetch("/api/feed?limit=20")
         .then((r) => r.json())
         .then((d) => {
+          if (cancelled) return;
           // Drop any event types this snippet can't render correctly.
           const items: FeedItem[] = (d.feed || []).filter(
             (i: FeedItem) => SUPPORTED_LEGACY_TYPES.has(i.type),
@@ -174,13 +178,47 @@ export function LiveActivityFeed() {
           setError(null);
         })
         .catch(() => {
+          if (cancelled) return;
           setError("Couldn't load live activity");
           setLoaded(true);
         });
     }
+
+    // Pause polling while the tab is hidden so background tabs don't keep
+    // hitting /api/feed (burning Cloudflare Worker invocations + Supabase
+    // egress) for content nobody is looking at; resume with an immediate
+    // re-sync on focus. Mirrors components/feed/network-feed.
+    const startPolling = () => {
+      if (interval !== null) return;
+      interval = setInterval(fetchFeed, 30000);
+    };
+    const stopPolling = () => {
+      if (interval === null) return;
+      clearInterval(interval);
+      interval = null;
+    };
+    const onVisibilityChange = () => {
+      if (typeof document === "undefined") return;
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        fetchFeed();
+        startPolling();
+      }
+    };
+
     fetchFeed();
-    const interval = setInterval(fetchFeed, 30000);
-    return () => clearInterval(interval);
+    startPolling();
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", onVisibilityChange);
+    }
+    return () => {
+      cancelled = true;
+      stopPolling();
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      }
+    };
   }, []);
 
   const grouped = useMemo(() => groupFeedItems(feed).slice(0, 6), [feed]);
