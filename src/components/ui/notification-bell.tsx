@@ -96,17 +96,62 @@ export function NotificationBell() {
     }
   }, []);
 
+  // Lightweight badge-only refresh for the polling loop: skips the notification
+  // list (fetched lazily when the dropdown opens) and returns just the count.
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await fetch("/api/notifications?count=1");
+      if (!res.ok) return;
+      const data = await res.json();
+      setUnreadCount(data.unread_count || 0);
+    } catch {
+      // Silently fail
+    }
+  }, []);
+
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 60000);
-    const handleRefresh = () => fetchNotifications();
-    window.addEventListener("notifications-updated", handleRefresh);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("notifications-updated", handleRefresh);
+    // Pause polling while the tab is hidden so background tabs don't keep
+    // hitting /api/notifications (burning Cloudflare Worker invocations +
+    // Supabase egress) for a badge nobody is looking at; resume with an
+    // immediate re-sync on focus. Mirrors components/feed/network-feed.
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const startPolling = () => {
+      if (interval !== null) return;
+      interval = setInterval(fetchUnreadCount, 60000);
     };
-  }, [fetchNotifications]);
+    const stopPolling = () => {
+      if (interval === null) return;
+      clearInterval(interval);
+      interval = null;
+    };
+    const onVisibilityChange = () => {
+      if (typeof document === "undefined") return;
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        fetchUnreadCount();
+        startPolling();
+      }
+    };
+    const handleRefresh = () => fetchNotifications();
+
+    // Initial load is the full fetch so the dropdown is populated the instant
+    // it's first opened; the repeating interval only needs the count.
+    fetchNotifications();
+    startPolling();
+    window.addEventListener("notifications-updated", handleRefresh);
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", onVisibilityChange);
+    }
+    return () => {
+      stopPolling();
+      window.removeEventListener("notifications-updated", handleRefresh);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      }
+    };
+  }, [fetchNotifications, fetchUnreadCount]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Click outside to close
@@ -160,7 +205,12 @@ export function NotificationBell() {
   return (
     <div className="relative" ref={ref}>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          // Opening the dropdown: pull the fresh list (the interval only keeps
+          // the count current, so the list may be stale or unloaded).
+          if (!open) fetchNotifications();
+          setOpen((o) => !o);
+        }}
         className="relative w-10 h-10 flex items-center justify-center cursor-pointer transition-all hover:translate-x-[1px] hover:translate-y-[1px]"
         style={{
           backgroundColor: "var(--bg-surface)",
