@@ -133,10 +133,10 @@ export default function AgentHubPage() {
             >
               <MessageCircle size={22} className="text-white" />
             </div>
-            <h2 className="text-lg font-extrabold uppercase text-white">Bot Chat</h2>
+            <h2 className="text-lg font-extrabold uppercase text-white">AI Chat</h2>
             <p className="mt-2 text-sm text-[var(--text-muted-soft)] font-medium">
-              Chat with VibeFinder Bot directly. Describe what you need and get instant
-              talent recommendations.
+              Talk to the real AI assistant — it searches live builder data, evaluates
+              profiles, and drafts hire messages on the spot.
             </p>
             <div className="mt-4 text-sm font-bold uppercase text-[var(--accent)]">
               Start Chat →

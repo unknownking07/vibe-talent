@@ -75,5 +75,6 @@ export const projectsLimiter = createRateLimiter("projects", 30, "1 m");
 export const buildersLimiter = createRateLimiter("builders", 30, "1 m");
 export const hireApiLimiter = createRateLimiter("hire-api", 5, "1 h");
 export const feedbackLimiter = createRateLimiter("feedback", 10, "1 h");
-// Support chat calls a paid LLM — keep this tight to protect the API budget.
-export const supportLimiter = createRateLimiter("support", 15, "5 m");
+// The VibeFinder agent calls a paid LLM (up to a few completions per message
+// once tool rounds are counted) — keep this tight to protect the API budget.
+export const agentLimiter = createRateLimiter("agent", 12, "5 m");

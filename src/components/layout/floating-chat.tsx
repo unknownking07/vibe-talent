@@ -105,7 +105,7 @@ export function FloatingChat() {
               <span className="vt-fab-ico"><Search size={18} /></span>
               <span>
                 <span className="vt-fab-title">Find talent</span>
-                <span className="vt-fab-sub">Match with builders</span>
+                <span className="vt-fab-sub">AI-matched builders</span>
               </span>
             </Link>
           </div>
