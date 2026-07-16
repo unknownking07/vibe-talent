@@ -10,6 +10,11 @@ import { encodeAgentEvent, type AgentStreamEvent } from "./events";
 // Cost ceiling: at most 3 tool rounds, then one forced plain-text answer —
 // so a single user message can never spend more than 4 completions.
 const MAX_TOOL_ROUNDS = 3;
+// A single completion can request many parallel tool calls; each one hits the
+// database. Execute only this many per round — the rest get an error payload
+// (every tool_call_id still needs a response or the next completion is
+// rejected upstream).
+const MAX_CALLS_PER_ROUND = 3;
 
 const TOOL_STATUS: Record<string, string> = {
   search_builders: "Searching builders…",
@@ -63,7 +68,17 @@ export function runAgentTurn(opts: {
             tool_calls: result.toolCalls,
           });
 
-          for (const call of result.toolCalls) {
+          for (const [index, call] of result.toolCalls.entries()) {
+            if (index >= MAX_CALLS_PER_ROUND) {
+              messages.push({
+                role: "tool",
+                tool_call_id: call.id,
+                content: JSON.stringify({
+                  error: "Tool call limit reached for this round — answer with what you already have.",
+                }),
+              });
+              continue;
+            }
             emit({ type: "status", label: TOOL_STATUS[call.function.name] ?? "Working…" });
             const { forLLM, builders } = await executeAgentTool(
               opts.supabase,

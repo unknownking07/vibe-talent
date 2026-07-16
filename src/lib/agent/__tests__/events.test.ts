@@ -42,4 +42,15 @@ describe("agent event stream protocol", () => {
     const { events } = decodeAgentEvents(wire);
     expect(events).toEqual([{ type: "token", text: "ok" }]);
   });
+
+  it("drops known types whose payload has the wrong shape", () => {
+    const wire =
+      '{"type":"builders"}\n' + // missing builders array
+      '{"type":"token"}\n' + // missing text
+      '{"type":"status","label":7}\n' +
+      '{"type":"mystery","text":"hi"}\n' +
+      encodeAgentEvent({ type: "done" });
+    const { events } = decodeAgentEvents(wire);
+    expect(events).toEqual([{ type: "done" }]);
+  });
 });

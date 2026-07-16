@@ -14,10 +14,31 @@ export function encodeAgentEvent(event: AgentStreamEvent): string {
   return JSON.stringify(event) + "\n";
 }
 
+/** Shape-check one decoded line so a malformed event can't crash a consumer. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isAgentEvent(parsed: any): parsed is AgentStreamEvent {
+  if (!parsed || typeof parsed !== "object") return false;
+  switch (parsed.type) {
+    case "token":
+      return typeof parsed.text === "string";
+    case "status":
+      return typeof parsed.label === "string";
+    case "builders":
+      return Array.isArray(parsed.builders);
+    case "error":
+      return typeof parsed.message === "string";
+    case "done":
+      return true;
+    default:
+      return false;
+  }
+}
+
 /**
  * Parse complete NDJSON lines out of a stream buffer. Returns the decoded
  * events plus the trailing partial line to carry into the next chunk.
- * Malformed lines are skipped rather than aborting the stream.
+ * Malformed or unknown-shaped lines are skipped rather than aborting the
+ * stream.
  */
 export function decodeAgentEvents(buffer: string): {
   events: AgentStreamEvent[];
@@ -31,9 +52,7 @@ export function decodeAgentEvents(buffer: string): {
     if (!trimmed) continue;
     try {
       const parsed = JSON.parse(trimmed);
-      if (parsed && typeof parsed.type === "string") {
-        events.push(parsed as AgentStreamEvent);
-      }
+      if (isAgentEvent(parsed)) events.push(parsed);
     } catch {
       // Skip malformed lines — better to drop one event than kill the chat.
     }

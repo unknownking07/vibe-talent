@@ -27,9 +27,22 @@ export function AgentChatPanel({
 }: AgentChatPanelProps) {
   const { messages, send, isStreaming, status } = useAgentChat(greeting);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Whether the user is reading at the bottom. Auto-scroll only then — a
+  // smooth scroll restarted on every streamed chunk would drag them back
+  // down while they're reading earlier messages.
+  const pinnedRef = useRef(true);
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    pinnedRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  };
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    const el = scrollRef.current;
+    if (el && pinnedRef.current) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
+    }
   }, [messages, isStreaming, status]);
 
   const showSuggestions = messages.length === 1 && !isStreaming;
@@ -57,8 +70,17 @@ export function AgentChatPanel({
         </div>
       </div>
 
-      {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 pb-4">
+      {/* Messages — role="log" announces streamed replies politely to
+          assistive tech; tabIndex makes the history keyboard-scrollable. */}
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        role="log"
+        aria-label="Conversation"
+        aria-busy={isStreaming}
+        tabIndex={0}
+        className="flex-1 overflow-y-auto space-y-4 pb-4 focus:outline-none"
+      >
         {messages.map((msg) => {
           // An empty agent bubble only exists transiently while we wait for the
           // first streamed token — render it as the animated "thinking" state.
@@ -80,7 +102,10 @@ export function AgentChatPanel({
 
         {/* Live tool activity — the agent is reading real platform data */}
         {status && (
-          <div className="ml-11 flex items-center gap-2 text-xs font-bold uppercase text-[var(--text-muted)] animate-pulse">
+          <div
+            role="status"
+            className="ml-11 flex items-center gap-2 text-xs font-bold uppercase text-[var(--text-muted)] animate-pulse"
+          >
             <Bot size={12} className="text-[var(--accent)]" />
             {status}
           </div>

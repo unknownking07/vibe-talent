@@ -131,7 +131,7 @@ export function BuilderCard({ builder, rank }: BuilderCardProps) {
           )}
 
           {/* Actions */}
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             <Link
               href={`/profile/${builder.username}`}
               className="btn-brutal btn-brutal-primary text-xs py-1.5 px-4 flex items-center gap-1"

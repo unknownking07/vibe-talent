@@ -33,6 +33,10 @@ function parseMessages(input: unknown): ChatMessage[] {
  * gets the user's own public stats so "how do I improve my score?" can be
  * answered with real numbers. Anonymous chat works exactly the same minus
  * personalization.
+ *
+ * Loosely typed on purpose: the hand-rolled Database interface doesn't carry
+ * the query-builder metadata supabase-js needs, so typed `.select()` strings
+ * resolve to `never` (same reason the v1 routes use `as any`).
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getViewerContext(supabase: any): Promise<ViewerContext | null> {
@@ -55,7 +59,14 @@ async function getViewerContext(supabase: any): Promise<ViewerContext | null> {
       .eq("user_id", user.id)
       .eq("flagged", false);
 
-    return { ...row, projects_count: count ?? 0 };
+    return {
+      username: row.username,
+      vibe_score: row.vibe_score,
+      streak: row.streak,
+      longest_streak: row.longest_streak,
+      badge_level: row.badge_level,
+      projects_count: count ?? 0,
+    };
   } catch {
     return null; // personalization is optional — never block the chat on it
   }

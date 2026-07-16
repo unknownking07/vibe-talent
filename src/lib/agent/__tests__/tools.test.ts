@@ -76,8 +76,8 @@ describe("normalizeSearchArgs", () => {
 });
 
 describe("normalizeUsername", () => {
-  it("strips the @ and surrounding whitespace", () => {
-    expect(normalizeUsername({ username: " @Some_User " })).toBe("Some_User");
+  it("strips the @, trims, and lowercases to the stored canonical form", () => {
+    expect(normalizeUsername({ username: " @Some_User " })).toBe("some_user");
   });
 
   it("rejects missing, empty, oversized, or unsafe values", () => {

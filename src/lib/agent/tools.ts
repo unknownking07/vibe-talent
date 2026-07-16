@@ -68,12 +68,16 @@ export function normalizeSearchArgs(raw: unknown): SearchBuilderArgs {
   };
 }
 
-/** "@Some_User " → "some_user"; rejects anything that can't be a username. */
+/**
+ * "@Some_User " → "some_user"; rejects anything that can't be a username.
+ * Usernames are stored lowercase (see lib/username.ts), so lowercasing here
+ * lets the exact-equality lookup tolerate model-typed casing.
+ */
 export function normalizeUsername(raw: unknown): string | null {
   const obj = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   if (typeof obj.username !== "string") return null;
-  const name = obj.username.trim().replace(/^@/, "");
-  if (!name || name.length > 60 || !/^[a-zA-Z0-9_.-]+$/.test(name)) return null;
+  const name = obj.username.trim().replace(/^@/, "").toLowerCase();
+  if (!name || name.length > 60 || !/^[a-z0-9_.-]+$/.test(name)) return null;
   return name;
 }
 
@@ -245,7 +249,7 @@ async function fetchBuilderPool(supabase: AnyClient): Promise<UserWithSocials[]>
   if (!users?.length) return [];
 
   const userIds = users.map((u: { id: string }) => u.id);
-  const [{ data: projects }, { data: socials }] = await Promise.all([
+  const [projectsRes, socialsRes] = await Promise.all([
     supabase
       .from("projects")
       .select(PROJECT_FIELDS)
@@ -254,6 +258,12 @@ async function fetchBuilderPool(supabase: AnyClient): Promise<UserWithSocials[]>
       .eq("is_private", false),
     supabase.from("social_links").select("user_id, telegram").in("user_id", userIds),
   ]);
+  // A failed read must NOT degrade into "builder with zero projects" — that
+  // would silently skew every ranking. Throw so the executor answers honestly.
+  if (projectsRes.error) throw projectsRes.error;
+  if (socialsRes.error) throw socialsRes.error;
+  const projects = projectsRes.data;
+  const socials = socialsRes.data;
 
   return users.map((user: UserWithSocials) => ({
     ...user,
@@ -314,11 +324,12 @@ async function getBuilder(supabase: AnyClient, rawArgs: unknown): Promise<ToolEx
   const username = normalizeUsername(rawArgs);
   if (!username) return { forLLM: { error: "A valid username is required." } };
 
-  // ilike with no wildcards = case-insensitive exact match.
+  // Exact equality — usernames are stored lowercase, and LIKE-style operators
+  // would treat "_" (common in handles) as a single-char wildcard.
   const { data: user, error } = await supabase
     .from("users")
     .select(USER_FIELDS)
-    .ilike("username", username)
+    .eq("username", username)
     .maybeSingle();
   if (error) throw error;
   if (!user) {
@@ -329,7 +340,7 @@ async function getBuilder(supabase: AnyClient, rawArgs: unknown): Promise<ToolEx
     };
   }
 
-  const [{ data: projects }, { data: social }] = await Promise.all([
+  const [projectsRes, socialRes] = await Promise.all([
     supabase
       .from("projects")
       .select(PROJECT_FIELDS)
@@ -338,11 +349,16 @@ async function getBuilder(supabase: AnyClient, rawArgs: unknown): Promise<ToolEx
       .eq("is_private", false),
     supabase.from("social_links").select("user_id, telegram").eq("user_id", user.id).maybeSingle(),
   ]);
+  // Same as the pool fetch: an evaluation over silently-missing projects would
+  // be wrong, not empty — fail loudly and let the executor answer honestly.
+  if (projectsRes.error) throw projectsRes.error;
+  if (socialRes.error) throw socialRes.error;
+  const projects = projectsRes.data;
 
   const full: UserWithSocials = {
     ...user,
     projects: projects || [],
-    social_links: social || null,
+    social_links: socialRes.data || null,
   };
   const evaluation = evaluateUser(full);
   const card = toCard(full, evaluation.overall_score, evaluation.strengths.slice(0, 3));
@@ -400,13 +416,15 @@ async function getPlatformStats(supabase: AnyClient): Promise<ToolExecution> {
       .maybeSingle(),
   ]);
 
+  if (topRes.error) throw topRes.error;
+
   return {
     forLLM: {
       total_builders: builders,
       builders_on_active_streak: activeStreaks,
       total_projects: projects,
       verified_projects: verifiedProjects,
-      top_builder: topRes?.data
+      top_builder: topRes.data
         ? { username: topRes.data.username, vibe_score: topRes.data.vibe_score }
         : null,
     },

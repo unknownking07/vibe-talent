@@ -13,6 +13,12 @@ export interface AgentChatMessage {
   role: "user" | "agent";
   content: string;
   builders?: AgentBuilderCard[];
+  /**
+   * False for bubbles that contain transport/tool error text. They render in
+   * the UI but are excluded from the history sent upstream, so a 429/503 or
+   * connection hiccup never reads as something the model actually said.
+   */
+  includeInHistory?: boolean;
 }
 
 export function useAgentChat(greeting: string) {
@@ -33,7 +39,7 @@ export function useAgentChat(greeting: string) {
       // Build the API payload BEFORE mutating state: full history + this turn,
       // minus the client-only greeting, mapped to the API's role names.
       const payload = [...messages, userMsg]
-        .filter((m) => m.id !== "greeting")
+        .filter((m) => m.id !== "greeting" && m.includeInHistory !== false)
         .map((m) => ({
           role: m.role === "agent" ? "assistant" : "user",
           content: m.content,
@@ -45,11 +51,17 @@ export function useAgentChat(greeting: string) {
 
       let content = "";
       let builders: AgentBuilderCard[] = [];
+      let includeInHistory = true;
       const apply = () =>
         setMessages((prev) =>
           prev.map((m) =>
             m.id === agentId
-              ? { ...m, content, builders: builders.length ? builders : undefined }
+              ? {
+                  ...m,
+                  content,
+                  builders: builders.length ? builders : undefined,
+                  includeInHistory,
+                }
               : m
           )
         );
@@ -64,6 +76,7 @@ export function useAgentChat(greeting: string) {
         if (!res.ok || !res.body) {
           const data = (await res.json().catch(() => null)) as { error?: string } | null;
           content = data?.error || "Something went wrong. Please try again.";
+          includeInHistory = false;
           apply();
           return;
         }
@@ -83,13 +96,17 @@ export function useAgentChat(greeting: string) {
             } else if (event.type === "status") {
               setStatus(event.label);
             } else if (event.type === "builders") {
-              // Merge, deduped by username — a refined search updates in place
-              // instead of stacking duplicate cards.
-              const merged = new Map(builders.map((b) => [b.username, b]));
-              for (const b of event.builders) merged.set(b.username, b);
-              builders = Array.from(merged.values());
+              // Newest results lead in their exact tool order (the ranks the
+              // deterministic engine just produced); earlier cards that
+              // weren't re-returned trail behind, deduped by username.
+              const incoming = new Set(event.builders.map((b) => b.username));
+              builders = [
+                ...event.builders,
+                ...builders.filter((b) => !incoming.has(b.username)),
+              ];
             } else if (event.type === "error") {
               content = content ? `${content}\n\n${event.message}` : event.message;
+              includeInHistory = false;
             }
           }
           apply();
@@ -97,12 +114,14 @@ export function useAgentChat(greeting: string) {
 
         if (!content.trim() && builders.length === 0) {
           content = "Sorry, I didn't catch that. Could you rephrase?";
+          includeInHistory = false; // UI-fabricated, not something the model said
           apply();
         }
       } catch {
         content = content
           ? `${content}\n\nConnection issue — please try again.`
           : "Connection issue. Please try again.";
+        includeInHistory = false;
         apply();
       } finally {
         setIsStreaming(false);
