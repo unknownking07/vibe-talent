@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "VibeFinder Bot Chat | VibeTalent",
   description:
-    "Chat with VibeFinder Bot to find the perfect vibe coder for your project. Describe what you need and get matched instantly.",
+    "Chat with VibeFinder, the AI assistant that searches live builder data to find the perfect vibe coder for your project — and answers anything about VibeTalent.",
 };
 
 export default function ChatLayout({ children }: { children: React.ReactNode }) {

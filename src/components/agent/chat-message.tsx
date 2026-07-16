@@ -8,6 +8,17 @@ interface ChatMessageProps {
   isThinking?: boolean;
 }
 
+// The assistant is instructed to answer in plain text, but LLMs still slip
+// markdown markers in occasionally — strip the common ones so they never
+// render as literal asterisks in the bubble. Runs on the full accumulated
+// text each render, so streaming chunk boundaries can't split a marker.
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*/g, "")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/^#{1,4}\s+/gm, "");
+}
+
 export function ChatMessage({ role, content, isThinking }: ChatMessageProps) {
   if (role === "agent") {
     return (
@@ -37,7 +48,7 @@ export function ChatMessage({ role, content, isThinking }: ChatMessageProps) {
               <span className="animate-bounce" style={{ animationDelay: "300ms" }}>.</span>
             </span>
           ) : (
-            <span className="whitespace-pre-wrap">{content}</span>
+            <span className="whitespace-pre-wrap">{stripMarkdown(content)}</span>
           )}
         </div>
       </div>
