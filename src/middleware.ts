@@ -1,18 +1,12 @@
-import { updateSession } from "@/lib/supabase/middleware";
+import { updateSession, hasAuthSessionCookie } from "@/lib/supabase/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 
-const AUTH_COOKIE_PREFIX = "sb-";
-const AUTH_COOKIE_SUFFIX = "-auth-token";
-
-function hasSupabaseAuthCookie(request: NextRequest): boolean {
-  return request.cookies
-    .getAll()
-    .some(
-      (c) =>
-        c.name.startsWith(AUTH_COOKIE_PREFIX) &&
-        c.name.endsWith(AUTH_COOKIE_SUFFIX),
-    );
-}
+// Chunk-aware session-cookie check shared with updateSession. The previous
+// local prefix/suffix match missed chunked cookies (sb-…-auth-token.0), which
+// made the anonymous fast-path below skip the cookie refresh for logged-in
+// users with large sessions — their auth silently went stale on every page
+// except /dashboard.
+const hasSupabaseAuthCookie = hasAuthSessionCookie;
 
 export async function middleware(request: NextRequest) {
   // Catch Supabase auth error redirects (e.g. identity_already_exists)

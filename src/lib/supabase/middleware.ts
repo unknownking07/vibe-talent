@@ -46,15 +46,17 @@ export async function updateSession(request: NextRequest) {
   // the cookie refresh above.
   const isProtectedRoute = request.nextUrl.pathname.startsWith("/dashboard");
   if (isProtectedRoute && !user) {
-    // Fall back to getSession() (local cookie read) on transient network
-    // errors so we don't bounce authenticated users on flakiness.
-    if (error) {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session) {
-        return supabaseResponse;
-      }
+    // getUser() failing WITH an auth cookie present is a refresh that raced or
+    // a transient auth-server blip — not proof of logout. This bites hardest
+    // overnight: a tab reopened after midnight carries an hours-expired access
+    // token, and one flaky refresh used to bounce a logged-in user to
+    // /auth/login. getSession() can't arbitrate (it re-attempts the refresh
+    // that just failed and returns null), so let the request through and let
+    // the client resolve the real state — the dashboard renders its own
+    // signed-out UI, and a genuinely dead session clears the cookie on the
+    // client, making the next navigation redirect normally.
+    if (error && hasAuthSessionCookie(request)) {
+      return supabaseResponse;
     }
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
@@ -62,4 +64,16 @@ export async function updateSession(request: NextRequest) {
   }
 
   return supabaseResponse;
+}
+
+// Matches @supabase/ssr session cookies, including chunked ones
+// (sb-<ref>-auth-token, sb-<ref>-auth-token.0, .1, …) while excluding the
+// PKCE sb-<ref>-auth-token-code-verifier cookie that mid-OAuth visitors carry.
+export function hasAuthSessionCookie(request: NextRequest): boolean {
+  return request.cookies
+    .getAll()
+    .some(
+      (c) =>
+        /^sb-.+-auth-token(\.\d+)?$/.test(c.name) && c.value.length > 0,
+    );
 }

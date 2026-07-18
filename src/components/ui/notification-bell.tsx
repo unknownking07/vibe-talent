@@ -79,6 +79,9 @@ function BellChip({ n }: { n: Notification }) {
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  // False until the first successful list fetch — the dropdown shows a loading
+  // hint instead of a false "No notifications yet" while the lazy list loads.
+  const [listLoaded, setListLoaded] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -91,6 +94,7 @@ export function NotificationBell() {
       const data = await res.json();
       setNotifications(data.data || []);
       setUnreadCount(data.unread_count || 0);
+      setListLoaded(true);
     } catch {
       // Silently fail
     }
@@ -98,14 +102,16 @@ export function NotificationBell() {
 
   // Lightweight badge-only refresh for the polling loop: skips the notification
   // list (fetched lazily when the dropdown opens) and returns just the count.
-  const fetchUnreadCount = useCallback(async () => {
+  // Reports success so the initial load can schedule a one-shot retry.
+  const fetchUnreadCount = useCallback(async (): Promise<boolean> => {
     try {
       const res = await fetch("/api/notifications?count=1");
-      if (!res.ok) return;
+      if (!res.ok) return false;
       const data = await res.json();
       setUnreadCount(data.unread_count || 0);
+      return true;
     } catch {
-      // Silently fail
+      return false;
     }
   }, []);
 
@@ -136,9 +142,19 @@ export function NotificationBell() {
     };
     const handleRefresh = () => fetchNotifications();
 
-    // Initial load is the full fetch so the dropdown is populated the instant
-    // it's first opened; the repeating interval only needs the count.
-    fetchNotifications();
+    // Badge-first initial load: one head-count query paints the unread badge
+    // as fast as the Worker can auth, instead of waiting on the 50-row list +
+    // count the old full fetch pulled. The list stays lazy — opening the
+    // dropdown always fetches it fresh (see the bell button), so preloading
+    // it here bought latency and egress for nothing. The one-shot retry
+    // covers hard loads where the first hit lands while the auth cookie is
+    // still settling and 401s.
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    void fetchUnreadCount().then((ok) => {
+      if (!ok) {
+        retryTimer = setTimeout(() => void fetchUnreadCount(), 1500);
+      }
+    });
     startPolling();
     window.addEventListener("notifications-updated", handleRefresh);
     if (typeof document !== "undefined") {
@@ -146,6 +162,7 @@ export function NotificationBell() {
     }
     return () => {
       stopPolling();
+      if (retryTimer !== null) clearTimeout(retryTimer);
       window.removeEventListener("notifications-updated", handleRefresh);
       if (typeof document !== "undefined") {
         document.removeEventListener("visibilitychange", onVisibilityChange);
@@ -260,7 +277,9 @@ export function NotificationBell() {
           {notifications.length === 0 ? (
             <div className="px-4 py-8 text-center">
               <Bell size={24} className="mx-auto mb-2 text-[var(--text-muted-soft)]" />
-              <p className="text-sm font-medium text-[var(--text-muted-soft)]">No notifications yet</p>
+              <p className="text-sm font-medium text-[var(--text-muted-soft)]">
+                {listLoaded ? "No notifications yet" : "Loading notifications…"}
+              </p>
             </div>
           ) : (
             <div>
