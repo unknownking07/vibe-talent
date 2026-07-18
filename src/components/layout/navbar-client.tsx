@@ -150,26 +150,79 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
   // would still leave hasUnloggedActivity true from a prior session.
   const isLoggedInRef = useRef(initialIsLoggedIn);
 
-  const checkTodayLogged = useCallback(async () => {
+  // Serialize dot checks. The eager mount kick, getUser(), INITIAL_SESSION,
+  // and focus events can all request one within the same second; the previous
+  // concurrent fetches resolved last-write-wins, so one slow failure could
+  // erase the dot a successful check had just set.
+  const todayCheckRef = useRef<Promise<void> | null>(null);
+  const todayCheckQueuedRef = useRef(false);
+
+  // `fresh` forces a follow-up fetch when a check is already in flight — used
+  // after streak writes, where the in-flight response may predate the write
+  // that fired the event. Plain callers just join the in-flight check.
+  const checkTodayLogged = useCallback(async (fresh = false) => {
     if (!isLoggedInRef.current) {
       setHasUnloggedActivity(false);
       return;
     }
-    try {
-      const now = new Date();
-      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-      const res = await fetch(`/api/streak/today-logged?date=${today}`);
-      if (!res.ok) {
-        // 401 / 429 / 5xx — clear the dot rather than leaving a stale value.
-        setHasUnloggedActivity(false);
-        return;
-      }
-      const data = await res.json();
-      setHasUnloggedActivity(data.loggedToday === false);
-    } catch {
-      setHasUnloggedActivity(false);
+    if (todayCheckRef.current) {
+      if (fresh) todayCheckQueuedRef.current = true;
+      return todayCheckRef.current;
     }
+    const run = (async () => {
+      try {
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+        const fetchToday = () => fetch(`/api/streak/today-logged?date=${today}`);
+        let res = await fetchToday();
+        if (res.status === 401 && isLoggedInRef.current) {
+          // Hard refreshes, tab wakes, and the midnight rollover all hit this
+          // endpoint right when the access token is most likely stale or
+          // mid-rotation. Let supabase settle the session, then retry once
+          // before believing the 401.
+          await createClient().auth.getSession();
+          res = await fetchToday();
+        }
+        if (res.status === 401) {
+          // Confirmed signed out — clear rather than leaving a stale dot.
+          setHasUnloggedActivity(false);
+          return;
+        }
+        if (!res.ok) return; // 429 / 5xx — transient; keep the last known state.
+        const data = await res.json();
+        setHasUnloggedActivity(data.loggedToday === false);
+      } catch {
+        // Network blip — keep the last known state; the next focus or streak
+        // event re-checks.
+      } finally {
+        todayCheckRef.current = null;
+        if (todayCheckQueuedRef.current) {
+          todayCheckQueuedRef.current = false;
+          void checkTodayLogged();
+        }
+      }
+    })();
+    todayCheckRef.current = run;
+    return run;
   }, []);
+
+  // Local-date rollover watcher: brings the "no activity logged today" dot up
+  // on ANY page shortly after midnight. The dashboard's MidnightCountdown only
+  // covers users parked on /dashboard — on every other page the dot kept
+  // yesterday's state until a tab switch or navigation. One date compare per
+  // minute; fetches only when the calendar day actually changes.
+  useEffect(() => {
+    let lastDate = new Date().toDateString();
+    const interval = setInterval(() => {
+      const today = new Date().toDateString();
+      if (today === lastDate) return;
+      lastDate = today;
+      // Hidden tabs re-sync via the visibilitychange listener the moment
+      // they're foregrounded; skip the fetch, not the date bookkeeping.
+      if (!document.hidden) void checkTodayLogged();
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [checkTodayLogged]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -189,10 +242,24 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
     // is the canonical "is the client mounted" pattern; the lint rule's
     // suggestion to use a useState initializer doesn't apply here — we
     // explicitly want false during SSR + hydration and true afterwards.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
     setAuthMounted(true);
 
-    async function fetchProfile(userId: string, email?: string) {
+    // One profile fetch per user per burst: mount getUser() and the
+    // INITIAL_SESSION auth event both land within ~a second of a hard load
+    // and used to double the users query on every page view. `force` bypasses
+    // the guard for real profile edits (profile-updated event).
+    let lastProfileFetch: { id: string; ts: number } | null = null;
+    async function fetchProfile(userId: string, email?: string, force = false) {
+      if (
+        !force &&
+        lastProfileFetch &&
+        lastProfileFetch.id === userId &&
+        Date.now() - lastProfileFetch.ts < 5000
+      ) {
+        return;
+      }
+      lastProfileFetch = { id: userId, ts: Date.now() };
       try {
         const { data: profile, error } = await sb
           .from("users")
@@ -269,11 +336,15 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
       isLoggedInRef.current = !!session?.user;
       setIsLoggedIn(!!session?.user);
       if (session?.user) {
+        // Hourly TOKEN_REFRESHED churn changes nothing user-visible — it used
+        // to refire the profile + dot queries in every open tab on every
+        // token rotation.
+        if (event === "TOKEN_REFRESHED") return;
         fetchProfile(session.user.id, session.user.email);
         void checkTodayLogged();
       } else {
@@ -289,14 +360,18 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
     const handleProfileUpdated = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (cancelled) return;
-      if (user) fetchProfile(user.id, user.email);
+      if (user) fetchProfile(user.id, user.email, true);
     };
     window.addEventListener("profile-updated", handleProfileUpdated);
 
     // The dashboard dispatches this after manual Log Activity, successful
     // GitHub sync, and midnight rollover. Refetch so the dot updates without
-    // a full page reload.
-    window.addEventListener("streak-updated", checkTodayLogged);
+    // a full page reload. `fresh` because the event follows a streak write —
+    // an already-in-flight check may carry a response from before the write.
+    const handleStreakUpdated = () => {
+      void checkTodayLogged(true);
+    };
+    window.addEventListener("streak-updated", handleStreakUpdated);
 
     // Catch the "pushed to GitHub in another tab/terminal, came back" case:
     // when the tab regains focus, re-check. GitHub auto-sync is scheduled
@@ -328,7 +403,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
       cancelled = true;
       subscription.unsubscribe();
       window.removeEventListener("profile-updated", handleProfileUpdated);
-      window.removeEventListener("streak-updated", checkTodayLogged);
+      window.removeEventListener("streak-updated", handleStreakUpdated);
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("storage", handleStorage);
     };

@@ -41,6 +41,17 @@ import {
   Zap,
 } from "lucide-react";
 
+// Column lists for the dashboard's own queries, kept to what the page (plus
+// the GitHub self-heal and mandatory-socials gating) actually reads. The
+// previous `select("*")` paid full-row egress on every visit — including
+// projects.quality_metrics, a JSONB blob nothing here renders.
+const DASHBOARD_USER_FIELDS =
+  "id, username, display_name, bio, avatar_url, github_username, vibe_score, streak, longest_streak, badge_level, streak_freezes_remaining, streak_freezes_used, referral_count, created_at";
+const DASHBOARD_PROJECT_FIELDS =
+  "id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, endorsement_count, created_at";
+const DASHBOARD_SOCIAL_FIELDS = "id, user_id, twitter, telegram, github, website, farcaster";
+const INBOX_FIELDS = "id, sender_name, sender_email, budget, message, status, reply, replied_at, created_at";
+
 // Lazy: only loaded when the tour is actually armed (post-signup or ?tour=force).
 // Keeps the ~300-line tour module + its deps out of the initial dashboard chunk.
 const OnboardingTour = dynamic(
@@ -121,6 +132,12 @@ export default function DashboardPage() {
   const [ghTotal, setGhTotal] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [hireRequests, setHireRequests] = useState<HireRequest[]>([]);
+  // Seed for the Inbox tab's "new" badge: a head-count fetched on initial
+  // load (the full list is deferred until the tab is opened). Once the list
+  // has loaded, the badge derives from it directly — see newHireCount below —
+  // so mark-read / delete / reply need no manual counter bookkeeping.
+  const [newHireSeed, setNewHireSeed] = useState(0);
+  const [inboxLoaded, setInboxLoaded] = useState(false);
   const [senderProfiles, setSenderProfiles] = useState<Record<string, { username: string }>>({});
   // Onboarding tour visibility. Initialized false on the server (SSR-safe);
   // the effect below reads the sessionStorage trigger or `?tour=force` query
@@ -188,13 +205,18 @@ export default function DashboardPage() {
       const sb = supabase as any;
 
       try {
-      // Fetch profile + projects + socials + streaks + inbox ALL in parallel (single round trip)
+      // Fetch profile + projects + socials + streaks + inbox badge ALL in
+      // parallel (single round trip). The inbox itself is deferred: the old
+      // hire_requests fetch pulled every request ever received — full message
+      // bodies included — plus a resolve-senders API call on every dashboard
+      // visit, just to derive the tab's "new" badge. A head-count covers the
+      // badge; the Inbox tab loads the real list via loadInbox() when opened.
       const results = await Promise.allSettled([
-        sb.from("users").select("*").eq("id", authUser.id).maybeSingle(),
-        sb.from("projects").select("*").eq("user_id", authUser.id).order("created_at", { ascending: false }),
-        sb.from("social_links").select("*").eq("user_id", authUser.id).maybeSingle(),
+        sb.from("users").select(DASHBOARD_USER_FIELDS).eq("id", authUser.id).maybeSingle(),
+        sb.from("projects").select(DASHBOARD_PROJECT_FIELDS).eq("user_id", authUser.id).order("created_at", { ascending: false }),
+        sb.from("social_links").select(DASHBOARD_SOCIAL_FIELDS).eq("user_id", authUser.id).maybeSingle(),
         fetchStreakLogs(authUser.id),
-        sb.from("hire_requests").select("*").eq("builder_id", authUser.id).order("created_at", { ascending: false }),
+        sb.from("hire_requests").select("id", { count: "exact", head: true }).eq("builder_id", authUser.id).eq("status", "new"),
       ]);
 
       const profile = results[0].status === "fulfilled" ? results[0].value?.data : null;
@@ -203,37 +225,7 @@ export default function DashboardPage() {
       // memory after a fire-and-forget DB upsert.
       let socials = results[2].status === "fulfilled" ? results[2].value?.data : null;
       const streakData = results[3].status === "fulfilled" ? results[3].value : {};
-      const inboxData = results[4].status === "fulfilled" ? results[4].value?.data : [];
-      setHireRequests(inboxData || []);
-
-      // Resolve hire request senders → profiles. The server only resolves
-      // requests where sender_user_id was captured at submission time (i.e.,
-      // the sender was logged in and their auth email matched the form email),
-      // so an unauthenticated form spoof can never link to a victim's profile.
-      // Fire-and-forget; failures keep names as plain text.
-      if (inboxData && inboxData.length > 0) {
-        const ids = (inboxData as HireRequest[]).map((r) => r.id).slice(0, 100);
-        fetch("/api/hire/resolve-senders", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ hire_request_ids: ids }),
-        })
-          .then((r) => {
-            if (!r.ok) {
-              console.warn("[dashboard] resolve-senders non-ok:", r.status);
-              return null;
-            }
-            return r.json();
-          })
-          .then((data) => {
-            if (!cancelled && data?.resolved) {
-              setSenderProfiles(data.resolved);
-            }
-          })
-          .catch((err) => {
-            console.warn("[dashboard] resolve-senders failed:", err);
-          });
-      }
+      setNewHireSeed(results[4].status === "fulfilled" ? results[4].value?.count || 0 : 0);
 
       if (!profile) {
         window.location.href = "/auth/profile-setup";
@@ -452,14 +444,6 @@ export default function DashboardPage() {
         }
       }
 
-      // Recompute streak/score server-side if our computed value differs
-      // (non-blocking). Routed through the SECURITY DEFINER update_user_streak
-      // RPC — reputation columns are no longer client-writable (see the
-      // 20260529 security migration); the RPC is the single source of truth.
-      if (profile && (actualStreak !== profile.streak || actualLongest !== profile.longest_streak)) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (sb as any).rpc("update_user_streak", { p_user_id: authUser.id });
-      }
       } catch (err) {
         console.error("Dashboard loadUserData failed:", err);
         setLoading(false);
@@ -560,11 +544,11 @@ export default function DashboardPage() {
     if (!authUser) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
-    const { data: profile } = await sb.from("users").select("id, username, bio, avatar_url, vibe_score, streak, longest_streak, badge_level, referral_count, created_at").eq("id", authUser.id).maybeSingle();
+    const { data: profile } = await sb.from("users").select(DASHBOARD_USER_FIELDS).eq("id", authUser.id).maybeSingle();
     if (!profile) return;
     const [{ data: projects }, { data: socials }, streakData] = await Promise.all([
-      sb.from("projects").select("id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, created_at").eq("user_id", authUser.id).order("created_at", { ascending: false }),
-      sb.from("social_links").select("id, user_id, twitter, telegram, github, website, farcaster").eq("user_id", authUser.id).maybeSingle(),
+      sb.from("projects").select(DASHBOARD_PROJECT_FIELDS).eq("user_id", authUser.id).order("created_at", { ascending: false }),
+      sb.from("social_links").select(DASHBOARD_SOCIAL_FIELDS).eq("user_id", authUser.id).maybeSingle(),
       fetchStreakLogs(authUser.id),
     ]);
     setUser({ ...profile, projects: projects || [], social_links: socials || null });
@@ -736,18 +720,51 @@ export default function DashboardPage() {
     setTimeout(() => setGithubSyncResult(null), 5000);
   };
 
-  // Refresh inbox data directly from Supabase (skip API route hop)
+  // Fetch the inbox directly from Supabase (skip API route hop). Called when
+  // the Inbox tab is opened — the initial dashboard load only fetches the
+  // "new" head-count for the tab badge.
   const loadInbox = async () => {
     setLoadingInbox(true);
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any)
       .from("hire_requests")
-      .select("*")
+      .select(INBOX_FIELDS)
       .eq("builder_id", user?.id)
       .order("created_at", { ascending: false });
-    setHireRequests(data || []);
+    const list: HireRequest[] = data || [];
+    setHireRequests(list);
+    setInboxLoaded(true);
     setLoadingInbox(false);
+
+    // Resolve hire request senders → profiles. The server only resolves
+    // requests where sender_user_id was captured at submission time (i.e.,
+    // the sender was logged in and their auth email matched the form email),
+    // so an unauthenticated form spoof can never link to a victim's profile.
+    // Fire-and-forget; failures keep names as plain text.
+    if (list.length > 0) {
+      const ids = list.map((r) => r.id).slice(0, 100);
+      fetch("/api/hire/resolve-senders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hire_request_ids: ids }),
+      })
+        .then((r) => {
+          if (!r.ok) {
+            console.warn("[dashboard] resolve-senders non-ok:", r.status);
+            return null;
+          }
+          return r.json();
+        })
+        .then((data) => {
+          if (data?.resolved) {
+            setSenderProfiles(data.resolved);
+          }
+        })
+        .catch((err) => {
+          console.warn("[dashboard] resolve-senders failed:", err);
+        });
+    }
   };
 
   const handleMarkAsRead = async (requestId: string) => {
@@ -884,13 +901,24 @@ export default function DashboardPage() {
     // Route through the server API (admin client, upsert-safe). Previously this
     // page inserted via the browser Supabase client, which 404'd in production
     // due to RLS/JWT edge cases and left the user clicking with no feedback.
-    let res: Response;
-    try {
-      res = await fetch("/api/streak", {
+    const postStreak = () =>
+      fetch("/api/streak", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ date: today }),
       });
+    let res: Response;
+    try {
+      res = await postStreak();
+      if (res.status === 401) {
+        // Streaks get logged right after the midnight rollover — the moment a
+        // long-open tab's access token is most likely stale or mid-rotation
+        // (the rollover itself fires a burst of authed calls). Let supabase
+        // settle a fresh session and retry once before showing the scary
+        // "sign in again" message for what is usually a transient blip.
+        await createClient().auth.getSession();
+        res = await postStreak();
+      }
     } catch (err) {
       console.error("Failed to log activity (network):", err);
       setLogError("Network error — check your connection and try again.");
@@ -1172,6 +1200,12 @@ export default function DashboardPage() {
     );
   }
 
+  // Inbox "new" badge: derived from the fetched list once available, the
+  // initial head-count seed before that.
+  const newHireCount = inboxLoaded
+    ? hireRequests.filter((r) => r.status === "new").length
+    : newHireSeed;
+
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
       <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-6">Dashboard</h1>
@@ -1202,7 +1236,7 @@ export default function DashboardPage() {
         >
           <Inbox size={16} />
           Inbox
-          {hireRequests.filter((r) => r.status === "new").length > 0 && (
+          {newHireCount > 0 && (
             <span
               className="ml-1 px-2 py-0.5 text-xs font-extrabold"
               style={{
@@ -1211,7 +1245,7 @@ export default function DashboardPage() {
                 border: "2px solid var(--border-hard)",
               }}
             >
-              {hireRequests.filter((r) => r.status === "new").length}
+              {newHireCount}
             </span>
           )}
         </button>
