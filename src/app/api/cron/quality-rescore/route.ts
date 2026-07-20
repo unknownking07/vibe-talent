@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl } from "@/lib/github-quality";
+import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl, toRepoQualityData } from "@/lib/github-quality";
 import { runWeeklySnapshot } from "@/lib/cron-jobs/weekly-snapshot";
 
 // Each project costs 4 api.github.com calls. At 50 projects per run that's
@@ -76,6 +76,24 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch projects" }, { status: 500 });
     }
 
+    // Map owner → VibeTalent profile slug so README badge detection can be
+    // scoped to the right builder. One query for the whole batch rather than
+    // a lookup per project. Note this is `users.username` (the profile slug in
+    // badge URLs), NOT `github_username`.
+    const profileUsernameById = new Map<string, string>();
+    const ownerIds = [...new Set(
+      ((needsRescore ?? []) as { user_id: string }[]).map((p) => p.user_id).filter(Boolean)
+    )];
+    if (ownerIds.length > 0) {
+      const { data: ownerRows } = await sb
+        .from("users")
+        .select("id, username")
+        .in("id", ownerIds);
+      for (const row of (ownerRows ?? []) as { id: string; username: string | null }[]) {
+        if (row.username) profileUsernameById.set(row.id, row.username);
+      }
+    }
+
     // Monday-only weekly snapshot of all users' vibe scores so we can compute
     // "climbed since last Monday" deltas. Runs in-process after rescoring (or
     // the no-op skip path) to avoid burning another Vercel cron slot. Isolated
@@ -115,23 +133,15 @@ export async function GET(req: NextRequest) {
 
             const { owner: repoOwner, repo: repoName } = parsed;
 
-            const qualityResult = await analyzeRepository(repoOwner, repoName, githubToken);
+            const qualityResult = await analyzeRepository(
+              repoOwner,
+              repoName,
+              githubToken,
+              profileUsernameById.get(project.user_id) ?? null
+            );
             const qualityScore = qualityResult.success ? (qualityResult.metrics?.quality_score ?? 0) : 0;
             const qualityMetrics = (qualityResult.success && qualityResult.metrics)
-              ? {
-                  stars: qualityResult.metrics.stars,
-                  forks: qualityResult.metrics.forks,
-                  contributors: qualityResult.metrics.contributors,
-                  total_commits: qualityResult.metrics.total_commits,
-                  has_tests: qualityResult.metrics.has_tests,
-                  has_ci: qualityResult.metrics.has_ci,
-                  has_readme: qualityResult.metrics.has_readme,
-                  community_score: qualityResult.metrics.community_score,
-                  substance_score: qualityResult.metrics.substance_score,
-                  maintenance_score: qualityResult.metrics.maintenance_score,
-                  quality_score: qualityResult.metrics.quality_score,
-                  analyzed_at: new Date().toISOString(),
-                }
+              ? toRepoQualityData(qualityResult.metrics)
               : null;
 
             let live_url_ok: boolean | null = null;

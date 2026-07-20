@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { after } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { projectsLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
-import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl } from "@/lib/github-quality";
+import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl, toRepoQualityData } from "@/lib/github-quality";
 import { normalizeExternalUrl, normalizeRepoUrl } from "@/lib/url-normalize";
 import { createNotification } from "@/lib/notifications";
 
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: userRow } = await (supabase as any)
         .from("users")
-        .select("github_username")
+        .select("github_username, username")
         .eq("id", user.id)
         .single();
 
@@ -174,6 +174,9 @@ export async function POST(request: NextRequest) {
         user.user_metadata?.user_name ||
         user.user_metadata?.preferred_username ||
         null;
+      // VibeTalent profile slug — distinct from the GitHub handle above, and
+      // the one that appears in badge/profile URLs we look for in the README.
+      const profileUsername: string | null = userRow?.username ?? null;
 
       const parsed = parseGithubRepoUrl(normalizedGithubUrl);
       if (githubUsername && parsed && parsed.owner.toLowerCase() === githubUsername.toLowerCase()) {
@@ -184,7 +187,7 @@ export async function POST(request: NextRequest) {
           try {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const sb = supabase as any;
-            const qualityResult = await analyzeRepository(repoOwner, repoName, providerToken);
+            const qualityResult = await analyzeRepository(repoOwner, repoName, providerToken, profileUsername);
 
             // If GitHub analysis fails (rate limit, transient API error, etc.)
             // leave the project unverified so the cron backfill can retry it.
@@ -201,20 +204,7 @@ export async function POST(request: NextRequest) {
             }
 
             const qualityScore = qualityResult.metrics.quality_score;
-            const qualityMetrics = {
-              stars: qualityResult.metrics.stars,
-              forks: qualityResult.metrics.forks,
-              contributors: qualityResult.metrics.contributors,
-              total_commits: qualityResult.metrics.total_commits,
-              has_tests: qualityResult.metrics.has_tests,
-              has_ci: qualityResult.metrics.has_ci,
-              has_readme: qualityResult.metrics.has_readme,
-              community_score: qualityResult.metrics.community_score,
-              substance_score: qualityResult.metrics.substance_score,
-              maintenance_score: qualityResult.metrics.maintenance_score,
-              quality_score: qualityResult.metrics.quality_score,
-              analyzed_at: new Date().toISOString(),
-            };
+            const qualityMetrics = toRepoQualityData(qualityResult.metrics);
 
             let live_url_ok: boolean | null = null;
             if (normalizedLiveUrl) {

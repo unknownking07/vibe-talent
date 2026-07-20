@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createNotification } from "@/lib/notifications";
-import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl } from "@/lib/github-quality";
+import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl, toRepoQualityData } from "@/lib/github-quality";
 
 /**
  * Invalidate the cached profile read so the new "Verified" badge appears
@@ -146,7 +146,7 @@ export async function POST(request: Request) {
     // Method 1: Owner match
     if (repoOwner.toLowerCase() === githubUsername.toLowerCase()) {
       // Run quality analysis on the repo
-      const qualityResult = await analyzeRepository(repoOwner, repoName, providerToken);
+      const qualityResult = await analyzeRepository(repoOwner, repoName, providerToken, profileUsername);
 
       // Detected a private repo (our public-only OAuth can't read it). Private
       // repos aren't supported yet — read-only support is coming via a GitHub
@@ -164,20 +164,7 @@ export async function POST(request: Request) {
       }
       const qualityScore = qualityResult.success ? (qualityResult.metrics?.quality_score ?? 0) : 0;
       const qualityMetrics = (qualityResult.success && qualityResult.metrics)
-        ? {
-            stars: qualityResult.metrics.stars,
-            forks: qualityResult.metrics.forks,
-            contributors: qualityResult.metrics.contributors,
-            total_commits: qualityResult.metrics.total_commits,
-            has_tests: qualityResult.metrics.has_tests,
-            has_ci: qualityResult.metrics.has_ci,
-            has_readme: qualityResult.metrics.has_readme,
-            community_score: qualityResult.metrics.community_score,
-            substance_score: qualityResult.metrics.substance_score,
-            maintenance_score: qualityResult.metrics.maintenance_score,
-            quality_score: qualityResult.metrics.quality_score,
-            analyzed_at: new Date().toISOString(),
-          }
+        ? toRepoQualityData(qualityResult.metrics)
         : null;
 
       // Check live URL health if provided
@@ -262,23 +249,10 @@ export async function POST(request: Request) {
           fileContent.includes(user.id)
         ) {
           // Run quality analysis on the repo
-          const qualityResult = await analyzeRepository(repoOwner, repoName, providerToken);
+          const qualityResult = await analyzeRepository(repoOwner, repoName, providerToken, profileUsername);
           const qualityScore = qualityResult.success ? (qualityResult.metrics?.quality_score ?? 0) : 0;
           const qualityMetrics = (qualityResult.success && qualityResult.metrics)
-            ? {
-                stars: qualityResult.metrics.stars,
-                forks: qualityResult.metrics.forks,
-                contributors: qualityResult.metrics.contributors,
-                total_commits: qualityResult.metrics.total_commits,
-                has_tests: qualityResult.metrics.has_tests,
-                has_ci: qualityResult.metrics.has_ci,
-                has_readme: qualityResult.metrics.has_readme,
-                community_score: qualityResult.metrics.community_score,
-                substance_score: qualityResult.metrics.substance_score,
-                maintenance_score: qualityResult.metrics.maintenance_score,
-                quality_score: qualityResult.metrics.quality_score,
-                analyzed_at: new Date().toISOString(),
-              }
+            ? toRepoQualityData(qualityResult.metrics)
             : null;
 
           // Check live URL health

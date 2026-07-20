@@ -46,6 +46,10 @@ export interface RepoQualityData {
   has_tests: boolean;
   has_ci: boolean;
   has_readme: boolean;
+  // Optional: absent on rows analyzed before badge detection shipped. Treat
+  // `undefined` as "unknown", not "no badge" — it only becomes authoritative
+  // after the next quality rescore of that project.
+  has_vibetalent_badge?: boolean;
   community_score: number;
   substance_score: number;
   maintenance_score: number;

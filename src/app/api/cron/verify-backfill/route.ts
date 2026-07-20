@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl } from "@/lib/github-quality";
+import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl, toRepoQualityData } from "@/lib/github-quality";
 import { createNotification } from "@/lib/notifications";
 
 const BATCH_SIZE = 5;
@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
     // starving legitimate owner-mismatch retries.
     const { data: linkedUserRows, error: linkedUsersError } = await sb
       .from("users")
-      .select("id, github_username")
+      .select("id, github_username, username")
       .not("github_username", "is", null)
       .neq("github_username", "")
       .order("id", { ascending: true })
@@ -82,8 +82,12 @@ export async function GET(req: NextRequest) {
     }
 
     const usernameById = new Map<string, string>();
-    for (const row of (linkedUserRows ?? []) as { id: string; github_username: string }[]) {
+    // Separate map for the VibeTalent profile slug — that's what appears in
+    // badge/profile URLs we look for in the README, not the GitHub handle.
+    const profileUsernameById = new Map<string, string>();
+    for (const row of (linkedUserRows ?? []) as { id: string; github_username: string; username: string | null }[]) {
       if (row.github_username) usernameById.set(row.id, row.github_username);
+      if (row.username) profileUsernameById.set(row.id, row.username);
     }
 
     if (usernameById.size === 0) {
@@ -176,7 +180,12 @@ export async function GET(req: NextRequest) {
               }
 
               const { owner: repoOwner, repo: repoName } = parsed;
-              const qualityResult = await analyzeRepository(repoOwner, repoName);
+              const qualityResult = await analyzeRepository(
+                repoOwner,
+                repoName,
+                undefined,
+                profileUsernameById.get(project.user_id) ?? null
+              );
 
               // If GitHub API fails entirely, skip WITHOUT stamping — leave it
               // for a future run to retry. Don't mark verified without a valid
@@ -188,20 +197,7 @@ export async function GET(req: NextRequest) {
 
               const qualityScore = qualityResult.metrics?.quality_score ?? 0;
               const qualityMetrics = qualityResult.metrics
-                ? {
-                    stars: qualityResult.metrics.stars,
-                    forks: qualityResult.metrics.forks,
-                    contributors: qualityResult.metrics.contributors,
-                    total_commits: qualityResult.metrics.total_commits,
-                    has_tests: qualityResult.metrics.has_tests,
-                    has_ci: qualityResult.metrics.has_ci,
-                    has_readme: qualityResult.metrics.has_readme,
-                    community_score: qualityResult.metrics.community_score,
-                    substance_score: qualityResult.metrics.substance_score,
-                    maintenance_score: qualityResult.metrics.maintenance_score,
-                    quality_score: qualityResult.metrics.quality_score,
-                    analyzed_at: new Date().toISOString(),
-                  }
+                ? toRepoQualityData(qualityResult.metrics)
                 : null;
 
               let live_url_ok: boolean | null = null;
