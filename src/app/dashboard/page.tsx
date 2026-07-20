@@ -42,13 +42,17 @@ import {
 } from "lucide-react";
 
 // Column lists for the dashboard's own queries, kept to what the page (plus
-// the GitHub self-heal and mandatory-socials gating) actually reads. The
-// previous `select("*")` paid full-row egress on every visit — including
-// projects.quality_metrics, a JSONB blob nothing here renders.
+// the GitHub self-heal and mandatory-socials gating) actually reads, instead
+// of the `select("*")` that paid full-row egress on every visit.
+//
+// quality_metrics IS required despite being JSONB: QualityScoreBadge renders
+// its Community/Substance/Maintenance breakdown from it (and silently falls
+// back to a generic checklist without it), and the Badge Holder chip reads
+// has_vibetalent_badge. It's a flat ~13-key object, so the egress is trivial.
 const DASHBOARD_USER_FIELDS =
   "id, username, display_name, bio, avatar_url, github_username, vibe_score, streak, longest_streak, badge_level, streak_freezes_remaining, streak_freezes_used, referral_count, created_at";
 const DASHBOARD_PROJECT_FIELDS =
-  "id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, endorsement_count, created_at";
+  "id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, endorsement_count, created_at";
 const DASHBOARD_SOCIAL_FIELDS = "id, user_id, twitter, telegram, github, website, farcaster";
 const INBOX_FIELDS = "id, sender_name, sender_email, budget, message, status, reply, replied_at, created_at";
 
@@ -1206,6 +1210,12 @@ export default function DashboardPage() {
     ? hireRequests.filter((r) => r.status === "new").length
     : newHireSeed;
 
+  // How many of this builder's projects have the VibeTalent badge in their
+  // README, per the last quality scan.
+  const badgedProjectCount = (user.projects ?? []).filter(
+    (p) => p.quality_metrics?.has_vibetalent_badge
+  ).length;
+
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
       <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-6">Dashboard</h1>
@@ -1768,6 +1778,30 @@ export default function DashboardPage() {
           <ExternalLink size={16} className="text-[var(--accent)]" />
           Embeddable Badge
         </h2>
+
+        {/* Nudge / confirmation. `has_vibetalent_badge` is only populated on
+            projects analyzed since badge detection shipped, so "not found yet"
+            is phrased as an invitation rather than an accusation — an older
+            project genuinely may have the badge and not know it until its next
+            weekly rescore. */}
+        {badgedProjectCount > 0 ? (
+          <div
+            className="mb-3 px-3 py-2 flex items-center gap-2"
+            style={{ backgroundColor: "var(--status-success-bg)", border: "2px solid var(--border-hard)" }}
+          >
+            <ShieldCheck size={14} className="text-[var(--status-success-text)] shrink-0" />
+            <span className="text-xs font-bold text-[var(--status-success-text)]">
+              Badge found in {badgedProjectCount} {badgedProjectCount === 1 ? "repo" : "repos"} — nice.
+            </span>
+          </div>
+        ) : (
+          <p className="mb-3 text-xs font-medium text-[var(--text-secondary)] leading-relaxed">
+            Drop this in a repo README to show your streak and score where other
+            developers actually look. We&apos;ll spot it on the next scan and add a
+            <span className="font-extrabold text-[var(--accent)]"> Badge Holder </span>
+            chip to your projects.
+          </p>
+        )}
 
         <div className="flex items-center gap-4 p-3 bg-zinc-50 border-2 border-zinc-200 mb-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}

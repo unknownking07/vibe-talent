@@ -1,3 +1,5 @@
+import type { RepoQualityData } from "./types/database";
+
 /**
  * GitHub Repository Quality Scoring
  *
@@ -21,6 +23,11 @@ export interface RepoQualityMetrics {
   has_ci: boolean;
   has_readme: boolean;
   readme_length: number;
+  // True when the repo's README links back to this builder's VibeTalent
+  // profile or badge. Deliberately does NOT feed any score: a README link is
+  // trivially fakeable, and this file's whole premise is scoring only signals
+  // that are hard to fake. It exists to render a "Badge Holder" chip.
+  has_vibetalent_badge: boolean;
   last_commit_date: string | null;
   created_at: string | null;
   repo_age_days: number;
@@ -66,6 +73,61 @@ function parseOAuthScopes(res: Response): string[] | null {
 }
 
 const GITHUB_API = "https://api.github.com";
+
+/**
+ * Detect a VibeTalent badge / profile backlink in a README.
+ *
+ * Scoped to one username on purpose: matching any vibetalent.work link would
+ * hand the chip to someone who pasted a *different* builder's badge (or merely
+ * linked the site). With `username` supplied, only that builder's own badge or
+ * profile URL counts.
+ *
+ * Matches the two shapes the dashboard's copy buttons emit, with or without
+ * `www`, http or https, and tolerates percent-encoding (the copy helpers run
+ * the username through encodeURIComponent):
+ *   https://www.vibetalent.work/api/badge/<username>
+ *   https://www.vibetalent.work/profile/<username>
+ */
+export function detectVibeTalentBadge(
+  readme: string,
+  username: string | null | undefined
+): boolean {
+  if (!readme || typeof username !== "string" || !username.trim()) return false;
+  // Usernames are alphanumeric + [-_.], but decode first so an encoded form
+  // still matches, and escape after so a username can never inject regex.
+  let decoded = username.trim();
+  try {
+    decoded = decodeURIComponent(decoded);
+  } catch {
+    // Malformed escape sequence — fall back to the raw value.
+  }
+  const escaped = decoded.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(
+    `https?://(?:www\\.)?vibetalent\\.work/(?:api/badge|profile)/${escaped}(?![A-Za-z0-9_-])`,
+    "i"
+  );
+  return pattern.test(readme);
+}
+
+/**
+ * Decode the base64 body GitHub returns from the /readme endpoint.
+ * Returns "" when the payload is missing — GitHub omits `content` for files
+ * over 1MB, which is not an error, just a README we can't inspect inline.
+ *
+ * atob (not Buffer) because this runs on Cloudflare Workers. The result is a
+ * binary string, so multi-byte UTF-8 lands as mojibake — harmless here, since
+ * we only ever search it for ASCII URLs.
+ */
+function decodeGithubContent(content: unknown, encoding: unknown): string {
+  if (typeof content !== "string" || !content) return "";
+  if (encoding !== "base64") return typeof content === "string" ? content : "";
+  try {
+    // GitHub wraps the base64 payload at 60 chars; atob rejects the newlines.
+    return atob(content.replace(/\s/g, ""));
+  } catch {
+    return "";
+  }
+}
 
 async function githubFetch(url: string, token?: string): Promise<Response> {
   const headers: Record<string, string> = {
@@ -123,7 +185,8 @@ export function parseGithubRepoUrl(
 export async function analyzeRepository(
   owner: string,
   repo: string,
-  token?: string
+  token?: string,
+  vibetalentUsername?: string | null
 ): Promise<RepoAnalysisResult> {
   try {
     // Fetch repo metadata, languages, contributors, and file tree in parallel
@@ -235,13 +298,22 @@ export async function analyzeRepository(
       );
     }
 
-    // Fetch README length if it exists
+    // Fetch README length if it exists. The same response already carries the
+    // file body, so badge detection rides along on this request rather than
+    // costing another GitHub API call against the rate limit.
+    let has_vibetalent_badge = false;
     if (has_readme) {
       try {
         const readmeRes = await githubFetch(`${GITHUB_API}/repos/${owner}/${repo}/readme`, token);
         if (readmeRes.ok) {
           const readmeData = await readmeRes.json();
           readme_length = readmeData.size || 0;
+          if (vibetalentUsername) {
+            has_vibetalent_badge = detectVibeTalentBadge(
+              decodeGithubContent(readmeData.content, readmeData.encoding),
+              vibetalentUsername
+            );
+          }
         }
       } catch {
         // non-critical
@@ -334,6 +406,7 @@ export async function analyzeRepository(
       has_ci,
       has_readme,
       readme_length,
+      has_vibetalent_badge,
       last_commit_date: lastPush?.toISOString() || null,
       created_at: repoData.created_at || null,
       repo_age_days: repoAgeDays,
@@ -353,6 +426,34 @@ export async function analyzeRepository(
       errorCode: "network_error",
     };
   }
+}
+
+/**
+ * Project the full analysis result down to the subset persisted in
+ * `projects.quality_metrics`. All four write paths (project create, manual
+ * verify, quality-rescore cron, verify-backfill cron) built this object by
+ * hand and identically — one shared projection so a new metric can't reach
+ * some paths and silently miss others.
+ */
+export function toRepoQualityData(
+  metrics: RepoQualityMetrics,
+  analyzedAt: string = new Date().toISOString()
+): RepoQualityData {
+  return {
+    stars: metrics.stars,
+    forks: metrics.forks,
+    contributors: metrics.contributors,
+    total_commits: metrics.total_commits,
+    has_tests: metrics.has_tests,
+    has_ci: metrics.has_ci,
+    has_readme: metrics.has_readme,
+    has_vibetalent_badge: metrics.has_vibetalent_badge,
+    community_score: metrics.community_score,
+    substance_score: metrics.substance_score,
+    maintenance_score: metrics.maintenance_score,
+    quality_score: metrics.quality_score,
+    analyzed_at: analyzedAt,
+  };
 }
 
 /**

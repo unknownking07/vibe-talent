@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ExternalLink, Github, Clock, Tag, Pencil, Flag, CheckCircle, ShieldCheck, Undo2, User } from "lucide-react";
+import { ExternalLink, Github, Clock, Tag, Pencil, Flag, CheckCircle, ShieldCheck, Undo2, User, BadgeCheck } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Project } from "@/lib/types/database";
@@ -248,12 +248,23 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
         </div>
       </div>
 
-      {(verified || project.quality_score > 0) && (
+      {(verified || project.quality_score > 0 || project.quality_metrics?.has_vibetalent_badge) && (
         <div className="mt-1 flex items-center gap-2 flex-wrap">
           {verified && (
             <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600" title="Verified owner">
               <CheckCircle size={14} />
               Verified
+            </span>
+          )}
+          {/* Social proof only — carries no score (a README link is trivially
+              fakeable, so it deliberately stays out of the quality formula). */}
+          {project.quality_metrics?.has_vibetalent_badge && (
+            <span
+              className="inline-flex items-center gap-1 text-xs font-bold text-[var(--accent)]"
+              title="This repo's README links back to the builder's VibeTalent profile"
+            >
+              <BadgeCheck size={14} />
+              Badge Holder
             </span>
           )}
           <QualityScoreBadge project={project} />
