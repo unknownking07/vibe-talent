@@ -142,6 +142,7 @@ export default function DashboardPage() {
   // so mark-read / delete / reply need no manual counter bookkeeping.
   const [newHireSeed, setNewHireSeed] = useState(0);
   const [inboxLoaded, setInboxLoaded] = useState(false);
+  const [inboxError, setInboxError] = useState<string | null>(null);
   const [senderProfiles, setSenderProfiles] = useState<Record<string, { username: string }>>({});
   // Onboarding tour visibility. Initialized false on the server (SSR-safe);
   // the effect below reads the sessionStorage trigger or `?tour=force` query
@@ -731,12 +732,23 @@ export default function DashboardPage() {
     setLoadingInbox(true);
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data, error } = await (supabase as any)
       .from("hire_requests")
       .select(INBOX_FIELDS)
       .eq("builder_id", user?.id)
       .order("created_at", { ascending: false });
+    // A failed query is not an empty inbox. Swallowing the error here would
+    // render "No hire requests yet" over real requests and — because the tab
+    // badge switches to deriving from this list once inboxLoaded flips — also
+    // clear the unread count the initial head-count had correctly seeded.
+    if (error) {
+      console.error("[dashboard] inbox fetch failed:", error);
+      setInboxError("Couldn't load your inbox. Check your connection and try again.");
+      setLoadingInbox(false);
+      return;
+    }
     const list: HireRequest[] = data || [];
+    setInboxError(null);
     setHireRequests(list);
     setInboxLoaded(true);
     setLoadingInbox(false);
@@ -1865,6 +1877,25 @@ export default function DashboardPage() {
               {[1, 2, 3].map((i) => (
                 <div key={i} className="skeleton h-32" />
               ))}
+            </div>
+          ) : inboxError ? (
+            <div
+              className="p-8 text-center"
+              style={{
+                backgroundColor: "var(--bg-surface)",
+                border: "2px solid var(--border-hard)",
+                boxShadow: "var(--shadow-brutal)",
+              }}
+              role="alert"
+            >
+              <Inbox size={40} className="mx-auto text-[var(--text-muted-soft)] mb-3" />
+              <h3 className="text-base font-extrabold uppercase text-[var(--foreground)]">
+                Couldn&apos;t load your inbox
+              </h3>
+              <p className="text-sm text-[var(--text-secondary)] font-medium mt-2">{inboxError}</p>
+              <button onClick={loadInbox} className="btn-brutal btn-brutal-secondary text-sm mt-4">
+                Retry
+              </button>
             </div>
           ) : hireRequests.length === 0 ? (
             <div

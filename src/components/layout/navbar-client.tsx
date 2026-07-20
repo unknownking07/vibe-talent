@@ -156,10 +156,17 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
   // erase the dot a successful check had just set.
   const todayCheckRef = useRef<Promise<void> | null>(null);
   const todayCheckQueuedRef = useRef(false);
+  // Bumped on every auth transition (login, logout, account switch, cross-tab
+  // cache clear). A check captures the generation it started under and drops
+  // its result if that changed mid-flight — otherwise a response for the
+  // *previous* account can land after the new state is set and resurrect a dot
+  // for a user who just signed out.
+  const authGenerationRef = useRef(0);
 
   // `fresh` forces a follow-up fetch when a check is already in flight — used
-  // after streak writes, where the in-flight response may predate the write
-  // that fired the event. Plain callers just join the in-flight check.
+  // after streak writes (the in-flight response may predate the write that
+  // fired the event) and after auth transitions (it belongs to the old
+  // identity). Plain callers just join the in-flight check.
   const checkTodayLogged = useCallback(async (fresh = false) => {
     if (!isLoggedInRef.current) {
       setHasUnloggedActivity(false);
@@ -169,19 +176,25 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
       if (fresh) todayCheckQueuedRef.current = true;
       return todayCheckRef.current;
     }
+    const generation = authGenerationRef.current;
+    // True once the identity this check was issued for is no longer current.
+    const stale = () => authGenerationRef.current !== generation;
     const run = (async () => {
       try {
         const now = new Date();
         const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
         const fetchToday = () => fetch(`/api/streak/today-logged?date=${today}`);
         let res = await fetchToday();
+        if (stale()) return;
         if (res.status === 401 && isLoggedInRef.current) {
           // Hard refreshes, tab wakes, and the midnight rollover all hit this
           // endpoint right when the access token is most likely stale or
           // mid-rotation. Let supabase settle the session, then retry once
           // before believing the 401.
           await createClient().auth.getSession();
+          if (stale()) return;
           res = await fetchToday();
+          if (stale()) return;
         }
         if (res.status === 401) {
           // Confirmed signed out — clear rather than leaving a stale dot.
@@ -190,6 +203,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
         }
         if (!res.ok) return; // 429 / 5xx — transient; keep the last known state.
         const data = await res.json();
+        if (stale()) return;
         setHasUnloggedActivity(data.loggedToday === false);
       } catch {
         // Network blip — keep the last known state; the next focus or streak
@@ -322,11 +336,15 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
       // cached profile, so bail without touching state; onAuthStateChange's
       // INITIAL_SESSION and the next check reconcile the real auth state.
       if (error) return;
+      // Identity resolved — retire any check issued under the previous one.
+      authGenerationRef.current += 1;
       isLoggedInRef.current = !!user;
       setIsLoggedIn(!!user);
       if (user) {
         fetchProfile(user.id, user.email);
-        void checkTodayLogged();
+        // fresh: an in-flight check may belong to the prior identity, so join
+        // it AND queue a replacement rather than trusting its result.
+        void checkTodayLogged(true);
       } else {
         // Cookie genuinely expired or cleared (no error, no user) — drop the
         // cached profile so the next hard refresh doesn't flash it.
@@ -338,6 +356,9 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
+      // Not on TOKEN_REFRESHED: the identity is unchanged there, and bumping
+      // would needlessly discard a perfectly valid in-flight check every hour.
+      if (event !== "TOKEN_REFRESHED") authGenerationRef.current += 1;
       isLoggedInRef.current = !!session?.user;
       setIsLoggedIn(!!session?.user);
       if (session?.user) {
@@ -346,7 +367,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
         // token rotation.
         if (event === "TOKEN_REFRESHED") return;
         fetchProfile(session.user.id, session.user.email);
-        void checkTodayLogged();
+        void checkTodayLogged(true);
       } else {
         setUserProfile(null);
         setHasUnloggedActivity(false);
@@ -391,6 +412,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
     const handleStorage = (e: StorageEvent) => {
       if (e.key !== NAV_PROFILE_CACHE_KEY) return;
       if (e.newValue === null) {
+        // Another tab logged out. Retire in-flight checks issued while we
+        // still believed we were signed in — otherwise one can resolve a
+        // moment later and re-light the dot on a logged-out navbar.
+        authGenerationRef.current += 1;
         isLoggedInRef.current = false;
         setIsLoggedIn(false);
         setUserProfile(null);
@@ -481,8 +506,13 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    // Retire in-flight dot checks and stop new ones before clearing state, so
+    // a response still in transit can't re-light the dot after logout.
+    authGenerationRef.current += 1;
+    isLoggedInRef.current = false;
     setIsLoggedIn(false);
     setUserProfile(null);
+    setHasUnloggedActivity(false);
     writeCachedNavProfile(null);
     setProfileDropdownOpen(false);
     router.push("/");
