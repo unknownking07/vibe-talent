@@ -85,6 +85,14 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  // Mirrors `open` for the notifications-updated listener, which is registered
+  // once on mount and would otherwise capture the initial value forever.
+  // Synced in an effect rather than assigned during render — a render-phase
+  // ref write isn't safe under concurrent rendering (react-hooks/refs).
+  const openRef = useRef(open);
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
   const router = useRouter();
 
   const fetchNotifications = useCallback(async () => {
@@ -115,7 +123,9 @@ export function NotificationBell() {
     }
   }, []);
 
-  /* eslint-disable react-hooks/set-state-in-effect */
+  /* eslint-disable react-hooks/set-state-in-effect -- this effect's setState
+     calls all happen after an await/timer boundary (fetch responses, polling
+     ticks), not during the effect body, so there's no cascading-render risk. */
   useEffect(() => {
     // Pause polling while the tab is hidden so background tabs don't keep
     // hitting /api/notifications (burning Cloudflare Worker invocations +
@@ -140,7 +150,17 @@ export function NotificationBell() {
         startPolling();
       }
     };
-    const handleRefresh = () => fetchNotifications();
+    // Refresh on external updates (e.g. logging activity clears streak
+    // warnings). Badge-only while the dropdown is closed: pulling the 50-row
+    // list for a popover nobody has opened would defeat the lazy-list contract
+    // below. Reads `open` through a ref so this listener never goes stale.
+    const handleRefresh = () => {
+      if (openRef.current) {
+        void fetchNotifications();
+      } else {
+        void fetchUnreadCount();
+      }
+    };
 
     // Badge-first initial load: one head-count query paints the unread badge
     // as fast as the Worker can auth, instead of waiting on the 50-row list +
@@ -150,8 +170,14 @@ export function NotificationBell() {
     // covers hard loads where the first hit lands while the auth cookie is
     // still settling and 401s.
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    // Cleanup can run while that first request is still in flight; without
+    // this flag the continuation would schedule a retry *after* unmount, past
+    // the clearTimeout in the cleanup, leaving a stray fetch and a setState on
+    // a dead component.
+     
+    let disposed = false;
     void fetchUnreadCount().then((ok) => {
-      if (!ok) {
+      if (!ok && !disposed) {
         retryTimer = setTimeout(() => void fetchUnreadCount(), 1500);
       }
     });
@@ -161,6 +187,7 @@ export function NotificationBell() {
       document.addEventListener("visibilitychange", onVisibilityChange);
     }
     return () => {
+      disposed = true;
       stopPolling();
       if (retryTimer !== null) clearTimeout(retryTimer);
       window.removeEventListener("notifications-updated", handleRefresh);
@@ -170,6 +197,7 @@ export function NotificationBell() {
     };
   }, [fetchNotifications, fetchUnreadCount]);
   /* eslint-enable react-hooks/set-state-in-effect */
+   
 
   // Click outside to close
   useEffect(() => {
