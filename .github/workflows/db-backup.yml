@@ -133,27 +133,45 @@ jobs:
           # Round-trip the file we are about to upload. Catches a wrong/rotated
           # key or a corrupt stream now, rather than during an outage when the
           # backup is the only thing standing between you and data loss.
-          DECRYPTED=$(openssl enc -d -aes-256-cbc -pbkdf2 -iter 300000 \
-            -pass env:BACKUP_ENCRYPTION_KEY -in "$OUT" | gunzip)
-          echo "$DECRYPTED" | grep -q "PostgreSQL database dump" \
+          # Decrypt to /dev/shm (RAM-backed tmpfs), NOT a shell variable.
+          # `VAR=$(...)` would hold the entire uncompressed dump in memory and
+          # re-pipe it through grep for every check — that degrades as the DB
+          # grows and eventually hits OOM or "Argument list too long". A tmpfs
+          # keeps the plaintext off the runner's persistent disk (the whole
+          # point of piping the dump straight into openssl earlier) while
+          # letting grep/tail stream it.
+          DEC=/dev/shm/vt-backup-verify.sql
+          # trap, not a trailing `rm`: under `set -e` a failed check exits
+          # immediately and would leave the plaintext dump sitting in shared
+          # memory. EXIT fires on success and failure alike.
+          trap 'rm -f "$DEC"' EXIT
+
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 300000 \
+            -pass env:BACKUP_ENCRYPTION_KEY -in "$OUT" | gunzip > "$DEC"
+
+          grep -q "PostgreSQL database dump" "$DEC" \
             || { echo "::error::Decrypted output is not a pg_dump file"; exit 1; }
 
           # The trailing marker is the real truncation detector. pg_dump only
           # writes it after the final COPY block, so a stream cut short
           # mid-data — the dangerous case, where the schema looks complete but
           # rows are missing — fails here. A byte-count check cannot catch that.
-          echo "$DECRYPTED" | tail -5 | grep -q "PostgreSQL database dump complete" \
+          tail -5 "$DEC" | grep -q "PostgreSQL database dump complete" \
             || { echo "::error::Dump has no completion marker — it was truncated"; exit 1; }
 
           # Sanity-check that the core tables actually made it in.
           for t in users projects streak_logs; do
-            echo "$DECRYPTED" | grep -q "public\".\"$t\"" \
+            grep -q "public\".\"$t\"" "$DEC" \
               || { echo "::error::Dump is missing table: $t"; exit 1; }
           done
           echo "Verified: decrypts cleanly, ends with the completion marker, and contains users, projects, streak_logs."
 
       - name: Upload encrypted backup
-        uses: actions/upload-artifact@v4
+        # Pinned to a full commit SHA rather than the mutable @v4 tag. This is
+        # the highest-privilege workflow in the repo — it handles a full
+        # database dump and the encryption key — so a hijacked tag here would
+        # be worst-case. (SHA for v4, verified via the GitHub API.)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: db-backup-${{ env.STAMP }}
           path: ${{ env.OUT }}
@@ -161,6 +179,10 @@ jobs:
           # retention window costs a trivial amount of artifact storage.
           retention-days: 90
           if-no-files-found: error
+          # The artifact is already gzip -9'd and then AES-encrypted, and
+          # encrypted bytes are incompressible. The default level-6 pass would
+          # burn runner CPU for zero size reduction.
+          compression-level: 0
 
       - name: Summary
         run: |
