@@ -12,7 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 import { parseImageCrop } from "@/lib/image-crop";
 import { normalizeExternalUrl, normalizeRepoUrl } from "@/lib/url-normalize";
 
-function ProjectImageBanner({ url, alt }: { url: string; alt: string }) {
+function ProjectImageBanner({ url, alt, priority }: { url: string; alt: string; priority?: boolean }) {
   const crop = parseImageCrop(url);
   return (
     <div className="relative w-full h-28 border-b-2 border-[var(--border-hard)] overflow-hidden bg-[var(--bg-surface-light)]">
@@ -21,6 +21,7 @@ function ProjectImageBanner({ url, alt }: { url: string; alt: string }) {
         alt={alt}
         fill
         sizes="(max-width: 768px) 100vw, 360px"
+        priority={priority}
         className="object-cover"
         style={{ objectPosition: crop.objectPosition, transform: `scale(${crop.scale})` }}
       />
@@ -69,9 +70,11 @@ interface ProjectCardProps {
   verified?: boolean;
   onEdit?: (project: Project) => void;
   onVerify?: (projectId: string) => void;
+  /** Eager-load the thumbnail (above-the-fold cards) instead of lazy-loading. */
+  priority?: boolean;
 }
 
-export function ProjectCard({ project, authorUsername, onEdit, showReport = true, verified = false, onVerify }: ProjectCardProps) {
+export function ProjectCard({ project, authorUsername, onEdit, showReport = true, verified = false, onVerify, priority = false }: ProjectCardProps) {
   const [reportOpen, setReportOpen] = useState(false);
   const [reported, setReported] = useState(() => !!getReportData(project.id));
   const [reporting, setReporting] = useState(false);
@@ -149,7 +152,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
       className="card-brutal h-full flex flex-col transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
     >
       {project.image_url ? (
-        <ProjectImageBanner url={project.image_url} alt={project.title} />
+        <ProjectImageBanner url={project.image_url} alt={project.title} priority={priority} />
       ) : (
         <div className="w-full h-28 border-b-2 border-[var(--border-hard)] bg-[var(--bg-surface-light)] flex items-center justify-center">
           <span className="text-3xl font-extrabold uppercase text-[var(--text-muted-soft)] tracking-widest select-none">{project.title?.charAt(0) ?? "P"}</span>

@@ -313,10 +313,11 @@ export default async function HomePage() {
             // grid on sm+. Keep stagger-children so the entrance animation
             // still cascades down the column.
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 stagger-children">
-              {featuredProjects.map((project) => (
+              {featuredProjects.map((project, i) => (
                 <ProjectCard
                   key={project.id}
                   project={project}
+                  priority={i < 3}
                   verified={!!project.verified}
                   authorUsername={project.users?.username ?? undefined}
                 />
