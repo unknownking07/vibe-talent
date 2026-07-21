@@ -1,0 +1,199 @@
+# Nightly encrypted Postgres backup.
+#
+# WHY ENCRYPTED: this repo is PUBLIC, and GitHub Actions artifacts on a public
+# repo are downloadable by anyone who can see the repo. A plaintext dump would
+# publish every user row, hire request, and email address. The dump is AES-256
+# encrypted before it ever reaches the artifact store, so the artifact is
+# useless without BACKUP_ENCRYPTION_KEY.
+#
+# REQUIRED REPO SECRETS (Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL         Supabase → Project Settings → Database → Connection
+#                           string → **Session pooler** (URI). Use the pooler,
+#                           not "Direct connection": GitHub runners are
+#                           IPv4-only and direct connections are IPv6-only
+#                           without the paid IPv4 add-on. Keep the password in
+#                           the URI and URL-encode any special characters.
+#   BACKUP_ENCRYPTION_KEY   A long random passphrase. Generate with:
+#                             openssl rand -base64 48
+#                           STORE IT SOMEWHERE OUTSIDE THIS REPO (password
+#                           manager). Lose it and the backups are unrecoverable.
+#
+# TO RESTORE:
+#   1. Download the artifact from the run's summary page and unzip it.
+#   2. Decrypt:
+#      openssl enc -d -aes-256-cbc -pbkdf2 -iter 300000 \
+#        -pass env:BACKUP_ENCRYPTION_KEY \
+#        -in vibetalent-YYYY-MM-DD.sql.gz.enc | gunzip > restore.sql
+#   3. Inspect it before running it anywhere near production.
+#   4. Apply to a TARGET database (a fresh project or branch first — never
+#      straight to prod):
+#      psql "$TARGET_DB_URL" -v ON_ERROR_STOP=1 -f restore.sql
+#
+#   Scope note: the dump covers `public` (all app data) and `auth` (users, so
+#   logins survive a restore). Supabase-managed internals (storage objects on
+#   S3, realtime, extensions config) are NOT included — restoring into a fresh
+#   project means re-uploading storage files and re-applying the migrations in
+#   supabase/migrations/ first. The auth schema is owned by supabase_auth_admin;
+#   expect to restore it as that role or with --no-owner (already set below).
+
+name: Nightly DB Backup
+
+on:
+  schedule:
+    # 18:00 UTC = 11:30 PM IST. Deliberately offset from the 06:00 UTC `daily`
+    # cron so a backup never contends with the fan-out jobs for the nano
+    # instance's very limited connection pool.
+    - cron: "0 18 * * *"
+  workflow_dispatch: {}
+
+# A second concurrent dump would double the load on a t4g.nano for no benefit.
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Dump, encrypt, upload
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Verify required secrets are present
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          ENC_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          missing=0
+          if [ -z "$DB_URL" ]; then
+            echo "::error::Missing repo secret SUPABASE_DB_URL"; missing=1
+          fi
+          if [ -z "$ENC_KEY" ]; then
+            echo "::error::Missing repo secret BACKUP_ENCRYPTION_KEY"; missing=1
+          fi
+          [ "$missing" -eq 0 ] || exit 1
+
+      - name: Install postgresql-client 17
+        run: |
+          set -euo pipefail
+          # The runner image ships an older client; pg_dump must be >= the
+          # server (Postgres 17.6) or it refuses to dump.
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          pg_dump --version
+
+      - name: Dump and encrypt
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          STAMP="$(date -u +%Y-%m-%d)"
+          echo "STAMP=$STAMP" >> "$GITHUB_ENV"
+          OUT="vibetalent-${STAMP}.sql.gz.enc"
+          echo "OUT=$OUT" >> "$GITHUB_ENV"
+
+          # --no-owner / --no-privileges: role grants differ between projects,
+          #   and keeping them makes a restore into a fresh project fail.
+          # --clean --if-exists: the dump is replayable onto a non-empty DB.
+          # Piped straight into gzip → openssl so the plaintext dump is never
+          # written to the runner's disk.
+          pg_dump "$DB_URL" \
+            --schema=public \
+            --schema=auth \
+            --no-owner \
+            --no-privileges \
+            --clean \
+            --if-exists \
+            --quote-all-identifiers \
+            | gzip -9 \
+            | openssl enc -aes-256-cbc -pbkdf2 -iter 300000 -salt \
+                -pass env:BACKUP_ENCRYPTION_KEY \
+                -out "$OUT"
+
+          # An empty dump must fail loudly — a "successful" run that uploaded
+          # a few hundred bytes of nothing is worse than no backup at all,
+          # because it looks like protection you don't have. This is only a
+          # cheap early guard; the real integrity check is the next step.
+          SIZE=$(stat -c%s "$OUT")
+          echo "Encrypted backup size: ${SIZE} bytes"
+          if [ "$SIZE" -lt 2048 ]; then
+            echo "::error::Backup is only ${SIZE} bytes — far too small to be real. Treating as failed."
+            exit 1
+          fi
+          echo "BACKUP_SIZE=$SIZE" >> "$GITHUB_ENV"
+
+      - name: Verify the artifact decrypts and looks like a dump
+        env:
+          BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+        run: |
+          set -euo pipefail
+          # Round-trip the file we are about to upload. Catches a wrong/rotated
+          # key or a corrupt stream now, rather than during an outage when the
+          # backup is the only thing standing between you and data loss.
+          # Decrypt to /dev/shm (RAM-backed tmpfs), NOT a shell variable.
+          # `VAR=$(...)` would hold the entire uncompressed dump in memory and
+          # re-pipe it through grep for every check — that degrades as the DB
+          # grows and eventually hits OOM or "Argument list too long". A tmpfs
+          # keeps the plaintext off the runner's persistent disk (the whole
+          # point of piping the dump straight into openssl earlier) while
+          # letting grep/tail stream it.
+          DEC=/dev/shm/vt-backup-verify.sql
+          # trap, not a trailing `rm`: under `set -e` a failed check exits
+          # immediately and would leave the plaintext dump sitting in shared
+          # memory. EXIT fires on success and failure alike.
+          trap 'rm -f "$DEC"' EXIT
+
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 300000 \
+            -pass env:BACKUP_ENCRYPTION_KEY -in "$OUT" | gunzip > "$DEC"
+
+          grep -q "PostgreSQL database dump" "$DEC" \
+            || { echo "::error::Decrypted output is not a pg_dump file"; exit 1; }
+
+          # The trailing marker is the real truncation detector. pg_dump only
+          # writes it after the final COPY block, so a stream cut short
+          # mid-data — the dangerous case, where the schema looks complete but
+          # rows are missing — fails here. A byte-count check cannot catch that.
+          tail -5 "$DEC" | grep -q "PostgreSQL database dump complete" \
+            || { echo "::error::Dump has no completion marker — it was truncated"; exit 1; }
+
+          # Sanity-check that the core tables actually made it in.
+          for t in users projects streak_logs; do
+            grep -q "public\".\"$t\"" "$DEC" \
+              || { echo "::error::Dump is missing table: $t"; exit 1; }
+          done
+          echo "Verified: decrypts cleanly, ends with the completion marker, and contains users, projects, streak_logs."
+
+      - name: Upload encrypted backup
+        # Pinned to a full commit SHA rather than the mutable @v4 tag. This is
+        # the highest-privilege workflow in the repo — it handles a full
+        # database dump and the encryption key — so a hijacked tag here would
+        # be worst-case. (SHA for v4, verified via the GitHub API.)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: db-backup-${{ env.STAMP }}
+          path: ${{ env.OUT }}
+          # ~90 days of nightly history. The DB is ~26MB, so the whole
+          # retention window costs a trivial amount of artifact storage.
+          retention-days: 90
+          if-no-files-found: error
+          # The artifact is already gzip -9'd and then AES-encrypted, and
+          # encrypted bytes are incompressible. The default level-6 pass would
+          # burn runner CPU for zero size reduction.
+          compression-level: 0
+
+      - name: Summary
+        run: |
+          {
+            echo "### Backup complete"
+            echo ""
+            echo "- **Date:** ${STAMP}"
+            echo "- **Encrypted size:** $(numfmt --to=iec "${BACKUP_SIZE}")"
+            echo "- **Artifact:** \`db-backup-${STAMP}\` (retained 90 days)"
+            echo "- **Scope:** \`public\` + \`auth\` schemas"
+            echo ""
+            echo "Decrypt with \`BACKUP_ENCRYPTION_KEY\` — see the header of"
+            echo "\`.github/workflows/db-backup.yml\` for restore steps."
+          } >> "$GITHUB_STEP_SUMMARY"
