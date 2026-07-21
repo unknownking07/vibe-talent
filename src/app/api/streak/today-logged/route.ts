@@ -12,15 +12,18 @@ import { messagesLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
 export async function GET(request: NextRequest) {
   // Same limiter the streak POST uses — 60/min per IP. Enough headroom for
   // navbar refetches on focus changes; cheap insurance against scripted abuse.
-  const { success } = await checkRateLimit(messagesLimiter, getIP(request));
+  // Run concurrently with the auth lookup: they hit different services and
+  // don't depend on each other, so serializing them just added a round trip to
+  // every navbar dot check.
+  const supabase = await createServerSupabaseClient();
+  const [{ success }, { data: { user } }] = await Promise.all([
+    checkRateLimit(messagesLimiter, getIP(request)),
+    supabase.auth.getUser(),
+  ]);
+
   if (!success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
-
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

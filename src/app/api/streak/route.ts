@@ -6,15 +6,20 @@ import { messagesLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
 
 // POST /api/streak — Log activity (auth required, logs for authenticated user only)
 export async function POST(request: NextRequest) {
-  // Rate limit: reuse messages limiter (60/min per IP)
-  const { success } = await checkRateLimit(messagesLimiter, getIP(request));
-  if (!success) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
-  }
-
   try {
+    // Rate limit (Upstash) and auth (GoTrue) are independent lookups against
+    // two different services, so run them concurrently instead of paying both
+    // round trips serially. On the Cloudflare→Supabase(Seoul) path that's
+    // ~100ms off every log — the user-visible cost of tapping Log Activity.
     const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const [{ success }, { data: { user } }] = await Promise.all([
+      checkRateLimit(messagesLimiter, getIP(request)),
+      supabase.auth.getUser(),
+    ]);
+
+    if (!success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

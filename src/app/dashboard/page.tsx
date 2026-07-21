@@ -909,10 +909,49 @@ export default function DashboardPage() {
 
   const handleLogActivity = async () => {
     if (!user || todayLogged || logging) return;
-    setLogging(true);
     setLogError(null);
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+    // Paint the result BEFORE the network call, not after.
+    //
+    // A log round-trips browser → Cloudflare edge → GoTrue (Seoul) → Postgres
+    // (Seoul) → back: three serial hops, ~350-500ms at best, over a second on
+    // a cold Worker, and roughly double that when the access token is stale
+    // (the 401 path below re-auths and re-posts). Blocking the button on all
+    // of that left it sitting on "Logging…" long enough to feel broken.
+    //
+    // Safe to do optimistically because the write is idempotent: the server
+    // upserts against the unique (user_id, activity_date) index, so a retry —
+    // or a double click that slips through — converges on the same single row.
+    // Every field touched here is restored by `rollback` if the write fails.
+    const prevStreak = user.streak;
+    const prevLongest = user.longest_streak;
+    const optimisticStreak = prevStreak + 1;
+
+    setUser((u) =>
+      u ? { ...u, streak: optimisticStreak, longest_streak: Math.max(optimisticStreak, u.longest_streak) } : u
+    );
+    setHeatmapData((h) => ({ ...h, [today]: (h[today] || 0) + 1 }));
+    setTodayLogged(true);
+    setLogging(true);
+
+    // Undo the optimistic paint. Uses functional updates and adjusts only
+    // today's cell rather than restoring a whole snapshot — the GitHub sync
+    // running in the background may legitimately have written other days while
+    // this request was in flight, and clobbering those would lose real data.
+    const rollback = () => {
+      setUser((u) => (u ? { ...u, streak: prevStreak, longest_streak: prevLongest } : u));
+      setHeatmapData((h) => {
+        const next = { ...h };
+        const remaining = (next[today] ?? 1) - 1;
+        if (remaining > 0) next[today] = remaining;
+        else delete next[today];
+        return next;
+      });
+      setTodayLogged(false);
+      setLogging(false);
+    };
 
     // Route through the server API (admin client, upsert-safe). Previously this
     // page inserted via the browser Supabase client, which 404'd in production
@@ -937,8 +976,8 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error("Failed to log activity (network):", err);
+      rollback();
       setLogError("Network error — check your connection and try again.");
-      setLogging(false);
       return;
     }
 
@@ -950,20 +989,17 @@ export default function DashboardPage() {
       } catch {}
       if (res.status === 401) message = "Your session expired — refresh and sign in again.";
       console.error("Failed to log activity:", res.status, message);
+      rollback();
       setLogError(message);
-      setLogging(false);
       return;
     }
 
-    // Optimistically update streak in UI
-    const newStreak = user.streak + 1;
-    const newLongest = Math.max(newStreak, user.longest_streak);
-    setUser({ ...user, streak: newStreak, longest_streak: newLongest });
-    setHeatmapData({ ...heatmapData, [today]: (heatmapData[today] || 0) + 1 });
-    setTodayLogged(true);
     setLogging(false);
 
-    // Drop the navbar "unlogged activity" dot without a reload.
+    // Drop the navbar "unlogged activity" dot without a reload. Fired only
+    // after the write lands — the navbar re-checks against the server, so
+    // announcing it optimistically would just race the write and get the
+    // pre-write answer back.
     window.dispatchEvent(new Event("streak-updated"));
 
     // Mark streak warning notifications as read and refresh the bell
