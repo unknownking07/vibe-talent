@@ -61,6 +61,23 @@ function negotiatedFormat(request: Request): string {
 }
 
 /**
+ * Is this `/_next/image` request pointed at an image this app generates?
+ *
+ * `/api/og/*`, `/api/share-card/*` and `/api/badge/*` render live user data —
+ * vibe score, streak, shipped project — behind a URL that carries no content
+ * version, which is why those routes deliberately choose a short TTL of their
+ * own (the receipt route caps the browser at 5 minutes). The optimizer drops
+ * that header — it returns no `Cache-Control` for *any* source — so taking
+ * over caching here would pin a stale badge or receipt for a full day.
+ *
+ * Leave them untouched. We only cache sources whose bytes are tied to their
+ * URL: remote avatars/thumbnails and files from public/.
+ */
+function isAppGeneratedImage(url: URL): boolean {
+  return (url.searchParams.get("url") ?? "").startsWith("/api/");
+}
+
+/**
  * Serve an optimized image from the colo cache when possible, otherwise let
  * OpenNext transform it and store the result. Output is deterministic for a
  * given (url, w, q) plus negotiated format, so this is safe to share across
@@ -120,7 +137,11 @@ export default {
         Response.redirect(`https://www.vibetalent.work${url.pathname}${url.search}`, 301),
       );
     }
-    if (request.method === "GET" && url.pathname === "/_next/image") {
+    if (
+      request.method === "GET" &&
+      url.pathname === "/_next/image" &&
+      !isAppGeneratedImage(url)
+    ) {
       return serveOptimizedImage(request, env, ctx, url);
     }
     return handler.fetch(request, env, ctx);

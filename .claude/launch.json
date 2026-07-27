@@ -17,8 +17,8 @@
     },
     {
       "name": "vibe-talent-worker",
-      "runtimeExecutable": "/opt/homebrew/bin/node",
-      "runtimeArgs": ["/opt/homebrew/bin/npx", "wrangler", "dev", "--port", "8788"],
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["wrangler", "dev", "--port", "8788"],
       "env": { "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin" },
       "port": 8788
     }
