@@ -3,9 +3,9 @@
  *
  * Wraps the OpenNext-generated worker (`.open-next/worker.js`, produced by
  * `opennextjs-cloudflare build`) to add Cloudflare Cron Trigger support via a
- * `scheduled()` handler, while preserving OpenNext's `fetch` handler and
- * re-exporting its Durable Object classes (which must be exported from the
- * Worker's main module).
+ * `scheduled()` handler and edge caching for optimized images, while preserving
+ * OpenNext's `fetch` handler and re-exporting its Durable Object classes (which
+ * must be exported from the Worker's main module).
  *
  * The cron schedules themselves live in wrangler.jsonc and are enabled at DNS
  * cutover (Phase 3). Each firing invokes the matching /api/cron/* route
@@ -22,6 +22,78 @@ type Env = {
   CRON_SECRET?: string;
   NEXT_PUBLIC_SITE_URL?: string;
 };
+
+/**
+ * Minimal shapes for the two Workers-only globals used below. The project's
+ * tsconfig loads the DOM lib rather than @cloudflare/workers-types (the two
+ * conflict), so these are declared locally — same approach the OpenNext import
+ * above already takes.
+ */
+type ExecutionContext = { waitUntil(promise: Promise<unknown>): void };
+type WorkerCaches = { default: Cache };
+
+/**
+ * Browser + edge TTL for `/_next/image` output.
+ *
+ * OpenNext's image route returns these with **no** `Cache-Control` at all — the
+ * Cloudflare IMAGES binding sets none, and `images.minimumCacheTTL` in
+ * next.config is a documented no-op on this adapter. So every avatar and
+ * project thumbnail was re-fetched *and* re-transformed on each page view
+ * (~1.2s for a 7KB avatar, measured on prod).
+ *
+ * A day of freshness keeps a swapped avatar from sticking around — GitHub and
+ * Supabase both reuse the same URL when a user changes their picture — and a
+ * week of stale-while-revalidate keeps return visits instant.
+ */
+const IMAGE_CACHE_CONTROL = "public, max-age=86400, stale-while-revalidate=604800";
+
+/**
+ * Output format the optimizer will negotiate for this request. One `/_next/image`
+ * URL can yield AVIF, WebP or the source bytes depending on `Accept`, so this
+ * has to be part of the cache key or a Safari user could be served AVIF.
+ * Mirrors Next.js' own pick-first-supported-of-`images.formats` order.
+ */
+function negotiatedFormat(request: Request): string {
+  const accept = request.headers.get("accept") ?? "";
+  if (accept.includes("image/avif")) return "avif";
+  if (accept.includes("image/webp")) return "webp";
+  return "src";
+}
+
+/**
+ * Serve an optimized image from the colo cache when possible, otherwise let
+ * OpenNext transform it and store the result. Output is deterministic for a
+ * given (url, w, q) plus negotiated format, so this is safe to share across
+ * users — and it turns the transform into a once-per-colo cost instead of a
+ * once-per-request one.
+ */
+async function serveOptimizedImage(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+  url: URL,
+): Promise<Response> {
+  const cache = (caches as unknown as WorkerCaches).default;
+
+  const keyUrl = new URL(url);
+  keyUrl.searchParams.set("_fmt", negotiatedFormat(request));
+  const cacheKey = new Request(keyUrl.toString(), { method: "GET" });
+
+  const hit = await cache.match(cacheKey);
+  if (hit) return hit;
+
+  const response = await handler.fetch(request, env, ctx);
+  // Only 200s are worth storing: errors should retry, and `cache.put` rejects
+  // on partial (206) responses anyway.
+  if (response.status !== 200) return response;
+
+  const cached = new Response(response.body, response);
+  cached.headers.set("cache-control", IMAGE_CACHE_CONTROL);
+  // Best-effort: a failed cache write costs us a transform next time, and must
+  // never surface as a Worker exception on a request that already succeeded.
+  ctx.waitUntil(cache.put(cacheKey, cached.clone()).catch(() => {}));
+  return cached;
+}
 
 /** Cloudflare cron expression -> internal cron route (mirrors vercel.json crons). */
 const CRON_ROUTES: Record<string, string> = {
@@ -40,13 +112,16 @@ const handler = openNextWorker as {
 };
 
 export default {
-  fetch(request: Request, env: Env, ctx: unknown): Promise<Response> {
+  fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     // apex -> www 301 redirect (replaces the vercel.json host redirect at cutover).
     const url = new URL(request.url);
     if (url.hostname === "vibetalent.work") {
       return Promise.resolve(
         Response.redirect(`https://www.vibetalent.work${url.pathname}${url.search}`, 301),
       );
+    }
+    if (request.method === "GET" && url.pathname === "/_next/image") {
+      return serveOptimizedImage(request, env, ctx, url);
     }
     return handler.fetch(request, env, ctx);
   },
