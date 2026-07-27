@@ -1,0 +1,41 @@
+# Cache policy for files served by Cloudflare Workers Static Assets.
+#
+# Workers Assets stamps EVERY asset with `public, max-age=0, must-revalidate`
+# by default, which tells the browser to re-check freshness before each use.
+# On this site that meant ~13 conditional requests (10 JS chunks, the CSS
+# bundle, 2 fonts) on every single page load — each a full round trip that
+# blocks hydration, and all of them paid again on the first visit of the day
+# once the in-memory cache is gone.
+#
+# Rules only apply to static-asset responses; SSR/route-handler responses come
+# from the Worker and are unaffected. Keep the patterns non-overlapping so
+# rule precedence never matters.
+#
+# https://developers.cloudflare.com/workers/static-assets/headers
+# https://opennext.js.org/cloudflare/caching#static-assets-caching
+
+# Next.js build output is content-hashed — the filename changes whenever the
+# bytes do — so it can be cached permanently and never revalidated.
+/_next/static/*
+  Cache-Control: public,max-age=31536000,immutable
+
+# Seed builder avatars. Stable filenames, so not immutable: a day of freshness
+# plus a week of stale-while-revalidate keeps return visits instant while a
+# replaced file still rolls out on its own.
+/avatars/*
+  Cache-Control: public,max-age=86400,stale-while-revalidate=604800
+
+# Brand/marketing images in public/. Same reasoning as above — these keep their
+# names across deploys, and og-image-v2.jpg is versioned in the filename when it
+# changes (social platforms cache previews by URL anyway).
+/logo.png
+  Cache-Control: public,max-age=86400,stale-while-revalidate=604800
+
+/og-image-v2.jpg
+  Cache-Control: public,max-age=86400,stale-while-revalidate=604800
+
+/roadmap.png
+  Cache-Control: public,max-age=86400,stale-while-revalidate=604800
+
+/favicon.ico
+  Cache-Control: public,max-age=86400,stale-while-revalidate=604800
