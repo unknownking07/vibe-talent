@@ -177,15 +177,35 @@ function hasAuthCookie(request: Request): boolean {
  * which Cloudflare does not do for Worker responses on its own.
  */
 function sharedCacheTtl(response: Response): number {
-  const cc = response.headers.get("cache-control");
-  if (!cc) return 0;
-  const lower = cc.toLowerCase();
-  if (lower.includes("private") || lower.includes("no-store") || lower.includes("no-cache")) {
+  const header = response.headers.get("cache-control");
+  if (!header) return 0;
+
+  // Parse directive names rather than substring-matching the raw header. A
+  // substring test reads `s-maxage` out of a longer token such as
+  // `x-s-maxage=300` and would cache a response the origin never marked
+  // shareable — the one failure direction that matters here. (`no-cache=
+  // "set-cookie"` and vendor extensions like `x-no-store` fail the safe way,
+  // but are handled correctly by the same parse.)
+  const directives = new Map<string, string>();
+  for (const part of header.split(",")) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const eq = trimmed.indexOf("=");
+    const name = (eq === -1 ? trimmed : trimmed.slice(0, eq)).trim().toLowerCase();
+    if (name) directives.set(name, eq === -1 ? "" : trimmed.slice(eq + 1).trim());
+  }
+
+  if (directives.has("private") || directives.has("no-store") || directives.has("no-cache")) {
     return 0;
   }
-  const match = /s-maxage=(\d+)/.exec(lower);
-  if (!match) return 0;
-  return Math.min(Number(match[1]), MAX_DOCUMENT_EDGE_TTL_SECONDS);
+
+  const sMaxAge = directives.get("s-maxage");
+  // Strict digits: `Number.parseInt` would happily read 60 out of "60junk".
+  if (!sMaxAge || !/^\d+$/.test(sMaxAge)) return 0;
+
+  const seconds = Number(sMaxAge);
+  if (seconds <= 0) return 0;
+  return Math.min(seconds, MAX_DOCUMENT_EDGE_TTL_SECONDS);
 }
 
 /**
