@@ -79,24 +79,31 @@ export async function GET(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
 
-    // One row per endorsement across every requested project, tallied below.
-    // `head: true` counting can't group, so this reads the ids and counts them.
+    // Read the denormalised counter rather than tallying endorsement rows.
+    // Counting rows would return at most one PostgREST page, so a popular
+    // project — or a 50-id batch whose rows exceed the cap in total — would
+    // silently report a truncated count, and it materialises every endorsement
+    // just to discard it. This column is maintained by the POST/DELETE handlers
+    // below and is already what /api/v1/builders and the dashboard read.
+    // Bounded at one row per requested project, so it cannot be truncated.
     const { data: rows, error } = await sb
-      .from("project_endorsements")
-      .select("project_id")
-      .in("project_id", projectIds);
+      .from("projects")
+      .select("id, endorsement_count")
+      .in("id", projectIds);
 
     if (error) {
       return NextResponse.json({ error: "Failed to fetch endorsements" }, { status: 500 });
     }
 
     const counts = new Map<string, number>();
-    for (const row of (rows ?? []) as { project_id: string }[]) {
-      counts.set(row.project_id, (counts.get(row.project_id) ?? 0) + 1);
+    for (const row of (rows ?? []) as { id: string; endorsement_count: number | null }[]) {
+      counts.set(row.id, row.endorsement_count ?? 0);
     }
 
     // Which of these the caller has already endorsed — one query, not one per
-    // project, and only when there is a session to check.
+    // project, and only when there is a session to check. Unlike a raw count
+    // this is safe to read as rows: it is one endorsement per user per project,
+    // so the result is bounded by the batch size.
     const endorsed = new Set<string>();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
