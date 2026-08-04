@@ -101,6 +101,28 @@ describe("fetchEndorsementState", () => {
     expect((await settled).map((r) => r.status)).toEqual(["rejected", "rejected"]);
   });
 
+  it("rejects only the waiter a successful response left out", async () => {
+    // The route answers 200 but omits one id — a project deleted between render
+    // and lookup, say. The present one must still resolve.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => jsonResponse({ present: { count: 4, user_endorsed: false } })),
+    );
+
+    const settled = Promise.allSettled([
+      fetchEndorsementState("present"),
+      fetchEndorsementState("absent"),
+    ]);
+    await vi.runAllTimersAsync();
+    const [present, absent] = await settled;
+
+    expect(present).toEqual({
+      status: "fulfilled",
+      value: { count: 4, user_endorsed: false },
+    });
+    expect(absent.status).toBe("rejected");
+  });
+
   it("starts a fresh batch after the previous one has flushed", async () => {
     const fetchMock = vi.fn(async (url: string) =>
       jsonResponse(

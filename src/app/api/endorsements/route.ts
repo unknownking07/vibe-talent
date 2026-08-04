@@ -107,11 +107,19 @@ export async function GET(req: NextRequest) {
     const endorsed = new Set<string>();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data: mine } = await sb
+      const { data: mine, error: mineError } = await sb
         .from("project_endorsements")
         .select("project_id")
         .in("project_id", projectIds)
         .eq("user_id", user.id);
+
+      // Swallowing this would report `user_endorsed: false` with a 200, so a
+      // user who has already endorsed sees an un-endorsed button and their next
+      // click POSTs a duplicate. Fail loudly instead — the button keeps its
+      // server-rendered count when the lookup errors.
+      if (mineError) {
+        return NextResponse.json({ error: "Failed to fetch endorsements" }, { status: 500 });
+      }
       for (const row of (mine ?? []) as { project_id: string }[]) {
         endorsed.add(row.project_id);
       }
