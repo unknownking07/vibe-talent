@@ -35,46 +35,96 @@ async function revalidateOwnerProfile(ownerId: string) {
  *   - Endorsements from higher-scored users weigh more (computed at read time)
  */
 
-// GET /api/endorsements?project_id=xxx — Get endorsement count + whether current user endorsed
+// Upper bound on a single batch. A page renders at most a few dozen cards, and
+// this keeps one request from turning into an unbounded `IN (...)` scan.
+const MAX_BATCH_PROJECT_IDS = 50;
+
+/**
+ * GET /api/endorsements
+ *
+ * Accepts either:
+ *   ?project_id=xxx    -> { count, user_endorsed }
+ *   ?project_ids=a,b,c -> { results: { a: { count, user_endorsed }, ... } }
+ *
+ * The batch form exists because every card mounts its own EndorseButton. One
+ * request per card meant a page of 12 projects fired 12 round trips, each a
+ * separate Worker invocation and each re-running `auth.getUser()`. Batched, any
+ * number of cards costs two queries and one auth check.
+ */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const projectId = searchParams.get("project_id");
+    const singleId = searchParams.get("project_id");
+    const batchParam = searchParams.get("project_ids");
 
-    if (!projectId) {
+    if (!singleId && !batchParam) {
       return NextResponse.json({ error: "project_id is required" }, { status: 400 });
+    }
+
+    const projectIds = batchParam
+      ? [...new Set(batchParam.split(",").map((id) => id.trim()).filter(Boolean))]
+      : [singleId as string];
+
+    if (projectIds.length === 0) {
+      return NextResponse.json({ error: "project_ids is empty" }, { status: 400 });
+    }
+    if (projectIds.length > MAX_BATCH_PROJECT_IDS) {
+      return NextResponse.json(
+        { error: `project_ids accepts at most ${MAX_BATCH_PROJECT_IDS} ids` },
+        { status: 400 },
+      );
     }
 
     const supabase = await createServerSupabaseClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
 
-    // Get count
-    const { count, error } = await sb
+    // One row per endorsement across every requested project, tallied below.
+    // `head: true` counting can't group, so this reads the ids and counts them.
+    const { data: rows, error } = await sb
       .from("project_endorsements")
-      .select("id", { count: "exact", head: true })
-      .eq("project_id", projectId);
+      .select("project_id")
+      .in("project_id", projectIds);
 
     if (error) {
       return NextResponse.json({ error: "Failed to fetch endorsements" }, { status: 500 });
     }
 
-    // Check if current user endorsed
-    let userEndorsed = false;
+    const counts = new Map<string, number>();
+    for (const row of (rows ?? []) as { project_id: string }[]) {
+      counts.set(row.project_id, (counts.get(row.project_id) ?? 0) + 1);
+    }
+
+    // Which of these the caller has already endorsed — one query, not one per
+    // project, and only when there is a session to check.
+    const endorsed = new Set<string>();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data: existing } = await sb
+      const { data: mine } = await sb
         .from("project_endorsements")
-        .select("id")
-        .eq("project_id", projectId)
-        .eq("user_id", user.id)
-        .single();
-      userEndorsed = !!existing;
+        .select("project_id")
+        .in("project_id", projectIds)
+        .eq("user_id", user.id);
+      for (const row of (mine ?? []) as { project_id: string }[]) {
+        endorsed.add(row.project_id);
+      }
+    }
+
+    // Preserve the original single-project response shape for existing callers.
+    if (!batchParam) {
+      return NextResponse.json({
+        count: counts.get(projectIds[0]) ?? 0,
+        user_endorsed: endorsed.has(projectIds[0]),
+      });
     }
 
     return NextResponse.json({
-      count: count || 0,
-      user_endorsed: userEndorsed,
+      results: Object.fromEntries(
+        projectIds.map((id) => [
+          id,
+          { count: counts.get(id) ?? 0, user_endorsed: endorsed.has(id) },
+        ]),
+      ),
     });
   } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 });

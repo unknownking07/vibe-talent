@@ -25,7 +25,10 @@ export const metadata: Metadata = {
   },
 };
 
-export const revalidate = 60;
+// Browse/ranking data moves on the order of hours (vibe score is recomputed
+// daily), so a 5-minute window is generous while cutting background re-renders
+// — and their Supabase fan-out — fivefold.
+export const revalidate = 300;
 
 export default async function ExplorePage() {
   let users: Awaited<ReturnType<typeof fetchAllUsersCached>>;

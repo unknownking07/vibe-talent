@@ -589,6 +589,12 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   key={link.href}
                   href={link.href}
                   role="menuitem"
+                  // Dropdown contents are `display:none` until opened, so they
+                  // all become visible at once — prefetching would fire the
+                  // whole menu's RSC payloads as a burst the moment a pointer
+                  // grazes the trigger. Every one of those is a Worker
+                  // invocation, and the click that follows is a single route.
+                  prefetch={false}
                   onClick={() => setExploreOpen(false)}
                   className="px-4 py-2.5 text-sm font-bold uppercase tracking-wide transition-colors hover:bg-[var(--accent)]/10"
                   style={{
@@ -657,6 +663,8 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                 <Link
                   key={link.href}
                   href={link.href}
+                  // See the Explore dropdown above.
+                  prefetch={false}
                   onClick={() => setMoreOpen(false)}
                   className="px-4 py-2.5 text-sm font-bold uppercase tracking-wide transition-colors hover:bg-[var(--accent)]/10"
                   style={{
@@ -758,6 +766,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   <Link
                     href={`/profile/${userProfile?.username || ""}`}
                     role="menuitem"
+                    // Profile dropdown, same reasoning as the Explore menu: the
+                    // whole panel unhides at once, so prefetch turns one hover
+                    // into four Worker invocations.
+                    prefetch={false}
                     onClick={() => setProfileDropdownOpen(false)}
                     className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors"
                     style={{ color: "var(--foreground)" }}
@@ -768,6 +780,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   <Link
                     href={`/profile/${userProfile?.username || ""}/achievements`}
                     role="menuitem"
+                    prefetch={false}
                     onClick={() => setProfileDropdownOpen(false)}
                     className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors"
                     style={{ color: "var(--foreground)" }}
@@ -778,6 +791,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   <Link
                     href={userProfile && !userProfile.display_name ? "/settings?complete=name" : "/settings"}
                     role="menuitem"
+                    prefetch={false}
                     onClick={() => setProfileDropdownOpen(false)}
                     className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors"
                     style={{ color: "var(--foreground)" }}
@@ -805,6 +819,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   <Link
                     href="/settings#referral"
                     role="menuitem"
+                    prefetch={false}
                     onClick={() => setProfileDropdownOpen(false)}
                     className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors"
                     style={{ color: "var(--foreground)" }}
@@ -947,6 +962,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
             <Link
               key={link.href}
               href={link.href}
+              // The mobile sheet renders every route at once, so prefetching
+              // here would fan out the entire menu on open — worst case on the
+              // connections least able to absorb it.
+              prefetch={false}
               onClick={() => setMobileOpen(false)}
               className="relative inline-block px-4 py-3 text-sm font-bold uppercase tracking-wide"
               style={{
@@ -960,6 +979,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
             <Link
               key={link.href}
               href={link.href}
+              prefetch={false}
               onClick={() => setMobileOpen(false)}
               className="relative inline-block px-4 py-3 text-sm font-bold uppercase tracking-wide"
               style={{
@@ -991,6 +1011,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch={false}
                 onClick={() => setMobileOpen(false)}
                 className="relative inline-block px-4 py-3 text-sm font-bold uppercase tracking-wide"
                 style={{
@@ -1017,6 +1038,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               <>
                 <Link
                   href={`/profile/${userProfile.username}`}
+                  prefetch={false}
                   onClick={() => setMobileOpen(false)}
                   className="block px-4 py-3 mt-1 text-sm font-bold uppercase tracking-wide text-[var(--foreground)]"
                 >
@@ -1024,6 +1046,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                 </Link>
                 <Link
                   href={`/profile/${userProfile.username}/achievements`}
+                  prefetch={false}
                   onClick={() => setMobileOpen(false)}
                   className="block px-4 py-3 text-sm font-bold uppercase tracking-wide text-[var(--foreground)]"
                 >
@@ -1031,6 +1054,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                 </Link>
                 <Link
                   href="/settings"
+                  prefetch={false}
                   onClick={() => setMobileOpen(false)}
                   className="block px-4 py-3 text-sm font-bold uppercase tracking-wide text-[var(--foreground)]"
                 >
@@ -1038,6 +1062,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                 </Link>
                 <Link
                   href="/settings#referral"
+                  prefetch={false}
                   onClick={() => setMobileOpen(false)}
                   className="block px-4 py-3 text-sm font-bold uppercase tracking-wide text-[var(--foreground)]"
                 >

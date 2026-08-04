@@ -19,7 +19,9 @@ import type { FeedItem } from "@/components/feed/feed-types";
  * feed (separate keys so a stat-query failure can't poison the feed cache
  * and vice versa) — once warm, the page renders in single-digit ms.
  */
-export const revalidate = 60;
+// See the homepage: widened to 3 minutes to cut background re-renders. The feed
+// itself polls on the client, so this only affects the first painted snapshot.
+export const revalidate = 180;
 
 export default async function FeedPage() {
   // Run feed + stats in parallel. allSettled means a stats failure can't

@@ -21,7 +21,31 @@
   "kv_namespaces": [
     { "binding": "NEXT_INC_CACHE_KV", "id": "2febea4c4d924795bc2825226b140456" }
   ],
+  // Tunes the ISR revalidation queue (see the DOQueueHandler in
+  // @opennextjs/cloudflare). Both values exist to break a revalidation storm:
+  // one homepage view used to trigger 28 background re-renders of `/` in 38s.
+  //
+  // TIMEOUT: the queue aborts a revalidation after 10s by default. A homepage
+  // re-render can exceed that (it fans out to Supabase in ap-northeast-2), and
+  // an aborted revalidation never records success — so the sync row that would
+  // dedupe the next enqueue is never written and the route enters a retrying
+  // failed state. 25s is comfortably above a normal render and still well under
+  // the queue's own concurrency ceiling.
+  //
+  // MAX_RETRIES: caps how hard the queue retries a genuinely failing route. The
+  // default 6 retries compound with the alarm loop; 1 is enough because, as
+  // OpenNext itself notes, subsequent ISR requests retry anyway.
+  "vars": {
+    "NEXT_CACHE_DO_QUEUE_REVALIDATION_TIMEOUT_MS": "25000",
+    "NEXT_CACHE_DO_QUEUE_MAX_RETRIES": "1"
+  },
   // revalidateTag / revalidatePath tag cache.
+  //
+  // NOTE: no longer read at runtime — the tag cache moved to the sharded
+  // Durable Object below because this D1 instance is pinned to ENAM (Newark)
+  // with read replication disabled, so every dynamic response paid a ~250ms
+  // cross-planet round trip for a 0.2ms query. The binding stays declared so
+  // reverting open-next.config.ts is a one-line rollback.
   "d1_databases": [
     {
       "binding": "NEXT_TAG_CACHE_D1",
@@ -29,11 +53,18 @@
       "database_id": "757f6a0f-ae69-4243-81f1-e24eaa2412d3"
     }
   ],
-  // Time-based ISR revalidation queue (Durable Object) + self-reference the queue uses.
+  // Time-based ISR revalidation queue + the sharded tag cache, both Durable
+  // Objects, plus the self-reference the queue uses to call back into the app.
   "durable_objects": {
-    "bindings": [{ "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" }]
+    "bindings": [
+      { "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" },
+      { "name": "NEXT_TAG_CACHE_DO_SHARDED", "class_name": "DOShardedTagCache" }
+    ]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DOQueueHandler"] }],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["DOQueueHandler"] },
+    { "tag": "v2", "new_sqlite_classes": ["DOShardedTagCache"] }
+  ],
   "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "vibetalent" }]
 
   // Cron Triggers DISABLED — moved to GitHub Actions (.github/workflows/cron.yml).
