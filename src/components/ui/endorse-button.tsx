@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { ThumbsUp } from "lucide-react";
+import { fetchEndorsementState } from "@/lib/endorsement-batch";
 
 interface EndorseButtonProps {
   projectId: string;
@@ -21,22 +22,21 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
   // their optimistic toggle with stale pre-click values.
   const interacted = useRef(false);
 
-  // Check endorsement state on mount so button shows correct state after refresh
+  // Check endorsement state on mount so button shows correct state after refresh.
+  // Goes through the batcher: every card on the page mounts in the same tick, so
+  // they share one request instead of one Worker invocation each.
   useEffect(() => {
     if (isOwner) return;
-    const controller = new AbortController();
-    fetch(`/api/endorsements?project_id=${projectId}`, { signal: controller.signal })
-      .then((res) => (res.ok ? res.json() : null))
+    let cancelled = false;
+    fetchEndorsementState(projectId)
       .then((data) => {
-        if (data && !interacted.current) {
+        if (!cancelled && !interacted.current) {
           setEndorsed(data.user_endorsed);
           setCount(data.count);
         }
       })
-      .catch((err) => {
-        if (err.name !== "AbortError") { /* silent */ }
-      });
-    return () => { controller.abort(); };
+      .catch(() => { /* silent — the card keeps its server-rendered count */ });
+    return () => { cancelled = true; };
   }, [projectId, isOwner]);
 
   async function handleToggle() {

@@ -25,7 +25,10 @@ export const metadata: Metadata = {
   },
 };
 
-export const revalidate = 60;
+// See /explore. Note this is the outer window only — `fetchAllProjectsCached`
+// keeps its own 60s `unstable_cache` entry, so widening here changes how often
+// the page re-renders, not how fresh the data is when it does.
+export const revalidate = 300;
 
 export default async function ProjectsPage() {
   let projects: Awaited<ReturnType<typeof fetchAllProjectsCached>>;

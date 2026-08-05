@@ -26,7 +26,9 @@ export const metadata: Metadata = {
   },
 };
 
-export const revalidate = 60;
+// See /explore: rankings shift slowly, so 5 minutes trades no real freshness
+// for five times fewer background re-renders.
+export const revalidate = 300;
 
 export default async function LeaderboardPage() {
   let users: Awaited<ReturnType<typeof fetchAllUsersCached>>;

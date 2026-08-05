@@ -23,7 +23,11 @@ import { Flame, Trophy, GitCommitHorizontal, Zap, ArrowRight } from "lucide-reac
 const HOMEPAGE_FEED_V2_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_HOMEPAGE_FEED_V2 === "true";
 
-export const revalidate = 60;
+// 3 minutes rather than 1: every expiry schedules a background re-render that
+// fans out to Supabase, and the live parts of this page (activity feed, network
+// feed) poll on the client anyway — so a wider server window costs no freshness
+// a visitor can perceive.
+export const revalidate = 180;
 
 const FAQ_ITEMS = [
   {

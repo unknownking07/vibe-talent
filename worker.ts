@@ -112,6 +112,194 @@ async function serveOptimizedImage(
   return cached;
 }
 
+/**
+ * Ceiling on how long a document may sit in the colo cache, in seconds.
+ *
+ * The effective TTL is `min(the response's own s-maxage, this)`, so this never
+ * introduces staleness the origin hadn't already sanctioned — it only stops a
+ * long ISR window from pinning a document at the edge for minutes, which would
+ * blunt the `revalidateTag` calls that fire on project verification and
+ * endorsement.
+ */
+const MAX_DOCUMENT_EDGE_TTL_SECONDS = 60;
+
+/**
+ * Carry the origin's own Cache-Control and Vary across a cache round trip.
+ *
+ * Both are rewritten on the stored copy and restored on the way out, so what a
+ * client sees is byte-identical to an uncached response. `Vary` in particular
+ * has to come off: Cloudflare's Cache API only honours `Vary: Accept-Encoding`
+ * and can decline to store anything else, which would turn this whole path into
+ * a silent no-op. The RSC variant is already folded into the cache key by
+ * `documentCacheKey`, so dropping the header loses no correctness.
+ */
+const ORIGIN_CACHE_CONTROL_HEADER = "x-vt-origin-cache-control";
+const ORIGIN_VARY_HEADER = "x-vt-origin-vary";
+
+/** Restore the origin's Cache-Control/Vary onto a copy taken from the cache. */
+function restoreOriginHeaders(source: Headers, edgeState: "HIT" | "MISS"): Headers {
+  const headers = new Headers(source);
+  const cacheControl = headers.get(ORIGIN_CACHE_CONTROL_HEADER);
+  const vary = headers.get(ORIGIN_VARY_HEADER);
+
+  if (cacheControl) headers.set("cache-control", cacheControl);
+  else headers.delete("cache-control");
+  if (vary) headers.set("vary", vary);
+
+  headers.delete(ORIGIN_CACHE_CONTROL_HEADER);
+  headers.delete(ORIGIN_VARY_HEADER);
+  headers.set("x-vt-edge", edgeState);
+  return headers;
+}
+
+/**
+ * Does this request carry a logged-in Supabase session?
+ *
+ * Mirrors `hasAuthSessionCookie` in src/lib/supabase/middleware.ts, including
+ * chunked cookies (`sb-<ref>-auth-token.0`) and excluding the PKCE
+ * `-code-verifier` cookie a mid-OAuth visitor carries. Anything matching here
+ * is never read from, nor written to, the shared cache.
+ */
+function hasAuthCookie(request: Request): boolean {
+  const cookie = request.headers.get("cookie");
+  if (!cookie) return false;
+  return cookie
+    .split(";")
+    .some((part) => /^sb-.+-auth-token(\.\d+)?=.+$/.test(part.trim()));
+}
+
+/**
+ * Seconds this response may be shared-cached, or 0 when it must not be.
+ *
+ * `s-maxage` is precisely the directive for a shared cache like this one, and
+ * OpenNext already sets it on ISR output while marking everything dynamic or
+ * personalised `private`/`no-store`. So the origin decides; we just enforce it,
+ * which Cloudflare does not do for Worker responses on its own.
+ */
+function sharedCacheTtl(response: Response): number {
+  const header = response.headers.get("cache-control");
+  if (!header) return 0;
+
+  // Parse directive names rather than substring-matching the raw header. A
+  // substring test reads `s-maxage` out of a longer token such as
+  // `x-s-maxage=300` and would cache a response the origin never marked
+  // shareable — the one failure direction that matters here. (`no-cache=
+  // "set-cookie"` and vendor extensions like `x-no-store` fail the safe way,
+  // but are handled correctly by the same parse.)
+  const directives = new Map<string, string>();
+  for (const part of header.split(",")) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+    const eq = trimmed.indexOf("=");
+    const name = (eq === -1 ? trimmed : trimmed.slice(0, eq)).trim().toLowerCase();
+    if (name) directives.set(name, eq === -1 ? "" : trimmed.slice(eq + 1).trim());
+  }
+
+  if (directives.has("private") || directives.has("no-store") || directives.has("no-cache")) {
+    return 0;
+  }
+
+  const sMaxAge = directives.get("s-maxage");
+  // Strict digits: `Number.parseInt` would happily read 60 out of "60junk".
+  if (!sMaxAge || !/^\d+$/.test(sMaxAge)) return 0;
+
+  const seconds = Number(sMaxAge);
+  if (seconds <= 0) return 0;
+  return Math.min(seconds, MAX_DOCUMENT_EDGE_TTL_SECONDS);
+}
+
+/**
+ * Cache key for a document request.
+ *
+ * The response varies on the RSC negotiation headers, and Cloudflare's Cache
+ * API does not honour `Vary` beyond `Accept-Encoding` — so the variant has to
+ * be folded into the key or a router prefetch and a full navigation would
+ * collide. Same trick as `negotiatedFormat` above.
+ */
+function documentCacheKey(request: Request, url: URL): Request {
+  const keyUrl = new URL(url);
+  const variant = [
+    request.headers.get("rsc") ? "rsc" : "html",
+    request.headers.get("next-router-prefetch") ? "pf" : "",
+    request.headers.get("next-router-state-tree") ? "st" : "",
+    request.headers.get("next-router-segment-prefetch") ?? "",
+  ]
+    .filter(Boolean)
+    .join("-");
+  keyUrl.searchParams.set("_vtvariant", variant);
+  return new Request(keyUrl.toString(), { method: "GET" });
+}
+
+/** Is this a path whose documents we are willing to share between visitors? */
+function isCacheableDocumentPath(pathname: string): boolean {
+  // Route handlers are excluded wholesale: several are per-user (notifications,
+  // streak, hire) and the image-ish ones (og, share-card, badge, receipt) pick
+  // deliberate TTLs of their own that this must not override.
+  if (pathname.startsWith("/api/")) return false;
+  // Served by the assets layer or the image branch above; never reaches here in
+  // practice, but keeps the intent explicit.
+  if (pathname.startsWith("/_next/")) return false;
+  return true;
+}
+
+/**
+ * Serve a document from the colo cache when the origin marked it shareable.
+ *
+ * Why this exists: Cloudflare does not cache Worker responses, so every HTML
+ * document and every RSC prefetch payload was reaching the Worker — measured at
+ * ~30 Worker invocations for a single homepage view, each paying the full
+ * OpenNext cache path. A hard refresh fires that whole set at once, which is
+ * exactly when the site felt slowest.
+ *
+ * Only anonymous requests participate, and only responses the origin already
+ * declared publicly shareable, so nothing user-specific can be served across
+ * sessions.
+ */
+async function serveDocument(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+  url: URL,
+): Promise<Response> {
+  const cache = (caches as unknown as WorkerCaches).default;
+  const cacheKey = documentCacheKey(request, url);
+
+  const hit = await cache.match(cacheKey);
+  if (hit) {
+    return new Response(hit.body, {
+      status: hit.status,
+      headers: restoreOriginHeaders(hit.headers, "HIT"),
+    });
+  }
+
+  const response = await handler.fetch(request, env, ctx);
+
+  const ttl = sharedCacheTtl(response);
+  // `Set-Cookie` means the response was personalised for this caller (the
+  // Supabase middleware refreshing a session, most often) and must never be
+  // shared, whatever its Cache-Control says.
+  if (response.status !== 200 || ttl <= 0 || response.headers.has("set-cookie")) {
+    return response;
+  }
+
+  const stored = new Response(response.body, response);
+  stored.headers.set(ORIGIN_CACHE_CONTROL_HEADER, response.headers.get("cache-control") ?? "");
+  const originVary = response.headers.get("vary");
+  if (originVary) stored.headers.set(ORIGIN_VARY_HEADER, originVary);
+  stored.headers.set("cache-control", `public, max-age=${ttl}`);
+  stored.headers.delete("vary");
+
+  // Best-effort, exactly as with images: a failed write costs one extra origin
+  // hit and must never surface on a request that already succeeded.
+  ctx.waitUntil(cache.put(cacheKey, stored.clone()).catch(() => {}));
+
+  // The caller gets the origin's own headers, not the edge TTL we stored under.
+  return new Response(stored.body, {
+    status: stored.status,
+    headers: restoreOriginHeaders(stored.headers, "MISS"),
+  });
+}
+
 /** Cloudflare cron expression -> internal cron route (mirrors vercel.json crons). */
 const CRON_ROUTES: Record<string, string> = {
   "0 6 * * *": "/api/cron/daily",
@@ -143,6 +331,13 @@ export default {
       !isAppGeneratedImage(url)
     ) {
       return serveOptimizedImage(request, env, ctx, url);
+    }
+    if (
+      request.method === "GET" &&
+      !hasAuthCookie(request) &&
+      isCacheableDocumentPath(url.pathname)
+    ) {
+      return serveDocument(request, env, ctx, url);
     }
     return handler.fetch(request, env, ctx);
   },
