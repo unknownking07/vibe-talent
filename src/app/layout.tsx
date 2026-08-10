@@ -58,6 +58,13 @@ export const metadata: Metadata = {
   alternates: {
     canonical: siteUrl,
   },
+  // Orynth directory listing ownership check. Duplicated at
+  // /.well-known/ory-verify.txt — the file is the method Orynth recommends,
+  // this tag is the belt-and-braces copy that can't be dropped by the static
+  // asset pipeline. Safe to remove once the listing is approved.
+  verification: {
+    other: { "ory-verify": "orynth-91ed1e7813df4209a5816a96a2ae9172" },
+  },
   robots: {
     index: true,
     follow: true,
