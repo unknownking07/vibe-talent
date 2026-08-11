@@ -37,9 +37,12 @@ Consequences that shape the design:
 
 1. **No swap widget is possible.** Jupiter can't route it, so the buy path is an
    outbound link to Bags, with DexScreener for charting.
-2. **Vouch weight is token-denominated, not USD.** At $2,375 liquidity a $100
-   order is ~4% of the pool. Token counts are also immutable once burned, so a
-   builder's score can't swing with the price.
+2. **Amounts are USD-denominated but frozen at burn time.** USD is what users
+   understand; freezing the value on burn gives it the immutability that stops a
+   builder's score drifting with the token price. Thin liquidity also caps
+   sensible amounts — at $2,375 in the pool, a $100 order is ~4% of it, so the
+   $25 per-voucher weight cap doubles as a nudge away from orders that would
+   move the price against the buyer.
 3. **This is token bootstrapping, not revenue.** At $2.4k FDV, $1 sinks across
    194 users are rounding error. The deliverable is the first real holders, a
    working demo, and a coherent token story.
@@ -196,19 +199,36 @@ Burn any amount of $VIBE behind a builder. Public, permanent, irreversible.
 
 **Weight**
 
+The voucher chooses a **USD amount**; the client quotes it to $VIBE at burn time
+via the existing `/api/solana/quote` path. Both values are recorded, and weight is
+computed from the USD value **frozen at burn time** — never re-evaluated, so a
+builder's score cannot move when the token price does.
+
 ```
-weight      = floor( sqrt(tokens_burned / 1e6) × 1.5 × credibility )
-credibility = 0.5 + 0.5 × min(voucher_vibe_score / 200, 1)      → 0.5× … 1.0×
+weight      = floor( sqrt(usd_at_burn) × credibility )
+credibility = voucher_vibe_score < 20  →  0        (display-only, no score weight)
+              otherwise 0.5 + 0.5 × min(voucher_vibe_score / 200, 1)   → 0.5× … 1.0×
 per-voucher cap = 5 pts        per-profile cap = 25 pts
-minimum vouch   = 1,000,000 $VIBE  (~$2.40 at time of writing)
+minimum vouch   = $2
 ```
 
 | Burned | Points (credibility 1.0) |
 | --- | --- |
-| 1M | 1 |
-| 4M | 3 |
-| 9M | 4 |
-| 11.2M+ | 5 (capped) |
+| $2 | 1 |
+| $5 | 2 |
+| $10 | 3 |
+| $25+ | 5 (capped) |
+
+USD denomination is the product decision — "$5" is legible in a way "2,078,000
+tokens" is not — and freezing at burn time gives it the same immutability that
+token-denomination would have. Maxing a profile takes 5 credible backers at $25:
+**$125 of supply permanently destroyed** for +25 points.
+
+**The `vibe_score < 20` credibility floor is the Sybil defence.** Without it, ~25
+throwaway accounts burning $4 each (~$100) could max a profile. With it, a
+throwaway account's burn still appears in the public display — honest, it did
+happen — but contributes zero to the score. Buying rank requires accounts that
+already earned score through real work, which is the expensive part.
 
 **Calibration against live data.** `vibe_score` distribution across 194 users:
 median 44, p75 108, p90 181, p99 540, max 718. A +25 ceiling moves a median
@@ -235,13 +255,14 @@ score through work.
 | `id` | `uuid` pk | |
 | `voucher_id` | `uuid` → users | |
 | `builder_id` | `uuid` → users | |
-| `vibe_burned` | `bigint` | Base units, exact |
-| `usd_at_burn` | `numeric` | Frozen for display only, never for weight |
+| `vibe_burned` | `bigint` | Base units, exact — drives the uncapped display |
+| `usd_at_burn` | `numeric` | Frozen at burn time — drives the capped score weight |
 | `tx_ref` | `text` unique | Replay protection |
 | `created_at` | `timestamptz` | |
 
-`usd_at_burn` is recorded for display and for the burn counter, but weight is
-computed from `vibe_burned` alone so the score never moves with price.
+Both are recorded. `usd_at_burn` is written once and never recomputed, so weight
+is stable for the life of the vouch. `vibe_burned` is the exact destroyed amount
+and feeds the public display and the site-wide burn counter.
 
 **Scoring integration.** The vouch term goes into the `update_user_streak()` SQL
 function — **not** into `calculateVibeScore()` in `src/lib/streak.ts`. Those two
@@ -252,7 +273,54 @@ out of scope here; see Out of scope.
 **Profile UI.** A "Backed by" block: backer avatars, total $VIBE burned, total USD
 equivalent, and each backer's amount.
 
-## 4. Holder tier → free freezes
+## 4. Burn confirmation UX
+
+Burning is irreversible and involves real money, so the interface has to make the
+consequence unmissable *before* the wallet opens. Users arriving from a hiring
+marketplace should not be assumed to know what "burn" means on-chain — the most
+likely misconception is that the tokens go to the builder, or to VibeTalent.
+
+**Vouch flow — two steps, never one.**
+
+*Step 1 — choose amount.* USD presets ($2 / $5 / $10 / $25) plus a custom field.
+Live conversion shown beneath: `$5.00 ≈ 2,078,000 $VIBE`. Also shows what the
+builder gains: `+2 vibe score`, and that per-voucher weight caps at $25 so nobody
+overspends expecting more score than they can get.
+
+*Step 2 — confirm the burn.* A distinct panel, not a one-line checkbox tacked onto
+step 1:
+
+> **This burn is permanent**
+>
+> You're about to destroy **2,078,000 $VIBE** (≈ $5.00) forever.
+>
+> **Nobody receives these tokens** — not VibeTalent, not @karan. They're removed
+> from the total supply permanently.
+>
+> In return: @karan gets **+2 vibe score**, and you appear publicly as a backer
+> on their profile.
+>
+> This cannot be undone, reversed, or refunded.
+
+- Required checkbox: *"I understand these tokens will be destroyed and cannot be
+  recovered."* Unchecked by default; the action button stays disabled until ticked.
+- The action button names the destructive act — **"Burn 2,078,000 $VIBE"** — not
+  "Confirm" or "Continue", and uses destructive styling.
+- Back button returns to step 1 without penalty.
+
+**Streak protect** is lower-stakes but equally irreversible, so it gets the same
+treatment in a single compacted step: the exact token amount, "permanently
+destroyed, nobody receives them", what it restores (`your 34-day streak`), and a
+button reading **"Burn X $VIBE"**.
+
+**Post-burn**, both flows show the destroyed amount with a Solscan link to the
+transaction, so the burn is independently verifiable rather than merely asserted.
+
+**Copy rule for the whole feature:** never write "spend", "pay", "stake" or "send"
+for a burn. It is destroyed. Use "burn" or "destroy" everywhere, including the
+`/token` page, notifications and emails, so no surface implies recoverability.
+
+## 5. Holder tier → free freezes
 
 The only holder perk in this pass, and it needs no new mechanic: **holding raises
 the free freeze allowance** that `reset-freezes` already writes on the 1st.
@@ -275,7 +343,7 @@ Capping the top tier at 4 keeps streak integrity defensible: worst case is 4 fre
 plus 2 paid protections in a month, all visibly marked in the heatmap via
 `streak_logs.source`.
 
-## 5. `/token` page, contract address, buy link
+## 6. `/token` page, contract address, buy link
 
 The CA currently appears only in `llms.txt`, `roadmap/page.tsx` and
 `chains-config.ts`. There is no human-facing surface for it at all.
@@ -339,6 +407,12 @@ New migration adds:
 
 ## Open questions
 
-None blocking. Two calibration values are deliberately configurable constants and
-expected to be tuned after first real usage: the holder tier thresholds
-($10 / $40) and the vouch scale factor (1.5).
+None blocking. Three calibration values are deliberately configurable constants,
+expected to be tuned once there is real usage to tune against:
+
+- Holder tier thresholds — $10 / $40.
+- Vouch caps — 5 per voucher, 25 per profile.
+- The `vibe_score >= 20` credibility floor for a vouch to carry any weight.
+
+All three are pure numbers in one config module, changeable without touching the
+burn, verification or scoring logic.
