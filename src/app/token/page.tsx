@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Flame, Shield, TrendingUp, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
+import { Fire, Shield, TrendUp } from "@phosphor-icons/react/dist/ssr";
+import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
 import { jsonLdHtml } from "@/lib/json-ld";
 import { siteUrl } from "@/lib/seo";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -22,7 +24,7 @@ import { CopyAddress } from "@/components/token/copy-address";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: { absolute: "$VIBE Token — Burn to Vouch, Protect Your Streak | VibeTalent" },
+  title: { absolute: "$VIBE Token: Burn to Vouch, Protect Your Streak | VibeTalent" },
   description:
     `$VIBE is VibeTalent's token on Solana (CA: ${VIBE_MINT}). Burn $VIBE to vouch for a builder and add verifiable trust to their profile, or to restore a broken coding streak. Hold $VIBE for extra free streak freezes every month. Every burn permanently destroys supply.`,
   keywords: [
@@ -36,7 +38,7 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: `${siteUrl}/token` },
   openGraph: {
-    title: "$VIBE Token — Burn to Vouch",
+    title: "$VIBE Token: Burn to Vouch",
     description:
       "Burn $VIBE to vouch for builders or bring back a broken streak. Hold $VIBE for free streak freezes. Live on Solana.",
     url: `${siteUrl}/token`,
@@ -45,7 +47,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "$VIBE Token — Burn to Vouch",
+    title: "$VIBE Token: Burn to Vouch",
     description:
       "Burn $VIBE to back builders. Hold it for free streak freezes. Live on Solana.",
   },
@@ -115,7 +117,7 @@ export default async function TokenPage() {
         name: "What is $VIBE used for?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: `$VIBE has three uses on VibeTalent. Burn it to vouch for a builder, which shows publicly on their profile and adds up to ${VOUCH.perProfileCapPoints} points to their vibe score. Burn it to restore a coding streak you broke. Hold it to earn extra free streak freezes every month. Burning permanently destroys the tokens — nobody receives them.`,
+          text: `$VIBE has three uses on VibeTalent. Burn it to vouch for a builder, which shows publicly on their profile and adds up to ${VOUCH.perProfileCapPoints} points to their vibe score. Burn it to restore a coding streak you broke. Hold it to earn extra free streak freezes every month. Burning permanently destroys the tokens. Nobody receives them.`,
         },
       },
       {
@@ -129,8 +131,12 @@ export default async function TokenPage() {
     ],
   };
 
+  // The root layout already wraps children in <main>, so this page must not
+  // render another one: nested <main> is invalid HTML and left this whole
+  // subtree unhydrated, which silently broke the copy button. Root element
+  // and spacing match roadmap/about/pricing.
   return (
-    <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
+    <div className="mx-auto max-w-4xl px-4 sm:px-6 py-16">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(faqLd) }} />
 
@@ -196,16 +202,16 @@ export default async function TokenPage() {
 
       {/* Live stats */}
       <section className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-3" aria-label="Token statistics">
-        <Stat label="Price" value={stats.priceUsd != null ? formatTokenPrice(stats.priceUsd) : "—"} />
+        <Stat label="Price" value={stats.priceUsd != null ? formatTokenPrice(stats.priceUsd): ": "} />
         <Stat
           label="Market Cap"
           value={
             stats.marketCapUsd != null
               ? `$${Math.round(stats.marketCapUsd).toLocaleString("en-US")}`
-              : "—"
+: ": "
           }
         />
-        <Stat label="Supply" value={stats.supply != null ? formatTokenCount(stats.supply) : "—"} />
+        <Stat label="Supply" value={stats.supply != null ? formatTokenCount(stats.supply): ": "} />
         <Stat label="Burned Forever" value={formatTokenCount(stats.burnedTotal)} accent />
       </section>
 
@@ -216,7 +222,7 @@ export default async function TokenPage() {
         </h2>
         <div className="grid md:grid-cols-3 gap-4">
           <UtilityCard
-            icon={Flame}
+            icon={Fire}
             title="Burn to Vouch"
             text={`Put $VIBE behind a builder you rate. Your name and the amount show publicly on their profile, and it adds up to ${VOUCH.perProfileCapPoints} points to their vibe score. From $${VOUCH.minUsd}.`}
           />
@@ -226,9 +232,9 @@ export default async function TokenPage() {
             text={`Broke a streak? Burn about $${STREAK_PROTECT.usdPrice} of $VIBE within ${STREAK_PROTECT.graceHours} hours to bring it back. Protected days stay marked on your heatmap.`}
           />
           <UtilityCard
-            icon={TrendingUp}
+            icon={TrendUp}
             title="Hold for Freezes"
-            text={`Every builder gets ${BASE_FREEZES} free streak freezes a month. Hold $VIBE and that goes up — no burning needed.`}
+            text={`Every builder gets ${BASE_FREEZES} free streak freezes a month. Hold $VIBE and that goes up, no burning needed.`}
           />
         </div>
       </section>
@@ -264,13 +270,18 @@ export default async function TokenPage() {
           What burning means
         </h2>
         <p className="text-sm font-medium leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-          Burning permanently destroys tokens. They are <strong className="text-[var(--foreground)]">not</strong> sent
-          to VibeTalent, and <strong className="text-[var(--foreground)]">not</strong> sent to the builder
-          you&apos;re backing. Nobody receives them — they&apos;re removed from the total supply and
-          can&apos;t be recovered. Every burn is a Solana transaction you can check yourself on Solscan.
+          {/* Explicit {" "} after each <strong>: JSX drops the leading space of a
+              text node in this position, which rendered "notsent to the builder". */}
+          Burning permanently destroys tokens. They are{" "}
+          <strong className="text-[var(--foreground)]">not</strong>{" "}
+          sent to VibeTalent, and{" "}
+          <strong className="text-[var(--foreground)]">not</strong>{" "}
+          sent to the builder you&apos;re backing. Nobody receives them. They&apos;re removed from
+          the total supply and can&apos;t be recovered. Every burn is a Solana transaction you can
+          check yourself on Solscan.
         </p>
       </section>
-    </main>
+    </div>
   );
 }
 
@@ -295,13 +306,13 @@ function UtilityCard({
   title,
   text,
 }: {
-  icon: React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
+  icon: PhosphorIcon;
   title: string;
   text: string;
 }) {
   return (
     <div className="card-brutal p-5" style={{ backgroundColor: "var(--bg-surface)" }}>
-      <Icon size={20} style={{ color: "var(--accent)" }} />
+      <Icon weight="fill" size={20} style={{ color: "var(--accent)" }} />
       <h3 className="mt-3 text-base font-extrabold uppercase text-[var(--foreground)]">{title}</h3>
       <p className="mt-2 text-xs font-medium leading-relaxed" style={{ color: "var(--text-secondary)" }}>
         {text}
