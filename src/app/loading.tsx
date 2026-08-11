@@ -6,7 +6,7 @@ export default function HomeLoading() {
         <div className="skeleton h-8 w-80 mx-auto mb-8" />
         <div className="skeleton h-16 w-full max-w-2xl mx-auto mb-4" />
         <div className="skeleton h-16 w-full max-w-xl mx-auto mb-6" />
-        <div className="skeleton h-6 w-96 mx-auto mb-10" />
+        <div className="skeleton h-6 w-full max-w-96 mx-auto mb-10" />
         <div className="flex justify-center gap-4 mb-16">
           <div className="skeleton h-12 w-48" />
           <div className="skeleton h-12 w-36" />

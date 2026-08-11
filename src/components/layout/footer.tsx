@@ -10,8 +10,8 @@ export function Footer() {
       }}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-5 gap-8">
-          <div className="sm:col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-8">
+          <div className="sm:col-span-3 lg:col-span-2">
             <div className="flex items-center gap-2.5 mb-3">
               <Image src="/logo.png" alt="VibeTalent" width={36} height={36} className="object-contain" />
               <span className="text-lg font-bold tracking-tight" style={{ color: "var(--foreground)" }}>
@@ -31,6 +31,24 @@ export function Footer() {
               <Link href="/dashboard" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Dashboard</Link>
               <Link href="/roadmap" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Roadmap</Link>
               <a href="https://vibe-talent.gitbook.io/untitled" target="_blank" rel="noopener noreferrer" aria-label="Docs (opens in new tab)" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Docs</a>
+            </div>
+          </div>
+          {/*
+            The /vs/* comparison pages target the highest-intent queries we
+            have ("hire vibe coders", "upwork alternative"), but they were
+            orphaned: the only internal link to any of them was from /vs, and
+            /vs itself was linked from nowhere. Google discovered them via the
+            sitemap and then never crawled them ("Discovered - currently not
+            indexed"). A site-wide footer link is the cheapest durable fix.
+          */}
+          <div>
+            <h4 className="text-sm font-semibold mb-3" style={{ color: "var(--foreground)" }}>Compare</h4>
+            <div className="flex flex-col gap-2">
+              <Link href="/vs/upwork" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>vs Upwork</Link>
+              <Link href="/vs/fiverr" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>vs Fiverr</Link>
+              <Link href="/vs/toptal" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>vs Toptal</Link>
+              <Link href="/vs/freelancer" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>vs Freelancer</Link>
+              <Link href="/glossary" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Glossary</Link>
             </div>
           </div>
           <div>
