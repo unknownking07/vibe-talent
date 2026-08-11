@@ -54,7 +54,8 @@ export function CopyAddress({ address }: { address: string }) {
           ref={addressRef}
           className="flex-1 px-3 py-2.5 font-mono text-[11px] sm:text-xs font-bold break-all"
           style={{
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
+            borderRadius: "var(--radius-control)",
             backgroundColor: "var(--bg-surface)",
             color: "var(--foreground)",
           }}
@@ -67,7 +68,8 @@ export function CopyAddress({ address }: { address: string }) {
           aria-label={label}
           className="px-3 shrink-0 transition-colors"
           style={{
-            border: "2px solid var(--border-hard)",
+            border: state === "copied" ? "1px solid var(--accent)" : "1px solid var(--border-subtle)",
+            borderRadius: "var(--radius-control)",
             backgroundColor: state === "copied" ? "var(--accent)" : "var(--bg-surface)",
             color: state === "copied" ? "var(--bg-surface)" : "var(--foreground)",
           }}
