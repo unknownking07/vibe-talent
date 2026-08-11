@@ -534,11 +534,11 @@ export default function RoadmapPage() {
             href="https://x.com/abhiontwt"
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-brutal text-sm inline-flex items-center gap-2"
+            className="btn-brutal text-sm inline-flex items-center gap-2 rounded-xl"
             style={{
               backgroundColor: "var(--bg-surface)",
               color: "var(--foreground)",
-              border: "1px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
             }}
           >
             Follow Updates

@@ -45,7 +45,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "How does the VibeTalent vibe score work?",
-    a: "The vibe score is VibeTalent's core reputation metric (a single number representing how consistently and effectively a developer ships code. It is calculated from four weighted components: coding streak days (40% weight), which measures consecutive days of GitHub commits; project quality scores (30% weight), based on GitHub repo health including stars, forks, commit frequency, and deployment status; GitHub activity (20% weight), covering commits, pull requests, code reviews, and issue participation; and peer endorsements (10% weight), where endorsements from higher-scored developers carry more weight. The score updates daily and is always based on verifiable, public data. It cannot be gamed through fake reviews or purchased followers) only real, consistent shipping moves the needle.",
+    a: "The vibe score is VibeTalent's core reputation metric: a single number representing how consistently and effectively a developer ships code. It is calculated from four weighted components: coding streak days (40% weight), which measures consecutive days of GitHub commits; project quality scores (30% weight), based on GitHub repo health including stars, forks, commit frequency, and deployment status; GitHub activity (20% weight), covering commits, pull requests, code reviews, and issue participation; and peer endorsements (10% weight), where endorsements from higher-scored developers carry more weight. The score updates daily and is always based on verifiable, public data. It cannot be gamed through fake reviews or purchased followers. Only real, consistent shipping moves the needle.",
   },
   {
     q: "What are coding streaks and why do they matter?",
@@ -53,7 +53,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "How do VibeTalent badges work?",
-    a: "Badges are visual milestones earned through streak achievements that appear on your profile and in search results. There are four levels: Bronze at 30 consecutive days, Silver at 90 days, Gold at 180 days, and Diamond at 365 days (a full year of daily coding. Each badge level signals increasing dedication and reliability to potential clients browsing the platform. Badges are permanent once earned) even if your streak resets, the badge remains on your profile as proof of past achievement. However, your active streak is displayed separately so clients can see both your historical consistency and current momentum. The badge system creates clear, achievable milestones that motivate developers to maintain their streaks while giving clients an instant visual indicator of a developer's commitment level.",
+    a: "Badges are visual milestones earned through streak achievements that appear on your profile and in search results. There are four levels: Bronze at 30 consecutive days, Silver at 90 days, Gold at 180 days, and Diamond at 365 days, a full year of daily coding. Each badge level signals increasing dedication and reliability to potential clients browsing the platform. Badges are permanent once earned: even if your streak resets, the badge remains on your profile as proof of past achievement. However, your active streak is displayed separately so clients can see both your historical consistency and current momentum. The badge system creates clear, achievable milestones that motivate developers to maintain their streaks while giving clients an instant visual indicator of a developer's commitment level.",
   },
   {
     q: "How is VibeTalent different from Upwork or Toptal?",
@@ -238,7 +238,7 @@ export default async function HomePage() {
                     <span className="font-semibold text-[var(--foreground)]">{b.label}</span>
                     <span className="font-bold text-[var(--text-muted)]">{b.days} days</span>
                   </div>
-                  <div className="h-3.5" style={{ backgroundColor: "var(--border-subtle)", border: "1px solid var(--border-hard)" }}>
+                  <div className="h-3.5 rounded-full" style={{ backgroundColor: "var(--border-subtle)", border: "1px solid var(--border-subtle)" }}>
                     <div className="h-full" style={{ backgroundColor: b.color, width: b.width }} />
                   </div>
                 </div>
@@ -354,7 +354,7 @@ export default async function HomePage() {
       {/* FAQ */}
       <section
         style={{
-          borderTop: "1px solid var(--border-hard)",
+          borderTop: "1px solid var(--border-subtle)",
         }}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
@@ -363,10 +363,10 @@ export default async function HomePage() {
             {FAQ_ITEMS.map((faq) => (
               <details
                 key={faq.q}
-                className="group p-5 cursor-pointer"
+                className="group p-5 cursor-pointer rounded-2xl"
                 style={{
                   backgroundColor: "var(--bg-surface)",
-                  border: "1px solid var(--border-hard)",
+                  border: "1px solid var(--border-subtle)",
                   boxShadow: "var(--shadow-brutal-sm)",
                 }}
               >
@@ -399,11 +399,11 @@ export default async function HomePage() {
       {/* CTA */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
         <div
-          className="p-12 text-center"
+          className="p-10 sm:p-12 text-center rounded-3xl"
           style={{
             backgroundColor: "var(--bg-inverted)",
-            border: "1px solid var(--border-hard)",
-            boxShadow: "8px 8px 0 var(--accent)",
+            border: "1px solid var(--border-subtle)",
+            boxShadow: "var(--shadow-brutal-accent)",
           }}
         >
           <Lightning weight="duotone" size={40} className="mx-auto text-[var(--accent)] mb-4" />
@@ -412,10 +412,7 @@ export default async function HomePage() {
             Start building your vibe coding reputation today. Create a profile,
             start your streak, and let your proof of work get you discovered.
           </p>
-          <HeroCTA
-            className="mt-8 inline-flex"
-            style={{ boxShadow: "6px 6px 0 var(--background)" }}
-          />
+          <HeroCTA className="mt-8 inline-flex" />
         </div>
       </section>
     </div>

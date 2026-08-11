@@ -42,20 +42,20 @@ export default function ForgotPasswordPage() {
         </Link>
 
         <div
-          className="p-8"
+          className="p-8 rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "1px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
           {sent ? (
             <div className="text-center">
               <div
-                className="inline-flex items-center justify-center w-16 h-16 mb-4"
+                className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-2xl"
                 style={{
                   backgroundColor: "#D1FAE5",
-                  border: "1px solid var(--border-hard)",
+                  border: "1px solid var(--border-subtle)",
                 }}
               >
                 <Check weight="bold" size={32} className="text-emerald-700" />
@@ -72,10 +72,10 @@ export default function ForgotPasswordPage() {
             <>
               <div className="text-center mb-6">
                 <div
-                  className="inline-flex items-center justify-center w-16 h-16 mb-4"
+                  className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-2xl"
                   style={{
                     backgroundColor: "var(--status-warning-bg)",
-                    border: "1px solid var(--border-hard)",
+                    border: "1px solid var(--border-subtle)",
                   }}
                 >
                   <Envelope weight="duotone" size={32} className="text-[var(--accent)]" />
@@ -88,8 +88,8 @@ export default function ForgotPasswordPage() {
 
               {error && (
                 <div
-                  className="p-3 mb-4 text-sm font-bold text-red-800"
-                  style={{ backgroundColor: "var(--status-error-border)", border: "1px solid var(--border-hard)" }}
+                  className="p-3 mb-4 text-sm font-bold text-red-800 rounded-xl"
+                  style={{ backgroundColor: "var(--status-error-border)", border: "1px solid var(--border-subtle)" }}
                 >
                   {error}
                 </div>

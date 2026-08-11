@@ -110,7 +110,7 @@ function FeedShell({ children }: { children: ReactNode }) {
             display: "flex",
             alignItems: "center",
             gap: 8,
-            fontFamily: "var(--font-space-grotesk, 'Space Grotesk', sans-serif)",
+            fontFamily: "var(--font-geist, ui-sans-serif, system-ui, sans-serif)",
           }}>
             <span aria-hidden="true" className="live-dot" />
             Live Activity
@@ -275,7 +275,7 @@ export function LiveActivityFeed() {
               display: "flex", justifyContent: "center", alignItems: "center",
               fontWeight: 700, color: textColor, fontSize: "1rem",
               overflow: "hidden",
-              fontFamily: "var(--font-space-grotesk, 'Space Grotesk', sans-serif)",
+              fontFamily: "var(--font-geist, ui-sans-serif, system-ui, sans-serif)",
             }}>
               {item.avatar_url ? (
                 <Image src={item.avatar_url} alt={item.username} width={40} height={40} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -296,7 +296,7 @@ export function LiveActivityFeed() {
                 <div style={{
                   fontSize: "1rem", fontWeight: 700, fontStyle: "italic",
                   color: "var(--accent, #ff4400)", letterSpacing: "-0.5px", lineHeight: 1.1,
-                  fontFamily: "var(--font-space-grotesk, 'Space Grotesk', sans-serif)",
+                  fontFamily: "var(--font-geist, ui-sans-serif, system-ui, sans-serif)",
                 }}>
                   {name}
                 </div>

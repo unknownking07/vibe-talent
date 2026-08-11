@@ -100,16 +100,16 @@ export default function SignUpPage() {
     return (
       <div className="mx-auto max-w-md px-4 sm:px-6 py-20">
         <div
-          className="p-8 text-center"
+          className="p-8 text-center rounded-2xl"
           style={{
             backgroundColor: "var(--status-success-bg)",
-            border: "1px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
           <div
-            className="w-16 h-16 mx-auto mb-4 flex items-center justify-center"
-            style={{ backgroundColor: "#16A34A", border: "1px solid var(--border-hard)" }}
+            className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-2xl"
+            style={{ backgroundColor: "#16A34A", border: "1px solid var(--border-subtle)" }}
           >
             <Check size={28} className="text-white" />
           </div>
@@ -132,10 +132,10 @@ export default function SignUpPage() {
         </p>
         {ref && (
           <div
-            className="mt-3 inline-block px-4 py-2 text-sm font-bold text-[#065F46]"
+            className="mt-3 inline-block px-4 py-2 text-sm font-bold text-[#065F46] rounded-xl"
             style={{
               backgroundColor: "#D1FAE5",
-              border: "1px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
             }}
           >
             Referred by @{ref}
@@ -144,10 +144,10 @@ export default function SignUpPage() {
       </div>
 
       <div
-        className="p-6 space-y-5"
+        className="p-6 space-y-5 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "1px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
@@ -242,10 +242,10 @@ export default function SignUpPage() {
 
           {error && (
             <div
-              className="p-3 text-sm font-bold text-[var(--status-error-text)]"
+              className="p-3 text-sm font-bold text-[var(--status-error-text)] rounded-xl"
               style={{
                 backgroundColor: "var(--status-error-bg)",
-                border: "1px solid var(--border-hard)",
+                border: "1px solid var(--border-subtle)",
               }}
             >
               {error}
@@ -255,10 +255,10 @@ export default function SignUpPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center px-5 py-3 text-sm font-semibold text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-[#E03300]"
+            className="w-full flex items-center justify-center px-5 py-3 text-sm font-semibold text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-[#E03300] rounded-xl"
             style={{
               backgroundColor: "var(--accent)",
-              border: "1px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
             }}
           >
             {loading ? "Creating account..." : "Create Account"}

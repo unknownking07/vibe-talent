@@ -229,8 +229,8 @@ export default function AboutPage() {
             href="https://abhinav-on.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-brutal text-sm flex items-center gap-2"
-            style={{ backgroundColor: "var(--bg-surface)", color: "var(--foreground)", border: "1px solid var(--border-hard)" }}
+            className="btn-brutal text-sm flex items-center gap-2 rounded-xl"
+            style={{ backgroundColor: "var(--bg-surface)", color: "var(--foreground)", border: "1px solid var(--border-subtle)" }}
           >
             Portfolio
             <ExternalLink size={12} />

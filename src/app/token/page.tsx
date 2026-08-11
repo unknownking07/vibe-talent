@@ -244,7 +244,7 @@ export default async function TokenPage() {
         <h2 id="tiers-heading" className="text-2xl font-extrabold uppercase text-[var(--foreground)] mb-4">
           Holder Tiers
         </h2>
-        <div style={{ border: "2px solid var(--border-hard)", backgroundColor: "var(--bg-surface)" }}>
+        <div className="card-brutal overflow-hidden">
           <TierRow tier="No holding" hold="$0" freezes={BASE_FREEZES} />
           {[...HOLDER_TIERS].reverse().map((t) => (
             <TierRow key={t.key} tier={t.label} hold={`$${t.minUsd}+`} freezes={t.freezes} />
@@ -261,11 +261,7 @@ export default async function TokenPage() {
       </section>
 
       {/* Burn explainer */}
-      <section
-        className="mt-12 p-5"
-        style={{ border: "2px solid var(--border-hard)", backgroundColor: "var(--bg-surface)" }}
-        aria-labelledby="burn-heading"
-      >
+      <section className="card-brutal mt-12 p-5" aria-labelledby="burn-heading">
         <h2 id="burn-heading" className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-2">
           What burning means
         </h2>
@@ -287,7 +283,7 @@ export default async function TokenPage() {
 
 function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className="p-3" style={{ border: "2px solid var(--border-hard)", backgroundColor: "var(--bg-surface)" }}>
+    <div className="card-brutal p-3">
       <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
         {label}
       </div>

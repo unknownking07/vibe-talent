@@ -131,7 +131,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-space-grotesk);
+  --font-sans: var(--font-geist);
   --font-mono: var(--font-jetbrains-mono);
 }
 

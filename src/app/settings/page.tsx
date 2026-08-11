@@ -386,10 +386,10 @@ export default function SettingsPage() {
 
       {/* Edit Profile */}
       <div
-        className="p-6 mb-8"
+        className="p-6 mb-8 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "1px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
@@ -398,8 +398,8 @@ export default function SettingsPage() {
           {/* Avatar Upload */}
           <div className="flex items-center gap-4">
             <div
-              className="relative w-20 h-20 flex items-center justify-center text-2xl font-extrabold text-white cursor-pointer group"
-              style={{ backgroundColor: "var(--bg-inverted)", border: "1px solid var(--border-hard)" }}
+              className="relative w-20 h-20 flex items-center justify-center text-2xl font-extrabold text-white cursor-pointer group rounded-full"
+              style={{ backgroundColor: "var(--bg-inverted)", border: "1px solid var(--border-subtle)" }}
               onClick={() => avatarInputRef.current?.click()}
             >
               {user.avatar_url ? (
@@ -467,8 +467,8 @@ export default function SettingsPage() {
               Display Name
               {highlightName && (
                 <span
-                  className="px-1.5 py-0.5 text-[10px] font-extrabold text-white"
-                  style={{ backgroundColor: "var(--accent)", border: "1px solid var(--border-hard)" }}
+                  className="px-1.5 py-0.5 text-[10px] font-extrabold text-white rounded-full"
+                  style={{ backgroundColor: "var(--accent)", border: "1px solid var(--border-subtle)" }}
                 >
                   New
                 </span>
@@ -610,10 +610,10 @@ export default function SettingsPage() {
       {/* Referral */}
       <div
         id="referral"
-        className="p-6 mb-8"
+        className="p-6 mb-8 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "1px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >

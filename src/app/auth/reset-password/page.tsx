@@ -62,20 +62,20 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div
-          className="p-8"
+          className="p-8 rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "1px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
           {success ? (
             <div className="text-center">
               <div
-                className="inline-flex items-center justify-center w-16 h-16 mb-4"
+                className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-2xl"
                 style={{
                   backgroundColor: "#D1FAE5",
-                  border: "1px solid var(--border-hard)",
+                  border: "1px solid var(--border-subtle)",
                 }}
               >
                 <Check weight="bold" size={32} className="text-emerald-700" />
@@ -89,10 +89,10 @@ export default function ResetPasswordPage() {
             <>
               <div className="text-center mb-6">
                 <div
-                  className="inline-flex items-center justify-center w-16 h-16 mb-4"
+                  className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-2xl"
                   style={{
                     backgroundColor: "var(--status-warning-bg)",
-                    border: "1px solid var(--border-hard)",
+                    border: "1px solid var(--border-subtle)",
                   }}
                 >
                   <Lock weight="duotone" size={32} className="text-[var(--accent)]" />
@@ -105,8 +105,8 @@ export default function ResetPasswordPage() {
 
               {!sessionReady && (
                 <div
-                  className="p-3 mb-4 text-sm font-bold text-amber-800"
-                  style={{ backgroundColor: "var(--status-warning-bg)", border: "1px solid var(--border-hard)" }}
+                  className="p-3 mb-4 text-sm font-bold text-amber-800 rounded-xl"
+                  style={{ backgroundColor: "var(--status-warning-bg)", border: "1px solid var(--border-subtle)" }}
                 >
                   Verifying reset link... If this persists, request a new link.
                 </div>
@@ -114,8 +114,8 @@ export default function ResetPasswordPage() {
 
               {error && (
                 <div
-                  className="p-3 mb-4 text-sm font-bold text-red-800"
-                  style={{ backgroundColor: "var(--status-error-border)", border: "1px solid var(--border-hard)" }}
+                  className="p-3 mb-4 text-sm font-bold text-red-800 rounded-xl"
+                  style={{ backgroundColor: "var(--status-error-border)", border: "1px solid var(--border-subtle)" }}
                 >
                   {error}
                 </div>

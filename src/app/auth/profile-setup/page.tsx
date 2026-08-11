@@ -531,10 +531,10 @@ export default function ProfileSetupPage() {
 
   const errorBox = error ? (
     <div
-      className="p-3 text-sm font-bold text-[var(--status-error-text)]"
+      className="p-3 text-sm font-bold text-[var(--status-error-text)] rounded-xl"
       style={{
         backgroundColor: "var(--status-error-bg)",
-        border: "1px solid var(--border-hard)",
+        border: "1px solid var(--border-subtle)",
       }}
     >
       {error}
@@ -547,10 +547,10 @@ export default function ProfileSetupPage() {
     <div className="space-y-5">
       <div className="flex items-center gap-3 mb-2">
         <div
-          className="w-10 h-10 flex items-center justify-center"
+          className="w-10 h-10 flex items-center justify-center rounded-2xl"
           style={{
             backgroundColor: "#FF3A00",
-            border: "1px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
           }}
         >
           <Zap size={20} className="text-white" />
@@ -656,10 +656,10 @@ export default function ProfileSetupPage() {
     <div className="space-y-5">
       <div className="flex items-center gap-3 mb-2">
         <div
-          className="w-10 h-10 flex items-center justify-center"
+          className="w-10 h-10 flex items-center justify-center rounded-2xl"
           style={{
             backgroundColor: "#FF3A00",
-            border: "1px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
           }}
         >
           <LinkIcon size={20} className="text-white" />
@@ -676,10 +676,10 @@ export default function ProfileSetupPage() {
 
       {verifiedGithub ? (
         <div
-          className="flex items-center gap-3 px-4 py-3"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl"
           style={{
             backgroundColor: "var(--status-success-bg)",
-            border: "1px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
           }}
         >
           <Github size={18} className="text-[var(--status-success-text)] shrink-0" />
@@ -692,10 +692,10 @@ export default function ProfileSetupPage() {
         <div>
           {searchParams.get("error_code") === "identity_already_exists" && (
             <div
-              className="mb-2 p-3 flex items-start gap-2 text-sm"
+              className="mb-2 p-3 flex items-start gap-2 text-sm rounded-xl"
               style={{
                 backgroundColor: "var(--status-error-bg)",
-                border: "1px solid var(--border-hard)",
+                border: "1px solid var(--border-subtle)",
               }}
             >
               <Github size={16} className="mt-0.5 shrink-0" style={{ color: "var(--status-error-text)" }} />
@@ -708,10 +708,10 @@ export default function ProfileSetupPage() {
             type="button"
             onClick={handleConnectGithub}
             disabled={connectingGithub}
-            className="w-full flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-[var(--bg-pill-hover)]"
+            className="w-full flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-[var(--bg-pill-hover)] rounded-xl"
             style={{
               backgroundColor: "var(--bg-inverted)",
-              border: "1px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
             }}
           >
             <Github size={18} />
@@ -798,10 +798,10 @@ export default function ProfileSetupPage() {
     <div className="space-y-5">
       <div className="flex items-center gap-3 mb-2">
         <div
-          className="w-10 h-10 flex items-center justify-center"
+          className="w-10 h-10 flex items-center justify-center rounded-2xl"
           style={{
             backgroundColor: "#FF3A00",
-            border: "1px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
           }}
         >
           <FolderGit2 size={20} className="text-white" />
@@ -922,10 +922,10 @@ export default function ProfileSetupPage() {
     <div className="space-y-6 text-center">
       <div className="flex items-center justify-center gap-3 mb-2">
         <div
-          className="w-10 h-10 flex items-center justify-center"
+          className="w-10 h-10 flex items-center justify-center rounded-2xl"
           style={{
             backgroundColor: "#FF3A00",
-            border: "1px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
           }}
         >
           <Flame size={20} className="text-white" />
@@ -943,10 +943,10 @@ export default function ProfileSetupPage() {
       {!streakLogged ? (
         <>
           <div
-            className="p-8"
+            className="p-8 rounded-2xl"
             style={{
               backgroundColor: "var(--bg-surface-light)",
-              border: "1px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
             }}
           >
             <Flame
@@ -978,10 +978,10 @@ export default function ProfileSetupPage() {
       ) : (
         <>
           <div
-            className="p-8"
+            className="p-8 rounded-2xl"
             style={{
               backgroundColor: "var(--status-success-bg)",
-              border: "1px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
               boxShadow: "var(--shadow-brutal)",
             }}
           >
@@ -1013,10 +1013,10 @@ export default function ProfileSetupPage() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Join the VibeTalent Telegram community (opens in new tab)"
-            className="flex items-center gap-3 p-4 text-left transition-all hover:-translate-y-0.5"
+            className="flex items-center gap-3 p-4 text-left transition-all hover:-translate-y-0.5 rounded-xl"
             style={{
               backgroundColor: "var(--bg-surface)",
-              border: "1px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
               boxShadow: "var(--shadow-brutal-sm)",
             }}
           >
@@ -1103,10 +1103,10 @@ export default function ProfileSetupPage() {
       {/* Header */}
       <div className="text-center mb-6">
         <div
-          className="inline-flex items-center justify-center w-14 h-14 mb-4"
+          className="inline-flex items-center justify-center w-14 h-14 mb-4 rounded-2xl"
           style={{
             backgroundColor: "#FF3A00",
-            border: "1px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
@@ -1125,10 +1125,10 @@ export default function ProfileSetupPage() {
 
       {/* Card */}
       <div
-        className="p-6"
+        className="p-6 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "1px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
