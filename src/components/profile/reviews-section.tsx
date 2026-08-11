@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Star, MessageSquare, Send, Trash2 } from "lucide-react";
+import { Send, Trash2 } from "lucide-react";
+import { ChatText, Star } from "@phosphor-icons/react";
 import { createClient } from "@/lib/supabase/client";
 import type { Review } from "@/lib/types/database";
 import { ReviewerByline } from "@/components/reviews/reviewer-byline";
@@ -15,15 +16,7 @@ function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          size={size}
-          className={
-            star <= rating
-              ? "fill-amber-500 text-amber-500"
-              : "text-[var(--border-subtle)]"
-          }
-        />
+        <Star weight="fill" key={star} size={size} className={ star <= rating ? "fill-amber-500 text-amber-500" : "text-[var(--border-subtle)]" } />
       ))}
     </div>
   );
@@ -51,18 +44,11 @@ function ClickableStars({
           onMouseLeave={() => setHovered(0)}
           className="transition-transform hover:scale-110"
         >
-          <Star
-            size={size}
-            className={
-              star <= (hovered || rating)
-                ? "fill-amber-500 text-amber-500"
-                : "text-[var(--border-subtle)] hover:text-amber-300"
-            }
-          />
+          <Star weight="fill" size={size} className={ star <= (hovered || rating) ? "fill-amber-500 text-amber-500" : "text-[var(--border-subtle)] hover:text-amber-300" } />
         </button>
       ))}
       {rating > 0 && (
-        <span className="ml-2 text-sm font-bold text-[var(--text-muted)]">
+        <span className="ml-2 text-sm font-semibold text-[var(--text-muted)]">
           {rating}/5
         </span>
       )}
@@ -245,7 +231,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
     return (
       <div className="card-brutal p-6">
         <h3 className="text-lg font-bold text-[var(--foreground)] mb-2 flex items-center gap-2">
-          <MessageSquare size={20} />
+          <ChatText weight="fill" size={20} />
           Reviews
         </h3>
         <p className="text-[var(--text-muted)] text-sm">Failed to load reviews.</p>
@@ -258,7 +244,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold text-[var(--foreground)] flex items-center gap-2">
-          <MessageSquare size={20} />
+          <ChatText weight="fill" size={20} />
           Reviews
         </h3>
         <div className="flex items-center gap-3">
@@ -285,8 +271,8 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
       {/* Success message */}
       {submitSuccess && (
         <div
-          className="p-3 mb-4 text-sm font-bold"
-          style={{ backgroundColor: "var(--status-success-bg)", color: "var(--status-success-text)", border: "2px solid var(--border-hard)" }}
+          className="p-3 mb-4 text-sm font-semibold rounded-xl"
+          style={{ backgroundColor: "var(--status-success-bg)", color: "var(--status-success-text)", border: "1px solid var(--border-subtle)" }}
         >
           Thanks for your review!
         </div>
@@ -295,16 +281,16 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
       {/* Review form */}
       {showForm && (
         <div
-          className="mb-6 p-5 space-y-4"
-          style={{ backgroundColor: "var(--bg-surface-light)", border: "2px solid var(--border-hard)" }}
+          className="mb-6 p-5 space-y-4 rounded-xl"
+          style={{ backgroundColor: "var(--bg-surface-light)" }}
         >
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-extrabold uppercase text-[var(--foreground)]">
+            <h4 className="text-sm font-bold text-[var(--foreground)]">
               Write a Review
             </h4>
             <button
               onClick={() => { setShowForm(false); setSubmitError(""); }}
-              className="text-xs font-bold text-[var(--text-muted)] hover:text-[var(--foreground)]"
+              className="text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--foreground)]"
             >
               Cancel
             </button>
@@ -312,7 +298,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
 
           {/* Star selection */}
           <div>
-            <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-2 block">
+            <label className="text-xs font-semibold text-[var(--text-muted)] mb-2 block">
               Rating *
             </label>
             <ClickableStars rating={formRating} onRate={setFormRating} />
@@ -321,7 +307,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
           {/* Name (auto-filled if logged in) */}
           {isLoggedIn ? (
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
+              <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
                 Reviewing as
               </label>
               <div className="input-brutal w-full cursor-default" style={{ backgroundColor: "var(--bg-surface-light)", color: "var(--text-secondary)" }}>
@@ -331,7 +317,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
           ) : (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
+                <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
                   Your Name *
                 </label>
                 <input
@@ -343,7 +329,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
                 />
               </div>
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
+                <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
                   Email *
                 </label>
                 <input
@@ -359,7 +345,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
 
           {/* Comment */}
           <div>
-            <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
+            <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
               Comment (optional)
             </label>
             <textarea
@@ -375,8 +361,8 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
           {/* Error */}
           {submitError && (
             <div
-              className="p-3 text-sm font-bold text-[var(--status-error-text)]"
-              style={{ backgroundColor: "var(--status-error-bg)", border: "2px solid var(--border-hard)" }}
+              className="p-3 text-sm font-semibold text-[var(--status-error-text)] rounded-xl"
+              style={{ backgroundColor: "var(--status-error-bg)", border: "1px solid var(--border-subtle)" }}
             >
               {submitError}
             </div>
@@ -402,8 +388,7 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
           {reviews.map((review) => (
             <div
               key={review.id}
-              className="border-2 p-4"
-              style={{ borderColor: "var(--border-subtle)" }}
+              className="p-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-[var(--shadow-brutal-xs)]"
             >
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div className="flex flex-col gap-1.5 min-w-0">
@@ -438,14 +423,14 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
               )}
               {deleteId === review.id && (
                 <div
-                  className="mt-3 p-3 space-y-2"
-                  style={{ backgroundColor: "var(--status-error-bg)", border: "2px solid var(--border-hard)" }}
+                  className="mt-3 p-3 space-y-2 rounded-lg"
+                  style={{ backgroundColor: "var(--status-error-bg)", border: "1px solid var(--border-subtle)" }}
                 >
-                  <p className="text-xs font-bold text-[var(--foreground)]">
+                  <p className="text-xs font-semibold text-[var(--foreground)]">
                     Delete this review? This can&apos;t be undone.
                   </p>
                   {deleteError && (
-                    <p className="text-xs font-bold text-red-600">{deleteError}</p>
+                    <p className="text-xs font-semibold text-red-600">{deleteError}</p>
                   )}
                   <div className="flex gap-2">
                     <button

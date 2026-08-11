@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ThumbsUp } from "lucide-react";
 import { fetchEndorsementState } from "@/lib/endorsement-batch";
+import { ThumbsUp } from "@phosphor-icons/react";
 
 interface EndorseButtonProps {
   projectId: string;
@@ -35,7 +35,7 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
           setCount(data.count);
         }
       })
-      .catch(() => { /* silent — the card keeps its server-rendered count */ });
+.catch(() => { /* silent: the card keeps its server-rendered count */ });
     return () => { cancelled = true; };
   }, [projectId, isOwner]);
 
@@ -87,8 +87,8 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
   if (isOwner) {
     // Owner sees count but can't endorse
     return count > 0 ? (
-      <div className="flex items-center gap-1 text-xs font-bold text-emerald-600">
-        <ThumbsUp size={12} />
+      <div className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
+        <ThumbsUp weight="fill" size={12} />
         {count}
       </div>
     ) : null;
@@ -100,19 +100,19 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
         type="button"
         onClick={(e) => { e.stopPropagation(); handleToggle(); }}
         aria-pressed={endorsed}
-        className={`inline-flex items-center gap-1 text-xs font-bold transition-all ${
+        className={`inline-flex items-center gap-1 text-xs font-semibold transition-all ${
           endorsed
             ? "text-emerald-600 hover:text-emerald-800"
             : "text-[var(--text-muted-soft)] hover:text-emerald-600"
         }`}
         title={endorsed ? "Remove endorsement" : "Endorse this project"}
       >
-        <ThumbsUp size={12} className={endorsed ? "fill-current" : ""} />
+        <ThumbsUp weight="fill" size={12} className={endorsed ? "fill-current" : ""} />
         {count > 0 && <span>{count}</span>}
         {count === 0 && !endorsed && <span className="text-[10px]">Endorse</span>}
       </button>
       {error && (
-        <span className="text-[9px] font-bold text-red-500 mt-0.5">{error}</span>
+        <span className="text-[9px] font-semibold text-red-500 mt-0.5">{error}</span>
       )}
     </div>
   );

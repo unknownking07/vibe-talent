@@ -3,7 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, LogOut, Settings, Sparkles, Trophy, User, Users, BadgeCheck, ChevronDown } from "lucide-react";
+import { Menu, X, LogOut, Settings, ChevronDown } from "lucide-react";
+import { SealCheck, Sparkle, Trophy, User, UsersThree } from "@phosphor-icons/react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { NotificationBell } from "@/components/ui/notification-bell";
@@ -201,7 +202,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
           setHasUnloggedActivity(false);
           return;
         }
-        if (!res.ok) return; // 429 / 5xx — transient; keep the last known state.
+        if (!res.ok) return; // 429 / 5xx: transient; keep the last known state.
         const data = await res.json();
         if (stale()) return;
         setHasUnloggedActivity(data.loggedToday === false);
@@ -527,7 +528,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
       className="sticky top-0 z-50"
       style={{
         backgroundColor: "var(--bg-surface)",
-        borderBottom: "2px solid var(--border-hard)",
+        borderBottom: "1px solid var(--border-hard)",
       }}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
@@ -567,7 +568,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               onClick={() => setExploreOpen((v) => !v)}
               aria-haspopup="menu"
               aria-expanded={exploreOpen}
-              className="flex items-center gap-1 px-4 py-2 text-sm font-bold uppercase tracking-wide transition-colors"
+              className="flex items-center gap-1 px-4 py-2 text-sm font-semibold transition-colors"
               style={{
                 color: pathname === "/explore" || pathname === "/projects" ? "var(--accent)" : "var(--foreground)",
                 borderBottom: pathname === "/explore" || pathname === "/projects" ? "2px solid var(--accent)" : "2px solid transparent",
@@ -579,8 +580,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               role="menu"
               className={`absolute left-0 top-full mt-0 ${exploreOpen ? "flex" : "hidden"} flex-col min-w-[160px] py-1 z-50`}
               style={{
-                border: "2px solid var(--border-hard)",
-                boxShadow: "var(--shadow-brutal-sm)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "var(--radius-control)",
+                overflow: "hidden",
+                boxShadow: "var(--shadow-brutal)",
                 backgroundColor: "var(--bg-surface)",
               }}
             >
@@ -596,7 +599,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   // invocation, and the click that follows is a single route.
                   prefetch={false}
                   onClick={() => setExploreOpen(false)}
-                  className="px-4 py-2.5 text-sm font-bold uppercase tracking-wide transition-colors hover:bg-[var(--accent)]/10"
+                  className="px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-[var(--accent)]/10"
                   style={{
                     color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
                   }}
@@ -610,7 +613,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
             <Link
               key={link.href}
               href={link.href}
-              className="relative px-4 py-2 text-sm font-bold uppercase tracking-wide transition-colors"
+              className="relative px-4 py-2 text-sm font-semibold transition-colors"
               style={{
                 color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
                 borderBottom: pathname === link.href ? "2px solid var(--accent)" : "2px solid transparent",
@@ -643,7 +646,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               onClick={() => setMoreOpen((v) => !v)}
               aria-haspopup="true"
               aria-expanded={moreOpen}
-              className="flex items-center gap-1 px-4 py-2 text-sm font-bold uppercase tracking-wide transition-colors"
+              className="flex items-center gap-1 px-4 py-2 text-sm font-semibold transition-colors"
               style={{
                 color: pathname === "/agent" ? "var(--accent)" : "var(--foreground)",
                 borderBottom: pathname === "/agent" ? "2px solid var(--accent)" : "2px solid transparent",
@@ -654,8 +657,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
             <div
               className={`absolute right-0 top-full mt-0 ${moreOpen ? "flex" : "hidden"} flex-col min-w-[160px] py-1 z-50`}
               style={{
-                border: "2px solid var(--border-hard)",
-                boxShadow: "var(--shadow-brutal-sm)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "var(--radius-control)",
+                overflow: "hidden",
+                boxShadow: "var(--shadow-brutal)",
                 backgroundColor: "var(--bg-surface)",
               }}
             >
@@ -666,7 +671,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   // See the Explore dropdown above.
                   prefetch={false}
                   onClick={() => setMoreOpen(false)}
-                  className="px-4 py-2.5 text-sm font-bold uppercase tracking-wide transition-colors hover:bg-[var(--accent)]/10"
+                  className="px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-[var(--accent)]/10"
                   style={{
                     color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
                   }}
@@ -679,7 +684,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMoreOpen(false)}
-                className="px-4 py-2.5 text-sm font-bold uppercase tracking-wide transition-colors hover:bg-[var(--accent)]/10"
+                className="px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-[var(--accent)]/10"
                 style={{ color: "var(--foreground)" }}
               >
                 Docs
@@ -718,7 +723,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   width: 48,
                   height: 48,
                   borderRadius: "50%",
-                  border: "2px solid var(--border-hard)",
+                  border: "1px solid var(--border-hard)",
                   backgroundColor: "var(--bg-inverted)",
                   cursor: "pointer",
                 }}
@@ -731,10 +736,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                 />
               </button>
               {userProfile?.github_username && (
-                <BadgeCheck
-                  size={18}
-                  strokeWidth={2.5}
-                  className="text-white fill-[#1D9BF0] absolute -bottom-0.5 -right-0.5 pointer-events-none"
+                <SealCheck size={18} weight="fill" className="text-[#1D9BF0] absolute -bottom-0.5 -right-0.5 pointer-events-none"
                   style={{ filter: "drop-shadow(0 0 2px var(--bg-base))" }}
                   aria-label="GitHub verified"
                 />
@@ -759,8 +761,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   className="absolute right-0 top-12 z-50 w-48"
                   style={{
                     backgroundColor: "var(--bg-surface)",
-                    border: "2px solid var(--border-hard)",
-                    boxShadow: "var(--shadow-brutal-sm)",
+                    border: "1px solid var(--border-subtle)",
+                    borderRadius: "var(--radius-control)",
+                    overflow: "hidden",
+                    boxShadow: "var(--shadow-brutal)",
                   }}
                 >
                   <Link
@@ -771,10 +775,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                     // into four Worker invocations.
                     prefetch={false}
                     onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors"
+                    className="flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors"
                     style={{ color: "var(--foreground)" }}
                   >
-                    <User size={16} />
+                    <User weight="fill" size={16} />
                     My Profile
                   </Link>
                   <Link
@@ -782,10 +786,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                     role="menuitem"
                     prefetch={false}
                     onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors"
+                    className="flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors"
                     style={{ color: "var(--foreground)" }}
                   >
-                    <Trophy size={16} />
+                    <Trophy weight="fill" size={16} />
                     Achievements
                   </Link>
                   <Link
@@ -793,14 +797,14 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                     role="menuitem"
                     prefetch={false}
                     onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors"
+                    className="flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors"
                     style={{ color: "var(--foreground)" }}
                   >
                     <Settings size={16} />
                     <span>Settings</span>
                     {userProfile && !userProfile.display_name && (
                       <span
-                        className="ml-auto flex items-center gap-1 text-[10px] font-extrabold uppercase"
+                        className="ml-auto flex items-center gap-1 text-[10px] font-bold"
                         style={{ color: "var(--accent)" }}
                       >
                         <span
@@ -821,10 +825,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                     role="menuitem"
                     prefetch={false}
                     onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors"
+                    className="flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors"
                     style={{ color: "var(--foreground)" }}
                   >
-                    <Users size={16} />
+                    <UsersThree weight="fill" size={16} />
                     Referral
                   </Link>
                   {TOUR_FLAG_ENABLED && (
@@ -847,18 +851,18 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                           router.push("/dashboard");
                         }
                       }}
-                      className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors w-full text-left"
+                      className="flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors w-full text-left"
                       style={{ color: "var(--foreground)" }}
                     >
-                      <Sparkles size={16} />
+                      <Sparkle weight="fill" size={16} />
                       Replay tour
                     </button>
                   )}
-                  <div style={{ borderTop: "2px solid var(--border-hard)" }} />
+                  <div style={{ borderTop: "1px solid var(--border-hard)" }} />
                   <button
                     role="menuitem"
                     onClick={handleLogout}
-                    className="flex items-center gap-2 px-4 py-3 text-sm font-bold uppercase tracking-wide transition-colors w-full text-left"
+                    className="flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors w-full text-left"
                     style={{ color: "var(--foreground)" }}
                   >
                     <LogOut size={16} />
@@ -891,7 +895,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                 width: 36,
                 height: 36,
                 borderRadius: "50%",
-                border: "2px solid var(--border-hard)",
+                border: "1px solid var(--border-hard)",
                 backgroundColor: "var(--bg-inverted)",
               }}
             >
@@ -919,7 +923,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
         <div
           className="sm:hidden px-4 pb-4"
           style={{
-            borderTop: "2px solid var(--border-hard)",
+            borderTop: "1px solid var(--border-hard)",
             backgroundColor: "var(--bg-surface)",
           }}
         >
@@ -932,7 +936,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   width: 36,
                   height: 36,
                   borderRadius: "50%",
-                  border: "2px solid var(--border-hard)",
+                  border: "1px solid var(--border-hard)",
                   backgroundColor: "var(--bg-inverted)",
                 }}
               >
@@ -946,10 +950,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               <span className="text-sm font-extrabold text-[var(--foreground)] flex items-center gap-1">
                 {userProfile.username}
                 {userProfile.github_username && (
-                  <BadgeCheck
-                    size={14}
-                    strokeWidth={2.5}
-                    className="text-white fill-[#1D9BF0] shrink-0"
+                  <SealCheck size={14} weight="fill" className="text-[#1D9BF0] shrink-0"
                     aria-label="GitHub verified"
                   />
                 )}
@@ -967,7 +968,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               // connections least able to absorb it.
               prefetch={false}
               onClick={() => setMobileOpen(false)}
-              className="relative inline-block px-4 py-3 text-sm font-bold uppercase tracking-wide"
+              className="relative inline-block px-4 py-3 text-sm font-semibold"
               style={{
                 color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
               }}
@@ -981,7 +982,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               href={link.href}
               prefetch={false}
               onClick={() => setMobileOpen(false)}
-              className="relative inline-block px-4 py-3 text-sm font-bold uppercase tracking-wide"
+              className="relative inline-block px-4 py-3 text-sm font-semibold"
               style={{
                 color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
               }}
@@ -1002,7 +1003,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               mobile set (Explore, Feed, Leaderboard, Dashboard) stays clean. */}
           <div className="mt-1 pt-1" style={{ borderTop: "1px solid var(--border-subtle)" }}>
             <span
-              className="block px-4 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-widest"
+              className="block px-4 pt-2 pb-1 text-[10px] font-semibold"
               style={{ color: "var(--text-muted)" }}
             >
               More
@@ -1013,7 +1014,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                 href={link.href}
                 prefetch={false}
                 onClick={() => setMobileOpen(false)}
-                className="relative inline-block px-4 py-3 text-sm font-bold uppercase tracking-wide"
+                className="relative inline-block px-4 py-3 text-sm font-semibold"
                 style={{
                   color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
                 }}
@@ -1026,7 +1027,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setMobileOpen(false)}
-              className="block px-4 py-3 text-sm font-bold uppercase tracking-wide"
+              className="block px-4 py-3 text-sm font-semibold"
               style={{ color: "var(--foreground)" }}
             >
               Docs
@@ -1040,7 +1041,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   href={`/profile/${userProfile.username}`}
                   prefetch={false}
                   onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-3 mt-1 text-sm font-bold uppercase tracking-wide text-[var(--foreground)]"
+                  className="block px-4 py-3 mt-1 text-sm font-semibold text-[var(--foreground)]"
                 >
                   My Profile
                 </Link>
@@ -1048,7 +1049,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   href={`/profile/${userProfile.username}/achievements`}
                   prefetch={false}
                   onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-3 text-sm font-bold uppercase tracking-wide text-[var(--foreground)]"
+                  className="block px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
                 >
                   Achievements
                 </Link>
@@ -1056,7 +1057,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   href="/settings"
                   prefetch={false}
                   onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-3 text-sm font-bold uppercase tracking-wide text-[var(--foreground)]"
+                  className="block px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
                 >
                   Settings
                 </Link>
@@ -1064,7 +1065,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   href="/settings#referral"
                   prefetch={false}
                   onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-3 text-sm font-bold uppercase tracking-wide text-[var(--foreground)]"
+                  className="block px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
                 >
                   Referral
                 </Link>
@@ -1081,7 +1082,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                         router.push("/dashboard");
                       }
                     }}
-                    className="block w-full text-left px-4 py-3 text-sm font-bold uppercase tracking-wide text-[var(--foreground)]"
+                    className="block w-full text-left px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
                   >
                     Replay tour
                   </button>
@@ -1094,7 +1095,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               style={{
                 backgroundColor: "var(--bg-inverted)",
                 color: "var(--text-on-inverted)",
-                border: "2px solid var(--border-hard)",
+                border: "1px solid var(--border-hard)",
               }}
             >
               <LogOut size={14} />

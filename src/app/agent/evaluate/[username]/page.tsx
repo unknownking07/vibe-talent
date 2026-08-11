@@ -6,7 +6,8 @@ import { evaluateUser } from "@/lib/agent-scoring";
 import type { UserWithSocials } from "@/lib/types/database";
 import { AgentThinking } from "@/components/agent/agent-thinking";
 import { EvaluationReport } from "@/components/agent/evaluation-report";
-import { Bot, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { Robot } from "@phosphor-icons/react";
 import Link from "next/link";
 import type { EvaluationResult, AgentStep } from "@/lib/types/agent";
 
@@ -56,7 +57,7 @@ export default function EvaluatePage({
   if (!user) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-        <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Builder not found</h1>
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">Builder not found</h1>
         <p className="mt-2 text-[var(--text-secondary)] font-medium">@{username} does not exist on VibeTalent.</p>
       </div>
     );
@@ -66,7 +67,7 @@ export default function EvaluatePage({
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
       <Link
         href={`/profile/${username}`}
-        className="inline-flex items-center gap-2 text-sm font-bold uppercase text-[var(--text-muted)] hover:text-[var(--accent)] mb-6"
+        className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-muted)] hover:text-[var(--accent)] mb-6"
       >
         <ArrowLeft size={14} />
         Back to Profile
@@ -74,16 +75,16 @@ export default function EvaluatePage({
 
       <div className="flex items-center gap-3 mb-8">
         <div
-          className="w-10 h-10 flex items-center justify-center"
+          className="w-10 h-10 flex items-center justify-center rounded-xl"
           style={{
             backgroundColor: "var(--bg-inverted)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
           }}
         >
-          <Bot size={20} className="text-[var(--accent)]" />
+          <Robot weight="fill" size={20} className="text-[var(--accent)]" />
         </div>
         <div>
-          <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">
+          <h1 className="text-2xl font-bold text-[var(--foreground)]">
             VibeFinder Evaluation: @{username}
           </h1>
           <p className="text-sm text-[var(--text-secondary)] font-medium">
@@ -105,7 +106,7 @@ export default function EvaluatePage({
               href={`/agent/contact/${username}`}
               className="btn-brutal btn-brutal-primary text-sm flex items-center gap-2"
             >
-              <Bot size={14} />
+              <Robot weight="fill" size={14} />
               Contact via VibeFinder
             </Link>
             <Link

@@ -208,7 +208,7 @@ export async function analyzeRepository(
           return {
             success: false,
             metrics: null,
-            error: "Private repository — not supported yet.",
+            error: "Private repository, not supported yet.",
             errorCode: "needs_repo_scope",
           };
         }

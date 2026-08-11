@@ -32,7 +32,7 @@ export async function generateMetadata({
     return { title: "Builder Not Found" };
   }
 
-  const title = `@${user.username} — Vibe Coder`;
+  const title = `@${user.username}: Vibe Coder`;
   const description = user.bio
     ? `${user.bio.slice(0, 150)} | ${user.streak}-day streak, ${(user.projects ?? []).length} projects`
     : `${user.streak}-day streak, ${(user.projects ?? []).length} projects on VibeTalent`;
@@ -81,7 +81,7 @@ export default async function ProfilePage({
   if (!username || username.length > 50 || !/^[a-zA-Z0-9_.\- ]+$/.test(username)) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-        <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Invalid username</h1>
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">Invalid username</h1>
         <p className="mt-2 text-[var(--text-secondary)] font-medium">This is not a valid username.</p>
       </div>
     );
@@ -92,7 +92,7 @@ export default async function ProfilePage({
   if (!user) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-        <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Builder not found</h1>
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">Builder not found</h1>
         <p className="mt-2 text-[var(--text-secondary)] font-medium">@{username} does not exist on VibeTalent.</p>
       </div>
     );
@@ -225,7 +225,7 @@ export default async function ProfilePage({
         <div className="flex flex-col gap-6">
           {/* Share Receipt */}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-base font-extrabold uppercase text-[var(--foreground)]">
+            <h2 className="text-base font-bold text-[var(--foreground)]">
               Share @{user.username}&apos;s receipt
             </h2>
             <ShareButton
@@ -247,15 +247,15 @@ export default async function ProfilePage({
 
           {/* Heatmap Section */}
           <section
-            className="p-6"
+            className="p-6 rounded-2xl"
             style={{
               backgroundColor: "var(--bg-surface)",
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
               boxShadow: "var(--shadow-brutal)",
             }}
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-extrabold uppercase text-[var(--foreground)]">Contribution Heatmap</h3>
+              <h3 className="text-base font-bold text-[var(--foreground)]">Contribution Heatmap</h3>
               <Link
                 href="/dashboard"
                 className="btn-brutal btn-brutal-dark text-xs py-1.5 px-4"
@@ -274,7 +274,7 @@ export default async function ProfilePage({
             return (
               <section>
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-base font-extrabold uppercase text-[var(--foreground)]">Featured Projects</h3>
+                  <h3 className="text-base font-bold text-[var(--foreground)]">Featured Projects</h3>
                   {hasMore && (
                     <Link
                       href={`/profile/${user.username}/projects`}
@@ -292,10 +292,10 @@ export default async function ProfilePage({
                   </div>
                 ) : (
                   <div
-                    className="p-8 text-center font-bold uppercase text-[var(--text-muted)]"
+                    className="p-8 text-center font-semibold text-[var(--text-muted)] rounded-2xl"
                     style={{
                       backgroundColor: "var(--bg-surface)",
-                      border: "2px solid var(--border-hard)",
+                      border: "1px solid var(--border-subtle)",
                     }}
                   >
                     No projects yet.

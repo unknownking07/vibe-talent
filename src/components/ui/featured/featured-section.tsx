@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { Megaphone, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Megaphone } from "@phosphor-icons/react";
 import { createClient } from "@/lib/supabase/client";
 import {
   fetchPromotions,
@@ -28,17 +29,17 @@ const FeatureYourProjectCard = dynamic(
         className="card-brutal relative p-6 flex flex-col md:min-h-[420px] overflow-hidden"
         style={{ backgroundColor: "var(--bg-surface)" }}
       >
-        <h3 className="text-2xl font-extrabold uppercase leading-tight">
+        <h3 className="text-2xl font-bold leading-tight">
           <span className="block text-[var(--foreground)]">Feature</span>
           <span className="block" style={{ color: "var(--accent)" }}>Your Project</span>
         </h3>
         <div className="mt-6 space-y-3">
           <div
-            className="h-3 w-3/4 animate-pulse"
+            className="h-3 w-3/4 rounded-full animate-pulse"
             style={{ backgroundColor: "var(--border-subtle)" }}
           />
           <div
-            className="h-3 w-2/3 animate-pulse"
+            className="h-3 w-2/3 rounded-full animate-pulse"
             style={{ backgroundColor: "var(--border-subtle)" }}
           />
         </div>
@@ -145,8 +146,8 @@ export function FeaturedSection() {
     <section
       id="featured-projects"
       style={{
-        borderTop: "2px solid var(--border-hard)",
-        borderBottom: "2px solid var(--border-hard)",
+        borderTop: "1px solid var(--border-hard)",
+        borderBottom: "1px solid var(--border-hard)",
         backgroundColor: "var(--bg-surface)",
       }}
     >
@@ -171,12 +172,12 @@ export function FeaturedSection() {
         {/* Header */}
         <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
           <div className="flex items-center gap-3">
-            <Megaphone size={20} style={{ color: "var(--accent)" }} />
-            <h2 className="text-xl font-extrabold uppercase text-[var(--foreground)]">
+            <Megaphone weight="fill" size={20} style={{ color: "var(--accent)" }} />
+            <h2 className="text-xl font-bold text-[var(--foreground)]">
               Featured Projects
             </h2>
             <span
-              className="font-mono text-[10px] font-bold uppercase tracking-wider px-2 py-0.5"
+              className="font-mono text-[10px] font-semibold px-2.5 py-0.5 rounded-full"
               style={{ backgroundColor: "var(--accent)", color: "white" }}
             >
               Sponsored
@@ -187,9 +188,9 @@ export function FeaturedSection() {
               <button
                 type="button"
                 onClick={prev}
-                className="p-2 transition-all hover:translate-x-[-2px] hover:translate-y-[-2px]"
+                className="p-2 rounded-lg transition-all hover:-translate-y-0.5 hover:bg-[var(--bg-surface-light)]"
                 style={{
-                  border: "2px solid var(--border-hard)",
+                  border: "1px solid var(--border-subtle)",
                   boxShadow: "var(--shadow-brutal-xs)",
                   backgroundColor: "var(--bg-surface)",
                 }}
@@ -200,9 +201,9 @@ export function FeaturedSection() {
               <button
                 type="button"
                 onClick={next}
-                className="p-2 transition-all hover:translate-x-[2px] hover:translate-y-[-2px]"
+                className="p-2 rounded-lg transition-all hover:-translate-y-0.5 hover:bg-[var(--bg-surface-light)]"
                 style={{
-                  border: "2px solid var(--border-hard)",
+                  border: "1px solid var(--border-subtle)",
                   boxShadow: "var(--shadow-brutal-xs)",
                   backgroundColor: "var(--bg-surface)",
                 }}
@@ -216,14 +217,14 @@ export function FeaturedSection() {
 
         {loading ? (
           <div
-            className="p-8 text-center"
+            className="p-8 text-center rounded-2xl"
             style={{
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
               boxShadow: "var(--shadow-brutal-sm)",
               backgroundColor: "var(--bg-surface)",
             }}
           >
-            <p className="text-sm font-bold uppercase text-[var(--text-muted)] animate-pulse">
+            <p className="text-sm font-semibold text-[var(--text-muted)] animate-pulse">
               Loading promotions...
             </p>
           </div>

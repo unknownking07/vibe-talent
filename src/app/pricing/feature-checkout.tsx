@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
-import { Megaphone } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Megaphone } from "@phosphor-icons/react";
 
 // Lazy-loaded so the Privy / WalletConnect / Coinbase / Solana / viem stack
 // (~60 chunks) stays off /pricing's critical path. The placeholder matches the
@@ -25,7 +25,7 @@ const FeatureYourProjectCard = dynamic(
         className="card-brutal relative p-6 flex flex-col md:min-h-[420px] overflow-hidden"
         style={{ backgroundColor: "var(--bg-surface)" }}
       >
-        <h3 className="text-2xl font-extrabold uppercase leading-tight">
+        <h3 className="text-2xl font-bold leading-tight">
           <span className="block text-[var(--foreground)]">Feature</span>
           <span className="block" style={{ color: "var(--accent)" }}>Your Project</span>
         </h3>
@@ -54,12 +54,12 @@ export function FeatureCheckout() {
   return (
     <section
       id="feature-checkout"
-      className="p-6 mt-10"
-      style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}
+      className="p-6 mt-10 rounded-2xl"
+      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
     >
       <div className="flex items-center gap-3 mb-4">
-        <Megaphone size={20} style={{ color: "var(--accent)" }} />
-        <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)]">Feature Your Project</h2>
+        <Megaphone weight="fill" size={20} style={{ color: "var(--accent)" }} />
+        <h2 className="text-lg font-bold text-[var(--foreground)]">Feature Your Project</h2>
       </div>
       <p className="text-sm text-[var(--text-secondary)] font-medium mb-5 leading-relaxed">
         Connect your wallet, pick a project, and pay with USDC on Base or Solana. Your slot goes live within

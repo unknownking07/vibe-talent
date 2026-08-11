@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, Trophy } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Trophy } from "@phosphor-icons/react/dist/ssr";
 import { getBadgeArt } from "@/lib/achievements/badge-art";
 import { BadgeMedallion } from "@/components/achievements/badge-medallion";
 import {
@@ -34,30 +35,29 @@ export function AchievementsTeaser({
 
   return (
     <section
-      className="overflow-hidden"
+      className="overflow-hidden rounded-2xl"
       style={{
         backgroundColor: "var(--bg-surface)",
-        border: "2px solid var(--border-hard)",
+        border: "1px solid var(--border-subtle)",
         boxShadow: "var(--shadow-brutal)",
       }}
     >
       {/* Header */}
       <div
         className="flex flex-wrap items-center justify-between gap-3 px-6 py-4"
-        style={{ borderBottom: "2px solid var(--border-hard)" }}
+        style={{ borderBottom: "1px solid var(--border-subtle)" }}
       >
         <div className="flex items-center gap-2.5">
           <div
-            className="flex h-7 w-7 items-center justify-center"
+            className="flex h-7 w-7 items-center justify-center rounded-full"
             style={{
               backgroundColor: "var(--accent, #FF3A00)",
-              border: "2px solid var(--border-hard)",
             }}
           >
-            <Trophy size={14} strokeWidth={3} color="#fff" />
+            <Trophy weight="fill" size={14} color="#fff" />
           </div>
           <h3
-            className="text-base font-extrabold uppercase tracking-wide"
+            className="text-base font-semibold"
             style={{ color: "var(--foreground)" }}
           >
             Achievements
@@ -108,13 +108,7 @@ function ProgressRing({ earnedCount, total, percent }: ProgressRingProps) {
   const dashOffset = circumference - (percent / 100) * circumference;
 
   return (
-    <div
-      className="flex shrink-0 flex-col items-center justify-center gap-2 px-4 py-4 sm:w-[160px]"
-      style={{
-        backgroundColor: "var(--bg-base)",
-        border: "2px solid var(--border-hard)",
-      }}
-    >
+    <div className="flex shrink-0 flex-col items-center justify-center gap-2 px-4 py-4 sm:w-[160px]">
       <div className="relative flex items-center justify-center">
         <svg
           width={128}
@@ -152,7 +146,7 @@ function ProgressRing({ earnedCount, total, percent }: ProgressRingProps) {
             {earnedCount}
           </span>
           <span
-            className="mt-0.5 text-[10px] font-extrabold uppercase tracking-widest"
+            className="mt-0.5 text-[10px] font-semibold"
             style={{ color: "var(--text-muted)" }}
           >
             of {total}
@@ -160,8 +154,8 @@ function ProgressRing({ earnedCount, total, percent }: ProgressRingProps) {
         </div>
       </div>
       <div
-        className="text-[10px] font-extrabold uppercase tracking-widest"
-        style={{ color: "var(--text-secondary)" }}
+        className="text-[10px] font-medium"
+        style={{ color: "var(--text-muted)" }}
       >
         Unlocked
       </div>
@@ -196,7 +190,7 @@ function BadgeShelf({ achievements, username }: BadgeShelfProps) {
               title={
                 a.earned
                   ? a.title
-                  : `${a.title} — ${a.current}/${a.threshold} ${a.unit}`
+: `${a.title}: ${a.current}/${a.threshold} ${a.unit}`
               }
             >
               <BadgeMedallion
@@ -228,7 +222,7 @@ function NextUpBanner({ achievement }: NextUpBannerProps) {
     <div
       className="flex flex-wrap items-center gap-4 px-6 py-4"
       style={{
-        borderTop: "2px dashed var(--border-hard)",
+        borderTop: "1px solid var(--border-subtle)",
         backgroundColor: "var(--bg-base)",
       }}
     >
@@ -242,13 +236,13 @@ function NextUpBanner({ achievement }: NextUpBannerProps) {
         />
         <div className="flex flex-col">
           <span
-            className="text-[9px] font-extrabold uppercase tracking-widest"
+            className="text-[9px] font-medium"
             style={{ color: "var(--text-muted)" }}
           >
             Next up
           </span>
           <span
-            className="text-sm font-extrabold uppercase tracking-wide"
+            className="text-sm font-semibold"
             style={{ color: "var(--foreground)" }}
           >
             {achievement.title}
@@ -257,10 +251,10 @@ function NextUpBanner({ achievement }: NextUpBannerProps) {
       </div>
       <div className="flex min-w-[180px] flex-1 flex-col gap-1.5">
         <div
-          className="h-2 w-full overflow-hidden"
+          className="h-2 w-full overflow-hidden rounded-full"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "1px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
           }}
         >
           <div
@@ -271,7 +265,7 @@ function NextUpBanner({ achievement }: NextUpBannerProps) {
             }}
           />
         </div>
-        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wide">
+        <div className="flex items-center justify-between text-[10px] font-medium">
           <span style={{ color: "var(--text-secondary)" }}>
             {achievement.current.toLocaleString()} / {achievement.threshold.toLocaleString()}{" "}
             {achievement.unit}
@@ -292,16 +286,12 @@ function EmptyState() {
     <div
       className="flex flex-col items-center justify-center gap-2 px-6 py-10 text-center"
     >
-      <Trophy
-        size={28}
-        strokeWidth={2.5}
-        style={{ color: "var(--text-muted)" }}
-      />
+      <Trophy weight="fill" size={28} style={{ color: "var(--text-muted)" }} />
       <p
-        className="text-xs font-extrabold uppercase tracking-wide"
+        className="text-xs font-semibold"
         style={{ color: "var(--text-muted)" }}
       >
-        No achievements yet — start a streak to earn your first badge
+        No achievements yet: start a streak to earn your first badge
       </p>
     </div>
   );

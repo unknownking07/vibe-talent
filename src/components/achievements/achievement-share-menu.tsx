@@ -1,14 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  Share2,
-  Link as LinkIcon,
-  Download,
-  ImageIcon,
-  Check,
-  X,
-} from "lucide-react";
+import { Link as LinkIcon, Download, ImageIcon, X } from "lucide-react";
+import { Check, ShareNetwork } from "@phosphor-icons/react";
 
 interface AchievementShareMenuProps {
   username: string;
@@ -158,24 +152,24 @@ export function AchievementShareMenu({ username, achievementId, title }: Achieve
         onFocus={() => void fetchImageBlob().catch(() => {})}
         aria-label={`Share ${title} achievement`}
         aria-expanded={open}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold rounded-full"
         style={{
           backgroundColor: "var(--accent, #FF3A00)",
           color: "#FFFFFF",
-          border: "2px solid var(--border-hard)",
-          boxShadow: "var(--shadow-brutal-xs, 2px 2px 0 var(--border-hard))",
+          border: "none",
+          boxShadow: "var(--shadow-brutal-xs)",
           cursor: "pointer",
         }}
       >
-        <Share2 size={11} strokeWidth={3} />
+        <ShareNetwork weight="fill" size={11} />
         Share
       </button>
       {open ? (
         <div
-          className="absolute right-0 top-9 z-20 w-56"
+          className="absolute right-0 top-9 z-20 w-56 rounded-xl overflow-hidden"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
@@ -183,11 +177,11 @@ export function AchievementShareMenu({ username, achievementId, title }: Achieve
             type="button"
             onClick={copyImage}
 disabled={status === "copying-image"}
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-extrabold uppercase tracking-wide"
+            className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-semibold"
             style={{ color: "var(--foreground)" }}
           >
             {status === "image-copied" ? (
-              <Check size={14} strokeWidth={3} />
+              <Check weight="bold" size={14} />
             ) : (
               <ImageIcon size={14} strokeWidth={2.5} />
             )}
@@ -201,11 +195,11 @@ disabled={status === "copying-image"}
             type="button"
             onClick={downloadImage}
 disabled={status === "downloading"}
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-extrabold uppercase tracking-wide"
+            className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-semibold"
             style={{ color: "var(--foreground)" }}
           >
             {status === "downloaded" ? (
-              <Check size={14} strokeWidth={3} />
+              <Check weight="bold" size={14} />
             ) : (
               <Download size={14} strokeWidth={2.5} />
             )}
@@ -219,11 +213,11 @@ disabled={status === "downloading"}
             type="button"
             onClick={copyLink}
 disabled={status === "copying-link"}
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-extrabold uppercase tracking-wide"
+            className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-semibold"
             style={{ color: "var(--foreground)" }}
           >
             {status === "link-copied" ? (
-              <Check size={14} strokeWidth={3} />
+              <Check weight="bold" size={14} />
             ) : (
               <LinkIcon size={14} strokeWidth={2.5} />
             )}
@@ -232,7 +226,7 @@ disabled={status === "copying-link"}
           <button
             type="button"
             onClick={shareOnX}
-className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-extrabold uppercase tracking-wide"
+className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-semibold"
             style={{ color: "var(--foreground)" }}
           >
             <span aria-hidden="true" className="text-[15px] leading-none">𝕏</span>
@@ -240,16 +234,16 @@ className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-extrabold upp
           </button>
           {status === "image-error" ? (
             <div
-              className="flex items-center gap-2 px-3 py-2 text-[10px] font-extrabold uppercase"
+              className="flex items-center gap-2 px-3 py-2 text-[10px] font-medium"
               style={{ color: "var(--accent, #FF3A00)" }}
             >
               <X size={12} strokeWidth={3} />
-              Browser blocked image copy — try Download
+              Browser blocked image copy: try Download
             </div>
           ) : null}
           {status === "error" ? (
             <div
-              className="flex items-center gap-2 px-3 py-2 text-[10px] font-extrabold uppercase"
+              className="flex items-center gap-2 px-3 py-2 text-[10px] font-medium"
               style={{ color: "var(--accent, #FF3A00)" }}
             >
               <X size={12} strokeWidth={3} />

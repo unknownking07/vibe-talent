@@ -12,7 +12,11 @@ import type { UserWithSocials } from "@/lib/types/database";
 import { EmailPreferences } from "@/components/dashboard/email-preferences";
 import { PrivacyPreferences } from "@/components/dashboard/privacy-preferences";
 import { GithubConnection } from "@/components/dashboard/github-connection";
-import { isUsernameTakenError, validateUsername } from "@/lib/username";
+import {
+  isUsernameTakenError,
+  normalizeUsernameInput,
+  validateUsername,
+} from "@/lib/username";
 import { useUsernameAvailability } from "@/lib/use-username-availability";
 import { Save, Camera, Users } from "lucide-react";
 
@@ -359,7 +363,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
-        <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-8">Settings</h1>
+        <h1 className="text-3xl font-bold text-[var(--foreground)] mb-8">Settings</h1>
         <div className="space-y-6">
           {[1, 2, 3].map((i) => <div key={i} className="skeleton h-32" />)}
         </div>
@@ -370,7 +374,7 @@ export default function SettingsPage() {
   if (!user) {
     return (
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12 text-center">
-        <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-4">Settings</h1>
+        <h1 className="text-3xl font-bold text-[var(--foreground)] mb-4">Settings</h1>
         <p className="text-[var(--text-secondary)] font-medium">Please sign in to view your settings.</p>
       </div>
     );
@@ -378,24 +382,24 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
-      <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-8">Settings</h1>
+      <h1 className="text-3xl font-bold text-[var(--foreground)] mb-8">Settings</h1>
 
       {/* Edit Profile */}
       <div
         className="p-6 mb-8"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-hard)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">Edit Profile</h2>
+        <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">Edit Profile</h2>
         <div className="space-y-4">
           {/* Avatar Upload */}
           <div className="flex items-center gap-4">
             <div
               className="relative w-20 h-20 flex items-center justify-center text-2xl font-extrabold text-white cursor-pointer group"
-              style={{ backgroundColor: "var(--bg-inverted)", border: "2px solid var(--border-hard)" }}
+              style={{ backgroundColor: "var(--bg-inverted)", border: "1px solid var(--border-hard)" }}
               onClick={() => avatarInputRef.current?.click()}
             >
               {user.avatar_url ? (
@@ -426,14 +430,14 @@ export default function SettingsPage() {
             />
           </div>
           <div>
-            <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Username</label>
+            <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">Username</label>
             <input
               type="text"
               value={profileForm.username}
               onChange={(e) =>
                 setProfileForm({
                   ...profileForm,
-                  username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""),
+                  username: normalizeUsernameInput(e.target.value),
                 })
               }
               className="input-brutal"
@@ -459,11 +463,11 @@ export default function SettingsPage() {
             )}
           </div>
           <div>
-            <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 flex items-center gap-2">
+            <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 flex items-center gap-2">
               Display Name
               {highlightName && (
                 <span
-                  className="px-1.5 py-0.5 text-[10px] font-extrabold text-white uppercase"
+                  className="px-1.5 py-0.5 text-[10px] font-extrabold text-white"
                   style={{ backgroundColor: "var(--accent)", border: "1px solid var(--border-hard)" }}
                 >
                   New
@@ -490,7 +494,7 @@ export default function SettingsPage() {
             </p>
           </div>
           <div>
-            <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Bio</label>
+            <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">Bio</label>
             <textarea
               value={profileForm.bio}
               onChange={(e) => setProfileForm({ ...profileForm, bio: e.target.value })}
@@ -500,7 +504,7 @@ export default function SettingsPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">X (Twitter)</label>
+              <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">X (Twitter)</label>
               <div className="relative">
                 {looksLikeBareHandle(profileForm.twitter) && (
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted-soft)] font-bold text-sm select-none">@</span>
@@ -533,7 +537,7 @@ export default function SettingsPage() {
               }
             />
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Telegram</label>
+              <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">Telegram</label>
               <div className="relative">
                 {looksLikeBareHandle(profileForm.telegram) && (
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted-soft)] font-bold text-sm select-none">@</span>
@@ -549,7 +553,7 @@ export default function SettingsPage() {
               </div>
             </div>
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Portfolio</label>
+              <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">Portfolio</label>
               <input
                 type="text"
                 value={profileForm.website}
@@ -560,7 +564,7 @@ export default function SettingsPage() {
             </div>
           </div>
           <div>
-            <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Vibe Coding IDE</label>
+            <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">Vibe Coding IDE</label>
             <select
               value={profileForm.ide}
               onChange={(e) => setProfileForm({ ...profileForm, ide: e.target.value })}
@@ -609,11 +613,11 @@ export default function SettingsPage() {
         className="p-6 mb-8"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-hard)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        <h2 className="text-lg font-extrabold uppercase flex items-center gap-2 text-[var(--foreground)] mb-2">
+        <h2 className="text-lg font-bold flex items-center gap-2 text-[var(--foreground)] mb-2">
           <Users size={20} className="text-[var(--accent)]" />
           Invite Builders
         </h2>

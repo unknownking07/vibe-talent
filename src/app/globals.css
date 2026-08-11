@@ -9,17 +9,27 @@
   display: none;
 }
 
+/* ───────────────────────────────────────────────────────────────────────────
+   Design language: premium minimal.
+   Space Grotesk + the #FF3A00 accent carry the brand; surfaces are quiet —
+   1px hairlines, soft layered shadows, a locked radius scale (cards 16px,
+   controls 12px, chips full). Warm greys (hue ~14°) in dark mode.
+
+   Legacy note: the *-brutal class/var names survive from the old neo-brutalist
+   system because ~60 files reference them; their values are the new language.
+   ─────────────────────────────────────────────────────────────────────────── */
+
 :root {
-  --background: #EAEBEA;
-  --foreground: #0F0F0F;
+  --background: #F6F4F2;
+  --foreground: #141110;
 
   --bg-surface: #FFFFFF;
-  --bg-surface-light: #F5F5F5;
+  --bg-surface-light: #F5F3F1;
   --bg-unread: #FFF8F6;
-  --bg-pill: #0F0F0F;
+  --bg-pill: #141110;
   --bg-pill-hover: #2a2a2a;
-  --border-hard: #0F0F0F;
-  --border-subtle: #D4D4D4;
+  --border-hard: rgba(20, 17, 16, 0.14);
+  --border-subtle: rgba(20, 17, 16, 0.08);
 
   --text-muted: #71717A;
   --text-muted-soft: #A1A1AA;
@@ -30,25 +40,35 @@
   --accent-hover: #E03300;
   --accent-streak: #FF3A00;
   --accent-vibe: #FF3A00;
+  --accent-soft: rgba(255, 58, 0, 0.08);
 
   --badge-bronze: #D97706;
   --badge-silver: #71717A;
   --badge-gold: #CA8A04;
   --badge-diamond: #0891B2;
 
-  --hm-0: #E5E5E5;
+  --hm-0: #ECE8E5;
   --hm-1: #FFD4C4;
   --hm-2: #FFA07A;
   --hm-3: #FF6B3A;
   --hm-4: #FF3A00;
 
-  --shadow-brutal: 6px 6px 0 #0F0F0F;
-  --shadow-brutal-sm: 4px 4px 0 #0F0F0F;
-  --shadow-brutal-hover: 2px 2px 0 #0F0F0F;
-  --shadow-brutal-xs: 2px 2px 0 #0F0F0F;
-  --shadow-brutal-accent: 6px 6px 0 #FF3A00;
+  /* Soft layered elevation (tinted toward the warm ink, never pure black). */
+  --shadow-brutal: 0 1px 2px rgba(20, 12, 8, 0.04), 0 8px 24px rgba(20, 12, 8, 0.07);
+  --shadow-brutal-sm: 0 1px 2px rgba(20, 12, 8, 0.04), 0 3px 10px rgba(20, 12, 8, 0.05);
+  --shadow-brutal-hover: 0 2px 4px rgba(20, 12, 8, 0.05), 0 14px 36px rgba(20, 12, 8, 0.10);
+  --shadow-brutal-xs: 0 1px 2px rgba(20, 12, 8, 0.05);
+  --shadow-brutal-accent: 0 4px 16px rgba(255, 58, 0, 0.25);
 
-  --bg-inverted: #0F0F0F;
+  --radius-card: 16px;
+  --radius-control: 12px;
+  --radius-chip: 999px;
+  --radius-sm: 8px;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+  --bg-inverted: #141110;
   --text-on-inverted: #FFFFFF;
 
   --status-error-bg: #FEF2F2;
@@ -58,8 +78,6 @@
   --status-success-text: #166534;
   --status-warning-bg: #FFF7ED;
   --status-warning-text: #92400E;
-
-  --dot-pattern: radial-gradient(rgba(0, 0, 0, 0.06) 1.5px, transparent 1.5px);
 }
 
 [data-theme="dark"] {
@@ -74,13 +92,15 @@
   --bg-unread: hsl(14, 5%, 12%);
   --bg-pill: hsl(14, 4%, 15%);
   --bg-pill-hover: hsl(14, 4%, 23%);
-  --border-hard: hsl(14, 10%, 45%);
-  --border-subtle: hsl(14, 6%, 24%);
+  --border-hard: hsl(14, 6%, 26%);
+  --border-subtle: hsl(14, 5%, 19%);
 
   --text-muted: hsl(14, 8%, 58%);
   --text-muted-soft: hsl(14, 6%, 48%);
   --text-secondary: hsl(14, 8%, 62%);
   --text-tertiary: hsl(14, 6%, 78%);
+
+  --accent-soft: rgba(255, 58, 0, 0.12);
 
   --badge-bronze: #A0522D;
   --badge-silver: #A9A9A9;
@@ -93,11 +113,11 @@
   --hm-3: #FF6A40;
   --hm-4: #FF3A00;
 
-  --shadow-brutal: 6px 6px 0 #000000;
-  --shadow-brutal-sm: 4px 4px 0 #000000;
-  --shadow-brutal-hover: 2px 2px 0 #000000;
-  --shadow-brutal-xs: 2px 2px 0 #000000;
-  --shadow-brutal-accent: 6px 6px 0 #FF3A00;
+  --shadow-brutal: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.30);
+  --shadow-brutal-sm: 0 1px 2px rgba(0, 0, 0, 0.30), 0 3px 10px rgba(0, 0, 0, 0.25);
+  --shadow-brutal-hover: 0 2px 4px rgba(0, 0, 0, 0.35), 0 14px 36px rgba(0, 0, 0, 0.40);
+  --shadow-brutal-xs: 0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow-brutal-accent: 0 4px 16px rgba(255, 58, 0, 0.30);
 
   --status-error-bg: #3B1111;
   --status-error-text: #FCA5A5;
@@ -106,8 +126,6 @@
   --status-success-text: #86EFAC;
   --status-warning-bg: #431407;
   --status-warning-text: #FED7AA;
-
-  --dot-pattern: radial-gradient(rgba(255, 255, 255, 0.06) 1.5px, transparent 1.5px);
 }
 
 @theme inline {
@@ -119,42 +137,52 @@
 
 body {
   background-color: var(--background);
-  background-image: var(--dot-pattern);
-  background-size: 24px 24px;
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Brand voice: headings are uppercase (owner's call, 2026-08-11) — the punch
+   lives in the type, not in boxes. Buttons, labels, and body copy stay
+   sentence case. Escape hatch for a specific heading: Tailwind `normal-case`
+   (class specificity beats this element selector). */
+h1,
+h2,
+h3 {
+  text-transform: uppercase;
+}
+
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--background);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--foreground);
-  border: 2px solid var(--background);
+  background: var(--border-hard);
+  border-radius: 999px;
+  border: 3px solid var(--background);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--bg-pill-hover);
+  background: var(--text-muted-soft);
 }
 
 html {
   scroll-behavior: smooth;
 }
 
-/* Notification card hover-lift (brutalist offset stays fixed → card lifts off its shadow) */
+/* Notification card hover-lift */
 .ntf-card {
-  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  transition: transform 0.16s var(--ease-out), box-shadow 0.16s var(--ease-out);
 }
 .ntf-card:hover {
-  transform: translate(-2px, -2px);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-brutal-hover);
 }
 /* Title link stretches over the whole card so the card is clickable, with no
    visible "open" button. Interactive children (Mark read) sit above it via
@@ -175,34 +203,50 @@ html {
   background: var(--bg-unread);
 }
 
-/* Brutalist button base */
+/* Button base — solid fills, quiet borders, tactile press. */
 .btn-brutal {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border: 2px solid var(--border-hard);
-  box-shadow: var(--shadow-brutal);
-  transition: transform 0.15s, box-shadow 0.15s;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
   cursor: pointer;
+  transition:
+    transform 0.16s var(--ease-out),
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    opacity 0.16s ease;
 }
 
-.btn-brutal:hover {
-  transform: translate(2px, 2px);
-  box-shadow: var(--shadow-brutal-hover);
+@media (hover: hover) and (pointer: fine) {
+  .btn-brutal:hover {
+    transform: translateY(-1px);
+  }
+}
+
+.btn-brutal:active {
+  transform: translateY(0) scale(0.98);
 }
 
 .btn-brutal-primary {
   background-color: var(--accent);
-  color: #FFFFFF;
+  color: #ffffff;
+}
+.btn-brutal-primary:hover {
+  background-color: var(--accent-hover);
 }
 
 .btn-brutal-secondary {
   background-color: var(--bg-surface);
   color: var(--foreground);
+  border-color: var(--border-hard);
+}
+.btn-brutal-secondary:hover {
+  background-color: var(--bg-surface-light);
 }
 
 .btn-brutal-dark {
@@ -210,7 +254,7 @@ html {
   color: var(--text-on-inverted);
 }
 
-/* Flat button variant — no shadow, for use inside cards */
+/* Flat button variant — no lift, for use inside cards */
 .btn-brutal-flat {
   box-shadow: none;
 }
@@ -220,16 +264,16 @@ html {
   opacity: 0.85;
 }
 
-/* Notched corner — top-right cut for sponsored CTAs */
+/* Legacy hook for sponsored CTAs — the corner notch retired with the sharp-
+   corner language; keep the class as a no-op so markup doesn't break. */
 .btn-notched {
-  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+  clip-path: none;
 }
 
 /* Brief outline ripple on the Feature-Your-Project card after a user clicks
    "Claim This Spot" on an empty slot. The empty card scrolls/focuses the
    feature card, but the cards already share a viewport — without this pulse
-   the click looks dead. Uses outline (not box-shadow) so it doesn't fight
-   .card-brutal's hard offset shadow. */
+   the click looks dead. */
 .claim-pulse {
   animation: claim-pulse 1.2s ease-out;
 }
@@ -275,41 +319,45 @@ html {
   opacity: 1;
 }
 
-/* Brutalist card */
+/* Card surface */
 .card-brutal {
   background: var(--bg-surface);
-  border: 2px solid var(--border-hard);
-  box-shadow: var(--shadow-brutal);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-brutal-sm);
 }
 
-/* Brutalist input */
+/* Input */
 .input-brutal {
   width: 100%;
   padding-top: 0.75rem;
   padding-bottom: 0.75rem;
   padding-left: 1rem;
   padding-right: 1rem;
-  border: 2px solid var(--border-hard);
+  border: 1px solid var(--border-hard);
+  border-radius: var(--radius-control);
   background: var(--bg-surface);
   color: var(--foreground);
-  font-weight: 600;
+  font-weight: 500;
   font-size: 0.875rem;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
 .input-brutal::placeholder {
   color: var(--text-muted);
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .input-brutal:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 /* Native <select> arrows render inconsistently across browsers and sit
-   misaligned inside the tall brutalist field. Swap in a custom chevron
-   pinned to the vertical center, 1rem in from the right edge. The extra
-   right padding keeps long option labels from sliding under the arrow. */
+   misaligned inside the tall field. Swap in a custom chevron pinned to the
+   vertical center, 1rem in from the right edge. The extra right padding
+   keeps long option labels from sliding under the arrow. */
 select.input-brutal {
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -325,11 +373,10 @@ select.input-brutal {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23A69A96' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
-/* Large accent numbers */
+/* Large accent numbers — plain accent ink now; the stroke + hard text-shadow
+   retired with the brutalist pass. */
 .text-accent-brutal {
   color: var(--accent);
-  -webkit-text-stroke: 1px var(--border-hard);
-  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
 }
 
 /* Page enter animation */
@@ -393,15 +440,15 @@ select.input-brutal {
 }
 
 .animate-fade-in-up {
-  animation: fadeInUp 0.25s ease-out both;
+  animation: fadeInUp 0.25s var(--ease-out) both;
 }
 
 .animate-slide-in-left {
-  animation: slideInLeft 0.25s ease-out both;
+  animation: slideInLeft 0.25s var(--ease-out) both;
 }
 
 .animate-scale-in {
-  animation: scaleIn 0.2s ease-out both;
+  animation: scaleIn 0.2s var(--ease-out) both;
 }
 
 /* Stagger children */
@@ -409,7 +456,7 @@ select.input-brutal {
    cards don't retain `translateY(0)` — which would create a stacking context and
    trap popovers (e.g. quality-score info) behind later siblings. */
 .stagger-children > * {
-  animation: fadeInUp 0.25s ease-out backwards;
+  animation: fadeInUp 0.25s var(--ease-out) backwards;
 }
 .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
 .stagger-children > *:nth-child(2) { animation-delay: 30ms; }
@@ -429,7 +476,8 @@ select.input-brutal {
   background: linear-gradient(90deg, var(--bg-surface-light) 25%, var(--bg-surface) 50%, var(--bg-surface-light) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
-  border: 2px solid var(--border-hard);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
 }
 
 /* Tooltip */
@@ -441,18 +489,18 @@ select.input-brutal {
   position: absolute;
   bottom: calc(100% + 8px);
   left: 50%;
-  transform: translateX(-50%) scale(0.9);
-  padding: 4px 10px;
+  transform: translateX(-50%) scale(0.95);
+  padding: 5px 10px;
   background: var(--foreground);
   color: var(--background);
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
   white-space: nowrap;
-  border: 2px solid var(--border-hard);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-brutal-sm);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.15s, transform 0.15s;
+  transition: opacity 0.15s var(--ease-out), transform 0.15s var(--ease-out);
 }
 .tooltip-brutal:hover::after {
   opacity: 1;
@@ -470,7 +518,7 @@ body:has(.chat-page-wrapper) main {
 /* Focus ring for accessibility */
 .input-brutal:focus-visible,
 .btn-brutal:focus-visible {
-  outline: 3px solid var(--accent);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -479,7 +527,6 @@ body:has(.chat-page-wrapper) main {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none !important;
-  box-shadow: var(--shadow-brutal) !important;
 }
 
 /* Settings "New" field pulse — used when landing on /settings?complete=name */
@@ -559,7 +606,7 @@ body:has(.chat-page-wrapper) main {
   border: 0;
   padding: 0;
   cursor: pointer;
-  transition: transform 0.14s ease-out;
+  transition: transform 0.14s var(--ease-out);
 }
 .medallion-replay:hover {
   transform: scale(1.06);

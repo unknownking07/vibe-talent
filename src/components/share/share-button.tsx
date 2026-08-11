@@ -74,7 +74,7 @@ export function ShareButton({ url, text, imageUrl }: ShareButtonProps) {
         href={`https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(absUrl)}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="bg-[var(--bg-inverted)] text-white px-4 py-2 text-[13px] font-extrabold rounded-sm hover:opacity-90"
+        className="bg-[var(--bg-inverted)] text-white px-4 py-2 text-[13px] font-semibold rounded-xl hover:opacity-90"
       >
         Share on X →
       </a>
@@ -86,7 +86,7 @@ export function ShareButton({ url, text, imageUrl }: ShareButtonProps) {
           onFocus={prewarm}
           onPointerDown={prewarm}
           disabled={status === "copying"}
-          className="bg-[var(--accent)] text-white px-4 py-2 text-[13px] font-extrabold rounded-sm hover:opacity-90 disabled:opacity-60"
+          className="bg-[var(--accent)] text-white px-4 py-2 text-[13px] font-semibold rounded-xl hover:opacity-90 disabled:opacity-60"
           aria-label="Copy receipt image to clipboard"
         >
           {status === "copying" ? "Copying…"
@@ -98,7 +98,7 @@ export function ShareButton({ url, text, imageUrl }: ShareButtonProps) {
 
       <button
         onClick={copyLink}
-        className="bg-[var(--bg-surface)] text-[var(--foreground)] border-2 border-[var(--border-hard)] px-4 py-2 text-[13px] font-extrabold rounded-sm hover:bg-[var(--bg-surface-light)]"
+        className="bg-[var(--bg-surface)] text-[var(--foreground)] border border-[var(--border-hard)] px-4 py-2 text-[13px] font-semibold rounded-xl hover:bg-[var(--bg-surface-light)]"
         aria-label="Copy share link"
       >
         {status === "copied-link" ? "Link copied ✓" : "Copy link"}

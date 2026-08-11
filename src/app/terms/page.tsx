@@ -4,7 +4,7 @@ import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
-  description: "VibeTalent terms of service — rules and guidelines for using the platform.",
+  description: "VibeTalent terms of service: rules and guidelines for using the platform.",
   alternates: { canonical: `${siteUrl}/terms` },
 };
 
@@ -23,12 +23,12 @@ export default function TermsOfServicePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbLd) }}
       />
-      <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-8">Terms of Service</h1>
+      <h1 className="text-3xl font-bold text-[var(--foreground)] mb-8">Terms of Service</h1>
       <p className="text-sm text-[var(--text-muted)] mb-8">Last updated: April 1, 2026</p>
 
       <div className="space-y-6 text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">1. Acceptance of Terms</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">1. Acceptance of Terms</h2>
           <p>
             By accessing or using VibeTalent at vibetalent.work (&quot;the Platform&quot;), you agree to be
             bound by these Terms of Service. If you do not agree to these terms, do not use the Platform.
@@ -37,8 +37,8 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">2. Description of Service</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">2. Description of Service</h2>
           <p>
             VibeTalent is a developer talent marketplace that ranks software engineers by coding
             consistency, shipped projects, and community endorsements. The Platform provides tools
@@ -49,8 +49,8 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">3. Accounts</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">3. Accounts</h2>
           <ul className="list-disc pl-6 space-y-2">
             <li>You must provide accurate information when creating an account.</li>
             <li>You are responsible for maintaining the security of your account credentials.</li>
@@ -60,8 +60,8 @@ export default function TermsOfServicePage() {
           </ul>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">4. User Content</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">4. User Content</h2>
           <p className="mb-3">By submitting content to VibeTalent (including profile information, project descriptions, and reviews), you:</p>
           <ul className="list-disc pl-6 space-y-2">
             <li>Retain ownership of your content.</li>
@@ -71,8 +71,8 @@ export default function TermsOfServicePage() {
           </ul>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">5. Coding Streaks and Scores</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">5. Coding Streaks and Scores</h2>
           <p className="mb-3">
             Vibe scores, coding streaks, and badge levels are calculated automatically from your
             public GitHub activity. You agree that:
@@ -85,8 +85,8 @@ export default function TermsOfServicePage() {
           </ul>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">6. Hiring and Communication</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">6. Hiring and Communication</h2>
           <p className="mb-3">
             VibeTalent facilitates introductions between clients and developers. We are not a party
             to any employment or freelance agreement. You agree that:
@@ -98,15 +98,15 @@ export default function TermsOfServicePage() {
           </ul>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">7. Featured Projects and Payments</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">7. Featured Projects and Payments</h2>
           <p className="mb-3">
             VibeTalent offers an optional Featured Projects feature that allows developers to promote
             a project on the homepage carousel by paying with USDC on the Base network. By using this feature, you agree that:
           </p>
           <ul className="list-disc pl-6 space-y-2">
             <li>All payments are processed on-chain via smart contract and are non-refundable once the transaction is confirmed on the blockchain.</li>
-            <li>Featured placement is for visibility only — it does not affect your vibe score, badge level, streak, or search ranking.</li>
+            <li>Featured placement is for visibility only. It does not affect your vibe score, badge level, streak, or search ranking.</li>
             <li>VibeTalent reserves the right to remove featured projects that violate these terms or contain misleading content.</li>
             <li>Pricing and duration of featured placements are determined by the smart contract and may change over time.</li>
             <li>You are solely responsible for ensuring your wallet has sufficient USDC balance and that you approve the correct transaction amount.</li>
@@ -114,8 +114,8 @@ export default function TermsOfServicePage() {
           </ul>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">8. Prohibited Conduct</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">8. Prohibited Conduct</h2>
           <p className="mb-3">You agree not to:</p>
           <ul className="list-disc pl-6 space-y-2">
             <li>Use the Platform for any unlawful purpose</li>
@@ -128,8 +128,8 @@ export default function TermsOfServicePage() {
           </ul>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">9. Intellectual Property</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">9. Intellectual Property</h2>
           <p>
             The VibeTalent name, logo, design, and platform code are the property of VibeTalent.
             You may not copy, modify, or distribute our branding or proprietary materials without
@@ -137,8 +137,8 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">10. Termination</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">10. Termination</h2>
           <p>
             We reserve the right to suspend or terminate your account at any time for violation of
             these terms or for any conduct we deem harmful to the Platform or its users. You may
@@ -147,8 +147,8 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">11. Disclaimers</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">11. Disclaimers</h2>
           <p>
             VibeTalent is provided &quot;as is&quot; without warranties of any kind, express or implied.
             We do not guarantee the accuracy of vibe scores, streak data, or project quality assessments.
@@ -158,8 +158,8 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">12. Limitation of Liability</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">12. Limitation of Liability</h2>
           <p>
             To the maximum extent permitted by law, VibeTalent and its operators shall not be liable
             for any indirect, incidental, special, consequential, or punitive damages, regardless of
@@ -168,8 +168,8 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">13. Contact</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">13. Contact</h2>
           <p>
             For questions about these Terms of Service, contact us at{" "}
             <a

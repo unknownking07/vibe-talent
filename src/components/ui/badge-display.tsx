@@ -31,11 +31,11 @@ export function BadgeDisplay({ level, size = "md", showLabel = true }: BadgeDisp
 
   return (
     <span
-      className={`inline-flex items-center gap-1 font-extrabold uppercase tracking-wide ${sizeClasses[size]}`}
+      className={`inline-flex items-center gap-1 rounded-full font-semibold ${sizeClasses[size]}`}
       style={{
         backgroundColor: colors.bg,
         color: colors.text,
-        border: "1px solid var(--border-hard)",
+        border: "1px solid var(--border-subtle)",
       }}
     >
       <span>{info.icon}</span>

@@ -1,8 +1,8 @@
-import { Check, Lock } from "lucide-react";
 import type { AchievementView } from "@/lib/achievements/definitions";
 import { getBadgeArt } from "@/lib/achievements/badge-art";
 import { BadgeMedallion } from "@/components/achievements/badge-medallion";
 import { AchievementShareMenu } from "@/components/achievements/achievement-share-menu";
+import { Check, Lock } from "@phosphor-icons/react/dist/ssr";
 
 interface AchievementCardProps {
   achievement: AchievementView;
@@ -23,12 +23,12 @@ export function AchievementCard({ achievement, username, onCelebrate }: Achievem
 
   return (
     <div
-      className="relative flex flex-col gap-3 p-5"
+      className="relative flex flex-col gap-3 p-5 rounded-2xl"
       style={{
         backgroundColor: earned
           ? "var(--bg-surface)"
           : "var(--bg-surface-light, var(--bg-surface))",
-        border: "2px solid var(--border-hard)",
+        border: "1px solid var(--border-subtle)",
         boxShadow: earned ? "var(--shadow-brutal-sm)" : "none",
         opacity: earned ? 1 : 0.92,
       }}
@@ -63,33 +63,33 @@ export function AchievementCard({ achievement, username, onCelebrate }: Achievem
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <h3
-                className="text-sm font-extrabold uppercase tracking-wide"
+                className="text-sm font-semibold"
                 style={{ color: "var(--foreground)" }}
               >
                 {title}
               </h3>
               {earned ? (
                 <span
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-extrabold uppercase"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full"
                   style={{
                     backgroundColor: "var(--status-success-bg, #DCFCE7)",
                     color: "var(--status-success-text, #166534)",
-                    border: "1px solid var(--border-hard)",
+                    border: "1px solid var(--border-subtle)",
                   }}
                 >
-                  <Check size={10} strokeWidth={3} />
+                  <Check weight="bold" size={10} />
                   Earned
                 </span>
               ) : (
                 <span
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-extrabold uppercase"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full"
                   style={{
                     backgroundColor: "var(--bg-base)",
                     color: "var(--text-muted)",
-                    border: "1px solid var(--border-hard)",
+                    border: "1px solid var(--border-subtle)",
                   }}
                 >
-                  <Lock size={10} strokeWidth={3} />
+                  <Lock weight="fill" size={10} />
                   Locked
                 </span>
               )}
@@ -114,10 +114,10 @@ export function AchievementCard({ achievement, username, onCelebrate }: Achievem
       {showProgressNumbers && (
         <div className="flex flex-col gap-1.5">
           <div
-            className="h-2 w-full overflow-hidden"
+            className="h-2 w-full overflow-hidden rounded-full"
             style={{
               backgroundColor: "var(--bg-base)",
-              border: "1px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
             }}
             role="progressbar"
             aria-label={`${title} progress`}
@@ -137,7 +137,7 @@ export function AchievementCard({ achievement, username, onCelebrate }: Achievem
               }}
             />
           </div>
-          <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wide">
+          <div className="flex items-center justify-between text-[10px] font-medium">
             <span style={{ color: "var(--text-secondary)" }}>
               {current.toLocaleString()} / {threshold.toLocaleString()} {unit}
             </span>

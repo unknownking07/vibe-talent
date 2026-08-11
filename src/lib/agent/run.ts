@@ -74,7 +74,7 @@ export function runAgentTurn(opts: {
                 role: "tool",
                 tool_call_id: call.id,
                 content: JSON.stringify({
-                  error: "Tool call limit reached for this round — answer with what you already have.",
+                  error: "Tool call limit reached for this round: answer with what you already have.",
                 }),
               });
               continue;

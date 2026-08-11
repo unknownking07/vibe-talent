@@ -56,15 +56,15 @@ function FeedbackForm() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--bg-base)" }}>
         <div
-          className="w-full max-w-lg p-8 text-center"
+          className="w-full max-w-lg p-8 text-center rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
           <div className="text-4xl mb-4">🙏</div>
-          <h1 className="text-2xl font-extrabold text-[var(--foreground)] mb-3">
+          <h1 className="text-2xl font-bold text-[var(--foreground)] mb-3">
             Thanks for your honesty
           </h1>
           <p className="text-[var(--text-muted)] mb-6">
@@ -72,10 +72,9 @@ function FeedbackForm() {
           </p>
           <a
             href="/dashboard"
-            className="inline-block px-6 py-3 font-bold text-sm text-white"
+            className="inline-block px-6 py-3 rounded-xl font-semibold text-sm text-white"
             style={{
               background: "var(--accent)",
-              border: "2px solid var(--border-hard)",
               boxShadow: "var(--shadow-brutal)",
             }}
           >
@@ -89,39 +88,39 @@ function FeedbackForm() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "var(--bg-base)" }}>
       <div
-        className="w-full max-w-lg p-8"
+        className="w-full max-w-lg p-8 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        <h1 className="text-2xl font-extrabold text-[var(--foreground)] mb-2">
+        <h1 className="text-2xl font-bold text-[var(--foreground)] mb-2">
           Quick feedback
         </h1>
         <p className="text-sm text-[var(--text-muted)] mb-6">
-          No guilt trip — we just want to build something you&apos;d actually use. Takes 30 seconds.
+          No guilt trip. We just want to build something you&apos;d actually use. Takes 30 seconds.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {error && (
-            <div className="p-3 text-sm font-bold text-red-600" style={{ border: "2px solid currentColor" }}>
+            <div className="p-3 rounded-xl text-sm font-semibold text-red-600" style={{ border: "1px solid currentColor" }}>
               Something went wrong. Please try again.
             </div>
           )}
 
           {/* Reason */}
           <fieldset>
-            <legend className="block text-sm font-bold text-[var(--foreground)] mb-2">
+            <legend className="block text-sm font-semibold text-[var(--foreground)] mb-2">
               What made you stop using VibeTalent?
             </legend>
             <div className="space-y-2">
               {REASONS.map((r) => (
                 <label
                   key={r.value}
-                  className="flex items-center gap-3 p-3 cursor-pointer transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors"
                   style={{
-                    border: reason === r.value ? "2px solid var(--accent)" : "2px solid var(--border-subtle)",
+                    border: reason === r.value ? "1px solid var(--accent)" : "1px solid var(--border-subtle)",
                     background: reason === r.value ? "var(--accent-muted, rgba(255,58,0,0.05))" : "transparent",
                   }}
                 >
@@ -141,23 +140,23 @@ function FeedbackForm() {
 
           {/* Details */}
           <div>
-            <label className="block text-sm font-bold text-[var(--foreground)] mb-2">
+            <label className="block text-sm font-semibold text-[var(--foreground)] mb-2">
               What&apos;s the #1 thing that would bring you back?
               <span className="font-normal text-[var(--text-muted)]"> (optional)</span>
             </label>
             <textarea
               value={details}
               onChange={(e) => setDetails(e.target.value)}
-              placeholder="Be brutally honest — it helps us more than you think"
+              placeholder="Be brutally honest. It helps us more than you think"
               rows={3}
-              className="w-full px-3 py-2 text-sm bg-transparent text-[var(--foreground)] placeholder:text-[var(--text-muted)] resize-none"
-              style={{ border: "2px solid var(--border-subtle)" }}
+              className="w-full px-3 py-2 rounded-xl text-sm bg-transparent text-[var(--foreground)] placeholder:text-[var(--text-muted)] resize-none"
+              style={{ border: "1px solid var(--border-subtle)" }}
             />
           </div>
 
           {/* Would return */}
           <div>
-            <label className="block text-sm font-bold text-[var(--foreground)] mb-2">
+            <label className="block text-sm font-semibold text-[var(--foreground)] mb-2">
               Would you try VibeTalent again if we fixed this?
             </label>
             <div className="flex gap-2" role="group" aria-label="Would you try VibeTalent again if we fixed this?">
@@ -167,9 +166,9 @@ function FeedbackForm() {
                   type="button"
                   onClick={() => setWouldReturn(opt.toLowerCase())}
                   aria-pressed={wouldReturn === opt.toLowerCase()}
-                  className="flex-1 py-2 text-sm font-bold transition-colors"
+                  className="flex-1 py-2 rounded-xl text-sm font-semibold transition-colors"
                   style={{
-                    border: wouldReturn === opt.toLowerCase() ? "2px solid var(--accent)" : "2px solid var(--border-subtle)",
+                    border: wouldReturn === opt.toLowerCase() ? "1px solid var(--accent)" : "1px solid var(--border-subtle)",
                     background: wouldReturn === opt.toLowerCase() ? "var(--accent)" : "transparent",
                     color: wouldReturn === opt.toLowerCase() ? "#FFFFFF" : "var(--foreground)",
                   }}
@@ -183,10 +182,9 @@ function FeedbackForm() {
           <button
             type="submit"
             disabled={!reason || submitting}
-            className="w-full py-3 font-bold text-sm text-white disabled:opacity-50"
+            className="w-full py-3 rounded-xl font-semibold text-sm text-white disabled:opacity-50"
             style={{
               background: "var(--accent)",
-              border: "2px solid var(--border-hard)",
               boxShadow: "var(--shadow-brutal)",
             }}
           >

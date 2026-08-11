@@ -14,7 +14,8 @@ import {
   type HomepageFeedItem,
 } from "@/lib/homepage-feed";
 import { siteUrl } from "@/lib/seo";
-import { Flame, Trophy, GitCommitHorizontal, Zap, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Fire, GitCommit, Lightning, Trophy } from "@phosphor-icons/react/dist/ssr";
 
 // Feature flag: gates the new homepage feed section. When false (or unset),
 // the homepage renders the existing `<LiveActivityFeed />` snippet exactly
@@ -36,31 +37,31 @@ const FAQ_ITEMS = [
   },
   {
     q: "Where can I hire vibe coders?",
-    a: "VibeTalent is a vibe coders marketplace built specifically for hiring developers who ship with AI tools like Claude Code, Cursor, and Bolt. Browse builders ranked by coding streak, shipped-project quality, and vibe score on the Explore page and Leaderboard, or describe your project to VibeFinder Bot and get matched automatically. Hiring is direct and free — open any builder's profile, hit Hire, and message them with no middleman and no platform fees. Unlike general freelance sites such as Upwork or Fiverr, every ranking on VibeTalent is backed by verifiable GitHub activity rather than self-reported resumes.",
+    a: "VibeTalent is a vibe coders marketplace built specifically for hiring developers who ship with AI tools like Claude Code, Cursor, and Bolt. Browse builders ranked by coding streak, shipped-project quality, and vibe score on the Explore page and Leaderboard, or describe your project to VibeFinder Bot and get matched automatically. Hiring is direct and free: open any builder's profile, hit Hire, and message them with no middleman and no platform fees. Unlike general freelance sites such as Upwork or Fiverr, every ranking on VibeTalent is backed by verifiable GitHub activity rather than self-reported resumes.",
   },
   {
     q: "What is the best marketplace to hire vibe coders?",
-    a: "The best vibe coders marketplace depends on what you value. General freelance platforms like Upwork, Fiverr, and Freelancer have the largest talent pools but rank developers on resumes and client reviews that are easy to game. VibeTalent takes the opposite approach: it is a developer-only marketplace where builders are ranked entirely on proof of work — daily GitHub commit streaks, deployed projects with live URLs, repository quality, and peer endorsements. If you want to hire a vibe coder based on what they actually ship rather than how they market themselves, VibeTalent is purpose-built for it, with zero platform fees and AI-powered matching through VibeFinder Bot.",
+    a: "The best vibe coders marketplace depends on what you value. General freelance platforms like Upwork, Fiverr, and Freelancer have the largest talent pools but rank developers on resumes and client reviews that are easy to game. VibeTalent takes the opposite approach: it is a developer-only marketplace where builders are ranked entirely on proof of work: daily GitHub commit streaks, deployed projects with live URLs, repository quality, and peer endorsements. If you want to hire a vibe coder based on what they actually ship rather than how they market themselves, VibeTalent is purpose-built for it, with zero platform fees and AI-powered matching through VibeFinder Bot.",
   },
   {
     q: "How does the VibeTalent vibe score work?",
-    a: "The vibe score is VibeTalent's core reputation metric — a single number representing how consistently and effectively a developer ships code. It is calculated from four weighted components: coding streak days (40% weight), which measures consecutive days of GitHub commits; project quality scores (30% weight), based on GitHub repo health including stars, forks, commit frequency, and deployment status; GitHub activity (20% weight), covering commits, pull requests, code reviews, and issue participation; and peer endorsements (10% weight), where endorsements from higher-scored developers carry more weight. The score updates daily and is always based on verifiable, public data. It cannot be gamed through fake reviews or purchased followers — only real, consistent shipping moves the needle.",
+    a: "The vibe score is VibeTalent's core reputation metric (a single number representing how consistently and effectively a developer ships code. It is calculated from four weighted components: coding streak days (40% weight), which measures consecutive days of GitHub commits; project quality scores (30% weight), based on GitHub repo health including stars, forks, commit frequency, and deployment status; GitHub activity (20% weight), covering commits, pull requests, code reviews, and issue participation; and peer endorsements (10% weight), where endorsements from higher-scored developers carry more weight. The score updates daily and is always based on verifiable, public data. It cannot be gamed through fake reviews or purchased followers) only real, consistent shipping moves the needle.",
   },
   {
     q: "What are coding streaks and why do they matter?",
-    a: "A coding streak tracks the number of consecutive days you have committed code to at least one GitHub repository. VibeTalent syncs with your GitHub profile daily, and any commit to any public repository counts toward your streak. If a full calendar day passes with no commits (based on UTC), the streak resets to zero. Streaks matter because they are the single most reliable signal of developer consistency. A long streak is nearly impossible to fake — you cannot buy a 200-day streak. For clients evaluating talent, streak length is a stronger predictor of delivery reliability than years of experience or interview performance. Developers who code every day demonstrate intrinsic motivation, discipline, and the kind of sustained effort that translates directly into project success.",
+    a: "A coding streak tracks the number of consecutive days you have committed code to at least one GitHub repository. VibeTalent syncs with your GitHub profile daily, and any commit to any public repository counts toward your streak. If a full calendar day passes with no commits (based on UTC), the streak resets to zero. Streaks matter because they are the single most reliable signal of developer consistency. A long streak is nearly impossible to fake. You cannot buy a 200-day streak. For clients evaluating talent, streak length is a stronger predictor of delivery reliability than years of experience or interview performance. Developers who code every day demonstrate intrinsic motivation, discipline, and the kind of sustained effort that translates directly into project success.",
   },
   {
     q: "How do VibeTalent badges work?",
-    a: "Badges are visual milestones earned through streak achievements that appear on your profile and in search results. There are four levels: Bronze at 30 consecutive days, Silver at 90 days, Gold at 180 days, and Diamond at 365 days — a full year of daily coding. Each badge level signals increasing dedication and reliability to potential clients browsing the platform. Badges are permanent once earned — even if your streak resets, the badge remains on your profile as proof of past achievement. However, your active streak is displayed separately so clients can see both your historical consistency and current momentum. The badge system creates clear, achievable milestones that motivate developers to maintain their streaks while giving clients an instant visual indicator of a developer's commitment level.",
+    a: "Badges are visual milestones earned through streak achievements that appear on your profile and in search results. There are four levels: Bronze at 30 consecutive days, Silver at 90 days, Gold at 180 days, and Diamond at 365 days (a full year of daily coding. Each badge level signals increasing dedication and reliability to potential clients browsing the platform. Badges are permanent once earned) even if your streak resets, the badge remains on your profile as proof of past achievement. However, your active streak is displayed separately so clients can see both your historical consistency and current momentum. The badge system creates clear, achievable milestones that motivate developers to maintain their streaks while giving clients an instant visual indicator of a developer's commitment level.",
   },
   {
     q: "How is VibeTalent different from Upwork or Toptal?",
-    a: "Traditional freelancer platforms like Upwork and Toptal rely on resumes, client reviews, and interview processes to evaluate developers. These signals are easy to game — anyone can write a polished resume or get a friend to leave a five-star review. VibeTalent takes a fundamentally different approach by ranking developers on verifiable proof of work: coding streaks that track consecutive days of GitHub commits, shipped projects with live URLs you can visit, quality scores based on actual repository health, and peer endorsements from other verified developers. You cannot fake a 200-day coding streak or fabricate a deployed project with real GitHub activity. This means clients can trust that the rankings reflect genuine ability and consistency, not just good self-marketing.",
+    a: "Traditional freelancer platforms like Upwork and Toptal rely on resumes, client reviews, and interview processes to evaluate developers. These signals are easy to game. Anyone can write a polished resume or get a friend to leave a five-star review. VibeTalent takes a fundamentally different approach by ranking developers on verifiable proof of work: coding streaks that track consecutive days of GitHub commits, shipped projects with live URLs you can visit, quality scores based on actual repository health, and peer endorsements from other verified developers. You cannot fake a 200-day coding streak or fabricate a deployed project with real GitHub activity. This means clients can trust that the rankings reflect genuine ability and consistency, not just good self-marketing.",
   },
   {
     q: "Is VibeTalent free to use?",
-    a: "Yes, VibeTalent is free for developers. Creating a profile, connecting your GitHub account, building your streak, earning badges, adding projects, and getting discovered by clients costs nothing. Rankings are based entirely on merit — your vibe score, streak, and project quality determine your visibility. The one optional paid feature is Featured Projects: developers can pay to feature a project for extra visibility where people browse projects. This is purely optional and does not affect your vibe score, badge level, or search ranking. Simply sign up, start coding every day, add your best projects, and let your proof of work attract opportunities.",
+    a: "Yes, VibeTalent is free for developers. Creating a profile, connecting your GitHub account, building your streak, earning badges, adding projects, and getting discovered by clients costs nothing. Rankings are based entirely on merit. Your vibe score, streak, and project quality determine your visibility. The one optional paid feature is Featured Projects: developers can pay to feature a project for extra visibility where people browse projects. This is purely optional and does not affect your vibe score, badge level, or search ranking. Simply sign up, start coding every day, add your best projects, and let your proof of work attract opportunities.",
   },
 ];
 
@@ -122,8 +123,8 @@ export default async function HomePage() {
   // "How it works" — three steps that merge the old "What is Vibe Coding",
   // "Why Streaks Matter", and end-game-ladder sections into one story.
   const steps = [
-    { icon: GitCommitHorizontal, n: "01", title: "Ship daily", desc: "Commit every day. VibeTalent verifies your GitHub and builds your streak automatically." },
-    { icon: Flame, n: "02", title: "Build your Vibe Score", desc: "Streaks, project quality, and endorsements roll into one reputation number that can't be faked." },
+    { icon: GitCommit, n: "01", title: "Ship daily", desc: "Commit every day. VibeTalent verifies your GitHub and builds your streak automatically." },
+    { icon: Fire, n: "02", title: "Build your Vibe Score", desc: "Streaks, project quality, and endorsements roll into one reputation number that can't be faked." },
     { icon: Trophy, n: "03", title: "Get discovered & earn badges", desc: "Climb the leaderboard, unlock Bronze → Diamond badges, and let clients find you by proof of work." },
   ];
 
@@ -164,7 +165,7 @@ export default async function HomePage() {
                 alternateName: "Vibe Talent",
                 url: siteUrl,
                 description:
-                  "VibeTalent is the vibe coders marketplace — hire AI-assisted developers ranked by coding streaks, shipped projects, and verifiable proof of work instead of resumes.",
+                  "VibeTalent is the vibe coders marketplace: hire AI-assisted developers ranked by coding streaks, shipped projects, and verifiable proof of work instead of resumes.",
                 logo: {
                   "@type": "ImageObject",
                   url: `${siteUrl}/og-image-v2.jpg`,
@@ -202,13 +203,13 @@ export default async function HomePage() {
           "Why Streaks Matter", and end-game-ladder sections into one
           three-step story plus the streak-milestone badge ladder. */}
       <section
-        style={{ borderTop: "2px solid var(--border-hard)", borderBottom: "2px solid var(--border-hard)", backgroundColor: "var(--bg-surface)" }}
+        style={{ borderTop: "1px solid var(--border-hard)", borderBottom: "1px solid var(--border-hard)", backgroundColor: "var(--bg-surface)" }}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-16">
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">How it works</h2>
+            <h2 className="text-3xl font-bold text-[var(--foreground)]">How it works</h2>
             <p className="mt-3 text-[var(--text-secondary)] font-medium max-w-2xl mx-auto">
-              Three steps. No resumes, no portfolios — just proof you show up and ship.
+              Three steps. No resumes, no portfolios, just proof you show up and ship.
             </p>
           </div>
 
@@ -216,10 +217,10 @@ export default async function HomePage() {
             {steps.map((s) => (
               <div key={s.n} className="card-brutal p-6">
                 <div className="flex items-center justify-between">
-                  <s.icon size={28} className="text-[var(--accent)]" />
+                  <s.icon weight="fill" size={28} className="text-[var(--accent)]" />
                   <span className="font-mono text-2xl font-black text-[var(--border-subtle)]">{s.n}</span>
                 </div>
-                <h3 className="mt-4 text-lg font-extrabold uppercase text-[var(--foreground)]">{s.title}</h3>
+                <h3 className="mt-4 text-lg font-bold text-[var(--foreground)]">{s.title}</h3>
                 <p className="mt-2 text-sm text-[var(--text-secondary)] font-medium">{s.desc}</p>
               </div>
             ))}
@@ -227,17 +228,17 @@ export default async function HomePage() {
 
           {/* Badge ladder folded in as the visual for step 3 */}
           <div className="mt-10 max-w-3xl mx-auto">
-            <p className="text-center text-[11px] font-extrabold uppercase tracking-widest text-[var(--text-muted)] mb-4">
+            <p className="text-center text-[11px] font-semibold text-[var(--text-muted)] mb-4">
               Streak milestones
             </p>
             <div className="grid sm:grid-cols-2 gap-x-8 gap-y-4">
               {badges.map((b) => (
                 <div key={b.label}>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="font-bold uppercase text-[var(--foreground)]">{b.label}</span>
+                    <span className="font-semibold text-[var(--foreground)]">{b.label}</span>
                     <span className="font-bold text-[var(--text-muted)]">{b.days} days</span>
                   </div>
-                  <div className="h-3.5" style={{ backgroundColor: "var(--border-subtle)", border: "2px solid var(--border-hard)" }}>
+                  <div className="h-3.5" style={{ backgroundColor: "var(--border-subtle)", border: "1px solid var(--border-hard)" }}>
                     <div className="h-full" style={{ backgroundColor: b.color, width: b.width }} />
                   </div>
                 </div>
@@ -264,12 +265,12 @@ export default async function HomePage() {
       <section className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">Who are the top vibe coders?</h2>
+            <h2 className="text-3xl font-bold text-[var(--foreground)]">Who are the top vibe coders?</h2>
             <p className="mt-2 text-[var(--text-secondary)] font-medium">The most consistent builders on the platform</p>
           </div>
           <Link
             href="/leaderboard"
-            className="flex items-center gap-1 text-sm font-bold uppercase text-[var(--accent)] hover:underline transition-colors"
+            className="flex items-center gap-1 text-sm font-semibold text-[var(--accent)] hover:underline transition-colors"
           >
             View Leaderboard <ArrowRight size={14} />
           </Link>
@@ -286,7 +287,7 @@ export default async function HomePage() {
           </div>
         ) : (
           <div className="card-brutal p-8 text-center">
-            <p className="text-[var(--text-secondary)] font-bold uppercase">No builders yet. Be the first to join!</p>
+            <p className="text-[var(--text-secondary)] font-semibold">No builders yet. Be the first to join!</p>
           </div>
         )}
       </section>
@@ -294,19 +295,19 @@ export default async function HomePage() {
       {/* Recent projects — organic (paid featuring lives on /projects) */}
       <section
         style={{
-          borderTop: "2px solid var(--border-hard)",
+          borderTop: "1px solid var(--border-hard)",
           backgroundColor: "var(--bg-surface)",
         }}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">What are vibe coders building?</h2>
+              <h2 className="text-3xl font-bold text-[var(--foreground)]">What are vibe coders building?</h2>
               <p className="mt-2 text-[var(--text-secondary)] font-medium">Latest projects built by vibe coders, shipped fast</p>
             </div>
             <Link
               href="/projects"
-              className="flex items-center gap-1 text-sm font-bold uppercase text-[var(--accent)] hover:underline transition-colors"
+              className="flex items-center gap-1 text-sm font-semibold text-[var(--accent)] hover:underline transition-colors"
             >
               See All <ArrowRight size={14} />
             </Link>
@@ -328,7 +329,7 @@ export default async function HomePage() {
             </div>
           ) : (
             <div className="card-brutal p-8 text-center">
-              <p className="text-[var(--text-secondary)] font-bold uppercase">No projects shipped yet. Start building!</p>
+              <p className="text-[var(--text-secondary)] font-semibold">No projects shipped yet. Start building!</p>
             </div>
           )}
         </div>
@@ -337,13 +338,13 @@ export default async function HomePage() {
       {/* Testimonials */}
       <section
         style={{
-          borderTop: "2px solid var(--border-hard)",
+          borderTop: "1px solid var(--border-hard)",
           backgroundColor: "var(--bg-surface-light)",
         }}
       >
         <div className="py-16">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 mb-8">
-            <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">What do builders say about VibeTalent?</h2>
+            <h2 className="text-3xl font-bold text-[var(--foreground)]">What do builders say about VibeTalent?</h2>
             <p className="mt-2 text-[var(--text-secondary)] font-medium">Real feedback from the community on X</p>
           </div>
           <TestimonialScroll />
@@ -353,11 +354,11 @@ export default async function HomePage() {
       {/* FAQ */}
       <section
         style={{
-          borderTop: "2px solid var(--border-hard)",
+          borderTop: "1px solid var(--border-hard)",
         }}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
-          <h2 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-8">Frequently Asked Questions</h2>
+          <h2 className="text-3xl font-bold text-[var(--foreground)] mb-8">Frequently Asked Questions</h2>
           <div className="space-y-4">
             {FAQ_ITEMS.map((faq) => (
               <details
@@ -365,11 +366,11 @@ export default async function HomePage() {
                 className="group p-5 cursor-pointer"
                 style={{
                   backgroundColor: "var(--bg-surface)",
-                  border: "2px solid var(--border-hard)",
+                  border: "1px solid var(--border-hard)",
                   boxShadow: "var(--shadow-brutal-sm)",
                 }}
               >
-                <summary className="text-base font-extrabold uppercase text-[var(--foreground)] list-none flex items-center justify-between gap-4 [&::-webkit-details-marker]:hidden">
+                <summary className="text-base font-bold text-[var(--foreground)] list-none flex items-center justify-between gap-4 [&::-webkit-details-marker]:hidden">
                   {faq.q}
                   <span className="text-[var(--text-muted)] text-lg shrink-0 transition-transform group-open:rotate-45">+</span>
                 </summary>
@@ -401,12 +402,12 @@ export default async function HomePage() {
           className="p-12 text-center"
           style={{
             backgroundColor: "var(--bg-inverted)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-hard)",
             boxShadow: "8px 8px 0 var(--accent)",
           }}
         >
-          <Zap size={40} className="mx-auto text-[var(--accent)] mb-4" />
-          <h2 className="text-3xl sm:text-4xl font-extrabold uppercase text-white">Join the Marketplace</h2>
+          <Lightning weight="duotone" size={40} className="mx-auto text-[var(--accent)] mb-4" />
+          <h2 className="text-3xl sm:text-4xl font-bold text-white">Join the Marketplace</h2>
           <p className="mt-4 text-[var(--text-muted-soft)] font-medium max-w-xl mx-auto">
             Start building your vibe coding reputation today. Create a profile,
             start your streak, and let your proof of work get you discovered.

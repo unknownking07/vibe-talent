@@ -157,7 +157,7 @@ export const AGENT_TOOLS: ToolDefinition[] = [
     function: {
       name: "search_builders",
       description:
-        "Search and rank VibeTalent builders from live platform data. Ranking is deterministic — computed from verified GitHub activity, streaks, project quality, and reputation — and results come back in ranked order. Use whenever the user wants to find, hire, compare, or browse builders.",
+        "Search and rank VibeTalent builders from live platform data. Ranking is deterministic (computed from verified GitHub activity, streaks, project quality, and reputation) and results come back in ranked order. Use whenever the user wants to find, hire, compare, or browse builders.",
       parameters: {
         type: "object",
         properties: {

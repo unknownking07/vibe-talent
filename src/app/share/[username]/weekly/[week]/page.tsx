@@ -7,7 +7,7 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
   const { username, week } = await params;
   const og = `${siteUrl}/api/og/receipt/weekly/${username}?w=${week}`;
   const cardTitle = `@${username}'s weekly receipt`;
-  const description = `@${username}'s shipping receipt for the week of ${week} — streak, commits, and projects on VibeTalent.`;
+  const description = `@${username}'s shipping receipt for the week of ${week}: streak, commits, and projects on VibeTalent.`;
   return {
     title: cardTitle,
     description,
@@ -26,7 +26,7 @@ export default async function WeeklyReceiptPage({ params }: { params: Promise<{ 
     <main className="max-w-[840px] mx-auto p-6">
       <h1 className="text-[28px] font-extrabold mb-1">@{username}&apos;s receipt</h1>
       <p className="text-[14px] text-[var(--text-muted)] mb-4">Week of {week}</p>
-      <div className="border-2 border-[var(--border-hard)]" style={{ boxShadow: "var(--shadow-brutal)" }}>
+      <div className="rounded-2xl overflow-hidden border border-[var(--border-subtle)]" style={{ boxShadow: "var(--shadow-brutal)" }}>
         <Image src={ogImage} alt="receipt" width={1200} height={630} className="w-full h-auto" />
       </div>
       <div className="mt-6">

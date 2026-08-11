@@ -76,8 +76,10 @@ const FRAME_STYLE: CSSProperties = {
   maxWidth: 480,
   margin: "0 auto",
   backgroundColor: "var(--bg-surface, #0a0a0a)",
-  border: "2px solid var(--border-hard, #fff)",
-  boxShadow: "6px 6px 0px #000",
+  border: "1px solid var(--border-subtle, #2a2a2a)",
+  borderRadius: "var(--radius-card)",
+  overflow: "hidden",
+  boxShadow: "var(--shadow-brutal)",
   display: "flex",
   flexDirection: "column",
 };
@@ -99,12 +101,11 @@ function FeedShell({ children }: { children: ReactNode }) {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          borderBottom: "2px solid var(--border-hard, #fff)",
+          borderBottom: "1px solid var(--border-subtle, #2a2a2a)",
         }}>
           <div style={{
             fontSize: "1rem",
-            fontWeight: 800,
-            textTransform: "uppercase",
+            fontWeight: 700,
             letterSpacing: "-0.5px",
             display: "flex",
             alignItems: "center",
@@ -116,8 +117,7 @@ function FeedShell({ children }: { children: ReactNode }) {
           </div>
           <Link href="/feed" style={{
             backgroundColor: "#fff", color: "#000", textDecoration: "none",
-            fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase",
-            padding: "6px 12px", borderRadius: 999, border: "1.5px solid #000",
+            fontSize: "0.75rem", fontWeight: 600, padding: "6px 12px", borderRadius: 999,
             whiteSpace: "nowrap",
           }}>
             View Full Feed
@@ -141,9 +141,9 @@ function ActivitySkeletonRow({ last }: { last: boolean }) {
       gridTemplateColumns: "auto 1fr",
       gap: "1rem",
       alignItems: "center",
-      borderBottom: last ? "none" : "1px solid #2a2a2a",
+      borderBottom: last ? "none" : "1px solid var(--border-subtle, #2a2a2a)",
     }}>
-      <div className="skeleton" style={{ width: 40, height: 40, boxShadow: "2px 2px 0px #000" }} />
+      <div className="skeleton" style={{ width: 40, height: 40, borderRadius: 999 }} />
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
           <div className="skeleton" style={{ height: 12, width: 120 }} />
@@ -262,7 +262,7 @@ export function LiveActivityFeed() {
               display: "grid",
               gridTemplateColumns: "auto 1fr",
               gap: "1rem",
-              borderBottom: idx < grouped.length - 1 ? "1px solid #2a2a2a" : "none",
+              borderBottom: idx < grouped.length - 1 ? "1px solid var(--border-subtle, #2a2a2a)" : "none",
               transition: "background-color 0.15s ease",
               textDecoration: "none",
               color: "inherit",
@@ -270,10 +270,10 @@ export function LiveActivityFeed() {
           >
             <div style={{
               width: 40, height: 40, backgroundColor: bgColor,
-              border: "2px solid var(--border-hard, #fff)",
+              border: "1px solid var(--border-subtle, #2a2a2a)",
+              borderRadius: 999,
               display: "flex", justifyContent: "center", alignItems: "center",
-              fontWeight: 800, color: textColor, fontSize: "1rem",
-              textTransform: "uppercase", boxShadow: "2px 2px 0px #000",
+              fontWeight: 700, color: textColor, fontSize: "1rem",
               overflow: "hidden",
               fontFamily: "var(--font-space-grotesk, 'Space Grotesk', sans-serif)",
             }}>
@@ -294,9 +294,8 @@ export function LiveActivityFeed() {
               </div>
               {name && (
                 <div style={{
-                  fontSize: "1rem", fontWeight: 800, fontStyle: "italic",
-                  color: "var(--accent, #ff4400)", textTransform: "uppercase",
-                  letterSpacing: "-0.5px", lineHeight: 1.1,
+                  fontSize: "1rem", fontWeight: 700, fontStyle: "italic",
+                  color: "var(--accent, #ff4400)", letterSpacing: "-0.5px", lineHeight: 1.1,
                   fontFamily: "var(--font-space-grotesk, 'Space Grotesk', sans-serif)",
                 }}>
                   {name}

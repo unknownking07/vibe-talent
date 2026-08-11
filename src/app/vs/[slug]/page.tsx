@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { jsonLdHtml } from "@/lib/json-ld";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Check, X, ArrowRight, Flame, Zap, Shield } from "lucide-react";
+import { X, ArrowRight } from "lucide-react";
+import { Check, Fire, Lightning, Shield } from "@phosphor-icons/react/dist/ssr";
 import { siteUrl } from "@/lib/seo";
 import { COMPARISONS, getComparison } from "@/lib/comparisons";
 
@@ -104,17 +105,17 @@ export default async function ComparisonPage({
 
       <div className="mb-10">
         <div
-          className="inline-flex items-center gap-2 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-[var(--foreground)] mb-6"
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold text-[var(--foreground)] mb-6"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
-            boxShadow: "var(--shadow-brutal-sm)",
+            border: "1px solid var(--border-subtle)",
+            boxShadow: "var(--shadow-brutal-xs)",
           }}
         >
-          <Zap size={14} className="text-[var(--accent)]" />
+          <Lightning weight="fill" size={14} className="text-[var(--accent)]" />
           Comparison
         </div>
-        <h1 className="text-3xl sm:text-5xl font-extrabold uppercase text-[var(--foreground)] leading-tight">
+        <h1 className="text-3xl sm:text-5xl font-bold text-[var(--foreground)] leading-tight">
           VibeTalent <span className="text-[var(--text-muted)]">vs</span>{" "}
           <span className="text-[var(--accent)]">{c.name}</span>
         </h1>
@@ -124,14 +125,14 @@ export default async function ComparisonPage({
       {/* Answer block — the TL;DR sits at the top so AI engines pull it into
           answer boxes and humans can decide in 10 seconds. */}
       <section
-        className="p-6 sm:p-8 mb-10"
+        className="p-6 sm:p-8 mb-10 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">
+        <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">
           The short answer
         </h2>
         <p className="text-base text-[var(--foreground)] font-medium leading-relaxed">{c.tldr}</p>
@@ -139,28 +140,28 @@ export default async function ComparisonPage({
 
       {/* Feature matrix */}
       <section className="mb-12">
-        <h2 className="text-2xl font-extrabold uppercase text-[var(--foreground)] mb-6">
+        <h2 className="text-2xl font-bold text-[var(--foreground)] mb-6">
           Side-by-side comparison
         </h2>
         <div
-          className="overflow-hidden"
+          className="overflow-hidden rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr style={{ borderBottom: "2px solid var(--border-hard)" }}>
-                  <th className="text-left p-4 font-extrabold uppercase text-[var(--foreground)]">
+                <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                  <th className="text-left p-4 font-bold text-[var(--foreground)]">
                     Feature
                   </th>
-                  <th className="text-left p-4 font-extrabold uppercase text-[var(--accent)]">
+                  <th className="text-left p-4 font-bold text-[var(--accent)]">
                     VibeTalent
                   </th>
-                  <th className="text-left p-4 font-extrabold uppercase text-[var(--text-muted)]">
+                  <th className="text-left p-4 font-bold text-[var(--text-muted)]">
                     {c.name}
                   </th>
                 </tr>
@@ -180,7 +181,7 @@ export default async function ComparisonPage({
                     <td className="p-4 font-medium text-[var(--text-secondary)]">
                       {typeof row.vt === "boolean" ? (
                         row.vt ? (
-                          <Check size={18} className="text-[var(--accent)]" />
+                          <Check weight="bold" size={18} className="text-[var(--accent)]" />
                         ) : (
                           <X size={18} className="text-[var(--text-muted)]" />
                         )
@@ -191,7 +192,7 @@ export default async function ComparisonPage({
                     <td className="p-4 font-medium text-[var(--text-secondary)]">
                       {typeof row.them === "boolean" ? (
                         row.them ? (
-                          <Check size={18} className="text-[var(--accent)]" />
+                          <Check weight="bold" size={18} className="text-[var(--accent)]" />
                         ) : (
                           <X size={18} className="text-[var(--text-muted)]" />
                         )
@@ -209,16 +210,16 @@ export default async function ComparisonPage({
 
       <section className="grid sm:grid-cols-2 gap-6 mb-12">
         <div
-          className="p-6"
+          className="p-6 rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
           <div className="flex items-center gap-2 mb-3">
-            <Flame size={20} className="text-[var(--accent)]" />
-            <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)]">
+            <Fire weight="fill" size={20} className="text-[var(--accent)]" />
+            <h2 className="text-lg font-bold text-[var(--foreground)]">
               When VibeTalent wins
             </h2>
           </div>
@@ -230,16 +231,16 @@ export default async function ComparisonPage({
         </div>
 
         <div
-          className="p-6"
+          className="p-6 rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
           <div className="flex items-center gap-2 mb-3">
-            <Shield size={20} className="text-[var(--text-muted)]" />
-            <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)]">
+            <Shield weight="fill" size={20} className="text-[var(--text-muted)]" />
+            <h2 className="text-lg font-bold text-[var(--foreground)]">
               When {c.name} wins
             </h2>
           </div>
@@ -253,21 +254,21 @@ export default async function ComparisonPage({
 
       {/* FAQ */}
       <section className="mb-12">
-        <h2 className="text-2xl font-extrabold uppercase text-[var(--foreground)] mb-6">
+        <h2 className="text-2xl font-bold text-[var(--foreground)] mb-6">
           Frequently asked questions
         </h2>
         <div className="space-y-3">
           {c.faq.map(({ q, a }) => (
             <details
               key={q}
-              className="group p-5"
+              className="group p-5 rounded-2xl"
               style={{
                 backgroundColor: "var(--bg-surface)",
-                border: "2px solid var(--border-hard)",
+                border: "1px solid var(--border-subtle)",
                 boxShadow: "var(--shadow-brutal-sm)",
               }}
             >
-              <summary className="cursor-pointer font-extrabold uppercase text-sm text-[var(--foreground)] flex items-center justify-between">
+              <summary className="cursor-pointer font-bold text-sm text-[var(--foreground)] flex items-center justify-between">
                 {q}
                 <ArrowRight
                   size={14}
@@ -284,14 +285,14 @@ export default async function ComparisonPage({
 
       {/* CTA */}
       <section
-        className="p-8 sm:p-10 text-center"
+        className="p-8 sm:p-10 text-center rounded-2xl"
         style={{
           backgroundColor: "var(--bg-inverted)",
-          border: "2px solid var(--border-hard)",
-          boxShadow: "8px 8px 0 var(--accent)",
+          border: "1px solid var(--border-subtle)",
+          boxShadow: "var(--shadow-brutal-accent)",
         }}
       >
-        <h2 className="text-2xl sm:text-3xl font-extrabold uppercase text-white mb-3">
+        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
           Hire builders who actually ship
         </h2>
         <p className="text-sm text-[var(--text-muted-soft)] font-medium mb-6 max-w-md mx-auto">

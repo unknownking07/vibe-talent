@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ExternalLink, Flag, CheckCircle, Undo2, Github, ShieldCheck, Lock } from "lucide-react";
+import { ExternalLink, Flag, Undo2 } from "lucide-react";
+import { CheckCircle, GithubLogo, Lock, ShieldCheck } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import type { Project } from "@/lib/types/database";
@@ -143,24 +144,24 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
 
   return (
     <div
-      className="flex flex-col cursor-pointer transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
+      className="flex flex-col rounded-2xl cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-brutal-hover)]"
       style={{
         backgroundColor: "var(--bg-surface)",
-        border: "2px solid var(--border-hard)",
+        border: "1px solid var(--border-subtle)",
         boxShadow: "var(--shadow-brutal-sm)",
       }}
     >
       {project.image_url && (() => {
         const crop = parseImageCrop(project.image_url);
         return (
-          <div className="relative w-full h-28 border-b-2 border-[var(--border-hard)] overflow-hidden">
+          <div className="relative w-full h-28 border-b border-[var(--border-subtle)] rounded-t-2xl overflow-hidden">
             <Image src={project.image_url} alt={project.title} fill className="object-cover" style={{ objectPosition: crop.objectPosition, transform: `scale(${crop.scale})` }} />
           </div>
         );
       })()}
       <div className="flex flex-col gap-2 p-4 flex-grow">
       <div className="flex justify-between items-start gap-3">
-        <span className="text-[1.1rem] font-extrabold uppercase text-[var(--foreground)] min-w-0 break-words">{project.title}</span>
+        <span className="text-[1.1rem] font-bold text-[var(--foreground)] min-w-0 break-words">{project.title}</span>
         <div className="flex items-center gap-2 shrink-0">
           {(() => {
             const liveHref = normalizeExternalUrl(project.live_url);
@@ -190,7 +191,7 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
                 title="Open GitHub repo"
                 aria-label="Open GitHub repo"
               >
-                <Github size={16} />
+                <GithubLogo weight="fill" size={16} />
               </a>
             ) : null;
           })()}
@@ -199,7 +200,7 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
               <button
                 onClick={(e) => { e.stopPropagation(); handleUndo(); }}
                 disabled={undoing}
-                className="inline-flex items-center gap-1 text-xs font-bold text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
                 title="Undo report"
               >
                 <Undo2 size={12} />
@@ -216,8 +217,8 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
             )}
             {showReportMenu && (
               <div
-                className="absolute right-0 bottom-6 z-50 min-w-[160px] py-1"
-                style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)", boxShadow: "var(--shadow-brutal-sm)" }}
+                className="absolute right-0 bottom-6 z-50 min-w-[160px] py-1 rounded-xl overflow-hidden"
+                style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-brutal-sm)" }}
               >
                 {REPORT_REASONS.map((reason) => (
                   <button
@@ -237,17 +238,17 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
       {(verified || project.quality_score > 0 || project.is_private) && (
         <div className="flex items-center gap-2 flex-wrap">
           {verified && (
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600" title="Verified owner">
-              <CheckCircle size={14} />
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-600" title="Verified owner">
+              <CheckCircle weight="fill" size={14} />
               Verified
             </span>
           )}
           {project.is_private && (
             <span
-              className="inline-flex items-center gap-1 text-xs font-bold text-[var(--text-secondary)]"
-              title="Private repo — only you can see this card. The repo name and URL are hidden from everyone else."
+              className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--text-secondary)]"
+              title="Private repo, only you can see this card. The repo name and URL are hidden from everyone else."
             >
-              <Lock size={12} />
+              <Lock weight="fill" size={12} />
               Private
             </span>
           )}
@@ -263,7 +264,7 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-            className="mt-1 text-xs font-bold uppercase text-[var(--accent)] hover:underline"
+            className="mt-1 text-xs font-semibold text-[var(--accent)] hover:underline"
           >
             {expanded ? "Show less" : "Show more"}
           </button>
@@ -278,10 +279,10 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
         {(project.tech_stack ?? []).map((tech) => (
           <span
             key={tech}
-            className="font-mono text-xs font-bold uppercase text-[var(--text-tertiary)] px-2.5 py-1"
+            className="font-mono text-xs font-semibold text-[var(--text-tertiary)] px-2.5 py-1 rounded-full"
             style={{
               backgroundColor: "var(--bg-surface-light)",
-              border: "1px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
             }}
           >
             {tech}
@@ -302,15 +303,15 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
             type="button"
             onClick={(e) => { e.stopPropagation(); handleVerify(); }}
             disabled={verifying}
-            className="self-start inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold uppercase text-[var(--foreground)] border-2 border-[var(--border-hard)] bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-light)] transition-colors disabled:opacity-50"
+            className="self-start inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold text-[var(--foreground)] rounded-lg border border-[var(--border-hard)] bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-light)] transition-colors disabled:opacity-50"
             title="Verify GitHub ownership"
           >
-            <ShieldCheck size={12} />
+            <ShieldCheck weight="fill" size={12} />
             {verifying ? "Verifying..." : "Verify"}
           </button>
           {verifyMessage && (
             <p
-              className={`text-[11px] font-bold ${verifyMessage.success ? "text-green-700" : "text-red-600"}`}
+              className={`text-[11px] font-medium ${verifyMessage.success ? "text-green-700" : "text-red-600"}`}
               role="status"
             >
               {verifyMessage.text}
@@ -320,13 +321,13 @@ export function ProfileProjectCard({ project, verified = false, isOwner = false 
       )}
 
       {reportStatus === "success" && (
-        <p className="text-xs font-bold text-green-700 mt-2">Thanks for the report! We&apos;ll review this project shortly.</p>
+        <p className="text-xs font-medium text-green-700 mt-2">Thanks for the report! We&apos;ll review this project shortly.</p>
       )}
       {reportStatus === "error" && (
-        <p className="text-xs font-bold text-red-600 mt-2">Failed to submit report. Please try again.</p>
+        <p className="text-xs font-medium text-red-600 mt-2">Failed to submit report. Please try again.</p>
       )}
       {reportStatus === "auth" && (
-        <p className="text-xs font-bold text-red-600 mt-2">Please sign in to report a project.</p>
+        <p className="text-xs font-medium text-red-600 mt-2">Please sign in to report a project.</p>
       )}
       </div>
     </div>

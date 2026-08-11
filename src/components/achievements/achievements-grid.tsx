@@ -31,13 +31,13 @@ function AchievementsGridImpl({
           <section key={cat} className="flex flex-col gap-3">
             <div className="flex items-baseline justify-between">
               <h2
-                className="text-base font-extrabold uppercase tracking-wide"
+                className="text-base font-semibold"
                 style={{ color: "var(--foreground)" }}
               >
                 {CATEGORY_LABELS[cat]}
               </h2>
               <span
-                className="text-xs font-bold uppercase tracking-wide"
+                className="text-xs font-semibold"
                 style={{ color: "var(--text-secondary)" }}
               >
                 {earnedInCat} / {items.length} unlocked

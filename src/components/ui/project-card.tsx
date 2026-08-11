@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ExternalLink, Github, Clock, Tag, Pencil, Flag, CheckCircle, ShieldCheck, Undo2, User, BadgeCheck } from "lucide-react";
+import { ExternalLink, Pencil, Flag, Undo2 } from "lucide-react";
+import { CheckCircle, Clock, GithubLogo, SealCheck, ShieldCheck, Tag, User } from "@phosphor-icons/react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Project } from "@/lib/types/database";
@@ -15,7 +16,7 @@ import { normalizeExternalUrl, normalizeRepoUrl } from "@/lib/url-normalize";
 function ProjectImageBanner({ url, alt }: { url: string; alt: string }) {
   const crop = parseImageCrop(url);
   return (
-    <div className="relative w-full h-28 border-b-2 border-[var(--border-hard)] overflow-hidden bg-[var(--bg-surface-light)]">
+    <div className="relative w-full h-28 rounded-t-[calc(var(--radius-card)-1px)] border-b border-[var(--border-subtle)] overflow-hidden bg-[var(--bg-surface-light)]">
       <Image
         src={url}
         alt={alt}
@@ -59,7 +60,8 @@ const MAX_TAGS = 3;
 
 const PILL_STYLE = {
   backgroundColor: "var(--bg-surface-light)",
-  border: "1px solid var(--border-hard)",
+  border: "1px solid var(--border-subtle)",
+  borderRadius: 999,
 } as const;
 
 interface ProjectCardProps {
@@ -146,18 +148,18 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
 
   return (
     <div
-      className="card-brutal h-full flex flex-col transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
+      className="card-brutal h-full flex flex-col transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-brutal-hover)]"
     >
       {project.image_url ? (
         <ProjectImageBanner url={project.image_url} alt={project.title} />
       ) : (
-        <div className="w-full h-28 border-b-2 border-[var(--border-hard)] bg-[var(--bg-surface-light)] flex items-center justify-center">
-          <span className="text-3xl font-extrabold uppercase text-[var(--text-muted-soft)] tracking-widest select-none">{project.title?.charAt(0) ?? "P"}</span>
+        <div className="w-full h-28 rounded-t-[calc(var(--radius-card)-1px)] border-b border-[var(--border-subtle)] bg-[var(--bg-surface-light)] flex items-center justify-center">
+          <span className="text-3xl font-bold text-[var(--text-muted-soft)] select-none">{project.title?.charAt(0) ?? "P"}</span>
         </div>
       )}
       <div className="px-4 py-3 flex-1 flex flex-col">
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)] line-clamp-2 flex-1 min-w-0 leading-tight">{project.title}</h3>
+        <h3 className="text-sm font-bold text-[var(--foreground)] line-clamp-2 flex-1 min-w-0 leading-tight">{project.title}</h3>
         <div className="flex shrink-0 gap-2">
           {onEdit && (
             <button
@@ -174,7 +176,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
                 <button
                   onClick={(e) => { e.stopPropagation(); handleUndo(); }}
                   disabled={undoing}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
                   title="Undo report"
                 >
                   <Undo2 size={12} />
@@ -195,7 +197,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
                 </button>
               )}
               {reportOpen && (
-                <div className="absolute right-0 bottom-6 z-50 w-44 border-2 border-[var(--border-hard)] bg-[var(--bg-surface)] shadow-[4px_4px_0_var(--border-hard)]">
+                <div className="absolute right-0 bottom-6 z-50 w-44 rounded-xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-[var(--shadow-brutal)]">
                   {REPORT_REASONS.map((reason) => (
                     <button
                       key={reason}
@@ -204,7 +206,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
                         handleReport(reason);
                       }}
                       disabled={reporting}
-                      className="block w-full px-3 py-2 text-left text-xs font-bold uppercase text-[var(--foreground)] hover:bg-[var(--bg-surface-light)] transition-colors disabled:opacity-50"
+                      className="block w-full px-3 py-2 text-left text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--bg-surface-light)] transition-colors disabled:opacity-50"
                     >
                       {reason}
                     </button>
@@ -241,7 +243,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
                 className="text-[var(--text-secondary)] hover:text-[var(--foreground)] transition-colors"
                 onClick={(e) => e.stopPropagation()}
               >
-                <Github size={16} />
+                <GithubLogo weight="fill" size={16} />
               </a>
             ) : null;
           })()}
@@ -251,8 +253,8 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
       {(verified || project.quality_score > 0 || project.quality_metrics?.has_vibetalent_badge) && (
         <div className="mt-1 flex items-center gap-2 flex-wrap">
           {verified && (
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-green-600" title="Verified owner">
-              <CheckCircle size={14} />
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-600" title="Verified owner">
+              <CheckCircle weight="fill" size={14} />
               Verified
             </span>
           )}
@@ -260,10 +262,10 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
               fakeable, so it deliberately stays out of the quality formula). */}
           {project.quality_metrics?.has_vibetalent_badge && (
             <span
-              className="inline-flex items-center gap-1 text-xs font-bold text-[var(--accent)]"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--accent)]"
               title="This repo's README links back to the builder's VibeTalent profile"
             >
-              <BadgeCheck size={14} />
+              <SealCheck weight="fill" size={14} />
               Badge Holder
             </span>
           )}
@@ -279,9 +281,9 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
         <Link
           href={`/profile/${authorUsername}`}
           onClick={(e) => e.stopPropagation()}
-          className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+          className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
         >
-          <User size={12} />
+          <User weight="fill" size={12} />
           @{authorUsername}
         </Link>
       )}
@@ -296,7 +298,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
             {shown.map((t, i) => (
               <span
                 key={`${t}-${i}`}
-                className="px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--text-tertiary)]"
+                className="px-1.5 py-0.5 text-[10px] font-semibold text-[var(--text-tertiary)]"
                 style={PILL_STYLE}
               >
                 {t}
@@ -304,7 +306,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
             ))}
             {overflow > 0 && (
               <span
-                className="px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--text-muted)]"
+                className="px-1.5 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]"
                 style={PILL_STYLE}
                 title={tech.slice(MAX_TECH).join(", ")}
               >
@@ -323,11 +325,11 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
         githubUrl={project.github_url ?? null}
       />
 
-      <div className="mt-2 flex items-center gap-3 text-[10px] font-bold text-[var(--text-muted)] uppercase">
+      <div className="mt-2 flex items-center gap-3 text-[10px] font-semibold text-[var(--text-muted)]">
         <EndorseButton projectId={project.id} initialCount={project.endorsement_count} />
         {project.build_time && (
           <span className="flex items-center gap-1">
-            <Clock size={10} />
+            <Clock weight="fill" size={10} />
             {project.build_time}
           </span>
         )}
@@ -338,7 +340,7 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
           const overflow = tags.length - shown.length;
           return (
             <span className="flex items-center gap-1 min-w-0" title={tags.join(", ")}>
-              <Tag size={10} className="shrink-0" />
+              <Tag weight="fill" size={10} className="shrink-0" />
               <span className="truncate">{shown.join(", ")}</span>
               {overflow > 0 && (
                 <span className="shrink-0">
@@ -352,16 +354,16 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
       </div>
 
       {reportError && (
-        <p className="text-[10px] font-bold text-red-600 mt-1" role="alert">{reportError}</p>
+        <p className="text-[10px] font-semibold text-red-600 mt-1" role="alert">{reportError}</p>
       )}
 
       {!verified && onVerify && (
         <button
           onClick={(e) => { e.stopPropagation(); onVerify(project.id); }}
-          className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold uppercase text-[var(--foreground)] border-2 border-[var(--border-hard)] bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-light)] transition-colors"
+          className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold text-[var(--foreground)] border border-[var(--border-hard)] bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-light)] transition-colors"
           title="Verify GitHub ownership"
         >
-          <ShieldCheck size={12} />
+          <ShieldCheck weight="fill" size={12} />
           Verify
         </button>
       )}

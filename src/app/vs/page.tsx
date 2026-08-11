@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import { jsonLdHtml } from "@/lib/json-ld";
 import Link from "next/link";
-import { Zap, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Lightning } from "@phosphor-icons/react/dist/ssr";
 import { siteUrl } from "@/lib/seo";
 import { COMPARISONS } from "@/lib/comparisons";
 
 const PAGE_URL = `${siteUrl}/vs`;
-const PAGE_TITLE = "VibeTalent vs the Alternatives — Compare Hiring Platforms";
+const PAGE_TITLE = "VibeTalent vs the Alternatives: Compare Hiring Platforms";
 const PAGE_DESCRIPTION =
-  "How VibeTalent compares to Upwork, Fiverr, Toptal, and Freelancer for hiring developers. VibeTalent ranks vibe coders on verifiable proof of work — coding streaks, shipped projects, and GitHub activity — instead of resumes and reviews.";
+  "How VibeTalent compares to Upwork, Fiverr, Toptal, and Freelancer for hiring developers. VibeTalent ranks vibe coders on verifiable proof of work (coding streaks, shipped projects, and GitHub activity) instead of resumes and reviews.";
 
 // Upwork predates the data-driven /vs/[slug] system and lives as a standalone
 // page; list it here explicitly alongside the data-driven comparisons.
@@ -75,23 +76,23 @@ export default function CompareIndexPage() {
 
       <div className="mb-12">
         <div
-          className="inline-flex items-center gap-2 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-[var(--foreground)] mb-6"
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold text-[var(--foreground)] mb-6"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
-            boxShadow: "var(--shadow-brutal-sm)",
+            border: "1px solid var(--border-subtle)",
+            boxShadow: "var(--shadow-brutal-xs)",
           }}
         >
-          <Zap size={14} className="text-[var(--accent)]" />
+          <Lightning weight="fill" size={14} className="text-[var(--accent)]" />
           Compare
         </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold uppercase text-[var(--foreground)] leading-tight">
+        <h1 className="text-3xl sm:text-4xl font-bold text-[var(--foreground)] leading-tight">
           VibeTalent <span className="text-[var(--text-muted)]">vs</span>{" "}
           <span className="text-[var(--accent)]">the alternatives.</span>
         </h1>
         <p className="mt-4 text-[var(--text-secondary)] font-medium leading-relaxed max-w-2xl">
           Every platform below can connect you with developers. Only VibeTalent ranks them on
-          verifiable proof of work — coding streaks, shipped projects, and GitHub activity — instead
+          verifiable proof of work (coding streaks, shipped projects, and GitHub activity) instead
           of resumes, bids, and reviews. Here is how it stacks up.
         </p>
       </div>
@@ -101,20 +102,20 @@ export default function CompareIndexPage() {
           <Link
             key={c.slug}
             href={`/vs/${c.slug}`}
-            className="block p-6 transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
+            className="block p-6 rounded-2xl transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-brutal-hover)]"
             style={{
               backgroundColor: "var(--bg-surface)",
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
               boxShadow: "var(--shadow-brutal)",
             }}
           >
-            <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-2">
+            <h2 className="text-lg font-bold text-[var(--foreground)] mb-2">
               VibeTalent vs {c.name}
             </h2>
             <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed mb-3">
               {c.tagline}
             </p>
-            <span className="inline-flex items-center gap-1 text-xs font-bold uppercase text-[var(--accent)]">
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--accent)]">
               Read comparison <ArrowRight size={12} />
             </span>
           </Link>

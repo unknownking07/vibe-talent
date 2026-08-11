@@ -1,6 +1,6 @@
 "use client";
 
-import { Flame } from "lucide-react";
+import { Fire } from "@phosphor-icons/react";
 
 interface StreakCounterProps {
   streak: number;
@@ -23,10 +23,7 @@ export function StreakCounter({ streak, size = "md" }: StreakCounterProps) {
         isActive ? "text-[var(--accent)]" : "text-[var(--text-muted-soft)]"
       }`}
     >
-      <Flame
-        size={config.icon}
-        className={isActive ? "fill-[var(--accent)]" : ""}
-      />
+      <Fire size={config.icon} weight={isActive ? "fill" : "regular"} />
       <span className={`font-extrabold ${config.text} font-mono`}>{streak}</span>
     </div>
   );

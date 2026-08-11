@@ -14,7 +14,7 @@ export type UsernameStatus =
   | "checking" // availability lookup in flight
   | "available"
   | "taken"
-  | "error"; // lookup failed — don't hard-block; the on-submit constraint decides
+  | "error"; // lookup failed: don't hard-block; the on-submit constraint decides
 
 export interface UsernameAvailability {
   status: UsernameStatus;
@@ -88,5 +88,5 @@ export function useUsernameAvailability(
   if (result.errored) return { status: "error", message: null };
   return result.available
     ? { status: "available", message: "Available" }
-    : { status: "taken", message: `@${value} is already taken — try another.` };
+: { status: "taken", message: `@${value} is already taken: try another.` };
 }

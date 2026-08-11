@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Lock, Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Check, Lock } from "@phosphor-icons/react";
 
 /**
  * Single-toggle settings card for "Share private repo activity".
@@ -75,34 +75,31 @@ export function PrivacyPreferences() {
 
   return (
     <div
-      className="p-5"
+      className="p-5 rounded-2xl"
       style={{
         backgroundColor: "var(--bg-surface)",
-        border: "2px solid var(--border-hard)",
+        border: "1px solid var(--border-hard)",
         boxShadow: "var(--shadow-brutal)",
       }}
     >
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-extrabold uppercase flex items-center gap-2 text-[var(--foreground)]">
-          <Lock size={16} className="text-[var(--accent)]" />
+        <h2 className="text-base font-bold flex items-center gap-2 text-[var(--foreground)]">
+          <Lock weight="fill" size={16} className="text-[var(--accent)]" />
           Private Repo Privacy
         </h2>
         {saved && (
           <span className="flex items-center gap-1 text-xs font-bold text-emerald-600">
-            <Check size={12} /> Saved
+            <Check weight="bold" size={12} /> Saved
           </span>
         )}
         {error && (
           <span className="text-xs font-bold text-red-500" role="status">
-            Couldn&apos;t save — try again
+            Couldn&apos;t save: try again
           </span>
         )}
       </div>
 
-      <div
-        className="flex items-start justify-between gap-3 p-3"
-        style={{ border: "1px solid var(--border-subtle)" }}
-      >
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="text-sm font-bold text-[var(--foreground)]">
             Share private repo activity in the feed
@@ -122,7 +119,7 @@ export function PrivacyPreferences() {
           className="w-10 h-6 rounded-full relative cursor-pointer transition-colors shrink-0 disabled:opacity-50"
           style={{
             backgroundColor: enabled ? "var(--accent)" : "var(--border-subtle)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-hard)",
           }}
           aria-label="Toggle private repo activity sharing"
           role="switch"

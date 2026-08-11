@@ -20,7 +20,7 @@ export function createAdminClient() {
   if (!serviceRoleKey) {
     throw new Error(
       "Missing SUPABASE_SERVICE_ROLE_KEY environment variable. " +
-      "Admin operations require the service role key — do not fall back to the anon key."
+      "Admin operations require the service role key: do not fall back to the anon key."
     );
   }
 

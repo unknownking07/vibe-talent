@@ -135,11 +135,11 @@ export function OnboardingTour({ onClose, forceOpen = false, username }: Onboard
           override in globals.css — without it, animate-scale-in still runs for
           users who've opted out globally. */}
       <div
-        className="relative w-full max-w-lg max-h-[90dvh] overflow-y-auto animate-scale-in tour-modal-card"
+        className="relative w-full max-w-lg max-h-[90dvh] overflow-y-auto animate-scale-in tour-modal-card rounded-2xl"
         style={{
           maxHeight: "90vh", // legacy fallback for browsers without dvh support
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-hard)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
@@ -149,16 +149,16 @@ export function OnboardingTour({ onClose, forceOpen = false, username }: Onboard
             the bottom bar. */}
         <div
           className="flex items-center justify-between px-5 py-3"
-          style={{ borderBottom: "2px solid var(--border-hard)" }}
+          style={{ borderBottom: "1px solid var(--border-hard)" }}
         >
-          <span className="text-xs font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+          <span className="text-xs font-medium text-[var(--text-muted)]">
             {cardIndex + 1} of {TOUR_CARDS.length}
           </span>
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={completeTour}
-              className="text-xs font-extrabold uppercase tracking-wide text-[var(--text-secondary)] hover:text-[var(--foreground)] transition-colors"
+              className="text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--foreground)] transition-colors"
             >
               Skip
             </button>
@@ -166,8 +166,8 @@ export function OnboardingTour({ onClose, forceOpen = false, username }: Onboard
               type="button"
               onClick={completeTour}
               aria-label="Close tour"
-              className="w-8 h-8 flex items-center justify-center text-[var(--foreground)] transition-all hover:bg-[var(--bg-surface-light)]"
-              style={{ border: "2px solid var(--border-hard)" }}
+              className="w-8 h-8 flex items-center justify-center text-[var(--foreground)] transition-all hover:bg-[var(--bg-surface-light)] rounded-xl"
+              style={{ border: "1px solid var(--border-hard)" }}
             >
               <X size={16} />
             </button>
@@ -180,11 +180,11 @@ export function OnboardingTour({ onClose, forceOpen = false, username }: Onboard
         <div key={cardIndex} className="animate-fade-in-up tour-card-content p-6 sm:p-8">
           {/* Hero icon */}
           <div
-            className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 mb-4"
+            className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 mb-4 rounded-xl"
             style={{
               backgroundColor: "var(--accent)",
               color: "var(--text-on-inverted)",
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-hard)",
               boxShadow: "var(--shadow-brutal-sm)",
             }}
           >
@@ -194,7 +194,7 @@ export function OnboardingTour({ onClose, forceOpen = false, username }: Onboard
 
           <h2
             id="onboarding-tour-title"
-            className="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-[var(--foreground)] mb-3"
+            className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--foreground)] mb-3"
           >
             {card.title}
           </h2>
@@ -235,7 +235,7 @@ export function OnboardingTour({ onClose, forceOpen = false, username }: Onboard
               href={card.learnMoreHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
             >
               Learn more
               <ExternalLink size={12} />
@@ -248,7 +248,7 @@ export function OnboardingTour({ onClose, forceOpen = false, username }: Onboard
             read as a quiet progress bar rather than a competing visual. */}
         <div
           className="flex items-center justify-center gap-1.5 px-5 py-4"
-          style={{ borderTop: "2px solid var(--border-hard)" }}
+          style={{ borderTop: "1px solid var(--border-hard)" }}
           role="tablist"
           aria-label="Tour progress"
         >
@@ -277,7 +277,7 @@ export function OnboardingTour({ onClose, forceOpen = false, username }: Onboard
                 }}
               >
                 <span
-                  className="block transition-all"
+                  className="block transition-all rounded-full"
                   style={{
                     width: active ? 18 : 6,
                     height: 6,

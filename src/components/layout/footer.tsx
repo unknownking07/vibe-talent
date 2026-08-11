@@ -6,7 +6,7 @@ export function Footer() {
     <footer
       style={{
         backgroundColor: "var(--bg-surface)",
-        borderTop: "2px solid var(--border-hard)",
+        borderTop: "1px solid var(--border-hard)",
       }}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
@@ -14,7 +14,7 @@ export function Footer() {
           <div className="sm:col-span-2">
             <div className="flex items-center gap-2.5 mb-3">
               <Image src="/logo.png" alt="VibeTalent" width={36} height={36} className="object-contain" />
-              <span className="text-lg font-extrabold uppercase tracking-tight" style={{ color: "var(--foreground)" }}>
+              <span className="text-lg font-bold tracking-tight" style={{ color: "var(--foreground)" }}>
                 Vibe Talent
               </span>
             </div>
@@ -23,7 +23,7 @@ export function Footer() {
             </p>
           </div>
           <div>
-            <h4 className="text-sm font-extrabold uppercase tracking-wide mb-3" style={{ color: "var(--foreground)" }}>Platform</h4>
+            <h4 className="text-sm font-semibold mb-3" style={{ color: "var(--foreground)" }}>Platform</h4>
             <div className="flex flex-col gap-2">
               <Link href="/explore" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Explore</Link>
               <Link href="/feed" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Feed</Link>
@@ -34,7 +34,7 @@ export function Footer() {
             </div>
           </div>
           <div>
-            <h4 className="text-sm font-extrabold uppercase tracking-wide mb-3" style={{ color: "var(--foreground)" }}>Community</h4>
+            <h4 className="text-sm font-semibold mb-3" style={{ color: "var(--foreground)" }}>Community</h4>
             <div className="flex flex-col gap-2">
               <a
                 href="https://t.me/vibetalentwork"
@@ -49,7 +49,7 @@ export function Footer() {
             </div>
           </div>
           <div>
-            <h4 className="text-sm font-extrabold uppercase tracking-wide mb-3" style={{ color: "var(--foreground)" }}>Legal</h4>
+            <h4 className="text-sm font-semibold mb-3" style={{ color: "var(--foreground)" }}>Legal</h4>
             <div className="flex flex-col gap-2">
               <Link href="/about" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>About</Link>
               <Link href="/privacy" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Privacy Policy</Link>
@@ -58,8 +58,8 @@ export function Footer() {
           </div>
         </div>
         <div
-          className="mt-10 pt-6 text-center text-xs font-bold uppercase tracking-wider"
-          style={{ borderTop: "2px solid var(--border-hard)", color: "var(--text-muted)" }}
+          className="mt-10 pt-6 text-center text-xs font-medium"
+          style={{ borderTop: "1px solid var(--border-subtle)", color: "var(--text-muted)" }}
         >
           &copy; {new Date().getFullYear()} VibeTalent. Ship or miss.
           <span className="block mt-1">

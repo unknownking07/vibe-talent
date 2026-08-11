@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X, Download, Copy, Check, Loader2 } from "lucide-react";
+import { X, Download, Copy, Loader2 } from "lucide-react";
+import { Check } from "@phosphor-icons/react";
 
 interface ShareCardModalProps {
   username: string;
@@ -98,19 +99,19 @@ export function ShareCardModal({ username, isOpen, onClose }: ShareCardModalProp
     >
       <div
         ref={modalRef}
-        className="w-full max-w-[720px] animate-in"
+        className="w-full max-w-[720px] animate-in rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
         {/* Header */}
         <div
           className="flex items-center justify-between px-6 py-4"
-          style={{ borderBottom: "2px solid var(--border-hard)" }}
+          style={{ borderBottom: "1px solid var(--border-subtle)" }}
         >
-          <h3 className="text-lg font-extrabold uppercase text-[var(--foreground)]">
+          <h3 className="text-lg font-bold text-[var(--foreground)]">
             Share Card
           </h3>
           <button
@@ -124,10 +125,10 @@ export function ShareCardModal({ username, isOpen, onClose }: ShareCardModalProp
         {/* Card Preview */}
         <div className="p-6">
           <div
-            className="relative w-full overflow-hidden"
+            className="relative w-full overflow-hidden rounded-xl"
             style={{
               aspectRatio: "1200 / 630",
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
               backgroundColor: "var(--bg-inverted)",
             }}
           >
@@ -172,7 +173,7 @@ export function ShareCardModal({ username, isOpen, onClose }: ShareCardModalProp
               color: "var(--foreground)",
             }}
           >
-            {copied ? <Check size={16} className="text-emerald-600" /> : <Copy size={16} />}
+            {copied ? <Check weight="bold" size={16} className="text-emerald-600" /> : <Copy size={16} />}
             {copied ? "Copied!" : "Copy to Clipboard"}
           </button>
         </div>

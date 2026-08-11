@@ -4,7 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import type { MatchResult } from "@/lib/types/agent";
 import { BadgeDisplay } from "@/components/ui/badge-display";
-import { Bot, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Robot } from "@phosphor-icons/react";
 
 interface MatchCardProps {
   match: MatchResult;
@@ -23,10 +24,10 @@ export function MatchCard({ match, rank }: MatchCardProps) {
 
   return (
     <div
-      className="p-5 transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
+      className="p-5 rounded-2xl transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-brutal-hover)]"
       style={{
         backgroundColor: "var(--bg-surface)",
-        border: "2px solid var(--border-hard)",
+        border: "1px solid var(--border-subtle)",
         boxShadow: rank === 1 ? "var(--shadow-brutal-accent)" : "var(--shadow-brutal)",
       }}
     >
@@ -34,14 +35,14 @@ export function MatchCard({ match, rank }: MatchCardProps) {
         {/* Rank + Avatar */}
         <div className="flex flex-col items-center gap-2">
           <div
-            className="text-xs font-extrabold text-white px-2 py-0.5"
+            className="text-xs font-bold text-white px-2 py-0.5 rounded-full"
             style={{ backgroundColor: rank === 1 ? "var(--accent)" : "var(--bg-inverted)" }}
           >
             #{rank}
           </div>
           <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center text-sm font-extrabold text-white overflow-hidden"
-            style={{ backgroundColor: "var(--bg-inverted)", border: "2px solid var(--border-hard)" }}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white overflow-hidden"
+            style={{ backgroundColor: "var(--bg-inverted)", border: "1px solid var(--border-subtle)" }}
           >
             {user.avatar_url ? (
               <Image src={user.avatar_url} alt={user.username} width={48} height={48} className="w-full h-full object-cover" />
@@ -55,7 +56,7 @@ export function MatchCard({ match, rank }: MatchCardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-extrabold uppercase text-[var(--foreground)]">@{user.username}</h3>
+              <h3 className="font-bold text-[var(--foreground)]">@{user.username}</h3>
               <BadgeDisplay level={user.badge_level} size="sm" />
             </div>
             <div
@@ -66,7 +67,7 @@ export function MatchCard({ match, rank }: MatchCardProps) {
             </div>
           </div>
 
-          <div className="text-xs font-bold uppercase text-[var(--text-muted)] mt-1">
+          <div className="text-xs font-semibold text-[var(--text-muted)] mt-1">
             {recommended_for}
           </div>
 
@@ -74,7 +75,7 @@ export function MatchCard({ match, rank }: MatchCardProps) {
           <div className="mt-3 space-y-1">
             {match_reasons.map((reason, i) => (
               <div key={i} className="flex items-center gap-2 text-sm text-[var(--text-secondary)] font-medium">
-                <Bot size={12} className="text-[var(--accent)] shrink-0" />
+                <Robot weight="fill" size={12} className="text-[var(--accent)] shrink-0" />
                 {reason}
               </div>
             ))}
@@ -86,7 +87,7 @@ export function MatchCard({ match, rank }: MatchCardProps) {
               {matched_skills.map(skill => (
                 <span
                   key={skill}
-                  className="px-2 py-0.5 text-xs font-bold uppercase"
+                  className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
                   style={{
                     backgroundColor: "var(--status-warning-bg)",
                     border: "1px solid var(--accent)",
@@ -105,7 +106,7 @@ export function MatchCard({ match, rank }: MatchCardProps) {
               href={`/agent/contact/${user.username}`}
               className="btn-brutal btn-brutal-primary text-xs py-1.5 px-4 flex items-center gap-1"
             >
-              <Bot size={12} />
+              <Robot weight="fill" size={12} />
               Contact via Agent
             </Link>
             <Link

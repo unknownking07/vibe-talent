@@ -1,18 +1,31 @@
-import { Bell, Flame, Trophy, CheckCircle, AlertTriangle, Mail, Star, Eye, BarChart3, Zap, LinkIcon, Users } from "lucide-react";
+import {
+  Fire,
+  Trophy,
+  CheckCircle,
+  Warning,
+  Envelope,
+  Star,
+  Eye,
+  ChartBar,
+  Lightning,
+  LinkSimple,
+  UsersThree,
+} from "@phosphor-icons/react";
+import type { Icon } from "@phosphor-icons/react";
 
-export const NOTIFICATION_ICONS: Record<string, typeof Bell> = {
-  hire_request: Mail,
-  streak_milestone: Flame,
-  streak_warning: AlertTriangle,
+export const NOTIFICATION_ICONS: Record<string, Icon> = {
+  hire_request: Envelope,
+  streak_milestone: Fire,
+  streak_warning: Warning,
   badge_earned: Trophy,
   project_verified: CheckCircle,
-  project_flagged: AlertTriangle,
+  project_flagged: Warning,
   new_review: Star,
   profile_view_summary: Eye,
-  weekly_digest: BarChart3,
-  vibe_score_milestone: Zap,
-  project_missing_links: LinkIcon,
-  referral_prompt: Users,
+  weekly_digest: ChartBar,
+  vibe_score_milestone: Lightning,
+  project_missing_links: LinkSimple,
+  referral_prompt: UsersThree,
 };
 
 export const NOTIFICATION_COLORS: Record<string, string> = {

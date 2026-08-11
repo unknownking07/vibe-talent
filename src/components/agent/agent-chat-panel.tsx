@@ -4,11 +4,11 @@
 // /support render this panel with different copy — same brain underneath.
 
 import { useEffect, useRef } from "react";
-import { Bot } from "lucide-react";
 import { ChatMessage } from "@/components/agent/chat-message";
 import { ChatInput } from "@/components/agent/chat-input";
 import { BuilderCard } from "@/components/agent/builder-card";
 import { useAgentChat } from "@/components/agent/use-agent-chat";
+import { Robot } from "@phosphor-icons/react";
 
 interface AgentChatPanelProps {
   title: string;
@@ -55,18 +55,18 @@ export function AgentChatPanel({
       {/* Header */}
       <div className="flex items-center gap-3 mb-6 shrink-0">
         <div
-          className="w-10 h-10 flex items-center justify-center"
+          className="w-10 h-10 flex items-center justify-center rounded-xl"
           style={{
             backgroundColor: "var(--bg-inverted)",
-            border: "2px solid var(--border-hard)",
-            boxShadow: "3px 3px 0 var(--accent)",
+            border: "1px solid var(--border-subtle)",
+            boxShadow: "var(--shadow-brutal-accent)",
           }}
         >
-          <Bot size={20} className="text-[var(--accent)]" />
+          <Robot weight="fill" size={20} className="text-[var(--accent)]" />
         </div>
         <div>
-          <h1 className="text-xl font-extrabold uppercase text-[var(--foreground)]">{title}</h1>
-          <p className="text-xs text-[var(--text-muted)] font-bold uppercase">{subtitle}</p>
+          <h1 className="text-xl font-bold text-[var(--foreground)]">{title}</h1>
+          <p className="text-xs text-[var(--text-muted)] font-semibold">{subtitle}</p>
         </div>
       </div>
 
@@ -104,9 +104,9 @@ export function AgentChatPanel({
         {status && (
           <div
             role="status"
-            className="ml-11 flex items-center gap-2 text-xs font-bold uppercase text-[var(--text-muted)] animate-pulse"
+            className="ml-11 flex items-center gap-2 text-xs font-semibold text-[var(--text-muted)] animate-pulse"
           >
-            <Bot size={12} className="text-[var(--accent)]" />
+            <Robot weight="fill" size={12} className="text-[var(--accent)]" />
             {status}
           </div>
         )}
@@ -128,7 +128,7 @@ export function AgentChatPanel({
       </div>
 
       {/* Input */}
-      <div className="shrink-0 pt-4" style={{ borderTop: "2px solid var(--border-hard)" }}>
+      <div className="shrink-0 pt-4" style={{ borderTop: "1px solid var(--border-subtle)" }}>
         <ChatInput onSend={send} disabled={isStreaming} placeholder={placeholder} />
       </div>
     </div>

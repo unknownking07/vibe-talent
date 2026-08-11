@@ -47,10 +47,10 @@ export function AchievementsView({ achievements, username }: AchievementsViewPro
     <>
       {/* Header card */}
       <section
-        className="relative overflow-hidden p-6"
+        className="relative overflow-hidden p-6 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
@@ -70,7 +70,7 @@ export function AchievementsView({ achievements, username }: AchievementsViewPro
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-col gap-1.5">
               <h1
-                className="text-3xl font-extrabold uppercase leading-none tracking-wide sm:text-[2.5rem]"
+                className="text-3xl font-bold leading-none tracking-tight sm:text-[2.5rem]"
                 style={{ color: "var(--foreground)" }}
               >
                 Achievements
@@ -94,8 +94,8 @@ export function AchievementsView({ achievements, username }: AchievementsViewPro
                 <span style={{ color: "var(--text-muted)" }}> / {totalCount}</span>
               </div>
               <div
-                className="text-[11px] font-extrabold uppercase tracking-[0.14em]"
-                style={{ color: "var(--text-secondary)" }}
+                className="text-[11px] font-medium"
+                style={{ color: "var(--text-muted)" }}
               >
                 Unlocked
               </div>
@@ -132,13 +132,11 @@ export function AchievementsView({ achievements, username }: AchievementsViewPro
                 style={{
                   padding: "10px 18px",
                   fontSize: 12,
-                  fontWeight: 800,
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
+                  fontWeight: 600,
                   color: "#fff",
                   background: ACCENT,
-                  border: "2px solid #0F0F0F",
-                  boxShadow: "3px 3px 0 #000",
+                  border: "none",
+                  boxShadow: "var(--shadow-brutal-accent)",
                 }}
               >
                 <Play size={14} fill="currentColor" stroke="none" />
@@ -230,10 +228,10 @@ function ProgressBar({
 
   return (
     <div
-      className="h-3.5 w-full overflow-hidden"
+      className="h-3.5 w-full overflow-hidden rounded-full"
       style={{
         backgroundColor: "var(--bg-base, var(--background))",
-        border: "2px solid var(--border-hard)",
+        border: "1px solid var(--border-subtle)",
       }}
       role="progressbar"
       aria-label="Achievements unlocked"

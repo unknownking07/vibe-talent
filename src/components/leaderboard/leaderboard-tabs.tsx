@@ -56,12 +56,12 @@ export function LeaderboardTabs({ users }: { users: UserWithSocials[] }) {
 
   return (
     <div>
-      <div className="flex border-2 border-[var(--border-hard)] mb-4" role="tablist" aria-label="Leaderboard range">
+      <div className="inline-flex rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-1 mb-4" role="tablist" aria-label="Leaderboard range">
         <button
           role="tab"
           aria-selected={tab === "week"}
           onClick={() => setTab("week")}
-          className={`flex-1 py-3 px-4 text-[14px] font-bold border-r-2 border-[var(--border-hard)] ${tab === "week" ? "bg-[var(--accent)] text-white" : "bg-[var(--bg-surface)] text-[var(--foreground)]"}`}
+          className={`py-2.5 px-4 text-[14px] font-semibold rounded-lg transition-colors ${tab === "week" ? "bg-[var(--accent)] text-white" : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface-light)]"}`}
         >
           This week
         </button>
@@ -69,7 +69,7 @@ export function LeaderboardTabs({ users }: { users: UserWithSocials[] }) {
           role="tab"
           aria-selected={tab === "all"}
           onClick={() => setTab("all")}
-          className={`flex-1 py-3 px-4 text-[14px] font-bold ${tab === "all" ? "bg-[var(--accent)] text-white" : "bg-[var(--bg-surface)] text-[var(--foreground)]"}`}
+          className={`py-2.5 px-4 text-[14px] font-semibold rounded-lg transition-colors ${tab === "all" ? "bg-[var(--accent)] text-white" : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface-light)]"}`}
         >
           All-time
         </button>

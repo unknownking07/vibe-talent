@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { Mail, ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { Check, Envelope } from "@phosphor-icons/react";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -34,7 +35,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-md">
         <Link
           href="/auth/login"
-          className="inline-flex items-center gap-2 text-sm font-bold uppercase text-[var(--text-muted)] hover:text-[var(--accent)] mb-6"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-muted)] hover:text-[var(--accent)] mb-6"
         >
           <ArrowLeft size={14} />
           Back to Login
@@ -44,7 +45,7 @@ export default function ForgotPasswordPage() {
           className="p-8"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
@@ -54,12 +55,12 @@ export default function ForgotPasswordPage() {
                 className="inline-flex items-center justify-center w-16 h-16 mb-4"
                 style={{
                   backgroundColor: "#D1FAE5",
-                  border: "2px solid var(--border-hard)",
+                  border: "1px solid var(--border-hard)",
                 }}
               >
-                <Check size={32} className="text-emerald-700" />
+                <Check weight="bold" size={32} className="text-emerald-700" />
               </div>
-              <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Check Your Email</h1>
+              <h1 className="text-2xl font-bold text-[var(--foreground)]">Check Your Email</h1>
               <p className="mt-3 text-sm text-[var(--text-secondary)] font-medium">
                 We sent a password reset link to <strong>{email}</strong>. Click the link to set a new password.
               </p>
@@ -74,12 +75,12 @@ export default function ForgotPasswordPage() {
                   className="inline-flex items-center justify-center w-16 h-16 mb-4"
                   style={{
                     backgroundColor: "var(--status-warning-bg)",
-                    border: "2px solid var(--border-hard)",
+                    border: "1px solid var(--border-hard)",
                   }}
                 >
-                  <Mail size={32} className="text-[var(--accent)]" />
+                  <Envelope weight="duotone" size={32} className="text-[var(--accent)]" />
                 </div>
-                <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Forgot Password</h1>
+                <h1 className="text-2xl font-bold text-[var(--foreground)]">Forgot Password</h1>
                 <p className="mt-2 text-sm text-[var(--text-secondary)] font-medium">
                   Enter your email and we&apos;ll send you a reset link
                 </p>
@@ -88,7 +89,7 @@ export default function ForgotPasswordPage() {
               {error && (
                 <div
                   className="p-3 mb-4 text-sm font-bold text-red-800"
-                  style={{ backgroundColor: "var(--status-error-border)", border: "2px solid var(--border-hard)" }}
+                  style={{ backgroundColor: "var(--status-error-border)", border: "1px solid var(--border-hard)" }}
                 >
                   {error}
                 </div>
@@ -96,7 +97,7 @@ export default function ForgotPasswordPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
+                  <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
                     Email Address
                   </label>
                   <input

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Notification } from "@/lib/types/database";
 import { NOTIFICATION_ICONS, notificationTimeAgo, extractNotificationAvatar } from "@/lib/notification-display";
+import { Bell } from "@phosphor-icons/react";
 
 // JetBrains Mono is loaded as a CSS var by the root layout; fall back gracefully.
 const MONO = "var(--font-jetbrains-mono), 'JetBrains Mono', monospace";
@@ -31,7 +31,8 @@ function BellChip({ n }: { n: Notification }) {
             width: 34,
             height: 34,
             objectFit: "cover",
-            border: `2px solid ${ring}`,
+            borderRadius: 999,
+            border: `1px solid ${ring}`,
             filter: read ? "grayscale(1) opacity(0.7)" : "none",
           }}
         />
@@ -45,12 +46,13 @@ function BellChip({ n }: { n: Notification }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            borderRadius: 999,
             background: read ? "var(--bg-surface-light)" : "var(--accent)",
-            border: `1.5px solid ${ring}`,
+            border: `1px solid ${ring}`,
             color: read ? "var(--text-muted-soft)" : "#fff",
           }}
         >
-          <Icon size={9} />
+          <Icon weight="fill" size={9} />
         </div>
       </div>
     );
@@ -65,13 +67,14 @@ function BellChip({ n }: { n: Notification }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        border: `2px solid ${ring}`,
+        borderRadius: 999,
+        border: `1px solid ${ring}`,
         color: read ? "var(--text-muted-soft)" : "var(--accent)",
         background: "var(--bg-surface)",
-        boxShadow: read ? "none" : "2px 2px 0 var(--border-hard)",
+        boxShadow: read ? "none" : "var(--shadow-brutal-xs)",
       }}
     >
-      <Icon size={16} />
+      <Icon weight="fill" size={16} />
     </div>
   );
 }
@@ -253,24 +256,27 @@ export function NotificationBell() {
         onClick={() => {
           // Opening the dropdown: pull the fresh list (the interval only keeps
           // the count current, so the list may be stale or unloaded).
-          if (!open) fetchNotifications();
+          if (!open) {
+            fetchNotifications();
+            // Both exits from this dropdown (a row click and "View all") go to
+            // /notifications via router.push, which does no prefetching of its
+            // own. Warming it here — while the user is still reading the
+            // dropdown — means the route chunk and its loading skeleton are
+            // already in place when they click.
+            router.prefetch("/notifications");
+          }
           setOpen((o) => !o);
         }}
-        className="relative w-10 h-10 flex items-center justify-center cursor-pointer transition-all hover:translate-x-[1px] hover:translate-y-[1px]"
-        style={{
-          backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
-          boxShadow: open ? "var(--shadow-brutal-xs)" : "var(--shadow-brutal-sm)",
-        }}
+        className={`relative w-10 h-10 flex items-center justify-center rounded-full cursor-pointer transition-colors hover:bg-[var(--bg-surface-light)] active:scale-95 ${open ? "bg-[var(--bg-surface-light)]" : ""}`}
         aria-label="Notifications"
         aria-expanded={open}
         aria-controls="notification-popover"
         aria-haspopup="menu"
       >
-        <Bell size={18} className="text-[var(--foreground)]" />
+        <Bell weight="fill" size={18} className="text-[var(--foreground)]" />
         {unreadCount > 0 && (
           <span
-            className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center px-1 text-[10px] font-extrabold text-white rounded-full"
+            className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center px-1 text-[10px] font-bold text-white rounded-full"
             style={{ backgroundColor: "var(--accent)" }}
           >
             {unreadCount > 99 ? "99+" : unreadCount}
@@ -282,20 +288,20 @@ export function NotificationBell() {
         <div
           id="notification-popover"
           role="menu"
-          className="fixed right-2 top-16 z-50 w-[min(20rem,calc(100vw-1rem))] max-h-[60vh] sm:absolute sm:right-0 sm:top-12 sm:w-80 sm:max-h-96 overflow-y-auto"
+          className="fixed right-2 top-16 z-50 w-[min(20rem,calc(100vw-1rem))] max-h-[60vh] sm:absolute sm:right-0 sm:top-12 sm:w-80 sm:max-h-96 overflow-y-auto rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
-            boxShadow: "var(--shadow-brutal-sm)",
+            border: "1px solid var(--border-subtle)",
+            boxShadow: "var(--shadow-brutal)",
           }}
         >
-          <div className="flex items-center justify-between px-4 py-3 border-b-2 border-[var(--border-hard)]">
-            <span className="text-sm font-extrabold uppercase tracking-wide">Notifications</span>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)]">
+            <span className="text-sm font-semibold">Notifications</span>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
                 disabled={loading}
-                className="text-xs font-bold text-[var(--accent)] hover:underline cursor-pointer"
+                className="text-xs font-semibold text-[var(--accent)] hover:underline cursor-pointer"
               >
                 Mark all read
               </button>
@@ -304,7 +310,7 @@ export function NotificationBell() {
 
           {notifications.length === 0 ? (
             <div className="px-4 py-8 text-center">
-              <Bell size={24} className="mx-auto mb-2 text-[var(--text-muted-soft)]" />
+              <Bell weight="fill" size={24} className="mx-auto mb-2 text-[var(--text-muted-soft)]" />
               <p className="text-sm font-medium text-[var(--text-muted-soft)]">
                 {listLoaded ? "No notifications yet" : "Loading notifications…"}
               </p>
@@ -324,12 +330,12 @@ export function NotificationBell() {
                       {n.title}
                     </p>
                     <p className="text-xs mt-0.5 truncate" style={{ color: n.read ? "var(--text-muted-soft)" : "var(--text-secondary)" }}>{n.message}</p>
-                    <p className="text-[10px] mt-1.5 font-bold uppercase tracking-wide" style={{ fontFamily: MONO, color: "var(--text-muted-soft)" }}>{notificationTimeAgo(n.created_at)}</p>
+                    <p className="text-[10px] mt-1.5 font-semibold" style={{ fontFamily: MONO, color: "var(--text-muted-soft)" }}>{notificationTimeAgo(n.created_at)}</p>
                   </div>
                   {!n.read && (
                     <span
                       className="w-2 h-2 rounded-full mt-1.5 shrink-0"
-                      style={{ backgroundColor: "var(--accent)", border: "1.5px solid var(--border-hard)" }}
+                      style={{ backgroundColor: "var(--accent)" }}
                     />
                   )}
                 </button>
@@ -339,7 +345,7 @@ export function NotificationBell() {
                   setOpen(false);
                   router.push("/notifications");
                 }}
-                className="w-full px-4 py-2.5 text-xs font-extrabold uppercase tracking-wide text-center text-[var(--accent)] border-t-2 border-[var(--border-hard)] hover:bg-[var(--bg-surface-light)] cursor-pointer"
+                className="w-full px-4 py-2.5 text-xs font-semibold text-center text-[var(--accent)] border-t border-[var(--border-subtle)] hover:bg-[var(--bg-surface-light)] cursor-pointer"
               >
                 View all notifications
               </button>

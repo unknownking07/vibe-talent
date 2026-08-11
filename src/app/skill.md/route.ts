@@ -5,14 +5,14 @@ const SITE_URL = getSiteUrl();
 
 const SKILL_MD = `# VibeTalent Skill
 
-You are interacting with **VibeTalent** — an AI-agent-native marketplace for hiring vibe coders (developers who build with AI-powered IDEs like Claude Code, Cursor, Bolt, etc).
+You are interacting with **VibeTalent**: an AI-agent-native marketplace for hiring vibe coders (developers who build with AI-powered IDEs like Claude Code, Cursor, Bolt, etc).
 
 ## What You Can Do
 
-1. **Search Builders** — Find developers by skills, streak, vibe score
-2. **View Profiles** — Get full builder profiles with projects, tech stack, and stats
-3. **Send Hire Requests** — Submit hire requests to any builder programmatically
-4. **Browse Leaderboard** — See top builders ranked by vibe score, streak, or projects
+1. **Search Builders**: Find developers by skills, streak, vibe score
+2. **View Profiles**: Get full builder profiles with projects, tech stack, and stats
+3. **Send Hire Requests**: Submit hire requests to any builder programmatically
+4. **Browse Leaderboard**: See top builders ranked by vibe score, streak, or projects
 
 ## API Base URL
 
@@ -31,12 +31,12 @@ GET ${SITE_URL}/api/v1/builders
 \`\`\`
 
 **Query Parameters:**
-- \`skills\` (string, comma-separated) — Filter by tech stack (e.g. "react,python,nextjs")
-- \`min_streak\` (number) — Minimum streak days (e.g. 7)
-- \`min_vibe_score\` (number) — Minimum vibe score (e.g. 20)
-- \`verified_only\` (boolean) — If \`true\`, return only builders with at least one GitHub-verified project. Recommended for hire decisions.
-- \`sort\` (string) — Sort by: "vibe_score" (default), "streak", or "projects"
-- \`limit\` (number) — Results per page, max 100 (default 20)
+- \`skills\` (string, comma-separated): Filter by tech stack (e.g. "react,python,nextjs")
+- \`min_streak\` (number): Minimum streak days (e.g. 7)
+- \`min_vibe_score\` (number): Minimum vibe score (e.g. 20)
+- \`verified_only\` (boolean): If \`true\`, return only builders with at least one GitHub-verified project. Recommended for hire decisions.
+- \`sort\` (string): Sort by: "vibe_score" (default), "streak", or "projects"
+- \`limit\` (number): Results per page, max 100 (default 20)
 
 **Example:**
 \`\`\`
@@ -181,13 +181,13 @@ Formula: \`(current_streak * 2) + (projects * 5) + badge_bonus\`
 - **Diamond**: 365+ days (bonus: +40)
 
 ### Project Verification (\`verified\`)
-A project is \`verified: true\` when its GitHub repo ownership is proven — either the
+A project is \`verified: true\` when its GitHub repo ownership is proven: either the
 repo owner matches the builder's linked GitHub username, or the repo contains a
 \`.vibetalent\` file with the builder's username/user ID. **Strongly prefer verified
-projects** when evaluating builders — unverified projects are unproven claims.
+projects** when evaluating builders: unverified projects are unproven claims.
 
 ### Quality Score (\`quality_score\`, 0-100)
-Composite score derived from public GitHub signals — community (stars, forks,
+Composite score derived from public GitHub signals: community (stars, forks,
 external contributors), substance (languages, file structure, tests, CI, README),
 and maintenance (commit cadence, recency). Hard to game. Available on verified
 projects.
@@ -199,14 +199,14 @@ weight them differently if they want.
 ### Live URL Health (\`live_url_ok\`)
 \`true\` if the project's \`live_url\` responded healthily on the most recent check.
 \`false\` means the deployment is broken or unreachable. \`null\` means either no
-\`live_url\` is set or the first health check hasn't run yet — treat null as
+\`live_url\` is set or the first health check hasn't run yet: treat null as
 "unknown" rather than "healthy" or "broken".
 
 ### Endorsements (\`endorsement_count\`)
 Peer endorsements from other builders on the platform. Social-proof signal.
 
 ### Reviews (\`review_count\`, \`average_rating\`)
-Reviews are filtered by an anti-abuse trust score before averaging — only
+Reviews are filtered by an anti-abuse trust score before averaging, only
 \`trust_score >= 30\` reviews count. \`average_rating\` is null when the builder
 has no trusted reviews.
 
@@ -233,7 +233,7 @@ has no trusted reviews.
 - Always search with specific skills to get relevant results
 - Pass \`verified_only=true\` to skip builders whose project ownership is unproven
 - Use \`min_streak=3\` to filter out inactive builders
-- Pull the full profile (\`/builders/:username\`) before deciding — \`projects_count\` and
+- Pull the full profile (\`/builders/:username\`) before deciding: \`projects_count\` and
   \`tech_stack\` summary aren't enough; check each project's \`verified\`, \`quality_score\`,
   and \`live_url_ok\`
 - Include a clear project description in hire requests for better response rates

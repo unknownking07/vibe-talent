@@ -24,14 +24,14 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Vibe Coders Marketplace — Hire Builders Who Ship | VibeTalent",
+    default: "Vibe Coders Marketplace: Hire Builders Who Ship | VibeTalent",
     template: "%s | VibeTalent",
   },
   description:
     "The marketplace for vibe coders. Build your reputation through streaks, proof of work, and shipping projects consistently.",
   metadataBase: new URL(siteUrl),
   openGraph: {
-    title: "VibeTalent — Find Vibe Coders Who Actually Ship",
+    title: "VibeTalent: Find Vibe Coders Who Actually Ship",
     description: "The marketplace for vibe coders who ship consistently.",
     url: siteUrl,
     siteName: "VibeTalent",
@@ -42,14 +42,14 @@ export const metadata: Metadata = {
         url: `${siteUrl}/og-image-v2.jpg`,
         width: 1200,
         height: 630,
-        alt: "VibeTalent — Find Vibe Coders Who Actually Ship",
+        alt: "VibeTalent: Find Vibe Coders Who Actually Ship",
         type: "image/jpeg",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "VibeTalent — Find Vibe Coders Who Actually Ship",
+    title: "VibeTalent: Find Vibe Coders Who Actually Ship",
     description: "The marketplace for vibe coders who ship consistently.",
     images: [`${siteUrl}/og-image-v2.jpg`],
     site: "@vibetalentwork",

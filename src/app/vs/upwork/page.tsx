@@ -1,21 +1,22 @@
 import type { Metadata } from "next";
 import { jsonLdHtml } from "@/lib/json-ld";
 import Link from "next/link";
-import { Check, X, ArrowRight, Flame, Zap, Shield } from "lucide-react";
+import { X, ArrowRight } from "lucide-react";
+import { Check, Fire, Lightning, Shield } from "@phosphor-icons/react/dist/ssr";
 import { siteUrl } from "@/lib/seo";
 
 const PAGE_URL = `${siteUrl}/vs/upwork`;
-const PAGE_TITLE = "VibeTalent vs Upwork — Which Is Better for Hiring Developers?";
+const PAGE_TITLE = "VibeTalent vs Upwork: Which Is Better for Hiring Developers?";
 const PAGE_DESCRIPTION =
-  "VibeTalent ranks developers on verifiable proof of work — coding streaks, shipped projects, and GitHub activity. Upwork relies on resumes and client reviews. Side-by-side comparison, pricing, and which platform fits your hiring needs.";
+  "VibeTalent ranks developers on verifiable proof of work: coding streaks, shipped projects, and GitHub activity. Upwork relies on resumes and client reviews. Side-by-side comparison, pricing, and which platform fits your hiring needs.";
 
 const TL_DR =
-  "VibeTalent ranks developers on verifiable proof of work — daily coding streaks, deployed projects, and GitHub activity — while Upwork relies on self-reported resumes and client reviews that are easy to game. Pick VibeTalent if you want to hire developers based on what they actually ship, especially AI-native builders using Claude Code, Cursor, or Bolt. Pick Upwork if you need a generalist freelance marketplace with escrow and a broad talent pool across non-engineering roles.";
+  "VibeTalent ranks developers on verifiable proof of work (daily coding streaks, deployed projects, and GitHub activity) while Upwork relies on self-reported resumes and client reviews that are easy to game. Pick VibeTalent if you want to hire developers based on what they actually ship, especially AI-native builders using Claude Code, Cursor, or Bolt. Pick Upwork if you need a generalist freelance marketplace with escrow and a broad talent pool across non-engineering roles.";
 
 const FAQ = [
   {
     q: "What is the main difference between VibeTalent and Upwork?",
-    a: "Upwork is a generalist freelance marketplace where talent is ranked by self-reported skills, client reviews, and resume-style profiles — all of which can be gamed with paid reviews or polished marketing. VibeTalent is a developer-only marketplace where rankings come from verifiable data: GitHub commit streaks, deployed project quality, repo health, and peer endorsements weighted by the endorser's own vibe score. The data refreshes daily and cannot be faked.",
+    a: "Upwork is a generalist freelance marketplace where talent is ranked by self-reported skills, client reviews, and resume-style profiles, all of which can be gamed with paid reviews or polished marketing. VibeTalent is a developer-only marketplace where rankings come from verifiable data: GitHub commit streaks, deployed project quality, repo health, and peer endorsements weighted by the endorser's own vibe score. The data refreshes daily and cannot be faked.",
   },
   {
     q: "Is VibeTalent cheaper than Upwork?",
@@ -23,19 +24,19 @@ const FAQ = [
   },
   {
     q: "Can I hire AI-native developers on Upwork?",
-    a: "You can search for developers on Upwork who list AI tools in their skill tags, but there is no way to verify that they actually use those tools daily or ship working software with them. VibeTalent was built specifically for vibe coders — developers who use Claude Code, Cursor, Bolt, and Windsurf to ship code every day — and ranks them on the activity that proves they actually do it.",
+    a: "You can search for developers on Upwork who list AI tools in their skill tags, but there is no way to verify that they actually use those tools daily or ship working software with them. VibeTalent was built specifically for vibe coders (developers who use Claude Code, Cursor, Bolt, and Windsurf to ship code every day) and ranks them on the activity that proves they actually do it.",
   },
   {
     q: "Does Upwork show GitHub data?",
-    a: "Upwork lets freelancers link their GitHub profile, but it does not pull commit history, repo quality, or streak data into rankings. The Upwork search algorithm weights job success score, hours billed, and client reviews. VibeTalent makes GitHub activity the core ranking signal — coding streak length is 40% of the vibe score by itself.",
+    a: "Upwork lets freelancers link their GitHub profile, but it does not pull commit history, repo quality, or streak data into rankings. The Upwork search algorithm weights job success score, hours billed, and client reviews. VibeTalent makes GitHub activity the core ranking signal: coding streak length is 40% of the vibe score by itself.",
   },
   {
     q: "How does VibeTalent prevent fake reviews?",
-    a: "VibeTalent does not rely on reviews. Rankings come from public GitHub data — commit streaks, repo statistics, deployment status, and contribution patterns — none of which can be paid for or fabricated. Peer endorsements exist but are weighted at only 10% of the vibe score and weighted by the endorser's own score to make collusion economically unattractive.",
+    a: "VibeTalent does not rely on reviews. Rankings come from public GitHub data (commit streaks, repo statistics, deployment status, and contribution patterns) none of which can be paid for or fabricated. Peer endorsements exist but are weighted at only 10% of the vibe score and weighted by the endorser's own score to make collusion economically unattractive.",
   },
   {
     q: "Is Upwork or VibeTalent better for a one-off project?",
-    a: "Upwork is better for one-off non-engineering projects (design, copywriting, virtual assistance, video editing) or for hiring at large scale with escrow protection. VibeTalent is better for finding a developer who can ship a working product fast — whether that is a one-week prototype or an ongoing build relationship — because the platform surfaces builders proven to ship consistently.",
+    a: "Upwork is better for one-off non-engineering projects (design, copywriting, virtual assistance, video editing) or for hiring at large scale with escrow protection. VibeTalent is better for finding a developer who can ship a working product fast (whether that is a one-week prototype or an ongoing build relationship) because the platform surfaces builders proven to ship consistently.",
   },
 ];
 
@@ -127,17 +128,17 @@ export default function VsUpworkPage() {
 
       <div className="mb-10">
         <div
-          className="inline-flex items-center gap-2 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-[var(--foreground)] mb-6"
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold text-[var(--foreground)] mb-6"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
-            boxShadow: "var(--shadow-brutal-sm)",
+            border: "1px solid var(--border-subtle)",
+            boxShadow: "var(--shadow-brutal-xs)",
           }}
         >
-          <Zap size={14} className="text-[var(--accent)]" />
+          <Lightning weight="fill" size={14} className="text-[var(--accent)]" />
           Comparison
         </div>
-        <h1 className="text-3xl sm:text-5xl font-extrabold uppercase text-[var(--foreground)] leading-tight">
+        <h1 className="text-3xl sm:text-5xl font-bold text-[var(--foreground)] leading-tight">
           VibeTalent <span className="text-[var(--text-muted)]">vs</span>{" "}
           <span className="text-[var(--accent)]">Upwork</span>
         </h1>
@@ -149,14 +150,14 @@ export default function VsUpworkPage() {
       {/* Answer block — the TL;DR sits at the top so AI engines pull it into
           answer boxes and humans can decide in 10 seconds. */}
       <section
-        className="p-6 sm:p-8 mb-10"
+        className="p-6 sm:p-8 mb-10 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">
+        <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">
           The short answer
         </h2>
         <p className="text-base text-[var(--foreground)] font-medium leading-relaxed">{TL_DR}</p>
@@ -164,28 +165,28 @@ export default function VsUpworkPage() {
 
       {/* Feature matrix */}
       <section className="mb-12">
-        <h2 className="text-2xl font-extrabold uppercase text-[var(--foreground)] mb-6">
+        <h2 className="text-2xl font-bold text-[var(--foreground)] mb-6">
           Side-by-side comparison
         </h2>
         <div
-          className="overflow-hidden"
+          className="overflow-hidden rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr style={{ borderBottom: "2px solid var(--border-hard)" }}>
-                  <th className="text-left p-4 font-extrabold uppercase text-[var(--foreground)]">
+                <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                  <th className="text-left p-4 font-bold text-[var(--foreground)]">
                     Feature
                   </th>
-                  <th className="text-left p-4 font-extrabold uppercase text-[var(--accent)]">
+                  <th className="text-left p-4 font-bold text-[var(--accent)]">
                     VibeTalent
                   </th>
-                  <th className="text-left p-4 font-extrabold uppercase text-[var(--text-muted)]">
+                  <th className="text-left p-4 font-bold text-[var(--text-muted)]">
                     Upwork
                   </th>
                 </tr>
@@ -205,7 +206,7 @@ export default function VsUpworkPage() {
                     <td className="p-4 font-medium text-[var(--text-secondary)]">
                       {typeof row.vt === "boolean" ? (
                         row.vt ? (
-                          <Check size={18} className="text-[var(--accent)]" />
+                          <Check weight="bold" size={18} className="text-[var(--accent)]" />
                         ) : (
                           <X size={18} className="text-[var(--text-muted)]" />
                         )
@@ -216,7 +217,7 @@ export default function VsUpworkPage() {
                     <td className="p-4 font-medium text-[var(--text-secondary)]">
                       {typeof row.up === "boolean" ? (
                         row.up ? (
-                          <Check size={18} className="text-[var(--accent)]" />
+                          <Check weight="bold" size={18} className="text-[var(--accent)]" />
                         ) : (
                           <X size={18} className="text-[var(--text-muted)]" />
                         )
@@ -234,16 +235,16 @@ export default function VsUpworkPage() {
 
       <section className="grid sm:grid-cols-2 gap-6 mb-12">
         <div
-          className="p-6"
+          className="p-6 rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
           <div className="flex items-center gap-2 mb-3">
-            <Flame size={20} className="text-[var(--accent)]" />
-            <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)]">
+            <Fire weight="fill" size={20} className="text-[var(--accent)]" />
+            <h2 className="text-lg font-bold text-[var(--foreground)]">
               When VibeTalent wins
             </h2>
           </div>
@@ -257,16 +258,16 @@ export default function VsUpworkPage() {
         </div>
 
         <div
-          className="p-6"
+          className="p-6 rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
           <div className="flex items-center gap-2 mb-3">
-            <Shield size={20} className="text-[var(--text-muted)]" />
-            <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)]">
+            <Shield weight="fill" size={20} className="text-[var(--text-muted)]" />
+            <h2 className="text-lg font-bold text-[var(--foreground)]">
               When Upwork wins
             </h2>
           </div>
@@ -282,21 +283,21 @@ export default function VsUpworkPage() {
 
       {/* FAQ */}
       <section className="mb-12">
-        <h2 className="text-2xl font-extrabold uppercase text-[var(--foreground)] mb-6">
+        <h2 className="text-2xl font-bold text-[var(--foreground)] mb-6">
           Frequently asked questions
         </h2>
         <div className="space-y-3">
           {FAQ.map(({ q, a }) => (
             <details
               key={q}
-              className="group p-5"
+              className="group p-5 rounded-2xl"
               style={{
                 backgroundColor: "var(--bg-surface)",
-                border: "2px solid var(--border-hard)",
+                border: "1px solid var(--border-subtle)",
                 boxShadow: "var(--shadow-brutal-sm)",
               }}
             >
-              <summary className="cursor-pointer font-extrabold uppercase text-sm text-[var(--foreground)] flex items-center justify-between">
+              <summary className="cursor-pointer font-bold text-sm text-[var(--foreground)] flex items-center justify-between">
                 {q}
                 <ArrowRight
                   size={14}
@@ -313,14 +314,14 @@ export default function VsUpworkPage() {
 
       {/* CTA */}
       <section
-        className="p-8 sm:p-10 text-center"
+        className="p-8 sm:p-10 text-center rounded-2xl"
         style={{
           backgroundColor: "var(--bg-inverted)",
-          border: "2px solid var(--border-hard)",
-          boxShadow: "8px 8px 0 var(--accent)",
+          border: "1px solid var(--border-subtle)",
+          boxShadow: "var(--shadow-brutal-accent)",
         }}
       >
-        <h2 className="text-2xl sm:text-3xl font-extrabold uppercase text-white mb-3">
+        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
           Hire builders who actually ship
         </h2>
         <p className="text-sm text-[var(--text-muted-soft)] font-medium mb-6 max-w-md mx-auto">

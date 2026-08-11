@@ -5,7 +5,8 @@ import { fetchUserByUsername } from "@/lib/supabase/queries";
 import { generateHireMessage } from "@/lib/agent-scoring";
 import type { UserWithSocials } from "@/lib/types/database";
 import { AgentThinking } from "@/components/agent/agent-thinking";
-import { Bot, Send, ArrowLeft, Github, Globe } from "lucide-react";
+import { Send, ArrowLeft } from "lucide-react";
+import { GithubLogo, Globe, Robot } from "@phosphor-icons/react";
 import { extractSocialHandle } from "@/lib/social-handles";
 import Link from "next/link";
 import type { AgentStep } from "@/lib/types/agent";
@@ -68,7 +69,7 @@ export default function ContactPage({
   if (!user) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-        <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Builder not found</h1>
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">Builder not found</h1>
       </div>
     );
   }
@@ -81,37 +82,36 @@ export default function ContactPage({
     return (
       <div className="mx-auto max-w-2xl px-4 sm:px-6 py-12">
         <div
-          className="p-8 text-center"
+          className="p-8 text-center rounded-2xl"
           style={{
             backgroundColor: "var(--status-success-bg)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
           <div
-            className="w-16 h-16 mx-auto mb-4 flex items-center justify-center"
+            className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full"
             style={{
               backgroundColor: "#16A34A",
-              border: "2px solid var(--border-hard)",
             }}
           >
             <Send size={28} className="text-white" />
           </div>
-          <h2 className="text-2xl font-extrabold uppercase text-[var(--status-success-text)]">Request Sent!</h2>
+          <h2 className="text-2xl font-bold text-[var(--status-success-text)]">Request Sent!</h2>
           <p className="mt-2 text-sm text-[var(--status-success-text)] font-medium">
             Your hire request to @{username} has been recorded.
           </p>
         </div>
 
         <div
-          className="mt-6 p-6"
+          className="mt-6 p-6 rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
-          <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)] mb-4">
+          <h3 className="text-sm font-bold text-[var(--foreground)] mb-4">
             Follow Up Directly
           </h3>
           <p className="text-sm text-[var(--text-secondary)] font-medium mb-4">
@@ -125,7 +125,7 @@ export default function ContactPage({
                 rel="noopener noreferrer"
                 className="btn-brutal btn-brutal-dark text-xs py-2 px-4 flex items-center gap-2"
               >
-                <Github size={14} />
+                <GithubLogo weight="fill" size={14} />
                 GitHub
               </a>
             )}
@@ -147,7 +147,7 @@ export default function ContactPage({
                 rel="noopener noreferrer"
                 className="btn-brutal btn-brutal-secondary text-xs py-2 px-4 flex items-center gap-2"
               >
-                <Globe size={14} />
+                <Globe weight="fill" size={14} />
                 Website
               </a>
             )}
@@ -170,7 +170,7 @@ export default function ContactPage({
     <div className="mx-auto max-w-2xl px-4 sm:px-6 py-12">
       <Link
         href={`/profile/${username}`}
-        className="inline-flex items-center gap-2 text-sm font-bold uppercase text-[var(--text-muted)] hover:text-[var(--accent)] mb-6"
+        className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-muted)] hover:text-[var(--accent)] mb-6"
       >
         <ArrowLeft size={14} />
         Back to Profile
@@ -178,42 +178,42 @@ export default function ContactPage({
 
       <div className="flex items-center gap-3 mb-8">
         <div
-          className="w-10 h-10 flex items-center justify-center"
+          className="w-10 h-10 flex items-center justify-center rounded-xl"
           style={{
             backgroundColor: "var(--bg-inverted)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
           }}
         >
-          <Bot size={20} className="text-[var(--accent)]" />
+          <Robot weight="fill" size={20} className="text-[var(--accent)]" />
         </div>
         <div>
-          <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">
+          <h1 className="text-2xl font-bold text-[var(--foreground)]">
             Contact @{username}
           </h1>
           <p className="text-sm text-[var(--text-secondary)] font-medium">
-            Bot-drafted hire request
+            Robot-drafted hire request
           </p>
         </div>
       </div>
 
       {/* Target user mini card */}
       <div
-        className="p-4 flex items-center gap-4 mb-6"
+        className="p-4 flex items-center gap-4 mb-6 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal-sm)",
         }}
       >
         <div
-          className="flex h-12 w-12 shrink-0 items-center justify-center text-sm font-extrabold text-white"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
           style={{ backgroundColor: "var(--bg-inverted)" }}
         >
           {initials}
         </div>
         <div>
-          <div className="font-extrabold uppercase text-[var(--foreground)]">@{username}</div>
-          <div className="text-xs font-bold text-[var(--text-muted)]">
+          <div className="font-bold text-[var(--foreground)]">@{username}</div>
+          <div className="text-xs font-semibold text-[var(--text-muted)]">
             {user.streak} day streak · {(user.projects ?? []).length} projects · Vibe {user.vibe_score}
           </div>
         </div>
@@ -225,15 +225,15 @@ export default function ContactPage({
 
       {!thinking && (
         <div
-          className="p-6 space-y-4 mt-4"
+          className="p-6 space-y-4 mt-4 rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
           <div>
-            <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
+            <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
               Your Name
             </label>
             <input
@@ -247,8 +247,8 @@ export default function ContactPage({
           </div>
 
           <div>
-            <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
-              Bot-Drafted Message
+            <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
+              Robot-Drafted Message
             </label>
             <textarea
               value={message}
@@ -257,8 +257,8 @@ export default function ContactPage({
               className="input-brutal resize-none font-mono text-sm"
             />
             <p className="text-xs text-[var(--text-muted-soft)] mt-1 font-medium">
-              <Bot size={10} className="inline mr-1" />
-              Message drafted by VibeFinder Bot. Feel free to edit before sending.
+              <Robot weight="fill" size={10} className="inline mr-1" />
+              Message drafted by VibeFinder Robot. Feel free to edit before sending.
             </p>
           </div>
 

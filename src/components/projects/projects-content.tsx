@@ -97,7 +97,7 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
             placeholder="Search projects by name, tech, or tag..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border-2 border-[var(--border-hard)] bg-[var(--card-bg)] text-[var(--foreground)] font-medium text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[var(--border-hard)] bg-[var(--bg-surface)] text-[var(--foreground)] font-medium text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
           />
         </div>
         <div className="flex gap-3">
@@ -105,7 +105,7 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
             <select
               value={sortBy}
               onChange={e => setSortBy(e.target.value as SortOption)}
-              className="appearance-none pl-4 pr-10 py-2.5 border-2 border-[var(--border-hard)] bg-[var(--card-bg)] text-[var(--foreground)] font-bold text-sm uppercase cursor-pointer focus:outline-none focus:border-[var(--accent)]"
+              className="appearance-none pl-4 pr-10 py-2.5 rounded-xl border border-[var(--border-hard)] bg-[var(--bg-surface)] text-[var(--foreground)] font-semibold text-sm cursor-pointer focus:outline-none focus:border-[var(--accent)]"
             >
               <option value="newest">Newest</option>
               <option value="endorsements">Most Endorsed</option>
@@ -118,10 +118,10 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2.5 border-2 font-bold text-sm uppercase transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-semibold text-sm transition-colors ${
               showFilters || activeFilterCount > 0
                 ? "border-[var(--accent)] text-[var(--accent)] bg-[var(--accent)]/10"
-                : "border-[var(--border-hard)] text-[var(--foreground)] bg-[var(--card-bg)]"
+                : "border-[var(--border-hard)] text-[var(--foreground)] bg-[var(--bg-surface)]"
             }`}
           >
             <SlidersHorizontal size={14} />
@@ -132,7 +132,7 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
 
       {/* Expandable filter panel */}
       {showFilters && (
-        <div className="mb-6 p-4 border-2 border-[var(--border-hard)] bg-[var(--card-bg)]">
+        <div className="mb-6 p-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
           <div className="flex flex-wrap gap-6">
             <label className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)] cursor-pointer">
               <input
@@ -156,7 +156,7 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
 
           {allTechStacks.length > 0 && (
             <div className="mt-4">
-              <p className="text-xs font-bold uppercase text-[var(--text-secondary)] mb-2">Tech Stack</p>
+              <p className="text-xs font-medium text-[var(--text-muted)] mb-2">Tech Stack</p>
               <div className="flex flex-wrap gap-2">
                 {allTechStacks.slice(0, 20).map(tech => (
                   <button
@@ -166,7 +166,7 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
                         prev.includes(tech) ? prev.filter(t => t !== tech) : [...prev, tech]
                       )
                     }
-                    className={`px-3 py-1 text-xs font-bold uppercase border-2 transition-colors ${
+                    className={`px-3 py-1 text-xs font-semibold rounded-full border transition-colors ${
                       selectedTech.includes(tech)
                         ? "border-[var(--accent)] text-[var(--accent)] bg-[var(--accent)]/10"
                         : "border-[var(--border-hard)] text-[var(--text-secondary)] hover:border-[var(--foreground)]"
@@ -182,7 +182,7 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
           {activeFilterCount > 0 && (
             <button
               onClick={() => { setVerifiedOnly(false); setHasLiveUrl(false); setSelectedTech([]); }}
-              className="mt-4 text-xs font-bold uppercase text-[var(--accent)] hover:underline"
+              className="mt-4 text-xs font-semibold text-[var(--accent)] hover:underline"
             >
               Clear all filters
             </button>

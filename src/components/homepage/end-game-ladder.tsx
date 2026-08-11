@@ -20,15 +20,16 @@
  */
 
 import { Fragment } from "react";
-import { ArrowRight, Github, Flame, Trophy, Mail } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Envelope, Fire, GithubLogo, Trophy } from "@phosphor-icons/react/dist/ssr";
+import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
 import { EndGameLadderCTA } from "./end-game-ladder-cta";
 
 interface Step {
   number: string;
   title: string;
   body: string;
-  icon: LucideIcon;
+  icon: PhosphorIcon;
   /** True for the terminal "GET HIRED" step — gets accent styling so it
    *  reads as the destination rather than another waypoint. */
   isTerminal?: boolean;
@@ -39,13 +40,13 @@ const STEPS: readonly Step[] = [
     number: "01",
     title: "Sign up",
     body: "Connect your GitHub in 60 seconds. No resume, no portfolio.",
-    icon: Github,
+    icon: GithubLogo,
   },
   {
     number: "02",
     title: "Ship daily",
     body: "Commit every day. Streaks auto-detect from your GitHub activity.",
-    icon: Flame,
+    icon: Fire,
   },
   {
     number: "03",
@@ -57,7 +58,7 @@ const STEPS: readonly Step[] = [
     number: "04",
     title: "Get hired",
     body: "Founders DM the top builders. Skip the resume gauntlet.",
-    icon: Mail,
+    icon: Envelope,
     isTerminal: true,
   },
 ];
@@ -67,17 +68,17 @@ export function EndGameLadder() {
     <section className="mx-auto max-w-7xl px-4 sm:px-6 pb-14 sm:pb-20">
       <div className="text-center mb-10">
         <div
-          className="inline-flex items-center gap-2 mb-3 px-3 py-1 text-xs font-extrabold uppercase tracking-wider"
+          className="inline-flex items-center gap-2 mb-3 px-3.5 py-1 rounded-full text-xs font-semibold"
           style={{
             backgroundColor: "var(--bg-surface)",
             color: "var(--foreground)",
-            border: "2px solid var(--border-hard)",
-            boxShadow: "var(--shadow-brutal-sm)",
+            border: "1px solid var(--border-subtle)",
+            boxShadow: "var(--shadow-brutal-xs)",
           }}
         >
           How it works
         </div>
-        <h2 className="text-3xl sm:text-4xl font-extrabold uppercase tracking-tight text-[var(--foreground)]">
+        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--foreground)]">
           Four steps to
           <span className="text-accent-brutal"> getting hired.</span>
         </h2>
@@ -127,24 +128,24 @@ function StepCard({ step }: { step: Step }) {
 
   return (
     <article
-      className="p-5 sm:p-6 flex flex-col gap-3"
+      className="p-5 sm:p-6 flex flex-col gap-3 rounded-2xl"
       style={{
         backgroundColor: terminal ? "var(--accent)" : "var(--bg-surface)",
         color: terminal ? "var(--text-on-inverted)" : "var(--foreground)",
-        border: "2px solid var(--border-hard)",
+        border: "1px solid var(--border-subtle)",
         boxShadow: "var(--shadow-brutal-sm)",
       }}
     >
       <div className="flex items-start justify-between gap-3">
         <span
-          className="text-xs font-extrabold tracking-widest tabular-nums opacity-70"
+          className="text-xs font-semibold tabular-nums opacity-70"
         >
           {step.number}
         </span>
-        <Icon size={20} className="flex-shrink-0" strokeWidth={2.25} />
+        <Icon weight="fill" size={20} className="flex-shrink-0" />
       </div>
       <div>
-        <div className="text-lg sm:text-xl font-extrabold uppercase tracking-tight">
+        <div className="text-lg sm:text-xl font-bold tracking-tight">
           {step.title}
         </div>
         <p

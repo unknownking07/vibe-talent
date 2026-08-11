@@ -33,7 +33,7 @@ export function ChainDot({
         aria-hidden="true"
       />
       {withLabel && (
-        <span className="text-xs font-bold text-[var(--foreground)]">{LABELS[chain]}</span>
+        <span className="text-xs font-semibold text-[var(--foreground)]">{LABELS[chain]}</span>
       )}
     </span>
   );

@@ -3,15 +3,15 @@ export default function ProfileLoading() {
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
       <div className="grid lg:grid-cols-[320px_1fr] gap-8">
         <div
-          className="p-6 space-y-6"
+          className="p-6 space-y-6 rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
           <div className="flex flex-col items-center gap-4">
-            <div className="skeleton w-[120px] h-[120px]" />
+            <div className="skeleton w-[120px] h-[120px] rounded-full" />
             <div className="skeleton h-6 w-40" />
             <div className="skeleton h-4 w-24" />
           </div>

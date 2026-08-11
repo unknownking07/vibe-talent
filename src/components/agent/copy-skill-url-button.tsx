@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Check } from "lucide-react";
+import { Copy } from "lucide-react";
+import { Check } from "@phosphor-icons/react";
 
 export function CopySkillUrlButton() {
   const [copied, setCopied] = useState(false);
@@ -19,7 +20,7 @@ export function CopySkillUrlButton() {
       className="btn-brutal text-sm flex items-center gap-2 transition-all"
       style={{ backgroundColor: copied ? "#16A34A" : "var(--bg-inverted)", color: "var(--text-on-inverted)" }}
     >
-      {copied ? <Check size={14} /> : <Copy size={14} />}
+      {copied ? <Check weight="bold" size={14} /> : <Copy size={14} />}
       {copied ? "Copied!" : "Copy Skill URL"}
     </button>
   );

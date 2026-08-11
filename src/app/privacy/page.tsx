@@ -4,7 +4,7 @@ import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
-  description: "VibeTalent privacy policy — how we collect, use, and protect your data.",
+  description: "VibeTalent privacy policy: how we collect, use, and protect your data.",
   alternates: { canonical: `${siteUrl}/privacy` },
 };
 
@@ -23,12 +23,12 @@ export default function PrivacyPolicyPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbLd) }}
       />
-      <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-8">Privacy Policy</h1>
+      <h1 className="text-3xl font-bold text-[var(--foreground)] mb-8">Privacy Policy</h1>
       <p className="text-sm text-[var(--text-muted)] mb-8">Last updated: April 1, 2026</p>
 
       <div className="space-y-6 text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">1. Introduction</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">1. Introduction</h2>
           <p>
             VibeTalent (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) operates the website at vibetalent.work. This Privacy Policy
             explains how we collect, use, disclose, and safeguard your information when you visit our
@@ -37,8 +37,8 @@ export default function PrivacyPolicyPage() {
           </p>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">2. Information We Collect</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">2. Information We Collect</h2>
           <p className="mb-3">We collect the following types of information:</p>
           <ul className="list-disc pl-6 space-y-2">
             <li><strong>Account Information:</strong> When you sign up, we collect your email address and profile information through GitHub or Google OAuth. We do not store your passwords.</li>
@@ -50,8 +50,8 @@ export default function PrivacyPolicyPage() {
           </ul>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">3. How We Use Your Information</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">3. How We Use Your Information</h2>
           <ul className="list-disc pl-6 space-y-2">
             <li>To create and maintain your developer profile on the platform</li>
             <li>To calculate and display your vibe score, coding streak, and badge level</li>
@@ -63,18 +63,18 @@ export default function PrivacyPolicyPage() {
           </ul>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">4. Data Sharing</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">4. Data Sharing</h2>
           <p className="mb-3">We do not sell your personal information. We may share data in the following cases:</p>
           <ul className="list-disc pl-6 space-y-2">
-            <li><strong>Public Profile:</strong> Your profile, projects, streak, and vibe score are publicly visible by design — this is the core value proposition of the platform.</li>
+            <li><strong>Public Profile:</strong> Your profile, projects, streak, and vibe score are publicly visible by design. This is the core value proposition of the platform.</li>
             <li><strong>Service Providers:</strong> We use third-party services (Supabase for database and authentication, Vercel for hosting, Google Analytics for usage insights) that process data on our behalf.</li>
             <li><strong>Legal Requirements:</strong> We may disclose information if required by law or to protect our rights.</li>
           </ul>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">5. Data Storage and Security</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">5. Data Storage and Security</h2>
           <p>
             Your data is stored on Supabase (hosted on AWS) with row-level security policies.
             We use HTTPS encryption for all data in transit and follow industry-standard security
@@ -83,8 +83,8 @@ export default function PrivacyPolicyPage() {
           </p>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">6. Your Rights</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">6. Your Rights</h2>
           <p className="mb-3">You have the right to:</p>
           <ul className="list-disc pl-6 space-y-2">
             <li>Access the personal data we hold about you</li>
@@ -95,8 +95,8 @@ export default function PrivacyPolicyPage() {
           </ul>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">7. Cookies</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">7. Cookies</h2>
           <p>
             We use essential cookies for authentication and session management. We also use
             Google Analytics cookies to understand how visitors use the platform. You can disable
@@ -104,8 +104,8 @@ export default function PrivacyPolicyPage() {
           </p>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">8. Third-Party Links</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">8. Third-Party Links</h2>
           <p>
             Our platform contains links to external websites (GitHub, personal websites, project URLs).
             We are not responsible for the privacy practices of these external sites. We encourage you
@@ -113,8 +113,8 @@ export default function PrivacyPolicyPage() {
           </p>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">9. Changes to This Policy</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">9. Changes to This Policy</h2>
           <p>
             We may update this Privacy Policy from time to time. We will notify users of significant
             changes by posting a notice on the platform. Your continued use of VibeTalent after changes
@@ -122,8 +122,8 @@ export default function PrivacyPolicyPage() {
           </p>
         </section>
 
-        <section className="p-6" style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">10. Contact Us</h2>
+        <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">10. Contact Us</h2>
           <p>
             If you have questions about this Privacy Policy or want to exercise your data rights,
             contact us at{" "}

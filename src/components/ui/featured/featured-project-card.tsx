@@ -56,7 +56,7 @@ export function FeaturedProjectCard({ promo }: { promo: EnrichedPromotion }) {
 
       {/* Image area */}
       <div
-        className="relative h-44 lg:h-48 border-b-2 border-[var(--border-hard)] shrink-0"
+        className="relative h-44 lg:h-48 border-b border-[var(--border-subtle)] shrink-0"
         style={{ backgroundColor: "hsl(14, 6%, 12%)" }}
       >
         {imageUrl ? (
@@ -70,7 +70,7 @@ export function FeaturedProjectCard({ promo }: { promo: EnrichedPromotion }) {
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             <span
-              className="text-6xl font-extrabold uppercase opacity-20 select-none tracking-widest"
+              className="text-6xl font-bold opacity-20 select-none"
               style={{ color: "hsl(14, 6%, 30%)" }}
             >
               {title.charAt(0)}
@@ -82,11 +82,11 @@ export function FeaturedProjectCard({ promo }: { promo: EnrichedPromotion }) {
       {/* Content */}
       <div className="p-4 flex-1 flex flex-col">
         <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+          <span className="flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-muted)]">
             <span className="live-dot" /> Live
           </span>
         </div>
-        <h3 className="mt-2 text-base font-extrabold uppercase text-[var(--foreground)] line-clamp-1 leading-tight">
+        <h3 className="mt-2 text-base font-bold text-[var(--foreground)] line-clamp-1 leading-tight">
           {title}
         </h3>
         {username && (
@@ -109,7 +109,7 @@ export function FeaturedProjectCard({ promo }: { promo: EnrichedPromotion }) {
             {techStack.slice(0, MAX_TECH_PILLS).map((tech) => (
               <span
                 key={tech}
-                className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider text-[var(--text-muted)]"
+                className="px-2 py-0.5 rounded-full text-[9px] font-mono font-semibold text-[var(--text-muted)]"
                 style={{
                   backgroundColor: "var(--bg-surface-light)",
                   border: "1px solid var(--border-subtle)",
@@ -119,7 +119,7 @@ export function FeaturedProjectCard({ promo }: { promo: EnrichedPromotion }) {
               </span>
             ))}
             {techStack.length > MAX_TECH_PILLS && (
-              <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider text-[var(--text-muted)]">
+              <span className="px-2 py-0.5 text-[9px] font-mono font-semibold text-[var(--text-muted)]">
                 +{techStack.length - MAX_TECH_PILLS}
               </span>
             )}
@@ -129,7 +129,7 @@ export function FeaturedProjectCard({ promo }: { promo: EnrichedPromotion }) {
 
       {/* Hover/focus overlay — see .featured-card-overlay in globals.css */}
       <div className="featured-card-overlay">
-        <span className="btn-brutal btn-brutal-primary btn-notched text-xs px-5 py-2.5 uppercase font-extrabold">
+        <span className="btn-brutal btn-brutal-primary text-xs px-5 py-2.5">
           View Project
         </span>
       </div>

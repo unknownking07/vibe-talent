@@ -113,8 +113,8 @@ function extractStrengths(user: UserWithSocials, dims: EvaluationDimensions): st
   const strengths: string[] = [];
   if (user.streak > 90) strengths.push(`${user.streak}-day active coding streak`);
   else if (user.streak > 30) strengths.push(`${user.streak}-day streak shows dedication`);
-  if (user.badge_level === "diamond") strengths.push("Diamond badge holder — top tier");
-  else if (user.badge_level === "gold") strengths.push("Gold badge — proven consistency");
+  if (user.badge_level === "diamond") strengths.push("Diamond badge holder: top tier");
+  else if (user.badge_level === "gold") strengths.push("Gold badge: proven consistency");
   const verifiedProjCount = (user.projects ?? []).filter(p => p.verified).length;
   const highQualityCount = (user.projects ?? []).filter(p => p.quality_score >= 50).length;
   if (highQualityCount >= 2) strengths.push(`${highQualityCount} high-quality verified projects`);
@@ -143,11 +143,11 @@ function extractRisks(user: UserWithSocials, dims: EvaluationDimensions): string
   const risks: string[] = [];
   const unverifiedCount = (user.projects ?? []).filter(p => !p.verified).length;
   const verifiedCount = (user.projects ?? []).filter(p => p.verified).length;
-  if (unverifiedCount > 0 && verifiedCount === 0) risks.push("No verified projects — ownership unconfirmed");
+  if (unverifiedCount > 0 && verifiedCount === 0) risks.push("No verified projects: ownership unconfirmed");
   else if (unverifiedCount > verifiedCount) risks.push(`${unverifiedCount} of ${(user.projects ?? []).length} projects are unverified`);
   const lowQualityCount = (user.projects ?? []).filter(p => p.verified && p.quality_score > 0 && p.quality_score < 20).length;
   if (lowQualityCount > 0) risks.push(`${lowQualityCount} project${lowQualityCount > 1 ? "s" : ""} scored low on quality analysis`);
-  if (user.streak === 0) risks.push("Currently inactive — no active streak");
+  if (user.streak === 0) risks.push("Currently inactive, no active streak");
   if ((user.projects ?? []).length < 2) risks.push("Limited project portfolio");
   if (!user.social_links?.telegram) risks.push("No Telegram for quick communication");
   if (!(user.projects ?? []).some(p => p.live_url)) risks.push("No live deployed projects");

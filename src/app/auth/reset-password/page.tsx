@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { Lock, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Check, Lock } from "@phosphor-icons/react";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -65,7 +65,7 @@ export default function ResetPasswordPage() {
           className="p-8"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
@@ -75,12 +75,12 @@ export default function ResetPasswordPage() {
                 className="inline-flex items-center justify-center w-16 h-16 mb-4"
                 style={{
                   backgroundColor: "#D1FAE5",
-                  border: "2px solid var(--border-hard)",
+                  border: "1px solid var(--border-hard)",
                 }}
               >
-                <Check size={32} className="text-emerald-700" />
+                <Check weight="bold" size={32} className="text-emerald-700" />
               </div>
-              <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Password Updated</h1>
+              <h1 className="text-2xl font-bold text-[var(--foreground)]">Password Updated</h1>
               <p className="mt-3 text-sm text-[var(--text-secondary)] font-medium">
                 Your password has been reset. Redirecting to dashboard...
               </p>
@@ -92,12 +92,12 @@ export default function ResetPasswordPage() {
                   className="inline-flex items-center justify-center w-16 h-16 mb-4"
                   style={{
                     backgroundColor: "var(--status-warning-bg)",
-                    border: "2px solid var(--border-hard)",
+                    border: "1px solid var(--border-hard)",
                   }}
                 >
-                  <Lock size={32} className="text-[var(--accent)]" />
+                  <Lock weight="duotone" size={32} className="text-[var(--accent)]" />
                 </div>
-                <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Set New Password</h1>
+                <h1 className="text-2xl font-bold text-[var(--foreground)]">Set New Password</h1>
                 <p className="mt-2 text-sm text-[var(--text-secondary)] font-medium">
                   Choose a new password for your account
                 </p>
@@ -106,7 +106,7 @@ export default function ResetPasswordPage() {
               {!sessionReady && (
                 <div
                   className="p-3 mb-4 text-sm font-bold text-amber-800"
-                  style={{ backgroundColor: "var(--status-warning-bg)", border: "2px solid var(--border-hard)" }}
+                  style={{ backgroundColor: "var(--status-warning-bg)", border: "1px solid var(--border-hard)" }}
                 >
                   Verifying reset link... If this persists, request a new link.
                 </div>
@@ -115,7 +115,7 @@ export default function ResetPasswordPage() {
               {error && (
                 <div
                   className="p-3 mb-4 text-sm font-bold text-red-800"
-                  style={{ backgroundColor: "var(--status-error-border)", border: "2px solid var(--border-hard)" }}
+                  style={{ backgroundColor: "var(--status-error-border)", border: "1px solid var(--border-hard)" }}
                 >
                   {error}
                 </div>
@@ -123,7 +123,7 @@ export default function ResetPasswordPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
+                  <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
                     New Password
                   </label>
                   <input
@@ -138,7 +138,7 @@ export default function ResetPasswordPage() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
+                  <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
                     Confirm Password
                   </label>
                   <input

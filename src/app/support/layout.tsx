@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Support",
   description:
-    "Get instant answers about VibeTalent — vibe scores, streaks, projects, hiring, badges, and your account.",
+    "Get instant answers about VibeTalent: vibe scores, streaks, projects, hiring, badges, and your account.",
   robots: { index: false, follow: false }, // client-only chat surface, not an SEO page
 };
 

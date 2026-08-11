@@ -5,14 +5,14 @@ import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "All Projects — Shipped by Vibe Coders",
+  title: "All Projects: Shipped by Vibe Coders",
   description:
     "Browse all projects shipped by vibe coders. Filter by tech stack, quality score, and more to discover what builders are shipping.",
   alternates: {
     canonical: `${siteUrl}/projects`,
   },
   openGraph: {
-    title: "All Projects — VibeTalent",
+    title: "All Projects: VibeTalent",
     description: "Browse all projects shipped by vibe coders. Discover what builders are shipping.",
     url: `${siteUrl}/projects`,
     siteName: "VibeTalent",
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "All Projects — VibeTalent",
+    title: "All Projects: VibeTalent",
     description: "Browse all projects shipped by vibe coders. Discover what builders are shipping.",
   },
 };
@@ -53,7 +53,7 @@ export default async function ProjectsPage() {
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
       />
       <div className="mb-8">
-        <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">All Projects</h1>
+        <h1 className="text-3xl font-bold text-[var(--foreground)]">All Projects</h1>
         <p className="mt-2 text-[var(--text-secondary)] font-medium">
           {projects.length} projects shipped by vibe coders
         </p>

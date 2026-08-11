@@ -111,15 +111,15 @@ export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wide">
+        <span className="text-sm font-semibold text-[var(--text-secondary)]">
           {total} contributions in the last year
         </span>
-        <div className="flex items-center gap-1 text-xs font-bold text-[var(--text-muted)] uppercase">
+        <div className="flex items-center gap-1 text-xs font-medium text-[var(--text-muted)]">
           <span>Less</span>
           {[0, 1, 2, 3, 4].map((level) => (
             <div
               key={level}
-              className="w-3 h-3"
+              className="w-3 h-3 rounded-[2px]"
               style={{ backgroundColor: getLevelColor(level), border: "1px solid var(--border-subtle)" }}
             />
           ))}
@@ -133,7 +133,7 @@ export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
             return (
               <div
                 key={`${m.label}-${m.col}`}
-                className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)]"
+                className="text-[10px] font-semibold text-[var(--text-muted)]"
                 style={{ width: (nextCol - m.col) * 15, flexShrink: 0 }}
               >
                 {m.label}
@@ -144,7 +144,7 @@ export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
         <div className="flex">
           <div className="flex flex-col gap-[3px] mr-1" style={{ width: 28 }}>
             {DAY_LABELS.map((label, i) => (
-              <div key={i} className="h-3 flex items-center text-[10px] font-bold text-[var(--text-muted)]">
+              <div key={i} className="h-3 flex items-center text-[10px] font-medium text-[var(--text-muted)]">
                 {label}
               </div>
             ))}
@@ -157,7 +157,7 @@ export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
                   return (
                     <div
                       key={day.date}
-                      className="w-3 h-3"
+                      className="w-3 h-3 rounded-[2px]"
                       style={{ backgroundColor: getLevelColor(countToLevel(day.count)), border: "1px solid var(--border-subtle)" }}
                       title={label}
                       aria-label={label}

@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageCircle, X, LifeBuoy, Search } from "lucide-react";
+import { X, Search } from "lucide-react";
+import { ChatCircle, Lifebuoy } from "@phosphor-icons/react";
 
 /**
  * Site-wide floating chat launcher. One always-visible button (bottom-right)
@@ -56,38 +57,37 @@ export function FloatingChat() {
 
         .vt-fab {
           width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;
-          background: var(--accent); color: #0A0A0E;
-          border: 2px solid var(--border-hard); box-shadow: 4px 4px 0 var(--border-hard);
-          cursor: pointer; border-radius: 4px;
-          transition: transform .12s ease, box-shadow .12s ease;
+          background: var(--accent); color: #ffffff;
+          border: none; box-shadow: var(--shadow-brutal-accent);
+          cursor: pointer; border-radius: 999px;
+          transition: transform .16s cubic-bezier(0.23, 1, 0.32, 1), background-color .16s ease;
         }
-        .vt-fab:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--border-hard); }
-        .vt-fab:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--border-hard); }
+        .vt-fab:hover { transform: translateY(-2px); background: var(--accent-hover); }
+        .vt-fab:active { transform: scale(.95); }
 
         .vt-fab-menu {
           position: absolute; right: 0; bottom: calc(100% + 12px); width: 264px;
-          background: var(--bg-surface); border: 2px solid var(--border-hard);
-          box-shadow: 4px 4px 0 var(--border-hard); overflow: hidden;
-          animation: vt-fab-in .14s ease-out;
+          background: var(--bg-surface); border: 1px solid var(--border-subtle);
+          border-radius: var(--radius-card);
+          box-shadow: var(--shadow-brutal-hover); overflow: hidden;
+          animation: vt-fab-in .16s cubic-bezier(0.23, 1, 0.32, 1);
         }
-        @keyframes vt-fab-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes vt-fab-in { from { opacity: 0; transform: translateY(6px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
         .vt-fab-head {
-          padding: 10px 14px; font-size: 11px; font-weight: 800; text-transform: uppercase;
-          letter-spacing: .06em; color: var(--text-muted);
-          background: var(--bg-inverted); border-bottom: 2px solid var(--border-hard);
+          padding: 12px 16px 4px; font-size: 12px; font-weight: 600;
+          color: var(--text-muted);
         }
-        .vt-fab-item { display: flex; align-items: center; gap: 12px; padding: 14px; text-decoration: none; color: var(--foreground); transition: background .12s ease; }
-        .vt-fab-item + .vt-fab-item { border-top: 2px solid var(--border-hard); }
-        .vt-fab-item:hover { background: var(--bg-inverted); }
+        .vt-fab-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; text-decoration: none; color: var(--foreground); transition: background .12s ease; }
+        .vt-fab-item:hover { background: var(--bg-surface-light); }
         .vt-fab-ico {
           width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-          background: var(--bg-inverted); border: 2px solid var(--border-hard); color: var(--accent);
+          background: var(--accent-soft); border-radius: 10px; color: var(--accent);
           transition: background .12s ease, color .12s ease;
         }
-        .vt-fab-item:hover .vt-fab-ico { background: var(--accent); color: #0A0A0E; }
-        .vt-fab-title { display: block; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; line-height: 1.1; }
-        .vt-fab-sub { display: block; font-size: 12px; color: var(--text-muted); font-weight: 500; margin-top: 3px; }
+        .vt-fab-item:hover .vt-fab-ico { background: var(--accent); color: #ffffff; }
+        .vt-fab-title { display: block; font-size: 14px; font-weight: 600; line-height: 1.1; }
+        .vt-fab-sub { display: block; font-size: 12px; color: var(--text-muted); font-weight: 400; margin-top: 3px; }
       `}</style>
 
       <div className="vt-fab-wrap" ref={wrapRef}>
@@ -95,7 +95,7 @@ export function FloatingChat() {
           <div className="vt-fab-menu" role="menu" aria-label="Chat options">
             <div className="vt-fab-head">How can we help?</div>
             <Link href="/support" className="vt-fab-item" role="menuitem" onClick={() => setOpen(false)}>
-              <span className="vt-fab-ico"><LifeBuoy size={18} /></span>
+              <span className="vt-fab-ico"><Lifebuoy weight="fill" size={18} /></span>
               <span>
                 <span className="vt-fab-title">Get help</span>
                 <span className="vt-fab-sub">Questions &amp; support</span>
@@ -119,7 +119,7 @@ export function FloatingChat() {
           aria-expanded={open}
           aria-label={open ? "Close chat menu" : "Open chat menu"}
         >
-          {open ? <X size={24} /> : <MessageCircle size={24} />}
+          {open ? <X size={24} /> : <ChatCircle weight="fill" size={24} />}
         </button>
       </div>
     </>

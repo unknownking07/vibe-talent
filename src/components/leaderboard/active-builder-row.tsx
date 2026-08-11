@@ -32,7 +32,7 @@ export function ActiveBuilderRow(p: ActiveBuilderRowProps) {
   return (
     <Link
       href={`/profile/${p.username}`}
-      className={`block px-4 sm:px-5 py-3 sm:py-4 border-b border-[var(--border-subtle)] last:border-b-0 hover:bg-[var(--bg-surface-light)] transition-colors ${p.isCrown ? "bg-[#FFF7ED] dark:bg-[var(--bg-surface-light)] border-b-[var(--border-hard)]" : ""}`}
+      className={`block px-4 sm:px-5 py-3 sm:py-4 border-b border-[var(--border-subtle)] last:border-b-0 hover:bg-[var(--bg-surface-light)] transition-colors ${p.isCrown ? "bg-[var(--status-warning-bg)] border-b-[var(--border-hard)]" : ""}`}
     >
       <div
         className="flex flex-col gap-3 sm:grid sm:items-center sm:gap-4"
@@ -40,7 +40,7 @@ export function ActiveBuilderRow(p: ActiveBuilderRowProps) {
       >
         {/* Identity — flex on mobile, contents (transparent for grid) on sm+ */}
         <div className="flex items-center gap-3 min-w-0 sm:contents">
-          <span className="font-mono text-[14px] sm:text-[15px] font-extrabold text-[var(--text-secondary)] shrink-0 w-7 sm:w-auto">
+          <span className="font-mono text-[14px] sm:text-[15px] font-bold text-[var(--text-secondary)] shrink-0 w-7 sm:w-auto">
             {String(p.position).padStart(2, "0")}
           </span>
 
@@ -50,7 +50,7 @@ export function ActiveBuilderRow(p: ActiveBuilderRowProps) {
               alt={p.username}
               width={48}
               height={48}
-              className="rounded-full border-2 border-[var(--border-hard)] w-10 h-10 sm:w-12 sm:h-12 shrink-0"
+              className="rounded-full border border-[var(--border-hard)] w-10 h-10 sm:w-12 sm:h-12 shrink-0"
             />
           ) : (
             // White-on-accent gradient (the previous `accent → #FFA07A` light
@@ -60,7 +60,7 @@ export function ActiveBuilderRow(p: ActiveBuilderRowProps) {
             // fallback; white-on-dark clears AA / AAA easily and keeps the
             // fallback visually consistent with the rest of the app.
             <div
-              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-[var(--border-hard)] flex items-center justify-center text-white font-extrabold text-[15px] sm:text-[17px] shrink-0"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-[var(--border-hard)] flex items-center justify-center text-white font-bold text-[15px] sm:text-[17px] shrink-0"
               style={{ backgroundColor: "var(--bg-inverted)" }}
             >
               {p.username[0]?.toUpperCase()}
@@ -81,28 +81,28 @@ export function ActiveBuilderRow(p: ActiveBuilderRowProps) {
             handle column on mobile rather than swimming back to the rail. */}
         <div className="flex justify-between items-start gap-2 pt-2 pl-[52px] sm:pl-0 border-t border-[var(--border-subtle)] sm:border-t-0 sm:pt-0 sm:contents">
           <div className="text-left sm:text-right sm:min-w-[70px]">
-            <div className="font-mono font-black text-[18px] sm:text-[22px] leading-none text-[var(--foreground)]">
+            <div className="font-mono font-extrabold text-[18px] sm:text-[22px] leading-none text-[var(--foreground)]">
               {p.commits7d}
             </div>
-            <div className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-widest text-[var(--text-secondary)] mt-1">
+            <div className="text-[10px] sm:text-[11px] font-medium text-[var(--text-muted)] mt-1">
               COMMITS
             </div>
           </div>
 
           <div className="text-left sm:text-right sm:min-w-[70px]">
-            <div className="font-mono font-black text-[18px] sm:text-[22px] leading-none text-[var(--foreground)] tracking-tight">
+            <div className="font-mono font-extrabold text-[18px] sm:text-[22px] leading-none text-[var(--foreground)] tracking-tight">
               {p.streak}
             </div>
-            <div className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-widest text-[var(--text-secondary)] mt-1">
+            <div className="text-[10px] sm:text-[11px] font-medium text-[var(--text-muted)] mt-1">
               DAY STREAK
             </div>
           </div>
 
           <div className="text-left sm:text-right sm:min-w-[70px]">
-            <div className="font-mono font-black text-[18px] sm:text-[22px] leading-none text-[var(--accent)]">
+            <div className="font-mono font-extrabold text-[18px] sm:text-[22px] leading-none text-[var(--accent)]">
               {p.vibeScore}
             </div>
-            <div className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-widest text-[var(--text-secondary)] mt-1">
+            <div className="text-[10px] sm:text-[11px] font-medium text-[var(--text-muted)] mt-1">
               VIBE SCORE
             </div>
           </div>

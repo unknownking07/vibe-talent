@@ -62,12 +62,12 @@ export type FeedItem = {
   target_avatar_url?: string | null;
 
   // Review-event fields
-  rating?: number;             // 1–5
+  rating?: number;             // 1-5
   review_comment?: string;     // truncated server-side
 
   // Badge-event fields
   badge_tier?: BadgeTier;
-  badge_threshold_days?: number; // 30 / 90 / 180 / 365 — kept for copy
+  badge_threshold_days?: number; // 30 / 90 / 180 / 365: kept for copy
 };
 
 /** Filter chip values shown above the feed. `"all"` means no filter applied;

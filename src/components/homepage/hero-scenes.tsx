@@ -1,5 +1,6 @@
 // Animated hero scenes (CSS only, prefers-reduced-motion safe) for the homepage fork hero.
-import { Flame, Search, Check } from "lucide-react";
+import { Search } from "lucide-react";
+import { Check, Fire } from "@phosphor-icons/react/dist/ssr";
 
 const SCENE_CSS = `
 @keyframes prvCursorBlink { 0%,49% { opacity: 1 } 50%,100% { opacity: 0 } }
@@ -55,15 +56,15 @@ export function HeroSceneStyles() {
 function SceneFrame({ label, right, children }: { label: string; right: React.ReactNode; children: React.ReactNode }) {
   return (
     <div
-      className="relative w-full overflow-hidden select-none"
-      style={{ height: 150, border: "2px solid var(--border-hard)", backgroundColor: "var(--bg-surface-light)" }}
+      className="relative w-full overflow-hidden select-none rounded-xl"
+      style={{ height: 150, border: "1px solid var(--border-hard)", backgroundColor: "var(--bg-surface-light)" }}
       aria-hidden="true"
     >
       <div
         className="flex items-center justify-between px-3 py-1.5"
-        style={{ borderBottom: "2px solid var(--border-hard)", backgroundColor: "var(--bg-inverted)" }}
+        style={{ borderBottom: "1px solid var(--border-hard)", backgroundColor: "var(--bg-inverted)" }}
       >
-        <span className="font-mono text-[10px] font-extrabold uppercase tracking-wider" style={{ color: "var(--text-on-inverted)" }}>
+        <span className="font-mono text-[10px] font-semibold" style={{ color: "var(--text-on-inverted)" }}>
           {label}
         </span>
         {right}
@@ -76,7 +77,7 @@ function SceneFrame({ label, right, children }: { label: string; right: React.Re
 /** Builder: a vibe coder shipping — hooded avatar, typing code, streak flame, contribution graph. */
 export function BuilderScene() {
   return (
-    <SceneFrame label="~/vibe · shipping" right={<Flame size={14} className="prvFlame" style={{ color: "var(--accent)" }} />}>
+    <SceneFrame label="~/vibe · shipping" right={<Fire weight="fill" size={14} className="prvFlame" style={{ color: "var(--accent)" }} />}>
       <div className="flex items-start gap-3">
         {/* hooded coder avatar */}
         <svg width="26" height="26" viewBox="0 0 24 24" className="prvHood shrink-0" style={{ marginTop: 1 }}>
@@ -100,11 +101,11 @@ export function BuilderScene() {
           <div
             key={i}
             className="prvSquare"
-            style={{ width: 11, height: 11, animationDelay: `${i * 105}ms`, backgroundColor: "var(--border-subtle)", border: "1px solid var(--border-hard)" }}
+            style={{ width: 11, height: 11, borderRadius: 2, animationDelay: `${i * 105}ms`, backgroundColor: "var(--border-subtle)", border: "1px solid var(--border-hard)" }}
           />
         ))}
       </div>
-      <div className="mt-2 font-mono text-[9px] font-extrabold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+      <div className="mt-2 font-mono text-[9px] font-semibold" style={{ color: "var(--text-muted)" }}>
         commit · ship · repeat
       </div>
     </SceneFrame>
@@ -129,12 +130,12 @@ export function HirerScene() {
         {rows.map((r, i) => (
           <div
             key={i}
-            className={`flex items-center gap-2 px-2 py-1.5 ${r.match ? "prvMatchRow" : ""}`}
-            style={{ border: "2px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)" }}
+            className={`flex items-center gap-2 px-2 py-1.5 rounded-lg ${r.match ? "prvMatchRow" : ""}`}
+            style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)" }}
           >
             <div
               className="rounded-full shrink-0"
-              style={{ width: 16, height: 16, backgroundColor: r.match ? "var(--accent)" : "var(--border-subtle)", border: "1.5px solid var(--border-hard)" }}
+              style={{ width: 16, height: 16, backgroundColor: r.match ? "var(--accent)" : "var(--border-subtle)", border: "1px solid var(--border-hard)" }}
             />
             <div className="flex-1 space-y-1">
               <div className="h-1.5 rounded-sm" style={{ width: r.w, backgroundColor: "var(--border-subtle)" }} />
@@ -142,16 +143,16 @@ export function HirerScene() {
             </div>
             {r.match && (
               <span
-                className="prvCheck inline-flex items-center justify-center shrink-0"
-                style={{ width: 16, height: 16, backgroundColor: "var(--accent)", border: "1.5px solid var(--border-hard)" }}
+                className="prvCheck inline-flex items-center justify-center shrink-0 rounded-full"
+                style={{ width: 16, height: 16, backgroundColor: "var(--accent)" }}
               >
-                <Check size={11} strokeWidth={3.5} color="#fff" />
+                <Check weight="bold" size={11} color="#fff" />
               </span>
             )}
           </div>
         ))}
       </div>
-      <div className="mt-2 font-mono text-[9px] font-extrabold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+      <div className="mt-2 font-mono text-[9px] font-semibold" style={{ color: "var(--text-muted)" }}>
         ranked by proof
       </div>
     </SceneFrame>

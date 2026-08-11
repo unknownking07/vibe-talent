@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, Check } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { Check } from "@phosphor-icons/react";
 import type { AgentStep } from "@/lib/types/agent";
 
 interface AgentThinkingProps {
@@ -29,19 +30,19 @@ export function AgentThinking({ steps, onComplete }: AgentThinkingProps) {
 
   return (
     <div
-      className="p-6 font-mono text-sm"
+      className="p-6 rounded-xl font-mono text-sm"
       style={{
         backgroundColor: "var(--bg-inverted)",
-        border: "2px solid var(--border-hard)",
+        border: "1px solid var(--border-subtle)",
         boxShadow: "var(--shadow-brutal)",
       }}
     >
       <div className="flex items-center gap-2 mb-4">
         <div
-          className="w-3 h-3"
+          className="w-3 h-3 rounded-full"
           style={{ backgroundColor: "var(--accent)" }}
         />
-        <span className="text-xs font-extrabold uppercase tracking-wider text-white">
+        <span className="text-xs font-semibold text-white">
           VibeFinder Bot Processing
         </span>
       </div>
@@ -60,7 +61,7 @@ export function AgentThinking({ steps, onComplete }: AgentThinkingProps) {
               }`}
             >
               {isCompleted ? (
-                <Check size={16} className="text-green-400 shrink-0" />
+                <Check weight="bold" size={16} className="text-green-400 shrink-0" />
               ) : isActive ? (
                 <Loader2 size={16} className="text-[var(--accent)] animate-spin shrink-0" />
               ) : (

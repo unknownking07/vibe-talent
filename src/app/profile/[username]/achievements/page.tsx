@@ -21,7 +21,7 @@ export async function generateMetadata({
   }
 
   const title = `@${user.username}'s Achievements`;
-  const description = `Badges earned by @${user.username} on VibeTalent — streaks, projects, endorsements, and more.`;
+  const description = `Badges earned by @${user.username} on VibeTalent: streaks, projects, endorsements, and more.`;
   const encodedUsername = encodeURIComponent(user.username);
 
   return {
@@ -58,7 +58,7 @@ export default async function AchievementsPage({
   if (!username || username.length > 50 || !/^[a-zA-Z0-9_.\- ]+$/.test(username)) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-        <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">
           Invalid username
         </h1>
         <p className="mt-2 font-medium text-[var(--text-secondary)]">
@@ -73,7 +73,7 @@ export default async function AchievementsPage({
   if (!user) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-        <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">
           Builder not found
         </h1>
         <p className="mt-2 font-medium text-[var(--text-secondary)]">
@@ -92,7 +92,7 @@ export default async function AchievementsPage({
         {/* Back to profile */}
         <Link
           href={`/profile/${user.username}`}
-          className="inline-flex w-fit items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide"
+          className="inline-flex w-fit items-center gap-1.5 text-xs font-semibold"
           style={{ color: "var(--text-secondary)" }}
         >
           <ArrowLeft size={14} strokeWidth={3} />
