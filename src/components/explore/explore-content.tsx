@@ -3,13 +3,34 @@
 import { useState, useMemo, useCallback } from "react";
 import { VibecoderCard } from "@/components/ui/vibecoder-card";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { Robot } from "@phosphor-icons/react";
+import { Lightning, Package, Robot, SealCheck, X } from "@phosphor-icons/react";
 import { Pagination } from "@/components/ui/pagination";
 import Link from "next/link";
 import type { BadgeLevel, UserWithSocials } from "@/lib/types/database";
 
 const PAGE_SIZE = 15;
 type SortOption = "vibe_score" | "streak" | "projects" | "newest";
+
+// Filter-panel visual language (presentation only)
+const FILTER_LABEL = "block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2";
+
+/** One shared "selected" treatment: accent-tinted fill + accent border. */
+const chipStyle = (active: boolean) => ({
+  backgroundColor: active
+    ? "color-mix(in srgb, var(--accent) 14%, var(--bg-surface))"
+    : "var(--bg-surface)",
+  color: active ? "var(--foreground)" : "var(--text-secondary)",
+  border: `1px solid ${active ? "var(--accent)" : "var(--border-subtle)"}`,
+});
+
+const ACTIVE_PILL_STYLE = {
+  backgroundColor: "color-mix(in srgb, var(--accent) 14%, var(--bg-surface))",
+  border: "1px solid var(--accent)",
+  color: "var(--foreground)",
+};
+
+const PILL_REMOVE_BTN =
+  "inline-flex items-center justify-center rounded-full p-0.5 cursor-pointer text-[var(--text-muted)] transition-colors hover:text-[var(--foreground)]";
 
 export function ExploreContent({ users }: { users: UserWithSocials[] }) {
   const [search, _setSearch] = useState("");
@@ -175,11 +196,15 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
+            aria-expanded={showFilters}
+            aria-controls="explore-filter-panel"
             className="flex items-center gap-2 px-4 py-3 text-sm font-semibold cursor-pointer rounded-xl transition-colors"
             style={{
-              backgroundColor: showFilters ? "var(--accent)" : "var(--bg-surface)",
-              color: showFilters ? "var(--background)" : "var(--foreground)",
-              border: "1px solid var(--border-hard)",
+              backgroundColor: showFilters
+                ? "color-mix(in srgb, var(--accent) 14%, var(--bg-surface))"
+                : "var(--bg-surface)",
+              color: "var(--foreground)",
+              border: `1px solid ${showFilters ? "var(--accent)" : "var(--border-hard)"}`,
             }}
           >
             <SlidersHorizontal size={16} />
@@ -188,90 +213,100 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
         </div>
 
         {showFilters && (
-          <div className="card-brutal flex flex-wrap gap-4 p-4">
-            <div>
-              <label className="text-xs font-medium text-[var(--text-muted)] mb-1.5 block">Sort By</label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="input-brutal py-2 w-auto"
-              >
-                <option value="vibe_score">Highest Vibe Score</option>
-                <option value="streak">Longest Streak</option>
-                <option value="projects">Most Projects</option>
-                <option value="newest">Newest</option>
-              </select>
+          <div id="explore-filter-panel" className="card-brutal p-5">
+            {/* Sorting */}
+            <div className="flex flex-wrap gap-4">
+              <div className="w-full sm:w-auto">
+                <label htmlFor="explore-sort-by" className={FILTER_LABEL}>Sort By</label>
+                <select
+                  id="explore-sort-by"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  className="input-brutal py-2 sm:w-auto"
+                >
+                  <option value="vibe_score">Highest Vibe Score</option>
+                  <option value="streak">Longest Streak</option>
+                  <option value="projects">Most Projects</option>
+                  <option value="newest">Newest</option>
+                </select>
+              </div>
+              <div className="w-full sm:w-auto">
+                <label htmlFor="explore-badge-level" className={FILTER_LABEL}>Badge Level</label>
+                <select
+                  id="explore-badge-level"
+                  value={badgeFilter}
+                  onChange={(e) => setBadgeFilter(e.target.value as BadgeLevel | "all")}
+                  className="input-brutal py-2 sm:w-auto"
+                >
+                  <option value="all">All Badges</option>
+                  <option value="diamond">Diamond</option>
+                  <option value="gold">Gold</option>
+                  <option value="silver">Silver</option>
+                  <option value="bronze">Bronze</option>
+                  <option value="none">No Badge</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="text-xs font-medium text-[var(--text-muted)] mb-1.5 block">Badge Level</label>
-              <select
-                value={badgeFilter}
-                onChange={(e) => setBadgeFilter(e.target.value as BadgeLevel | "all")}
-                className="input-brutal py-2 w-auto"
-              >
-                <option value="all">All Badges</option>
-                <option value="diamond">Diamond</option>
-                <option value="gold">Gold</option>
-                <option value="silver">Silver</option>
-                <option value="bronze">Bronze</option>
-                <option value="none">No Badge</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-[var(--text-muted)] mb-2 block">Tech Stack</label>
+
+            {/* Tech stack */}
+            <div className="mt-5 pt-5 border-t border-[var(--border-subtle)]">
+              <span className={FILTER_LABEL}>Tech Stack</span>
               <div className="flex flex-wrap gap-1.5">
                 {allTechStacks.slice(0, 20).map((tech) => (
-                  <button key={tech} onClick={() => setSelectedTech(prev => prev.includes(tech) ? prev.filter(t => t !== tech) : [...prev, tech])}
-                    className="px-2.5 py-1 text-xs font-semibold rounded-full transition-all"
-                    style={{
-                      backgroundColor: selectedTech.includes(tech) ? "var(--accent)" : "var(--bg-surface)",
-                      color: selectedTech.includes(tech) ? "var(--background)" : "var(--foreground)",
-                      border: "1px solid var(--border-hard)",
-                    }}>
+                  <button
+                    key={tech}
+                    onClick={() => setSelectedTech(prev => prev.includes(tech) ? prev.filter(t => t !== tech) : [...prev, tech])}
+                    aria-pressed={selectedTech.includes(tech)}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer"
+                    style={chipStyle(selectedTech.includes(tech))}
+                  >
                     {tech}
                   </button>
                 ))}
               </div>
             </div>
-            <div>
-              <label className="text-xs font-medium text-[var(--text-muted)] mb-2 block">Streak Range</label>
-              <div className="flex items-center gap-2">
-                <input type="number" min={0} max={365} value={minStreak} onChange={(e) => setMinStreak(Number(e.target.value))}
-                  className="input-brutal w-20 text-center text-sm py-1.5" placeholder="Min" />
-                <span className="text-sm font-medium text-[var(--text-muted)]">to</span>
-                <input type="number" min={0} max={365} value={maxStreak} onChange={(e) => setMaxStreak(Number(e.target.value))}
-                  className="input-brutal w-20 text-center text-sm py-1.5" placeholder="Max" />
-                <span className="text-xs font-medium text-[var(--text-muted)]">days</span>
+
+            {/* Streak range + quick toggles */}
+            <div className="mt-5 pt-5 border-t border-[var(--border-subtle)] flex flex-wrap gap-x-10 gap-y-5">
+              <div>
+                <span className={FILTER_LABEL}>Streak Range</span>
+                <div className="flex items-center gap-2">
+                  <input type="number" min={0} max={365} value={minStreak} onChange={(e) => setMinStreak(Number(e.target.value))}
+                    aria-label="Minimum streak days"
+                    className="input-brutal w-20 text-center text-sm py-1.5" placeholder="Min" />
+                  <span className="text-sm font-medium text-[var(--text-muted)]">to</span>
+                  <input type="number" min={0} max={365} value={maxStreak} onChange={(e) => setMaxStreak(Number(e.target.value))}
+                    aria-label="Maximum streak days"
+                    className="input-brutal w-20 text-center text-sm py-1.5" placeholder="Max" />
+                  <span className="text-xs font-medium text-[var(--text-muted)]">days</span>
+                </div>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => setAvailableOnly(!availableOnly)}
-                className="px-3 py-1.5 text-xs font-semibold rounded-full transition-all"
-                style={{
-                  backgroundColor: availableOnly ? "var(--bg-inverted)" : "var(--bg-surface)",
-                  color: availableOnly ? "var(--background)" : "var(--foreground)",
-                  border: "1px solid var(--border-hard)",
-                }}>
-                🟢 Active Only
-              </button>
-              <button onClick={() => setHasProjects(!hasProjects)}
-                className="px-3 py-1.5 text-xs font-semibold rounded-full transition-all"
-                style={{
-                  backgroundColor: hasProjects ? "var(--bg-inverted)" : "var(--bg-surface)",
-                  color: hasProjects ? "var(--background)" : "var(--foreground)",
-                  border: "1px solid var(--border-hard)",
-                }}>
-                📦 Has Projects
-              </button>
-              <button onClick={() => setVerifiedOnly(!verifiedOnly)}
-                className="px-3 py-1.5 text-xs font-semibold rounded-full transition-all"
-                style={{
-                  backgroundColor: verifiedOnly ? "var(--bg-inverted)" : "var(--bg-surface)",
-                  color: verifiedOnly ? "var(--background)" : "var(--foreground)",
-                  border: "1px solid var(--border-hard)",
-                }}>
-                ✅ Verified Projects
-              </button>
+              <div>
+                <span className={FILTER_LABEL}>Show Only</span>
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={() => setAvailableOnly(!availableOnly)}
+                    aria-pressed={availableOnly}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer"
+                    style={chipStyle(availableOnly)}>
+                    <Lightning size={13} weight="fill" aria-hidden="true" color={availableOnly ? "var(--accent)" : "currentColor"} />
+                    Active Only
+                  </button>
+                  <button onClick={() => setHasProjects(!hasProjects)}
+                    aria-pressed={hasProjects}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer"
+                    style={chipStyle(hasProjects)}>
+                    <Package size={13} weight="fill" aria-hidden="true" color={hasProjects ? "var(--accent)" : "currentColor"} />
+                    Has Projects
+                  </button>
+                  <button onClick={() => setVerifiedOnly(!verifiedOnly)}
+                    aria-pressed={verifiedOnly}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer"
+                    style={chipStyle(verifiedOnly)}>
+                    <SealCheck size={13} weight="fill" aria-hidden="true" color={verifiedOnly ? "var(--accent)" : "currentColor"} />
+                    Verified Projects
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -279,40 +314,58 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
 
       {/* Active Filter Pills */}
       {(selectedTech.length > 0 || minStreak > 0 || maxStreak < 365 || availableOnly || hasProjects || verifiedOnly) && (
-        <div className="flex flex-wrap gap-1.5 mb-4">
+        <div className="flex flex-wrap items-center gap-2 mb-4">
           {selectedTech.map(tech => (
-            <span key={tech} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-[var(--accent)] text-white border border-[var(--border-hard)]">
+            <span key={tech} className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full" style={ACTIVE_PILL_STYLE}>
               {tech}
-              <button onClick={() => setSelectedTech(prev => prev.filter(t => t !== tech))} className="hover:opacity-70">×</button>
+              <button onClick={() => setSelectedTech(prev => prev.filter(t => t !== tech))}
+                aria-label={`Remove ${tech} filter`} className={PILL_REMOVE_BTN}>
+                <X size={12} weight="bold" />
+              </button>
             </span>
           ))}
           {minStreak > 0 && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-[var(--bg-inverted)] text-white border border-[var(--border-hard)]">
-              Min: {minStreak}d <button onClick={() => setMinStreak(0)} className="hover:opacity-70">×</button>
+            <span className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full" style={ACTIVE_PILL_STYLE}>
+              Min: {minStreak}d
+              <button onClick={() => setMinStreak(0)} aria-label="Remove minimum streak filter" className={PILL_REMOVE_BTN}>
+                <X size={12} weight="bold" />
+              </button>
             </span>
           )}
           {maxStreak < 365 && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-[var(--bg-inverted)] text-white border border-[var(--border-hard)]">
-              Max: {maxStreak}d <button onClick={() => setMaxStreak(365)} className="hover:opacity-70">×</button>
+            <span className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full" style={ACTIVE_PILL_STYLE}>
+              Max: {maxStreak}d
+              <button onClick={() => setMaxStreak(365)} aria-label="Remove maximum streak filter" className={PILL_REMOVE_BTN}>
+                <X size={12} weight="bold" />
+              </button>
             </span>
           )}
           {availableOnly && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-[var(--bg-inverted)] text-white border border-[var(--border-hard)]">
-              Active Only <button onClick={() => setAvailableOnly(false)} className="hover:opacity-70">×</button>
+            <span className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full" style={ACTIVE_PILL_STYLE}>
+              Active Only
+              <button onClick={() => setAvailableOnly(false)} aria-label="Remove active only filter" className={PILL_REMOVE_BTN}>
+                <X size={12} weight="bold" />
+              </button>
             </span>
           )}
           {hasProjects && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-[var(--bg-inverted)] text-white border border-[var(--border-hard)]">
-              Has Projects <button onClick={() => setHasProjects(false)} className="hover:opacity-70">×</button>
+            <span className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full" style={ACTIVE_PILL_STYLE}>
+              Has Projects
+              <button onClick={() => setHasProjects(false)} aria-label="Remove has projects filter" className={PILL_REMOVE_BTN}>
+                <X size={12} weight="bold" />
+              </button>
             </span>
           )}
           {verifiedOnly && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full bg-[var(--bg-inverted)] text-white border border-[var(--border-hard)]">
-              Verified <button onClick={() => setVerifiedOnly(false)} className="hover:opacity-70">×</button>
+            <span className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full" style={ACTIVE_PILL_STYLE}>
+              Verified
+              <button onClick={() => setVerifiedOnly(false)} aria-label="Remove verified projects filter" className={PILL_REMOVE_BTN}>
+                <X size={12} weight="bold" />
+              </button>
             </span>
           )}
           <button onClick={() => { setSelectedTech([]); setMinStreak(0); setMaxStreak(365); setAvailableOnly(false); setHasProjects(false); setVerifiedOnly(false); }}
-            className="px-2 py-1 text-xs font-semibold text-[var(--accent)] hover:underline">
+            className="px-2 py-1 text-xs font-semibold cursor-pointer text-[var(--accent)] hover:underline">
             Clear all
           </button>
         </div>
