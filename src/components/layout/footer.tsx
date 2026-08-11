@@ -44,6 +44,7 @@ export function Footer() {
           <div>
             <h4 className="text-sm font-semibold mb-3" style={{ color: "var(--foreground)" }}>Compare</h4>
             <div className="flex flex-col gap-2">
+              <Link href="/hire-vibe-coders" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>How to hire</Link>
               <Link href="/vs/upwork" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>vs Upwork</Link>
               <Link href="/vs/fiverr" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>vs Fiverr</Link>
               <Link href="/vs/toptal" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>vs Toptal</Link>

@@ -31,6 +31,7 @@ VibeTalent is a developer talent marketplace that ranks software engineers by co
 ## Key Pages
 
 - Homepage: https://www.vibetalent.work/
+- How to Hire Vibe Coders (guide: what to evaluate, five-step process, red flags): https://www.vibetalent.work/hire-vibe-coders
 - Explore Talent: https://www.vibetalent.work/explore
 - Leaderboard: https://www.vibetalent.work/leaderboard
 - Roadmap: https://www.vibetalent.work/roadmap
