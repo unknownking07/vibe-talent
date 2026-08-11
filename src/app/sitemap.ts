@@ -19,6 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/agent`, lastModified: new Date("2026-04-06") },
     { url: `${siteUrl}/about`, lastModified: new Date("2026-04-06") },
     { url: `${siteUrl}/roadmap`, lastModified: new Date("2026-04-23") },
+    { url: `${siteUrl}/token`, lastModified: new Date("2026-08-11") },
     { url: `${siteUrl}/privacy`, lastModified: new Date("2026-04-06") },
     { url: `${siteUrl}/terms`, lastModified: new Date("2026-04-06") },
     { url: `${siteUrl}/glossary`, lastModified: new Date("2026-05-22") },
