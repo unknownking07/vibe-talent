@@ -95,10 +95,13 @@ export async function GET(req: NextRequest) {
     // we use that as the authoritative set to decrement.
     const frozenUsernames: string[] = [];
     if (usersToFreeze.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const syntheticLogs = usersToFreeze.map((u: any) => ({
+      // `source` marks these as freeze-granted rather than real GitHub
+      // activity, so the heatmap can render them honestly instead of passing a
+      // protected day off as work.
+      const syntheticLogs = usersToFreeze.map((u: { id: string }) => ({
         user_id: u.id,
         activity_date: yesterdayStr,
+        source: "freeze",
       }));
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -137,31 +140,60 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Reset streaks to 0 for users without freezes
+    // Reset streaks to 0 for users without freezes.
+    //
+    // Records what was lost alongside the reset. Previously the streak value
+    // was simply overwritten with 0, so a paid restore had nothing to bring
+    // back. A bulk .in() update can't write a per-user value, hence the loop —
+    // this runs over the handful of users who lapsed on a given day, not the
+    // whole table.
+    const failedResets: string[] = [];
     if (usersToReset.length > 0) {
-      const resetIds = usersToReset.map((u: { id: string }) => u.id);
-      const { error: updateError } = await supabase
-        .from("users")
-        .update({ streak: 0 })
-        .in("id", resetIds);
+      const brokenAt = new Date().toISOString();
+      for (const u of usersToReset as Array<{
+        id: string;
+        username: string;
+        streak: number;
+      }>) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: updateError } = await (supabase as any)
+          .from("users")
+          .update({
+            streak: 0,
+            streak_before_break: u.streak,
+            streak_broken_at: brokenAt,
+          })
+          .eq("id", u.id);
 
-      if (updateError) {
-        console.error("Failed to reset streaks:", updateError);
-        return NextResponse.json({ error: "Failed to reset streaks" }, { status: 500 });
+        if (updateError) {
+          // Keep going: one user's failure shouldn't leave the rest of the
+          // day's lapsed streaks unreset.
+          console.error(`Failed to reset streak for ${u.username}:`, updateError);
+          failedResets.push(u.username);
+        }
       }
 
       console.log(
-        `Reset streaks for ${usersToReset.length} users:`,
-        usersToReset.map((u: { username: string }) => u.username)
+        `Reset streaks for ${usersToReset.length - failedResets.length} users:`,
+        usersToReset
+          .map((u: { username: string }) => u.username)
+          .filter((n: string) => !failedResets.includes(n))
       );
+      if (failedResets.length > 0) {
+        console.error(`Streak reset failed for ${failedResets.length} users:`, failedResets);
+      }
     }
 
+    const resetCount = usersToReset.length - failedResets.length;
     return NextResponse.json({
-      message: `Reset ${usersToReset.length} stale streaks, froze ${frozenUsernames.length} streaks`,
-      reset: usersToReset.length,
+      message: `Reset ${resetCount} stale streaks, froze ${frozenUsernames.length} streaks`,
+      reset: resetCount,
       froze: frozenUsernames.length,
-      resetUsers: usersToReset.map((u: { username: string }) => u.username),
+      resetUsers: usersToReset
+        .map((u: { username: string }) => u.username)
+        .filter((n: string) => !failedResets.includes(n)),
       frozeUsers: frozenUsernames,
+      ...(failedResets.length > 0 ? { failedResets } : {}),
     });
   } catch (error) {
     console.error("Cron job error:", error);

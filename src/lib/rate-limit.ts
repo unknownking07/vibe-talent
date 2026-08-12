@@ -75,6 +75,10 @@ export const projectsLimiter = createRateLimiter("projects", 30, "1 m");
 export const buildersLimiter = createRateLimiter("builders", 30, "1 m");
 export const hireApiLimiter = createRateLimiter("hire-api", 5, "1 h");
 export const feedbackLimiter = createRateLimiter("feedback", 10, "1 h");
+// Burn endpoints: each call verifies a real on-chain transaction, so the cost
+// of abuse is RPC round trips rather than spam. Generous enough for retries
+// while a transaction propagates (the client polls up to 6 times).
+export const vouchLimiter = createRateLimiter("vouch", 30, "1 h");
 // The VibeFinder agent calls a paid LLM (up to a few completions per message
 // once tool rounds are counted) — keep this tight to protect the API budget.
 export const agentLimiter = createRateLimiter("agent", 12, "5 m");
