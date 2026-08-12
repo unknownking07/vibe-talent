@@ -79,6 +79,8 @@ type HomepageFeaturedProject = import("@/lib/types/database").Project & {
 export default async function HomePage() {
   let topVibecoders: import("@/lib/types/database").UserWithSocials[] = [];
   let featuredProjects: HomepageFeaturedProject[] = [];
+  let totalProjects = 0;
+  let avgStreak = 0;
   let homepageFeed: HomepageFeedItem[] = [];
 
   // Run the existing homepage data fetch and the new feed fetch in parallel.
@@ -102,6 +104,8 @@ export default async function HomePage() {
     const data = homepageDataResult.value;
     topVibecoders = data.topVibecoders;
     featuredProjects = data.featuredProjects;
+    totalProjects = data.totalProjects;
+    avgStreak = data.avgStreak;
   } else {
     console.error("[HomePage] Failed to fetch homepage data:", homepageDataResult.reason);
   }
@@ -189,7 +193,9 @@ export default async function HomePage() {
       />
 
       {/* Hero — the proof wall (owner design), then the builder/hiring fork */}
-      {proofWall && <ProofWallHero data={proofWall} />}
+      {proofWall && (
+        <ProofWallHero data={proofWall} totalProjects={totalProjects} avgStreak={avgStreak} />
+      )}
       <ForkHero />
 
       {/* How it works — merged from the old "What is Vibe Coding",

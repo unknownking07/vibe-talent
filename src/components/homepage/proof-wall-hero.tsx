@@ -31,8 +31,27 @@ function prettyDate(iso: string): string {
   });
 }
 
-export function ProofWallHero({ data }: { data: ProofWallData }) {
+export function ProofWallHero({
+  data,
+  totalProjects,
+  avgStreak,
+}: {
+  data: ProofWallData;
+  totalProjects: number;
+  avgStreak: number;
+}) {
   const { days, rows, totalBuilderDays, longestStreak, buildersTracked } = data;
+
+  // Every figure here is a live count. Deliberately absent: the old
+  // "Top Vibers" tile, which rendered topVibecoders.length against an array
+  // hardcoded to .slice(0, 3) — it read "3" no matter what the data did.
+  const stats = [
+    { label: "GitHub-verified days", value: totalBuilderDays.toLocaleString("en-US") },
+    { label: "Longest streak", value: longestStreak, suffix: "days" },
+    { label: "Builders tracked", value: buildersTracked, accent: true },
+    { label: "Projects shipped", value: totalProjects },
+    { label: "Avg. streak", value: avgStreak, suffix: avgStreak === 1 ? "day" : "days" },
+  ];
 
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 pt-12 sm:pt-16 pb-14">
@@ -90,41 +109,30 @@ export function ProofWallHero({ data }: { data: ProofWallData }) {
 
       {/* Real totals + the one CTA */}
       <div className="mt-8 flex flex-wrap items-end justify-between gap-x-10 gap-y-8">
-        <div className="flex flex-wrap gap-x-12 gap-y-6">
-          {/* Wording matters here. Roughly half of streak_logs predates the
-              platform (the github-sync backfill reads a year of contribution
-              history), so "days verified" implied activity ON VibeTalent that
-              these rows can't support. "GitHub-verified days" is what the
-              number actually is: commit days read from GitHub rather than
-              self-reported. Same reason the streak says "days, verified". */}
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-              GitHub-verified days
+        {/* Wording matters on the first tile. Roughly half of streak_logs
+            predates the platform (the github-sync backfill reads a year of
+            contribution history), so "days verified" implied activity ON
+            VibeTalent that those rows cannot support. "GitHub-verified days"
+            is what the number actually is: commit days read from GitHub
+            rather than self-reported. */}
+        <div className="flex flex-wrap gap-x-10 gap-y-6">
+          {stats.map((s) => (
+            <div key={s.label}>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                {s.label}
+              </div>
+              <div
+                className={`mt-1 text-3xl sm:text-4xl font-extrabold tracking-tight ${
+                  s.accent ? "text-[var(--accent)]" : "text-[var(--foreground)]"
+                }`}
+              >
+                {s.value}
+                {s.suffix && (
+                  <span className="ml-1.5 text-base font-bold text-[var(--text-muted)]">{s.suffix}</span>
+                )}
+              </div>
             </div>
-            <div className="mt-1 text-4xl sm:text-5xl font-extrabold tracking-tight text-[var(--foreground)]">
-              {totalBuilderDays.toLocaleString("en-US")}
-            </div>
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-              Longest streak
-            </div>
-            <div className="mt-1 text-4xl sm:text-5xl font-extrabold tracking-tight text-[var(--foreground)]">
-              {longestStreak}
-              <span className="ml-2 text-lg font-bold text-[var(--text-muted)]">days</span>
-            </div>
-          </div>
-          {/* Was "Self-reported: None" (from the original mock). It reads as a
-              rhetorical flourish rather than a statistic and nobody can tell
-              what it counts, so it's a real number now. */}
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-              Builders tracked
-            </div>
-            <div className="mt-1 text-4xl sm:text-5xl font-extrabold tracking-tight text-[var(--accent)]">
-              {buildersTracked}
-            </div>
-          </div>
+          ))}
         </div>
         <Link
           href="/auth/signup"
