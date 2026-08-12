@@ -1517,7 +1517,11 @@ BEGIN
       -- Verified against live Postgres: $10/718 -> 3, $25/200 -> 5,
       -- $100/44 -> 5, $2/400 -> 1, $50/10 -> 0, profile total 14.
       + COALESCE((
-        SELECT LEAST(SUM(pts), 25)::INTEGER FROM (
+        -- COALESCE INSIDE LEAST is load-bearing: Postgres LEAST ignores
+        -- NULLs, so LEAST(SUM(pts), 25) on an EMPTY vouches table returns
+        -- 25, not 0 — handing every user +25 vibe_score on migration.
+        -- Verified on live Postgres: as-planned = 25, corrected = 0.
+        SELECT LEAST(COALESCE(SUM(pts), 0), 25)::INTEGER FROM (
           SELECT LEAST(
             FLOOR(
               SQRT(SUM(v.usd_at_burn)) *
@@ -2752,5 +2756,8 @@ git commit -m "feat(vibe): surface holder tier and progress to the next one"
 - [ ] Replaying the same signature returns 409 on both burn endpoints
 - [ ] A burn whose memo names a different actor is rejected
 - [ ] A plain transfer of the correct amount is rejected as "didn't burn enough" — this is the invariant's core guarantee
+- [ ] With `vouches` EMPTY, `update_user_streak()` produces byte-identical
+  vibe_scores to before the migration — snapshot a few users either side.
+  This is the LEAST-ignores-NULL trap.
 - [ ] `/token` renders correctly in light and dark mode
 - [ ] No user-facing string uses "spend", "pay", "stake" or "send" for a burn
