@@ -1,0 +1,82 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  // Isolated staging Worker.
+  //
+  // The production config (wrangler.jsonc) routes ONE Worker to three hostnames:
+  // beta.vibetalent.work, www.vibetalent.work and the apex. A Worker serves a
+  // single deployed version across all of its routes, so "deploy to beta" on
+  // that config is indistinguishable from deploying to production.
+  //
+  // This is a genuinely separate Worker instead: its own name, its own cache
+  // resources, and deliberately NO routes, so it can only ever be reached at its
+  // workers.dev URL. Nothing here can affect www or the apex.
+  //
+  // Deploy with:  npx wrangler deploy -c wrangler.beta.jsonc
+  "name": "vibetalent-beta",
+  "main": "worker.ts",
+
+  "workers_dev": true,
+
+  // staging.vibetalent.work only. Deliberately NOT beta.vibetalent.work, which
+  // is still bound to the production Worker: a hostname can serve exactly one
+  // Worker, so claiming it here would require detaching it from production
+  // first. This hostname was unused, so wiring it up touches nothing live.
+  "routes": [{ "pattern": "staging.vibetalent.work", "custom_domain": true }],
+
+  "compatibility_date": "2025-08-15",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "images": { "binding": "IMAGES" },
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+
+  "observability": {
+    "enabled": true
+  },
+
+  // A DEDICATED namespace, not the production one. Sharing it would let a
+  // beta-rendered page be served to a real visitor on www (and the reverse),
+  // because the ISR cache is keyed by route, not by Worker.
+  "kv_namespaces": [
+    { "binding": "NEXT_INC_CACHE_KV", "id": "de15b920bcef4cb18d8e47bc39d9b80b" }
+  ],
+
+  // Same revalidation-queue tuning as production, so beta reproduces the
+  // behaviour being tested rather than a different one.
+  "vars": {
+    "NEXT_CACHE_DO_QUEUE_REVALIDATION_TIMEOUT_MS": "25000",
+    "NEXT_CACHE_DO_QUEUE_MAX_RETRIES": "1",
+
+    // Makes worker.ts stamp `x-robots-tag: noindex` on every staging response.
+    // Without it this is a full duplicate of the site on a crawlable hostname,
+    // competing with www for the very rankings we are trying to win.
+    "IS_STAGING": "1"
+  },
+
+  // Durable Objects are scoped per Worker, so these are automatically distinct
+  // from the production queue and tag cache.
+  "durable_objects": {
+    "bindings": [
+      { "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" },
+      { "name": "NEXT_TAG_CACHE_DO_SHARDED", "class_name": "DOShardedTagCache" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["DOQueueHandler"] },
+    { "tag": "v2", "new_sqlite_classes": ["DOShardedTagCache"] }
+  ],
+
+  // Must point at THIS Worker. Pointing it at "vibetalent" would make beta's
+  // ISR revalidations execute against production.
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "vibetalent-beta" }]
+
+  // No D1 binding: the tag cache moved to the sharded Durable Object above and
+  // NEXT_TAG_CACHE_D1 is no longer read at runtime. Omitting it keeps beta from
+  // holding a handle on a production database.
+
+  // No cron triggers: the schedules run from GitHub Actions against production
+  // only. Beta must never fire lifecycle emails or streak writes.
+}
