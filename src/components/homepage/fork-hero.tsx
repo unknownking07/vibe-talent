@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { UsersThree, Code, Fire, Target, CheckCircle } from "@phosphor-icons/react/dist/ssr";
+import { CheckCircle } from "@phosphor-icons/react/dist/ssr";
 import { HeroCTA } from "@/components/ui/hero-cta";
 import { HeroSceneStyles, BuilderScene, HirerScene } from "@/components/homepage/hero-scenes";
 
@@ -13,11 +13,13 @@ interface ForkHeroProps {
 }
 
 export function ForkHero({ stats }: ForkHeroProps) {
+  // No icons on the proof strip: bare numbers over quiet labels. Decorative
+  // glyphs next to stats read as ornament at this size, never as signal.
   const statItems = [
-    { label: "Active Builders", value: String(stats.totalBuilders), icon: UsersThree, accent: false },
-    { label: "Projects Shipped", value: String(stats.totalProjects), icon: Code, accent: false },
-    { label: "Avg. Streak", value: `${stats.avgStreak} ${stats.avgStreak === 1 ? "day" : "days"}`, icon: Fire, accent: true },
-    { label: "Top Vibers", value: String(stats.topVibers), icon: Target, accent: false },
+    { label: "Active Builders", value: String(stats.totalBuilders) },
+    { label: "Projects Shipped", value: String(stats.totalProjects) },
+    { label: "Avg. Streak", value: `${stats.avgStreak} ${stats.avgStreak === 1 ? "day" : "days"}` },
+    { label: "Top Vibers", value: String(stats.topVibers) },
   ];
 
   return (
@@ -76,11 +78,6 @@ export function ForkHero({ stats }: ForkHeroProps) {
         <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-8 max-w-3xl mx-auto">
           {statItems.map((stat) => (
             <div key={stat.label} className="text-center">
-              <stat.icon
-                size={18}
-                weight="fill"
-                className={`mx-auto mb-2 ${stat.accent ? "text-[var(--accent)]" : "text-[var(--text-muted-soft)]"}`}
-              />
               <div className="text-2xl font-bold text-[var(--foreground)] font-mono tracking-tight">{stat.value}</div>
               <div className="text-xs font-medium text-[var(--text-muted)] mt-1">{stat.label}</div>
             </div>

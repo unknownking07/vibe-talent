@@ -3,9 +3,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
-import { Fire, Robot, SealCheck } from "@phosphor-icons/react";
+import { Fire, SealCheck } from "@phosphor-icons/react";
 import { BadgeDisplay } from "@/components/ui/badge-display";
 import type { AgentBuilderCard } from "@/lib/agent/types";
+import { BotMark } from "@/components/icons/brand";
 
 interface BuilderCardProps {
   builder: AgentBuilderCard;
@@ -105,7 +106,7 @@ export function BuilderCard({ builder, rank }: BuilderCardProps) {
                   key={i}
                   className="flex items-center gap-2 text-sm text-[var(--text-secondary)] font-medium"
                 >
-                  <Robot weight="fill" size={12} className="text-[var(--accent)] shrink-0" />
+                  <BotMark weight="fill" size={12} className="text-[var(--accent)] shrink-0" />
                   {reason}
                 </div>
               ))}
@@ -143,7 +144,7 @@ export function BuilderCard({ builder, rank }: BuilderCardProps) {
               href={`/agent/contact/${builder.username}`}
               className="btn-brutal btn-brutal-secondary text-xs py-1.5 px-4 flex items-center gap-1"
             >
-              <Robot weight="fill" size={12} />
+              <BotMark weight="fill" size={12} />
               Contact
             </Link>
           </div>

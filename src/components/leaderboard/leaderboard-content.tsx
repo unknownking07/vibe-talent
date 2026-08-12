@@ -8,7 +8,7 @@ import { VibeScore } from "@/components/ui/vibe-score";
 import { Pagination } from "@/components/ui/pagination";
 import Link from "next/link";
 import Image from "next/image";
-import { Code, Fire, Lightning, SealCheck, Trophy } from "@phosphor-icons/react";
+import { Code, Fire, Lightning, SealCheck } from "@phosphor-icons/react";
 
 const PAGE_SIZE = 15;
 type Tab = "vibe_score" | "streak" | "projects";
@@ -45,7 +45,14 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
       }
     });
 
-  const tabs: { id: Tab; label: string; icon: typeof Trophy }[] = [
+  // Shape-typed rather than `typeof Trophy`: the map now mixes Phosphor
+  // components with the hand-drawn brand glyphs, which are plain function
+  // components rather than forwardRef exotics.
+  const tabs: {
+    id: Tab;
+    label: string;
+    icon: React.ComponentType<{ size?: number; weight?: "fill" | "duotone" | "regular" | "bold"; className?: string }>;
+  }[] = [
     { id: "vibe_score", label: "Vibe Score", icon: Lightning },
     { id: "streak", label: "Longest Streak", icon: Fire },
     { id: "projects", label: "Most Projects", icon: Code },

@@ -8,7 +8,7 @@ import { ChatMessage } from "@/components/agent/chat-message";
 import { ChatInput } from "@/components/agent/chat-input";
 import { BuilderCard } from "@/components/agent/builder-card";
 import { useAgentChat } from "@/components/agent/use-agent-chat";
-import { Robot } from "@phosphor-icons/react";
+import { BotMark } from "@/components/icons/brand";
 
 interface AgentChatPanelProps {
   title: string;
@@ -62,7 +62,7 @@ export function AgentChatPanel({
             boxShadow: "var(--shadow-brutal-accent)",
           }}
         >
-          <Robot weight="fill" size={20} className="text-[var(--accent)]" />
+          <BotMark weight="fill" size={20} className="text-[var(--accent)]" />
         </div>
         <div>
           <h1 className="text-xl font-bold text-[var(--foreground)]">{title}</h1>
@@ -106,7 +106,7 @@ export function AgentChatPanel({
             role="status"
             className="ml-11 flex items-center gap-2 text-xs font-semibold text-[var(--text-muted)] animate-pulse"
           >
-            <Robot weight="fill" size={12} className="text-[var(--accent)]" />
+            <BotMark weight="fill" size={12} className="text-[var(--accent)]" />
             {status}
           </div>
         )}

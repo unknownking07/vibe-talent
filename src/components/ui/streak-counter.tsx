@@ -2,6 +2,7 @@
 
 import { Fire } from "@phosphor-icons/react";
 
+
 interface StreakCounterProps {
   streak: number;
   size?: "sm" | "md" | "lg";

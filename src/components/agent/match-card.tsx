@@ -5,7 +5,7 @@ import Image from "next/image";
 import type { MatchResult } from "@/lib/types/agent";
 import { BadgeDisplay } from "@/components/ui/badge-display";
 import { ArrowRight } from "lucide-react";
-import { Robot } from "@phosphor-icons/react";
+import { BotMark } from "@/components/icons/brand";
 
 interface MatchCardProps {
   match: MatchResult;
@@ -75,7 +75,7 @@ export function MatchCard({ match, rank }: MatchCardProps) {
           <div className="mt-3 space-y-1">
             {match_reasons.map((reason, i) => (
               <div key={i} className="flex items-center gap-2 text-sm text-[var(--text-secondary)] font-medium">
-                <Robot weight="fill" size={12} className="text-[var(--accent)] shrink-0" />
+                <BotMark weight="fill" size={12} className="text-[var(--accent)] shrink-0" />
                 {reason}
               </div>
             ))}
@@ -106,7 +106,7 @@ export function MatchCard({ match, rank }: MatchCardProps) {
               href={`/agent/contact/${user.username}`}
               className="btn-brutal btn-brutal-primary text-xs py-1.5 px-4 flex items-center gap-1"
             >
-              <Robot weight="fill" size={12} />
+              <BotMark weight="fill" size={12} />
               Contact via Agent
             </Link>
             <Link

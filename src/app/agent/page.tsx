@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Search, Send, ExternalLink } from "lucide-react";
-import { ChatCircle, Code, Lightning, Robot } from "@phosphor-icons/react/dist/ssr";
+import { ChatCircle, Code, Lightning } from "@phosphor-icons/react/dist/ssr";
 import { CopySkillUrlButton } from "@/components/agent/copy-skill-url-button";
+import { BotMark } from "@/components/icons/brand";
 
 export default function AgentHubPage() {
   return (
@@ -15,7 +16,7 @@ export default function AgentHubPage() {
             boxShadow: "var(--shadow-brutal-accent)",
           }}
         >
-          <Robot weight="duotone" size={32} className="text-[var(--accent)]" />
+          <BotMark weight="duotone" size={32} className="text-[var(--accent)]" />
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold text-[var(--foreground)]">VibeFinder Robot</h1>
         <p className="mt-3 text-[var(--text-secondary)] font-medium max-w-2xl mx-auto">
@@ -249,7 +250,7 @@ export default function AgentHubPage() {
             rel="noopener noreferrer"
             className="btn-brutal btn-brutal-secondary text-sm flex items-center gap-2"
           >
-            <Robot weight="fill" size={14} />
+            <BotMark weight="fill" size={14} />
             AI Plugin Manifest
             <ExternalLink size={12} />
           </a>

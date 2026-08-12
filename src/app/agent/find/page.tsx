@@ -7,7 +7,7 @@ import type { UserWithSocials } from "@/lib/types/database";
 import { AgentThinking } from "@/components/agent/agent-thinking";
 import { MatchCard } from "@/components/agent/match-card";
 import { Search } from "lucide-react";
-import { Robot } from "@phosphor-icons/react";
+import { BotMark } from "@/components/icons/brand";
 import type { MatchResult, TaskRequest, AgentStep } from "@/lib/types/agent";
 
 const matchSteps: AgentStep[] = [
@@ -163,7 +163,7 @@ export default function FindTalentPage() {
               type="submit"
               className="btn-brutal btn-brutal-primary w-full justify-center text-base flex items-center gap-2"
             >
-              <Robot weight="fill" size={18} />
+              <BotMark weight="fill" size={18} />
               Find My Vibe Coder
             </button>
           </div>
@@ -182,7 +182,7 @@ export default function FindTalentPage() {
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
-          <Robot weight="fill" size={20} className="text-white" />
+          <BotMark weight="fill" size={20} className="text-white" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-[var(--foreground)]">VibeFinder Results</h1>
@@ -205,7 +205,7 @@ export default function FindTalentPage() {
               border: "1px solid var(--border-subtle)",
             }}
           >
-            <Robot weight="fill" size={14} className="inline mr-2 text-[var(--accent)]" />
+            <BotMark weight="fill" size={14} className="inline mr-2 text-[var(--accent)]" />
             Found {matches.length} matching vibe coders. Ranked by skill match, consistency, and reputation.
           </div>
 

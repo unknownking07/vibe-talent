@@ -15,7 +15,7 @@ import {
 } from "@/lib/homepage-feed";
 import { siteUrl } from "@/lib/seo";
 import { ArrowRight } from "lucide-react";
-import { Fire, GitCommit, Lightning, Trophy } from "@phosphor-icons/react/dist/ssr";
+import { Fire, GitCommit, Trophy } from "@phosphor-icons/react/dist/ssr";
 
 // Feature flag: gates the new homepage feed section. When false (or unset),
 // the homepage renders the existing `<LiveActivityFeed />` snippet exactly
@@ -406,7 +406,6 @@ export default async function HomePage() {
             boxShadow: "var(--shadow-brutal-accent)",
           }}
         >
-          <Lightning weight="duotone" size={40} className="mx-auto text-[var(--accent)] mb-4" />
           <h2 className="text-3xl sm:text-4xl font-bold text-white">Join the Marketplace</h2>
           <p className="mt-4 text-[var(--text-muted-soft)] font-medium max-w-xl mx-auto">
             Start building your vibe coding reputation today. Create a profile,

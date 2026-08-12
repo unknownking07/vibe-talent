@@ -3,10 +3,11 @@
 import { useState, useMemo, useCallback } from "react";
 import { VibecoderCard } from "@/components/ui/vibecoder-card";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { Lightning, Package, Robot, SealCheck, X } from "@phosphor-icons/react";
+import { Lightning, Package, SealCheck, X } from "@phosphor-icons/react";
 import { Pagination } from "@/components/ui/pagination";
 import Link from "next/link";
 import type { BadgeLevel, UserWithSocials } from "@/lib/types/database";
+import { BotMark } from "@/components/icons/brand";
 
 const PAGE_SIZE = 15;
 type SortOption = "vibe_score" | "streak" | "projects" | "newest";
@@ -169,7 +170,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
           className="w-10 h-10 shrink-0 flex items-center justify-center rounded-lg"
           style={{ backgroundColor: "var(--accent)" }}
         >
-          <Robot weight="fill" size={20} className="text-white" />
+          <BotMark weight="fill" size={20} className="text-white" />
         </div>
         <div>
           <div className="text-sm font-bold text-white">

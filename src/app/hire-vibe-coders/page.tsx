@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { jsonLdHtml } from "@/lib/json-ld";
 import { siteUrl } from "@/lib/seo";
-import { CheckCircle, Fire, Lightning, Warning } from "@phosphor-icons/react/dist/ssr";
+import { CheckCircle, Lightning, Warning } from "@phosphor-icons/react/dist/ssr";
 
 const PAGE_URL = `${siteUrl}/hire-vibe-coders`;
 const PAGE_TITLE = "How to Hire Vibe Coders: A Practical 2026 Guide";
@@ -407,7 +407,6 @@ export default function HireVibeCodersPage() {
           boxShadow: "var(--shadow-brutal-accent)",
         }}
       >
-        <Fire weight="duotone" size={40} className="mx-auto text-[var(--accent)] mb-4" />
         <h2 className="text-2xl sm:text-3xl font-bold text-white">Start with the evidence</h2>
         <p className="mt-3 text-[var(--text-muted-soft)] font-medium max-w-lg mx-auto">
           Browse builders ranked by commit streak, shipped projects, and repository quality. Hiring

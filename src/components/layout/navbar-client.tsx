@@ -545,7 +545,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
           }}
         >
           <Image src="/logo.png" alt="VibeTalent" width={36} height={36} className="object-contain" />
-          <span className="text-lg font-extrabold uppercase tracking-tight" style={{ color: "var(--foreground)" }}>
+          <span className="text-lg font-extrabold uppercase tracking-tight whitespace-nowrap hidden max-md:inline lg:inline" style={{ color: "var(--foreground)" }}>
             Vibe Talent
           </span>
         </Link>

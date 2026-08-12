@@ -1,6 +1,7 @@
 "use client";
 
-import { Robot, User } from "@phosphor-icons/react";
+import { User } from "@phosphor-icons/react";
+import { BotMark } from "@/components/icons/brand";
 
 interface ChatMessageProps {
   role: "user" | "agent";
@@ -30,7 +31,7 @@ export function ChatMessage({ role, content, isThinking }: ChatMessageProps) {
             border: "1px solid var(--border-subtle)",
           }}
         >
-          <Robot weight="fill" size={16} className="text-[var(--accent)]" />
+          <BotMark weight="fill" size={16} className="text-[var(--accent)]" />
         </div>
         <div
           className="max-w-[80%] p-4 rounded-2xl font-mono text-sm"

@@ -6,10 +6,11 @@ import { generateHireMessage } from "@/lib/agent-scoring";
 import type { UserWithSocials } from "@/lib/types/database";
 import { AgentThinking } from "@/components/agent/agent-thinking";
 import { Send, ArrowLeft } from "lucide-react";
-import { GithubLogo, Globe, Robot } from "@phosphor-icons/react";
+import { GithubLogo, Globe } from "@phosphor-icons/react";
 import { extractSocialHandle } from "@/lib/social-handles";
 import Link from "next/link";
 import type { AgentStep } from "@/lib/types/agent";
+import { BotMark } from "@/components/icons/brand";
 
 const contactSteps: AgentStep[] = [
   { label: "Loading builder profile data...", duration: 600 },
@@ -184,7 +185,7 @@ export default function ContactPage({
             border: "1px solid var(--border-subtle)",
           }}
         >
-          <Robot weight="fill" size={20} className="text-[var(--accent)]" />
+          <BotMark weight="fill" size={20} className="text-[var(--accent)]" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-[var(--foreground)]">
@@ -257,7 +258,7 @@ export default function ContactPage({
               className="input-brutal resize-none font-mono text-sm"
             />
             <p className="text-xs text-[var(--text-muted-soft)] mt-1 font-medium">
-              <Robot weight="fill" size={10} className="inline mr-1" />
+              <BotMark weight="fill" size={10} className="inline mr-1" />
               Message drafted by VibeFinder Robot. Feel free to edit before sending.
             </p>
           </div>

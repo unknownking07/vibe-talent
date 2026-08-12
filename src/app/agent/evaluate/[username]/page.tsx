@@ -7,7 +7,7 @@ import type { UserWithSocials } from "@/lib/types/database";
 import { AgentThinking } from "@/components/agent/agent-thinking";
 import { EvaluationReport } from "@/components/agent/evaluation-report";
 import { ArrowLeft } from "lucide-react";
-import { Robot } from "@phosphor-icons/react";
+import { BotMark } from "@/components/icons/brand";
 import Link from "next/link";
 import type { EvaluationResult, AgentStep } from "@/lib/types/agent";
 
@@ -81,7 +81,7 @@ export default function EvaluatePage({
             border: "1px solid var(--border-subtle)",
           }}
         >
-          <Robot weight="fill" size={20} className="text-[var(--accent)]" />
+          <BotMark weight="fill" size={20} className="text-[var(--accent)]" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-[var(--foreground)]">
@@ -106,7 +106,7 @@ export default function EvaluatePage({
               href={`/agent/contact/${username}`}
               className="btn-brutal btn-brutal-primary text-sm flex items-center gap-2"
             >
-              <Robot weight="fill" size={14} />
+              <BotMark weight="fill" size={14} />
               Contact via VibeFinder
             </Link>
             <Link
