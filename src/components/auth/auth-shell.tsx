@@ -62,43 +62,44 @@ function MiniWall() {
 
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12 lg:py-20">
-      {/* items-center, not items-start: the form column is much taller than the
-          panel, so top-aligning left the panel stranded against the nav with a
-          long empty run beneath it. The panel is no longer sticky either —
-          pinning it while the form scrolls produced the same orphaned look. */}
-      <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-        <div className="w-full max-w-md mx-auto lg:mx-0 lg:justify-self-end">{children}</div>
-
-        {/* No max-width: the panel fills its grid column. Capping it at max-w-md
-            inside a ~550px column was the dead space — the card floated with a
-            hundred unused pixels beside it. Everything inside scales off the
-            column too (wall cells are 1fr, so a wider panel means a denser,
-            larger wall rather than the same small tile recentred). */}
-        <aside className="hidden lg:block w-full">
-          <div
-            className="rounded-3xl p-10 overflow-hidden"
-            style={{ backgroundColor: "var(--bg-inverted)", border: "1px solid var(--border-subtle)" }}
-          >
-            <MiniWall />
-            <h2 className="mt-9 text-3xl font-bold text-white leading-tight">Proof over resumes</h2>
-            <ul className="mt-6 space-y-3.5">
-              {PROOF_POINTS.map((p) => (
-                <li key={p} className="flex items-center gap-3 text-base font-medium text-[var(--text-muted-soft)]">
-                  <CheckCircle weight="fill" size={19} className="text-[var(--accent)] shrink-0" />
-                  {p}
-                </li>
-              ))}
-            </ul>
-            <p
-              className="mt-9 pt-6 text-sm font-medium text-[var(--text-muted)]"
-              style={{ borderTop: "1px solid var(--border-subtle)" }}
-            >
-              Free for builders. No platform fees.
-            </p>
-          </div>
-        </aside>
+    // Full-bleed split rather than a centred container. A max-width wrapper
+    // always leaves a gutter on a wide screen (at 1600px the max-w-6xl cap put
+    // 448px into margins, a quarter of it stranded beside the panel), and
+    // widening the cap only moves that gap to the other side because the form
+    // is a fixed 448px. Letting the panel BE the right half removes the
+    // leftover space instead of redistributing it.
+    <div className="lg:grid lg:grid-cols-2 lg:items-stretch lg:min-h-[calc(100dvh-73px)]">
+      <div className="flex justify-center lg:justify-end px-4 sm:px-6 py-12 lg:py-20">
+        <div className="w-full max-w-md lg:mr-10 xl:mr-16">{children}</div>
       </div>
+
+      {/* The panel is now a surface, not a card: no border, no radius, runs to
+          the viewport edge. Its content stays readable via max-w-lg. */}
+      <aside
+        className="hidden lg:flex items-center px-12 xl:px-16"
+        style={{ backgroundColor: "var(--bg-inverted)" }}
+      >
+        <div className="w-full max-w-lg">
+          <MiniWall />
+          <h2 className="mt-10 text-3xl xl:text-4xl font-bold text-white leading-tight">
+            Proof over resumes
+          </h2>
+          <ul className="mt-7 space-y-4">
+            {PROOF_POINTS.map((p) => (
+              <li key={p} className="flex items-center gap-3 text-base font-medium text-[var(--text-muted-soft)]">
+                <CheckCircle weight="fill" size={19} className="text-[var(--accent)] shrink-0" />
+                {p}
+              </li>
+            ))}
+          </ul>
+          <p
+            className="mt-10 pt-6 text-sm font-medium text-[var(--text-muted)]"
+            style={{ borderTop: "1px solid var(--border-subtle)" }}
+          >
+            Free for builders. No platform fees.
+          </p>
+        </div>
+      </aside>
     </div>
   );
 }
