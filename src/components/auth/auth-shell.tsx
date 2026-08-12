@@ -26,11 +26,13 @@ const PROOF_POINTS = [
 // it's set dressing here, and a hardcoded pattern keeps the auth pages free
 // of any fetch. Tiers index into the same --hm-* scale the real wall uses.
 const MINI_WALL: number[][] = [
-  [2, 4, 1, 0, 3, 4, 2, 1, 4, 0, 2, 3, 1, 4],
-  [4, 1, 3, 2, 0, 1, 4, 3, 2, 4, 0, 1, 3, 2],
-  [1, 3, 0, 4, 2, 3, 1, 0, 4, 2, 3, 4, 0, 1],
-  [3, 0, 2, 1, 4, 0, 3, 2, 1, 3, 4, 0, 2, 4],
-  [0, 2, 4, 3, 1, 2, 0, 4, 3, 1, 2, 3, 4, 0],
+  [2, 4, 1, 0, 3, 4, 2, 1, 4, 0, 2, 3, 1, 4, 2, 0, 3, 4, 1, 2, 4, 3],
+  [4, 1, 3, 2, 0, 1, 4, 3, 2, 4, 0, 1, 3, 2, 4, 3, 1, 0, 2, 4, 1, 3],
+  [1, 3, 0, 4, 2, 3, 1, 0, 4, 2, 3, 4, 0, 1, 3, 2, 4, 1, 3, 0, 2, 4],
+  [3, 0, 2, 1, 4, 0, 3, 2, 1, 3, 4, 0, 2, 4, 1, 4, 2, 3, 0, 1, 4, 2],
+  [0, 2, 4, 3, 1, 2, 0, 4, 3, 1, 2, 3, 4, 0, 2, 1, 3, 4, 1, 3, 0, 4],
+  [2, 4, 3, 0, 4, 1, 3, 2, 0, 4, 1, 2, 3, 4, 0, 3, 1, 2, 4, 2, 3, 1],
+  [4, 1, 2, 3, 2, 4, 0, 1, 3, 2, 4, 3, 1, 0, 4, 2, 3, 0, 1, 4, 2, 3],
 ];
 
 function MiniWall() {
@@ -68,23 +70,28 @@ export function AuthShell({ children }: { children: ReactNode }) {
       <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
         <div className="w-full max-w-md mx-auto lg:mx-0 lg:justify-self-end">{children}</div>
 
-        <aside className="hidden lg:block w-full max-w-md">
+        {/* No max-width: the panel fills its grid column. Capping it at max-w-md
+            inside a ~550px column was the dead space — the card floated with a
+            hundred unused pixels beside it. Everything inside scales off the
+            column too (wall cells are 1fr, so a wider panel means a denser,
+            larger wall rather than the same small tile recentred). */}
+        <aside className="hidden lg:block w-full">
           <div
-            className="rounded-3xl p-8 overflow-hidden"
+            className="rounded-3xl p-10 overflow-hidden"
             style={{ backgroundColor: "var(--bg-inverted)", border: "1px solid var(--border-subtle)" }}
           >
             <MiniWall />
-            <h2 className="mt-7 text-2xl font-bold text-white">Proof over resumes</h2>
-            <ul className="mt-4 space-y-2.5">
+            <h2 className="mt-9 text-3xl font-bold text-white leading-tight">Proof over resumes</h2>
+            <ul className="mt-6 space-y-3.5">
               {PROOF_POINTS.map((p) => (
-                <li key={p} className="flex items-center gap-2.5 text-sm font-medium text-[var(--text-muted-soft)]">
-                  <CheckCircle weight="fill" size={17} className="text-[var(--accent)] shrink-0" />
+                <li key={p} className="flex items-center gap-3 text-base font-medium text-[var(--text-muted-soft)]">
+                  <CheckCircle weight="fill" size={19} className="text-[var(--accent)] shrink-0" />
                   {p}
                 </li>
               ))}
             </ul>
             <p
-              className="mt-7 pt-5 text-xs font-medium text-[var(--text-muted)]"
+              className="mt-9 pt-6 text-sm font-medium text-[var(--text-muted)]"
               style={{ borderTop: "1px solid var(--border-subtle)" }}
             >
               Free for builders. No platform fees.
