@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { VIBE_MINT, VIBE_BUY_URL } from "@/lib/vibe-config";
 
 export function Footer() {
   return (
@@ -30,6 +31,7 @@ export function Footer() {
               <Link href="/leaderboard" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Leaderboard</Link>
               <Link href="/dashboard" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Dashboard</Link>
               <Link href="/roadmap" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Roadmap</Link>
+              <Link href="/token" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>$VIBE Token</Link>
               <a href="https://vibe-talent.gitbook.io/untitled" target="_blank" rel="noopener noreferrer" aria-label="Docs (opens in new tab)" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Docs</a>
             </div>
           </div>
@@ -90,6 +92,20 @@ export function Footer() {
               className="text-[var(--accent)] hover:underline"
             >
               @abhiontwt
+            </a>
+          </span>
+          <span className="block mt-2">
+            $VIBE on Solana:{" "}
+            <code className="font-mono break-all" style={{ color: "var(--text-secondary)" }}>{VIBE_MINT}</code>
+            {" · "}
+            <a
+              href={VIBE_BUY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Buy $VIBE on Bags (opens in new tab)"
+              className="text-[var(--accent)] hover:underline"
+            >
+              Buy on Bags
             </a>
           </span>
         </div>
