@@ -32,7 +32,7 @@ function prettyDate(iso: string): string {
 }
 
 export function ProofWallHero({ data }: { data: ProofWallData }) {
-  const { days, rows, totalBuilderDays, longestStreak } = data;
+  const { days, rows, totalBuilderDays, longestStreak, buildersTracked } = data;
 
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 pt-12 sm:pt-16 pb-14">
@@ -49,9 +49,11 @@ export function ProofWallHero({ data }: { data: ProofWallData }) {
         </p>
       </div>
 
-      {/* The wall. justify-end + overflow-hidden clips the OLDEST days on
-          narrow viewports, so the most recent activity is always the part
-          that's visible — no horizontal scroll, no responsive re-query. */}
+      {/* The wall always spans the full column: one 1fr grid column per day,
+          square cells. Sizing by fraction rather than fixed pixels means it
+          fills edge to edge whatever the day count (the window shrinks when
+          the backfill has less history) and scales down cleanly on mobile
+          instead of clipping or scrolling. */}
       <div
         className="mt-10 py-6"
         style={{
@@ -67,7 +69,7 @@ export function ProofWallHero({ data }: { data: ProofWallData }) {
                 return (
                   <div
                     key={row.username}
-                    className="w-3 h-3 rounded-[2px]"
+                    className="w-[11px] h-[11px] sm:w-[14px] sm:h-[14px] rounded-[2px]"
                     style={{ backgroundColor: shadeFor(commits) }}
                     title={
                       commits
@@ -89,9 +91,15 @@ export function ProofWallHero({ data }: { data: ProofWallData }) {
       {/* Real totals + the one CTA */}
       <div className="mt-8 flex flex-wrap items-end justify-between gap-x-10 gap-y-8">
         <div className="flex flex-wrap gap-x-12 gap-y-6">
+          {/* Wording matters here. Roughly half of streak_logs predates the
+              platform (the github-sync backfill reads a year of contribution
+              history), so "days verified" implied activity ON VibeTalent that
+              these rows can't support. "GitHub-verified days" is what the
+              number actually is: commit days read from GitHub rather than
+              self-reported. Same reason the streak says "days, verified". */}
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-              Days verified
+              GitHub-verified days
             </div>
             <div className="mt-1 text-4xl sm:text-5xl font-extrabold tracking-tight text-[var(--foreground)]">
               {totalBuilderDays.toLocaleString("en-US")}
@@ -103,14 +111,18 @@ export function ProofWallHero({ data }: { data: ProofWallData }) {
             </div>
             <div className="mt-1 text-4xl sm:text-5xl font-extrabold tracking-tight text-[var(--foreground)]">
               {longestStreak}
+              <span className="ml-2 text-lg font-bold text-[var(--text-muted)]">days</span>
             </div>
           </div>
+          {/* Was "Self-reported: None" (from the original mock). It reads as a
+              rhetorical flourish rather than a statistic and nobody can tell
+              what it counts, so it's a real number now. */}
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-              Self-reported
+              Builders tracked
             </div>
             <div className="mt-1 text-4xl sm:text-5xl font-extrabold tracking-tight text-[var(--accent)]">
-              None
+              {buildersTracked}
             </div>
           </div>
         </div>

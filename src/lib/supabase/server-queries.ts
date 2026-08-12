@@ -287,6 +287,7 @@ export interface ProofWallData {
   rows: { username: string; cells: Record<string, number> }[];
   totalBuilderDays: number;
   longestStreak: number;
+  buildersTracked: number;
 }
 
 const PROOF_WALL_DAYS = 70;
@@ -300,44 +301,47 @@ async function _fetchProofWall(): Promise<ProofWallData> {
   cutoff.setUTCDate(cutoff.getUTCDate() - (PROOF_WALL_DAYS - 1));
   const cutoffIso = cutoff.toISOString().slice(0, 10);
 
-  const [logsRes, totalRes, streakRes] = await Promise.all([
-    sb
-      .from("streak_logs")
-      .select("user_id, activity_date, commit_count")
-      .gte("activity_date", cutoffIso),
-    sb.from("streak_logs").select("*", { count: "exact", head: true }),
+  // Pick the builders FIRST, then fetch only their logs.
+  //
+  // The obvious version (scan every log in the window, rank by row count)
+  // cannot work: PostgREST enforces a server-side max-rows of 1000, which
+  // `.range()` cannot raise, and the window holds ~3.9k rows. That silently
+  // returned an arbitrary 1000-row slice covering only ~20 of the 70 days, so
+  // the wall rendered three weeks and looked broken. Selecting 8 builders up
+  // front bounds the log query at 8 x 70 = 560 rows, comfortably under the cap.
+  const [topUsersRes, totalRes, buildersRes] = await Promise.all([
     sb
       .from("users")
-      .select("longest_streak")
+      .select("id, username, longest_streak")
+      .not("username", "is", null)
       .order("longest_streak", { ascending: false })
-      .limit(1),
+      .limit(PROOF_WALL_ROWS),
+    sb.from("streak_logs").select("*", { count: "exact", head: true }),
+    sb.from("users").select("id", { count: "exact", head: true }).not("username", "is", null),
   ]);
 
   // Throw on error so unstable_cache does NOT cache an empty wall
-  if (logsRes.error) throw new Error(`Failed to fetch proof wall logs: ${logsRes.error.message}`);
+  if (topUsersRes.error) throw new Error(`Failed to fetch proof wall builders: ${topUsersRes.error.message}`);
 
-  type LogRow = { user_id: string; activity_date: string; commit_count: number | null };
-  const logs: LogRow[] = logsRes.data ?? [];
+  type TopUser = { id: string; username: string; longest_streak: number };
+  const topUsers: TopUser[] = topUsersRes.data ?? [];
 
-  // Top rows = builders with the most active days in the window.
-  const perUser = new Map<string, LogRow[]>();
-  for (const log of logs) {
-    const list = perUser.get(log.user_id);
-    if (list) list.push(log);
-    else perUser.set(log.user_id, [log]);
+  let logs: { user_id: string; activity_date: string; commit_count: number | null }[] = [];
+  if (topUsers.length) {
+    const logsRes = await sb
+      .from("streak_logs")
+      .select("user_id, activity_date, commit_count")
+      .in("user_id", topUsers.map((u) => u.id))
+      .gte("activity_date", cutoffIso);
+    if (logsRes.error) throw new Error(`Failed to fetch proof wall logs: ${logsRes.error.message}`);
+    logs = logsRes.data ?? [];
   }
-  const topUserIds = [...perUser.entries()]
-    .sort((a, b) => b[1].length - a[1].length)
-    .slice(0, PROOF_WALL_ROWS)
-    .map(([id]) => id);
 
-  let usernames = new Map<string, string>();
-  if (topUserIds.length) {
-    const { data: users } = await sb
-      .from("users")
-      .select("id, username")
-      .in("id", topUserIds);
-    usernames = new Map((users ?? []).map((u: { id: string; username: string }) => [u.id, u.username]));
+  const perUser = new Map<string, Record<string, number>>();
+  for (const log of logs) {
+    const cells = perUser.get(log.user_id) ?? {};
+    cells[log.activity_date] = Math.max(1, log.commit_count ?? 1);
+    perUser.set(log.user_id, cells);
   }
 
   const days: string[] = [];
@@ -347,18 +351,13 @@ async function _fetchProofWall(): Promise<ProofWallData> {
     days.push(d.toISOString().slice(0, 10));
   }
 
-  const rows = topUserIds.map((id) => {
-    const cells: Record<string, number> = {};
-    for (const log of perUser.get(id) ?? []) {
-      cells[log.activity_date] = Math.max(1, log.commit_count ?? 1);
-    }
-    return { username: usernames.get(id) ?? "builder", cells };
-  });
+  const rows = topUsers.map((u) => ({
+    username: u.username,
+    cells: perUser.get(u.id) ?? {},
+  }));
 
-  // Trim leading days where NO selected row has activity. The github-sync
-  // backfill only reaches so far back, and a wall whose left half is uniform
-  // grey argues against the headline. The window regrows toward the full 70
-  // days on its own as history accumulates.
+  // Trim leading days where NO selected row has activity, so the wall never
+  // opens on a field of grey if the backfill has less history than the window.
   const firstActive = days.findIndex((d) => rows.some((r) => r.cells[d]));
   const visibleDays = firstActive > 0 ? days.slice(firstActive) : days;
 
@@ -366,12 +365,17 @@ async function _fetchProofWall(): Promise<ProofWallData> {
     days: visibleDays,
     rows,
     totalBuilderDays: totalRes.count ?? 0,
-    longestStreak: streakRes.data?.[0]?.longest_streak ?? 0,
+    longestStreak: topUsers[0]?.longest_streak ?? 0,
+    buildersTracked: buildersRes.count ?? 0,
   };
 }
 
 // 5 minutes: the wall is a marketing artifact, not a live feed — a wider
 // window keeps the 70-day log scan (a few thousand rows) off the hot path.
-export const fetchProofWallCached = unstable_cache(_fetchProofWall, ["proof-wall"], {
+// Key is versioned: an earlier build cached a wall built from a truncated
+// 1000-row page, and that entry would otherwise keep serving a wall with
+// weeks missing until its TTL expired. Bump the suffix whenever the shape of
+// the returned data changes.
+export const fetchProofWallCached = unstable_cache(_fetchProofWall, ["proof-wall-v3"], {
   revalidate: 300,
 });
