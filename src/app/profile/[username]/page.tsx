@@ -14,6 +14,7 @@ import { extractSocialHandle } from "@/lib/social-handles";
 import { ProfileProjectCard } from "@/components/profile/profile-project-card";
 import ReviewsSection from "@/components/profile/reviews-section";
 import { BackedBy } from "@/components/profile/backed-by";
+import { IS_STAGING_CLIENT } from "@/lib/staging-client";
 import { ProfileViewTracker } from "@/components/profile/profile-view-tracker";
 import { ShareButton } from "@/components/share/share-button";
 import Link from "next/link";
@@ -181,12 +182,24 @@ export default async function ProfilePage({
 
   // Check if the logged-in user is viewing their own profile
   let isOwner = false;
+  let viewer: { id: string; vibeScore: number } | null = null;
   try {
     const supabase = await createServerSupabaseClient();
     const { data: { user: authUser } } = await supabase.auth.getUser();
     isOwner = authUser?.id === user.id;
+    if (authUser) {
+      // The viewer's own vibe_score drives their vouch credibility, so the UI
+      // can show the points a burn would actually grant (0 below the floor).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: viewerRow } = await (supabase as any)
+        .from("users")
+        .select("vibe_score")
+        .eq("id", authUser.id)
+        .maybeSingle();
+      viewer = { id: authUser.id, vibeScore: viewerRow?.vibe_score ?? 0 };
+    }
   } catch {
-    // Not logged in — isOwner stays false
+    // Not logged in — isOwner stays false and viewer stays null
   }
 
   // Merge in the owner's private projects so they see their own work with a
@@ -267,9 +280,15 @@ export default async function ProfilePage({
             <ProfileHeatmap data={heatmapData} githubUsername={user.social_links?.github} />
           </section>
 
-          {/* Renders nothing until someone has actually burned for this
-              builder, so it never shows an empty box. */}
-          <BackedBy builderId={user.id} />
+          {/* Shows backers when they exist, and otherwise invites the first
+              vouch — without the empty state the feature is unreachable on a
+              platform where nobody has vouched yet. */}
+          <BackedBy
+            builderId={user.id}
+            builderUsername={user.username}
+            viewer={viewer}
+            enabled={IS_STAGING_CLIENT}
+          />
 
           {/* Projects Section */}
           {(() => {

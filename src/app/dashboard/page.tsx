@@ -15,6 +15,11 @@ import { ActivityHeatmap } from "@/components/ui/activity-heatmap";
 import { IS_STAGING_CLIENT } from "@/lib/staging-client";
 
 // Web3 stack — only pulled in when a restorable break actually exists.
+const LinkWallet = dynamic(
+  () => import("@/components/token/link-wallet").then((m) => ({ default: m.LinkWallet })),
+  { ssr: false, loading: () => <p className="text-xs text-[var(--text-muted)]">Loading wallet...</p> },
+);
+
 const StreakProtectCard = dynamic(
   () =>
     import("@/components/dashboard/streak-protect-card").then((m) => ({
@@ -39,7 +44,7 @@ import { Camera, ChatCircle, Check, Clock, Code, CurrencyDollar, Envelope, Envel
 // back to a generic checklist without it), and the Badge Holder chip reads
 // has_vibetalent_badge. It's a flat ~13-key object, so the egress is trivial.
 const DASHBOARD_USER_FIELDS =
-  "id, username, display_name, bio, avatar_url, github_username, vibe_score, streak, longest_streak, badge_level, streak_freezes_remaining, streak_freezes_used, referral_count, created_at, streak_before_break, streak_broken_at";
+  "id, username, display_name, bio, avatar_url, github_username, vibe_score, streak, longest_streak, badge_level, streak_freezes_remaining, streak_freezes_used, referral_count, created_at, streak_before_break, streak_broken_at, solana_wallet";
 const DASHBOARD_PROJECT_FIELDS =
   "id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, endorsement_count, created_at";
 const DASHBOARD_SOCIAL_FIELDS = "id, user_id, twitter, telegram, github, website, farcaster";
@@ -1771,7 +1776,9 @@ export default function DashboardPage() {
         <div className="mt-3 flex items-center gap-2">
           <ShieldCheck weight="fill" size={16} className="text-cyan-600" />
           <span className="text-sm font-bold text-[var(--text-secondary)]">
-            {user.streak_freezes_remaining ?? 2} / 2 Freezes Available
+            {user.streak_freezes_remaining ?? 2} /{" "}
+            {(user.streak_freezes_remaining ?? 2) + (user.streak_freezes_used ?? 0)} Freezes
+            Available
           </span>
           {(user.streak_freezes_used ?? 0) > 0 && (
             <span className="text-xs font-medium text-[var(--text-muted-soft)]">
@@ -1779,6 +1786,21 @@ export default function DashboardPage() {
             </span>
           )}
         </div>
+        {/* $VIBE wallet — sits with the freeze counter because holding is what
+            raises it, and it's the wallet vouching burns from. */}
+        {IS_STAGING_CLIENT && (
+          <div className="mt-4 pt-4 border-t border-[var(--border-subtle)]">
+            <div className="flex items-center gap-2 mb-2">
+              <Fire weight="fill" size={16} style={{ color: "var(--accent)" }} />
+              <span className="text-sm font-bold text-[var(--text-secondary)]">$VIBE Wallet</span>
+            </div>
+            <LinkWallet
+              initialAddress={
+                (user as unknown as { solana_wallet?: string | null })?.solana_wallet ?? null
+              }
+            />
+          </div>
+        )}
         {/* GitHub Sync */}
         {user.social_links?.github && (
           <div className="mt-4 pt-4 border-t border-[var(--border-subtle)]">
