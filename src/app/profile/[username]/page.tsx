@@ -13,6 +13,7 @@ import type { ReviewerTier } from "@/lib/reviewer/tier";
 import { extractSocialHandle } from "@/lib/social-handles";
 import { ProfileProjectCard } from "@/components/profile/profile-project-card";
 import ReviewsSection from "@/components/profile/reviews-section";
+import { BackedBy } from "@/components/profile/backed-by";
 import { ProfileViewTracker } from "@/components/profile/profile-view-tracker";
 import { ShareButton } from "@/components/share/share-button";
 import Link from "next/link";
@@ -265,6 +266,10 @@ export default async function ProfilePage({
             </div>
             <ProfileHeatmap data={heatmapData} githubUsername={user.social_links?.github} />
           </section>
+
+          {/* Renders nothing until someone has actually burned for this
+              builder, so it never shows an empty box. */}
+          <BackedBy builderId={user.id} />
 
           {/* Projects Section */}
           {(() => {

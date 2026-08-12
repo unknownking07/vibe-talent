@@ -6,17 +6,32 @@ import { countToLevel } from "@/lib/heatmap-utils";
 interface ActivityHeatmapProps {
   data: Record<string, number>;
   totalOverride?: number;
+  /**
+   * Dates (YYYY-MM-DD) kept by a streak freeze or a paid restore rather than
+   * real activity. Optional, so existing callers are unaffected; where it is
+   * supplied those days are marked instead of passing as work.
+   */
+  protectedDates?: Record<string, "freeze" | "restore">;
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
 
-function dayLabel(count: number, date: string): string {
+function dayLabel(
+  count: number,
+  date: string,
+  protection?: "freeze" | "restore",
+): string {
+  // Say so explicitly: a protected day looks like a worked day on the grid, and
+  // the whole point of tracking provenance is not to imply work that never
+  // happened.
+  if (protection === "freeze") return `Streak freeze used on ${date} (no activity)`;
+  if (protection === "restore") return `Streak restored with $VIBE on ${date} (no activity)`;
   if (count <= 0) return `No contributions on ${date}`;
   return `${count} ${count === 1 ? "contribution" : "contributions"} on ${date}`;
 }
 
-export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
+export function ActivityHeatmap({ data, totalOverride, protectedDates }: ActivityHeatmapProps) {
   const { weeks, monthLabels } = useMemo(() => {
     const result: { date: string; count: number; dayOfWeek: number }[][] = [];
     const today = new Date();
@@ -143,14 +158,20 @@ export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
             {weeks.map((week, wi) => (
               <div key={wi} className="flex flex-col gap-[3px]">
                 {week.map((day) => {
-                  const label = dayLabel(day.count, day.date);
+                  const protection = protectedDates?.[day.date];
+                  const label = dayLabel(day.count, day.date, protection);
                   return (
                     <div
                       key={day.date}
                       className="w-3 h-3 rounded-[3px]"
                       style={{
-                        backgroundColor: getLevelColor(countToLevel(day.count)),
-                        border: "1px solid var(--border-subtle)",
+                        backgroundColor: protection
+                          ? "transparent"
+                          : getLevelColor(countToLevel(day.count)),
+                        // Outlined rather than filled: visibly "held", not earned.
+                        border: protection
+                          ? "1px dashed var(--accent)"
+                          : "1px solid var(--border-subtle)",
                       }}
                       title={label}
                       aria-label={label}

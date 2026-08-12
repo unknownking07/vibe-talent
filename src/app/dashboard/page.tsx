@@ -12,6 +12,16 @@ import { BadgeDisplay } from "@/components/ui/badge-display";
 import type { UserWithSocials } from "@/lib/types/database";
 import { StreakCounter } from "@/components/ui/streak-counter";
 import { ActivityHeatmap } from "@/components/ui/activity-heatmap";
+import { IS_STAGING_CLIENT } from "@/lib/staging-client";
+
+// Web3 stack — only pulled in when a restorable break actually exists.
+const StreakProtectCard = dynamic(
+  () =>
+    import("@/components/dashboard/streak-protect-card").then((m) => ({
+      default: m.StreakProtectCard,
+    })),
+  { ssr: false },
+);
 import { ProjectCard } from "@/components/ui/project-card";
 import { ProfileViewsWidget } from "@/components/dashboard/profile-views-widget";
 import { StreakMilestone } from "@/components/dashboard/streak-milestone";
@@ -29,7 +39,7 @@ import { Camera, ChatCircle, Check, Clock, Code, CurrencyDollar, Envelope, Envel
 // back to a generic checklist without it), and the Badge Holder chip reads
 // has_vibetalent_badge. It's a flat ~13-key object, so the egress is trivial.
 const DASHBOARD_USER_FIELDS =
-  "id, username, display_name, bio, avatar_url, github_username, vibe_score, streak, longest_streak, badge_level, streak_freezes_remaining, streak_freezes_used, referral_count, created_at";
+  "id, username, display_name, bio, avatar_url, github_username, vibe_score, streak, longest_streak, badge_level, streak_freezes_remaining, streak_freezes_used, referral_count, created_at, streak_before_break, streak_broken_at";
 const DASHBOARD_PROJECT_FIELDS =
   "id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, endorsement_count, created_at";
 const DASHBOARD_SOCIAL_FIELDS = "id, user_id, twitter, telegram, github, website, farcaster";
@@ -1404,6 +1414,17 @@ export default function DashboardPage() {
         }}
       >
         <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">Your Activity</h2>
+        {IS_STAGING_CLIENT &&
+        (user as unknown as { streak_broken_at?: string | null })?.streak_broken_at &&
+        ((user as unknown as { streak_before_break?: number | null })?.streak_before_break ?? 0) >= 3 ? (
+          <div className="mb-4">
+            <StreakProtectCard
+              userId={user!.id}
+              lostStreak={(user as unknown as { streak_before_break: number }).streak_before_break}
+              brokenAt={(user as unknown as { streak_broken_at: string }).streak_broken_at}
+            />
+          </div>
+        ) : null}
         <ActivityHeatmap data={heatmapData} totalOverride={ghTotal > 0 ? ghTotal : undefined} />
       </div>
 

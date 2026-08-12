@@ -53,6 +53,9 @@ jobs:
       - name: Build (OpenNext → Cloudflare)
         env:
           NEXT_PUBLIC_SITE_URL: https://staging.vibetalent.work
+          # Reveals staging-only UI. Production never sets this, so the branch
+          # that renders unreleased flows is compiled out of the prod bundle.
+          NEXT_PUBLIC_VIBE_STAGING: "1"
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_PRIVY_APP_ID: ${{ vars.NEXT_PUBLIC_PRIVY_APP_ID }}
