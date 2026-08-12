@@ -157,3 +157,41 @@ export function notificationTimeAgo(dateStr: string): string {
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.floor(hrs / 24)}d ago`;
 }
+
+export type MessageSegment =
+  | { type: "text"; value: string }
+  | { type: "mention"; username: string };
+
+/**
+ * Split a notification message into plain text and @username mentions, so the
+ * UI can render the mentions as links to the profile.
+ *
+ * The charset matches signup validation (letters, digits, hyphen, underscore).
+ * A mention only counts when the "@" is not preceded by a word character or a
+ * dot, which keeps email addresses in message bodies from being torn apart:
+ * "ping me at bob@example.com" must not linkify "@example". Done by scanning
+ * rather than with a lookbehind, which Safari only gained in 16.4.
+ */
+export function parseNotificationMessage(message: string): MessageSegment[] {
+  if (!message) return [];
+  const segments: MessageSegment[] = [];
+  const pattern = /@([a-zA-Z0-9_-]{1,39})/g;
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(message)) !== null) {
+    const start = match.index;
+    const preceding = start > 0 ? message[start - 1] : "";
+    if (preceding && /[\w.]/.test(preceding)) continue; // part of an email/handle
+    if (start > cursor) {
+      segments.push({ type: "text", value: message.slice(cursor, start) });
+    }
+    segments.push({ type: "mention", username: match[1] });
+    cursor = start + match[0].length;
+  }
+
+  if (cursor < message.length) {
+    segments.push({ type: "text", value: message.slice(cursor) });
+  }
+  return segments;
+}

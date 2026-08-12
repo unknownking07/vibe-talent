@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { notificationTimeAgo, extractNotificationLink } from "../notification-display";
+import { notificationTimeAgo, extractNotificationLink, parseNotificationMessage } from "../notification-display";
 
 describe("notificationTimeAgo", () => {
   it("returns an empty string for unparseable input rather than 'undefined'", () => {
@@ -59,5 +59,38 @@ describe("extractNotificationLink", () => {
   it("rejects garbage that is neither a path nor a parseable URL", () => {
     expect(extractNotificationLink({ link: "not a url" })).toBeNull();
     expect(extractNotificationLink({ link: "evil.com/x" })).toBeNull();
+  });
+});
+
+describe("parseNotificationMessage", () => {
+  it("links a mention and keeps the surrounding text", () => {
+    expect(parseNotificationMessage("@zarkonik viewed your profile")).toEqual([
+      { type: "mention", username: "zarkonik" },
+      { type: "text", value: " viewed your profile" },
+    ]);
+  });
+
+  it("handles several mentions in one message", () => {
+    expect(parseNotificationMessage("@ana and @bob-1 endorsed you")).toEqual([
+      { type: "mention", username: "ana" },
+      { type: "text", value: " and " },
+      { type: "mention", username: "bob-1" },
+      { type: "text", value: " endorsed you" },
+    ]);
+  });
+
+  it("does not tear apart an email address", () => {
+    const parsed = parseNotificationMessage("reply to bob@example.com soon");
+    expect(parsed).toEqual([{ type: "text", value: "reply to bob@example.com soon" }]);
+  });
+
+  it("returns plain text when there is no mention", () => {
+    expect(parseNotificationMessage("Your streak hit 30 days")).toEqual([
+      { type: "text", value: "Your streak hit 30 days" },
+    ]);
+  });
+
+  it("returns nothing for an empty message", () => {
+    expect(parseNotificationMessage("")).toEqual([]);
   });
 });

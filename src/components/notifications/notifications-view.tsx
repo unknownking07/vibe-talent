@@ -10,6 +10,7 @@ import {
   NOTIFICATION_TAGS,
   HIRE_NOTIFICATION_TYPES,
   notificationTimeAgo,
+  parseNotificationMessage,
   notificationBucket,
   extractNotificationLink,
   extractNotificationAvatar,
@@ -177,7 +178,30 @@ function NotificationCard({
             overflowWrap: "anywhere",
           }}
         >
-          {n.message}
+          {/* @mentions become profile links. `position: relative; z-index: 1`
+              lifts them above the title's stretched ::after overlay, which
+              covers the whole card — without it the card link swallows the
+              click and the mention is unreachable. */}
+          {parseNotificationMessage(n.message).map((seg, i) =>
+            seg.type === "mention" ? (
+              <Link
+                key={i}
+                href={`/profile/${seg.username}`}
+                className="ntf-mention"
+                style={{
+                  position: "relative",
+                  zIndex: 1,
+                  color: "var(--accent)",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                }}
+              >
+                @{seg.username}
+              </Link>
+            ) : (
+              <span key={i}>{seg.value}</span>
+            )
+          )}
         </p>
 
         <div

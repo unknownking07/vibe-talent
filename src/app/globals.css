@@ -620,3 +620,9 @@ body:has(.chat-page-wrapper) main {
     transform: none;
   }
 }
+
+/* Notification @mention links. Underline only on hover so a message with two
+   or three mentions doesn't read as a wall of underlines at rest. */
+.ntf-mention:hover {
+  text-decoration: underline;
+}
