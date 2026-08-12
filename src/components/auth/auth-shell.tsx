@@ -35,13 +35,20 @@ const MINI_WALL: number[][] = [
 
 function MiniWall() {
   return (
+    // Grid + aspect-square keeps the cells square. As flex rows with a fixed
+    // height they stretched into bricks, which read as a progress bar rather
+    // than the activity wall this is echoing.
     <div className="flex flex-col gap-[3px]" aria-hidden>
       {MINI_WALL.map((row, r) => (
-        <div key={r} className="flex gap-[3px]">
+        <div
+          key={r}
+          className="grid gap-[3px]"
+          style={{ gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))` }}
+        >
           {row.map((tier, c) => (
             <div
               key={c}
-              className="h-3 flex-1 rounded-[3px]"
+              className="w-full aspect-square rounded-[3px]"
               style={{ backgroundColor: `var(--hm-${tier})` }}
             />
           ))}
@@ -54,10 +61,14 @@ function MiniWall() {
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12 lg:py-20">
-      <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-start">
+      {/* items-center, not items-start: the form column is much taller than the
+          panel, so top-aligning left the panel stranded against the nav with a
+          long empty run beneath it. The panel is no longer sticky either —
+          pinning it while the form scrolls produced the same orphaned look. */}
+      <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
         <div className="w-full max-w-md mx-auto lg:mx-0 lg:justify-self-end">{children}</div>
 
-        <aside className="hidden lg:block lg:sticky lg:top-24">
+        <aside className="hidden lg:block w-full max-w-md">
           <div
             className="rounded-3xl p-8 overflow-hidden"
             style={{ backgroundColor: "var(--bg-inverted)", border: "1px solid var(--border-subtle)" }}
