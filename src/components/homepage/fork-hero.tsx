@@ -3,44 +3,17 @@ import { CheckCircle } from "@phosphor-icons/react/dist/ssr";
 import { HeroCTA } from "@/components/ui/hero-cta";
 import { HeroSceneStyles, BuilderScene, HirerScene } from "@/components/homepage/hero-scenes";
 
-interface ForkHeroProps {
-  stats: {
-    totalBuilders: number;
-    totalProjects: number;
-    avgStreak: number;
-    topVibers: number;
-  };
-}
-
-export function ForkHero({ stats }: ForkHeroProps) {
-  // No icons on the proof strip: bare numbers over quiet labels. Decorative
-  // glyphs next to stats read as ornament at this size, never as signal.
-  const statItems = [
-    { label: "Active Builders", value: String(stats.totalBuilders) },
-    { label: "Projects Shipped", value: String(stats.totalProjects) },
-    { label: "Avg. Streak", value: `${stats.avgStreak} ${stats.avgStreak === 1 ? "day" : "days"}` },
-    { label: "Top Vibers", value: String(stats.topVibers) },
-  ];
-
+/**
+ * The builder/hirer fork. Used to be the whole hero (headline + stat strip);
+ * the headline moved into ProofWallHero and the stat strip died with it, so
+ * this is now purely the self-select section that follows the wall.
+ */
+export function ForkHero() {
   return (
     <section className="relative">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-12 pb-10">
-        <div className="text-center">
-          <p className="text-sm font-medium text-[var(--text-muted)] mb-5">
-            The vibe coders marketplace
-          </p>
-
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-[var(--foreground)]">
-            Vibe coders who <span className="text-accent-brutal">actually ship.</span>
-          </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-[var(--text-secondary)] font-medium">
-            VibeTalent gives developers a GitHub-verified track record: daily coding streaks, real shipped projects, and one Vibe Score. The best get discovered and hired on proof, not résumés.
-          </p>
-        </div>
-
-        {/* The explicit fork — the visitor self-selects */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pb-10">
         <HeroSceneStyles />
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 max-w-4xl mx-auto stagger-children">
+        <div className="grid gap-5 sm:grid-cols-2 max-w-4xl mx-auto stagger-children">
           {/* Builder path */}
           <div className="card-brutal p-7 flex flex-col">
             <BuilderScene />
@@ -72,16 +45,6 @@ export function ForkHero({ stats }: ForkHeroProps) {
               Explore Talent
             </Link>
           </div>
-        </div>
-
-        {/* Shared proof strip — open numbers, no boxes */}
-        <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-8 max-w-3xl mx-auto">
-          {statItems.map((stat) => (
-            <div key={stat.label} className="text-center">
-              <div className="text-2xl font-bold text-[var(--foreground)] font-mono tracking-tight">{stat.value}</div>
-              <div className="text-xs font-medium text-[var(--text-muted)] mt-1">{stat.label}</div>
-            </div>
-          ))}
         </div>
       </div>
     </section>

@@ -275,3 +275,103 @@ export const fetchStreakLogsCached = (userId: string) =>
     [`streak-logs-${userId}`],
     { revalidate: 60 }
   )();
+
+// ---------------------------------------------------------------------------
+// Proof wall (homepage hero)
+// ---------------------------------------------------------------------------
+
+export interface ProofWallData {
+  /** ISO dates, oldest -> newest, spanning the wall window. */
+  days: string[];
+  /** One row per builder; cells keyed by ISO date -> commit count. */
+  rows: { username: string; cells: Record<string, number> }[];
+  totalBuilderDays: number;
+  longestStreak: number;
+}
+
+const PROOF_WALL_DAYS = 70;
+const PROOF_WALL_ROWS = 8;
+
+async function _fetchProofWall(): Promise<ProofWallData> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = getPublicClient() as any;
+
+  const cutoff = new Date();
+  cutoff.setUTCDate(cutoff.getUTCDate() - (PROOF_WALL_DAYS - 1));
+  const cutoffIso = cutoff.toISOString().slice(0, 10);
+
+  const [logsRes, totalRes, streakRes] = await Promise.all([
+    sb
+      .from("streak_logs")
+      .select("user_id, activity_date, commit_count")
+      .gte("activity_date", cutoffIso),
+    sb.from("streak_logs").select("*", { count: "exact", head: true }),
+    sb
+      .from("users")
+      .select("longest_streak")
+      .order("longest_streak", { ascending: false })
+      .limit(1),
+  ]);
+
+  // Throw on error so unstable_cache does NOT cache an empty wall
+  if (logsRes.error) throw new Error(`Failed to fetch proof wall logs: ${logsRes.error.message}`);
+
+  type LogRow = { user_id: string; activity_date: string; commit_count: number | null };
+  const logs: LogRow[] = logsRes.data ?? [];
+
+  // Top rows = builders with the most active days in the window.
+  const perUser = new Map<string, LogRow[]>();
+  for (const log of logs) {
+    const list = perUser.get(log.user_id);
+    if (list) list.push(log);
+    else perUser.set(log.user_id, [log]);
+  }
+  const topUserIds = [...perUser.entries()]
+    .sort((a, b) => b[1].length - a[1].length)
+    .slice(0, PROOF_WALL_ROWS)
+    .map(([id]) => id);
+
+  let usernames = new Map<string, string>();
+  if (topUserIds.length) {
+    const { data: users } = await sb
+      .from("users")
+      .select("id, username")
+      .in("id", topUserIds);
+    usernames = new Map((users ?? []).map((u: { id: string; username: string }) => [u.id, u.username]));
+  }
+
+  const days: string[] = [];
+  for (let i = 0; i < PROOF_WALL_DAYS; i++) {
+    const d = new Date(cutoff);
+    d.setUTCDate(cutoff.getUTCDate() + i);
+    days.push(d.toISOString().slice(0, 10));
+  }
+
+  const rows = topUserIds.map((id) => {
+    const cells: Record<string, number> = {};
+    for (const log of perUser.get(id) ?? []) {
+      cells[log.activity_date] = Math.max(1, log.commit_count ?? 1);
+    }
+    return { username: usernames.get(id) ?? "builder", cells };
+  });
+
+  // Trim leading days where NO selected row has activity. The github-sync
+  // backfill only reaches so far back, and a wall whose left half is uniform
+  // grey argues against the headline. The window regrows toward the full 70
+  // days on its own as history accumulates.
+  const firstActive = days.findIndex((d) => rows.some((r) => r.cells[d]));
+  const visibleDays = firstActive > 0 ? days.slice(firstActive) : days;
+
+  return {
+    days: visibleDays,
+    rows,
+    totalBuilderDays: totalRes.count ?? 0,
+    longestStreak: streakRes.data?.[0]?.longest_streak ?? 0,
+  };
+}
+
+// 5 minutes: the wall is a marketing artifact, not a live feed — a wider
+// window keeps the 70-day log scan (a few thousand rows) off the hot path.
+export const fetchProofWallCached = unstable_cache(_fetchProofWall, ["proof-wall"], {
+  revalidate: 300,
+});

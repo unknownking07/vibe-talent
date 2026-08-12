@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import { CheckCircle } from "@phosphor-icons/react";
-import { HeroSceneStyles, BuilderScene } from "@/components/homepage/hero-scenes";
 
 /**
  * Shared chrome for the auth flow (login, signup, forgot/reset password).
@@ -22,6 +21,36 @@ const PROOF_POINTS = [
   "One vibe score clients can trust",
 ];
 
+// Static echo of the homepage proof wall (owner's design language): a fixed
+// pattern of activity tiers, deliberately NOT animated and NOT live data —
+// it's set dressing here, and a hardcoded pattern keeps the auth pages free
+// of any fetch. Tiers index into the same --hm-* scale the real wall uses.
+const MINI_WALL: number[][] = [
+  [2, 4, 1, 0, 3, 4, 2, 1, 4, 0, 2, 3, 1, 4],
+  [4, 1, 3, 2, 0, 1, 4, 3, 2, 4, 0, 1, 3, 2],
+  [1, 3, 0, 4, 2, 3, 1, 0, 4, 2, 3, 4, 0, 1],
+  [3, 0, 2, 1, 4, 0, 3, 2, 1, 3, 4, 0, 2, 4],
+  [0, 2, 4, 3, 1, 2, 0, 4, 3, 1, 2, 3, 4, 0],
+];
+
+function MiniWall() {
+  return (
+    <div className="flex flex-col gap-[3px]" aria-hidden>
+      {MINI_WALL.map((row, r) => (
+        <div key={r} className="flex gap-[3px]">
+          {row.map((tier, c) => (
+            <div
+              key={c}
+              className="h-3 flex-1 rounded-[3px]"
+              style={{ backgroundColor: `var(--hm-${tier})` }}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12 lg:py-20">
@@ -33,8 +62,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
             className="rounded-3xl p-8 overflow-hidden"
             style={{ backgroundColor: "var(--bg-inverted)", border: "1px solid var(--border-subtle)" }}
           >
-            <HeroSceneStyles />
-            <BuilderScene />
+            <MiniWall />
             <h2 className="mt-7 text-2xl font-bold text-white">Proof over resumes</h2>
             <ul className="mt-4 space-y-2.5">
               {PROOF_POINTS.map((p) => (

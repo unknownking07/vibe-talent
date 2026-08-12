@@ -2,12 +2,13 @@ import { LiveActivityFeed } from "@/components/ui/live-activity-feed";
 import { jsonLdHtml } from "@/lib/json-ld";
 import { NetworkFeed } from "@/components/feed/network-feed";
 import { ForkHero } from "@/components/homepage/fork-hero";
+import { ProofWallHero } from "@/components/homepage/proof-wall-hero";
 import Link from "next/link";
 import { VibecoderCard } from "@/components/ui/vibecoder-card";
 import { ProjectCard } from "@/components/ui/project-card";
 import { HeroCTA } from "@/components/ui/hero-cta";
 import { TestimonialScroll } from "@/components/ui/testimonial-scroll";
-import { fetchHomepageDataCached } from "@/lib/supabase/server-queries";
+import { fetchHomepageDataCached, fetchProofWallCached } from "@/lib/supabase/server-queries";
 import {
   fetchHomepageFeedCached,
   SPARSE_THRESHOLD,
@@ -78,9 +79,6 @@ type HomepageFeaturedProject = import("@/lib/types/database").Project & {
 export default async function HomePage() {
   let topVibecoders: import("@/lib/types/database").UserWithSocials[] = [];
   let featuredProjects: HomepageFeaturedProject[] = [];
-  let totalBuilders = 0;
-  let totalProjects = 0;
-  let avgStreak = 0;
   let homepageFeed: HomepageFeedItem[] = [];
 
   // Run the existing homepage data fetch and the new feed fetch in parallel.
@@ -89,20 +87,21 @@ export default async function HomePage() {
   // (empty arrays, zeroed stats) on the failed side. This matters more for
   // the feed than the stats: a transient feed-query timeout shouldn't make
   // the homepage stats disappear, and vice versa.
-  const [homepageDataResult, homepageFeedResult] = await Promise.allSettled([
+  const [homepageDataResult, homepageFeedResult, proofWallResult] = await Promise.allSettled([
     fetchHomepageDataCached(),
     HOMEPAGE_FEED_V2_ENABLED
       ? fetchHomepageFeedCached()
       : Promise.resolve([] as HomepageFeedItem[]),
+    fetchProofWallCached(),
   ]);
+  // The wall degrades to null (hero renders headline + CTA without squares)
+  // rather than blocking the page on a failed log scan.
+  const proofWall = proofWallResult.status === "fulfilled" ? proofWallResult.value : null;
 
   if (homepageDataResult.status === "fulfilled") {
     const data = homepageDataResult.value;
     topVibecoders = data.topVibecoders;
     featuredProjects = data.featuredProjects;
-    totalBuilders = data.totalBuilders;
-    totalProjects = data.totalProjects;
-    avgStreak = data.avgStreak;
   } else {
     console.error("[HomePage] Failed to fetch homepage data:", homepageDataResult.reason);
   }
@@ -189,15 +188,9 @@ export default async function HomePage() {
         }}
       />
 
-      {/* Hero — explicit builder/hiring fork + shared proof strip */}
-      <ForkHero
-        stats={{
-          totalBuilders,
-          totalProjects,
-          avgStreak,
-          topVibers: topVibecoders.length,
-        }}
-      />
+      {/* Hero — the proof wall (owner design), then the builder/hiring fork */}
+      {proofWall && <ProofWallHero data={proofWall} />}
+      <ForkHero />
 
       {/* How it works — merged from the old "What is Vibe Coding",
           "Why Streaks Matter", and end-game-ladder sections into one
