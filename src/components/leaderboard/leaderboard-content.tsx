@@ -45,6 +45,15 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
       }
     });
 
+  // The streak board ranks on `longest_streak`, so its Streak column has to
+  // show that same figure. Rendering `streak` (the run they are on today)
+  // there put builders whose streak has since broken near the top beside a
+  // 0, which reads as a leaderboard that cannot sort. Every other board keeps
+  // showing the live streak, so the header renames to say which one it is.
+  const isStreakBoard = activeTab === "streak";
+  const streakShown = (user: UserWithSocials) =>
+    isStreakBoard ? user.longest_streak : user.streak;
+
   // Shape-typed rather than `typeof Trophy`: the map now mixes Phosphor
   // components with the hand-drawn brand glyphs, which are plain function
   // components rather than forwardRef exotics.
@@ -140,7 +149,7 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
               </div>
               <div className="mt-3 flex flex-col items-center gap-1">
                 <VibeScore score={user.vibe_score} size="sm" />
-                <StreakCounter streak={user.streak} size="sm" />
+                <StreakCounter streak={streakShown(user)} size="sm" />
               </div>
             </Link>
           );
@@ -159,7 +168,9 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
               <th className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-white">Rank</th>
               <th className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-white">Builder</th>
               <th className="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-white">Vibe Score</th>
-              <th className="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-white hidden sm:table-cell">Streak</th>
+              <th className="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-white hidden sm:table-cell">
+                {isStreakBoard ? "Longest" : "Streak"}
+              </th>
               <th className="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-white hidden sm:table-cell">Projects</th>
               <th className="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-white">Badge</th>
             </tr>
@@ -203,7 +214,7 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                     <VibeScore score={user.vibe_score} size="sm" />
                   </td>
                   <td className="px-3 sm:px-4 py-3 text-right hidden sm:table-cell">
-                    <StreakCounter streak={user.streak} size="sm" />
+                    <StreakCounter streak={streakShown(user)} size="sm" />
                   </td>
                   <td className="px-3 sm:px-4 py-3 text-right text-sm font-bold text-[var(--text-secondary)] hidden sm:table-cell">
                     {(user.projects ?? []).length}
