@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Activity, Info, CheckCircle, Globe, Github, FileText, Image as ImageIcon, Layers, X } from "lucide-react";
+import { Image as ImageIcon, X } from "lucide-react";
+import { CheckCircle, FileText, GithubLogo, Globe, Info, Pulse, Stack } from "@phosphor-icons/react";
 import type { Project } from "@/lib/types/database";
 
 interface QualityScoreBadgeProps {
@@ -48,20 +49,20 @@ export function QualityScoreBadge({ project, size = "sm" }: QualityScoreBadgePro
           className={`inline-flex items-center gap-1 ${size === "sm" ? "text-xs" : "text-sm"} font-bold ${colorClass} hover:opacity-80 transition-opacity`}
           aria-label={`Quality score: ${project.quality_score} out of 100. Click for details.`}
         >
-          <Activity size={size === "sm" ? 14 : 16} />
+          <Pulse weight="bold" size={size === "sm" ? 14 : 16} />
           {project.quality_score}
-          <Info size={size === "sm" ? 10 : 12} className="opacity-60" />
+          <Info weight="fill" size={size === "sm" ? 10 : 12} className="opacity-60" />
         </button>
       )}
 
       {showInfo && (
         <div
-          className="absolute left-0 top-full mt-2 z-50 w-72"
-          style={{ border: "2px solid var(--border-hard)", boxShadow: "var(--shadow-brutal-sm)", backgroundColor: "var(--bg-surface)" }}
+          className="absolute left-0 top-full mt-2 z-50 w-72 rounded-xl overflow-hidden"
+          style={{ border: "1px solid var(--border-subtle)", boxShadow: "var(--shadow-brutal)", backgroundColor: "var(--bg-surface)" }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between px-3 py-2 border-b-2 border-[var(--border-hard)] bg-[var(--bg-surface-light)]">
-            <span className="text-xs font-extrabold uppercase text-[var(--foreground)]">Quality Score</span>
+          <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border-subtle)] bg-[var(--bg-surface-light)]">
+            <span className="text-xs font-semibold text-[var(--foreground)]">Quality Score</span>
             <button onClick={() => setShowInfo(false)} className="text-[var(--text-muted)] hover:text-[var(--foreground)]">
               <X size={14} />
             </button>
@@ -71,13 +72,13 @@ export function QualityScoreBadge({ project, size = "sm" }: QualityScoreBadgePro
             {/* Overall score bar */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className={`text-lg font-extrabold ${colorClass}`}>{project.quality_score}/100</span>
-                <span className="text-[10px] font-bold uppercase text-[var(--text-muted)]">
+                <span className={`text-lg font-bold ${colorClass}`}>{project.quality_score}/100</span>
+                <span className="text-[10px] font-medium text-[var(--text-muted)]">
                   {project.quality_score >= 70 ? "Excellent" : project.quality_score >= 40 ? "Good" : "Needs work"}
                 </span>
               </div>
-              <div className="w-full h-2 bg-[var(--border-subtle)] border border-[var(--border-hard)]">
-                <div className={`h-full ${barColor}`} style={{ width: `${project.quality_score}%` }} />
+              <div className="w-full h-2 rounded-full overflow-hidden bg-[var(--border-subtle)]">
+                <div className={`h-full rounded-full ${barColor}`} style={{ width: `${project.quality_score}%` }} />
               </div>
             </div>
 
@@ -93,25 +94,25 @@ export function QualityScoreBadge({ project, size = "sm" }: QualityScoreBadgePro
             {/* Checklist for non-GitHub-scored projects */}
             {!hasGitHubScore && (
               <div className="space-y-1">
-                <CheckItem icon={<CheckCircle size={12} />} label="Verified project" done={project.verified} pts="+5 base" />
-                <CheckItem icon={<Globe size={12} />} label="Live URL" done={!!project.live_url} pts="+3 pts" />
-                <CheckItem icon={<Github size={12} />} label="GitHub URL" done={!!project.github_url} pts="+2 pts" />
-                <CheckItem icon={<FileText size={12} />} label="Description >50 chars" done={project.description.length > 50} pts="+2 pts" />
+                <CheckItem icon={<CheckCircle weight="fill" size={12} />} label="Verified project" done={project.verified} pts="+5 base" />
+                <CheckItem icon={<Globe weight="fill" size={12} />} label="Live URL" done={!!project.live_url} pts="+3 pts" />
+                <CheckItem icon={<GithubLogo weight="fill" size={12} />} label="GitHub URL" done={!!project.github_url} pts="+2 pts" />
+                <CheckItem icon={<FileText weight="fill" size={12} />} label="Description >50 chars" done={project.description.length > 50} pts="+2 pts" />
                 <CheckItem icon={<ImageIcon size={12} />} label="Screenshot" done={!!project.image_url} pts="+1 pt" />
-                <CheckItem icon={<Layers size={12} />} label="3+ technologies" done={(project.tech_stack ?? []).length >= 3} pts="+2 pts" />
+                <CheckItem icon={<Stack weight="fill" size={12} />} label="3+ technologies" done={(project.tech_stack ?? []).length >= 3} pts="+2 pts" />
               </div>
             )}
 
             {/* How to improve */}
             <div className="pt-2 border-t border-[var(--border-subtle)]">
-              <p className="text-[10px] font-bold uppercase text-[var(--text-muted)]">
+              <p className="text-[10px] font-medium text-[var(--text-muted)]">
                 {hasGitHubScore
                   ? "Score is computed from your GitHub repo data at verification time."
                   : "Verify your project via GitHub to unlock full quality scoring."
                 }
               </p>
               {!project.verified && (
-                <p className="text-[10px] font-bold text-[var(--accent)] mt-1">
+                <p className="text-[10px] font-semibold text-[var(--accent)] mt-1">
                   Verify: add a .vibetalent file to your repo root, or link a repo you own.
                 </p>
               )}
@@ -128,11 +129,11 @@ function ScoreRow({ label, score, hint }: { label: string; score: number; hint: 
   return (
     <div>
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase text-[var(--foreground)]">{label}</span>
-        <span className="text-[10px] font-bold text-[var(--text-muted)]">{score}/100</span>
+        <span className="text-[10px] font-semibold text-[var(--foreground)]">{label}</span>
+        <span className="text-[10px] font-semibold text-[var(--text-muted)]">{score}/100</span>
       </div>
-      <div className="w-full h-1.5 bg-[var(--border-subtle)] border border-[var(--border-hard)] mt-0.5">
-        <div className={`h-full ${color}`} style={{ width: `${score}%` }} />
+      <div className="w-full h-1.5 rounded-full overflow-hidden bg-[var(--border-subtle)] mt-0.5">
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${score}%` }} />
       </div>
       <p className="text-[9px] text-[var(--text-muted-soft)] mt-0.5">{hint}</p>
     </div>
@@ -142,11 +143,11 @@ function ScoreRow({ label, score, hint }: { label: string; score: number; hint: 
 function CheckItem({ icon, label, done, pts }: { icon: React.ReactNode; label: string; done: boolean; pts: string }) {
   return (
     <div className="flex items-center justify-between">
-      <div className={`flex items-center gap-1.5 text-[10px] font-bold ${done ? "text-emerald-600" : "text-[var(--text-muted-soft)]"}`}>
+      <div className={`flex items-center gap-1.5 text-[10px] font-semibold ${done ? "text-emerald-600" : "text-[var(--text-muted-soft)]"}`}>
         {icon}
         <span>{label}</span>
       </div>
-      <span className={`text-[10px] font-bold ${done ? "text-emerald-600" : "text-[var(--text-muted-soft)]"}`}>
+      <span className={`text-[10px] font-semibold ${done ? "text-emerald-600" : "text-[var(--text-muted-soft)]"}`}>
         {done ? "Done" : pts}
       </span>
     </div>

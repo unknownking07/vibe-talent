@@ -2,18 +2,18 @@ import { fetchAllUsersCached } from "@/lib/supabase/server-queries";
 import { jsonLdHtml } from "@/lib/json-ld";
 import { LeaderboardTabs } from "@/components/leaderboard/leaderboard-tabs";
 import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
-import { Trophy } from "lucide-react";
 import type { Metadata } from "next";
+import { Trophy } from "@phosphor-icons/react/dist/ssr";
 
 export const metadata: Metadata = {
-  title: "Top Vibe Coders — Developer Leaderboard by Streak & Score",
+  title: "Top Vibe Coders: Developer Leaderboard by Streak & Score",
   description:
     "See the top vibe coders ranked by vibe score, streak, and projects shipped. The most consistent builders on the platform.",
   alternates: {
     canonical: `${siteUrl}/leaderboard`,
   },
   openGraph: {
-    title: "Top Vibe Coders — VibeTalent Leaderboard",
+    title: "Top Vibe Coders: VibeTalent Leaderboard",
     description: "See the top developers ranked by vibe score, coding streak, and projects shipped.",
     url: `${siteUrl}/leaderboard`,
     siteName: "VibeTalent",
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Top Vibe Coders — VibeTalent Leaderboard",
+    title: "Top Vibe Coders: VibeTalent Leaderboard",
     description: "See the top developers ranked by vibe score, coding streak, and projects shipped.",
   },
 };
@@ -68,19 +68,15 @@ export default async function LeaderboardPage() {
       />
       <div className="text-center mb-10">
         <div
-          className="inline-flex items-center justify-center w-16 h-16 mb-4"
-          style={{
-            backgroundColor: "var(--status-warning-bg)",
-            border: "2px solid var(--border-hard)",
-            boxShadow: "var(--shadow-brutal)",
-          }}
+          className="inline-flex items-center justify-center w-16 h-16 mb-4 rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-brutal-sm)]"
+          style={{ backgroundColor: "var(--status-warning-bg)" }}
         >
-          <Trophy size={32} className="text-[#CA8A04]" />
+          <Trophy weight="duotone" size={32} className="text-[#CA8A04]" />
         </div>
-        <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">Leaderboard</h1>
+        <h1 className="text-3xl font-bold text-[var(--foreground)]">Leaderboard</h1>
         <p className="mt-2 text-[var(--text-secondary)] font-medium">The most consistent builders on the platform</p>
-        <p className="mt-3 text-sm text-[var(--text-secondary)] leading-relaxed max-w-2xl mx-auto">
-          The VibeTalent leaderboard ranks developers by their vibe score — a reputation metric calculated from coding streaks, project quality, GitHub activity, and community endorsements. The most consistent builders rise to the top, proving their dedication through daily shipping.
+        <p className="mt-3 hidden sm:block text-sm text-[var(--text-muted)] leading-relaxed max-w-2xl mx-auto">
+          The VibeTalent leaderboard ranks developers by their vibe score: a reputation metric calculated from coding streaks, project quality, GitHub activity, and community endorsements. The most consistent builders rise to the top, proving their dedication through daily shipping.
         </p>
       </div>
 

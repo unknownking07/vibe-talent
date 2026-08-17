@@ -1,0 +1,106 @@
+name: Deploy to Staging (vibetalent-beta)
+
+# Staging deploys the CURRENT branch to the vibetalent-beta Worker behind
+# staging.vibetalent.work. Unlike production (push-to-main), this is opt-in:
+# push a feature branch and trigger it, or run it by hand.
+#
+# Staging shares production's Supabase, so anything deployed here reads and
+# writes live data. Unfinished write paths must be gated on IS_STAGING (see
+# src/lib/staging.ts), not merely hidden from the UI.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch or SHA to deploy (defaults to the branch you run this from)"
+        required: false
+        type: string
+  push:
+    branches:
+      - "feat/**"
+      - "fix/**"
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "infographics/**"
+      - ".github/**"
+
+# One staging deploy at a time. Unlike production this DOES cancel in-flight
+# runs — staging is disposable and the newest push is the one worth seeing.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # NEXT_PUBLIC_* are inlined at BUILD time. NEXT_PUBLIC_SITE_URL is
+      # overridden to the staging origin so emails, API links and manifests
+      # built here never point at www — getSiteUrl() reads it (see lib/seo.ts).
+      - name: Build (OpenNext → Cloudflare)
+        env:
+          NEXT_PUBLIC_SITE_URL: https://staging.vibetalent.work
+          # Reveals staging-only UI. Production never sets this, so the branch
+          # that renders unreleased flows is compiled out of the prod bundle.
+          NEXT_PUBLIC_VIBE_STAGING: "1"
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_PRIVY_APP_ID: ${{ vars.NEXT_PUBLIC_PRIVY_APP_ID }}
+          NEXT_PUBLIC_GA_ID: ""
+          NEXT_PUBLIC_RAZORPAY_KEY_ID: ${{ vars.NEXT_PUBLIC_RAZORPAY_KEY_ID }}
+          NEXT_PUBLIC_ENABLE_HOMEPAGE_FEED_V2: ${{ vars.NEXT_PUBLIC_ENABLE_HOMEPAGE_FEED_V2 }}
+          NEXT_PUBLIC_ENABLE_ONBOARDING_TOUR: ${{ vars.NEXT_PUBLIC_ENABLE_ONBOARDING_TOUR }}
+        run: npx opennextjs-cloudflare build
+
+      # Runtime secrets live on the vibetalent-beta Worker and persist across
+      # deploys; `wrangler deploy` does not touch them.
+      - name: Deploy to staging Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Same workaround as production: bypass wrangler's auto-delegation to
+          # `opennextjs-cloudflare deploy`, whose KV/D1 cache-populate step is
+          # intermittently flaky on this account. The cache populates lazily.
+          mv open-next.config.ts open-next.config.ts.bak
+          ok=0
+          for i in 1 2 3; do
+            if npx wrangler deploy -c wrangler.beta.jsonc; then ok=1; break; fi
+            echo "::warning::wrangler deploy attempt $i failed — retrying in 10s"
+            sleep 10
+          done
+          mv open-next.config.ts.bak open-next.config.ts
+          if [ "$ok" != 1 ]; then
+            echo "::error::staging deploy failed after 3 attempts"
+            exit 1
+          fi
+
+      - name: Confirm staging is serving and is noindexed
+        run: |
+          for i in $(seq 1 10); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" https://staging.vibetalent.work/ || true)
+            [ "$code" = "200" ] && break
+            echo "attempt $i: got $code, retrying"; sleep 6
+          done
+          if [ "$code" != "200" ]; then
+            echo "::error::staging returned $code"; exit 1
+          fi
+          # A staging origin that loses its noindex would compete with www for
+          # the same queries, so treat a missing header as a failed deploy.
+          if ! curl -sI https://staging.vibetalent.work/ | grep -qi "x-robots-tag: noindex"; then
+            echo "::error::staging is missing its noindex header"; exit 1
+          fi
+          echo "staging up and noindexed"

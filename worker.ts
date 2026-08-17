@@ -21,7 +21,21 @@ export { DOQueueHandler, DOShardedTagCache, BucketCachePurge } from "./.open-nex
 type Env = {
   CRON_SECRET?: string;
   NEXT_PUBLIC_SITE_URL?: string;
+  /**
+   * Set to "1" only in wrangler.beta.jsonc. Staging serves a byte-for-byte copy
+   * of the site on a different hostname, which is exactly what duplicate-content
+   * demotion is for, so every staging response is marked noindex. The variable
+   * is absent on the production Worker, so this can never fire on www.
+   */
+  IS_STAGING?: string;
 };
+
+/** Tell crawlers to ignore staging entirely, headers only, no body rewrite. */
+function withNoIndex(response: Response): Response {
+  const out = new Response(response.body, response);
+  out.headers.set("x-robots-tag", "noindex, nofollow, noarchive");
+  return out;
+}
 
 /**
  * Minimal shapes for the two Workers-only globals used below. The project's
@@ -325,6 +339,21 @@ export default {
         Response.redirect(`https://www.vibetalent.work${url.pathname}${url.search}`, 301),
       );
     }
+    // Staging: same routing as production, but nothing here may be indexed.
+    // Wraps the whole pipeline so cached documents and images are covered too.
+    if (env.IS_STAGING === "1") {
+      return this.route(request, env, ctx, url).then(withNoIndex);
+    }
+    return this.route(request, env, ctx, url);
+  },
+
+  /** Shared request routing for both production and staging. */
+  route(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext,
+    url: URL,
+  ): Promise<Response> {
     if (
       request.method === "GET" &&
       url.pathname === "/_next/image" &&

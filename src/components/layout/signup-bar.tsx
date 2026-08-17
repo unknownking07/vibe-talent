@@ -144,16 +144,16 @@ export function SignupBar() {
            from sliding under the bar. */
         body[data-signup-bar="visible"] { padding-bottom: 72px; }
         body[data-signup-bar="visible"] main { padding-bottom: 24px; }
-        .signup-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; background: var(--bg-surface, #15151A); border-top: 2px solid var(--border-hard, #2A2A33); padding: 12px 16px; box-shadow: 0 -4px 24px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+        .signup-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; background: var(--bg-surface, #15151A); border-top: 1px solid var(--border-hard, #2A2A33); padding: 12px 16px; box-shadow: 0 -8px 24px rgba(0,0,0,0.12); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
         .signup-bar__copy { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
         .signup-bar__heading { font-size: 14px; font-weight: 700; color: var(--foreground, #fff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .signup-bar__sub { font-size: 13px; color: var(--text-muted, #8A8B94); display: none; }
         .signup-bar__actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-        .signup-bar__signin { font-size: 13px; font-weight: 600; color: var(--text-secondary); text-decoration: none; padding: 8px 12px; border-radius: 6px; transition: color 0.15s ease; }
+        .signup-bar__signin { font-size: 13px; font-weight: 600; color: var(--text-secondary); text-decoration: none; padding: 8px 12px; border-radius: var(--radius-control, 12px); transition: color 0.15s ease; }
         .signup-bar__signin:hover { color: var(--foreground); }
-        .signup-bar__cta { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; padding: 9px 14px; background: var(--accent, #FF4A2A); color: #0A0A0E; text-decoration: none; border-radius: 6px; transition: transform 0.15s ease; }
+        .signup-bar__cta { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 9px 14px; background: var(--accent, #FF4A2A); color: #ffffff; text-decoration: none; border-radius: var(--radius-control, 12px); transition: transform 0.15s ease; }
         .signup-bar__cta:hover { transform: translateY(-1px); }
-        .signup-bar__dismiss { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; background: none; border: none; color: var(--text-muted, #8A8B94); cursor: pointer; transition: color 0.15s ease, background 0.15s ease; }
+        .signup-bar__dismiss { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: none; border: none; color: var(--text-muted, #8A8B94); cursor: pointer; transition: color 0.15s ease, background 0.15s ease; }
         .signup-bar__dismiss:hover { color: var(--foreground); background: var(--bg-surface-light, rgba(255,255,255,0.04)); }
         @media(min-width: 640px) {
           .signup-bar__sub { display: inline; }

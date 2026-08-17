@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Send, CheckCircle, Lock } from "lucide-react";
+import { X, Send } from "lucide-react";
+import { CheckCircle, Lock } from "@phosphor-icons/react";
 import { createClient } from "@/lib/supabase/client";
 
 interface HireModalProps {
@@ -152,29 +153,26 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
-          boxShadow: "var(--shadow-brutal-sm)",
+          border: "1px solid var(--border-subtle)",
+          boxShadow: "var(--shadow-brutal)",
         }}
       >
         {/* Header */}
         <div
           className="flex items-center justify-between p-5"
           style={{
-            borderBottom: "2px solid var(--border-hard)",
+            borderBottom: "1px solid var(--border-subtle)",
           }}
         >
-          <h2 className="text-lg font-extrabold uppercase tracking-tight text-[var(--foreground)]">
+          <h2 className="text-lg font-bold tracking-tight text-[var(--foreground)]">
             Hire @{builderName}
           </h2>
           <button
             onClick={handleClose}
-            className="w-8 h-8 flex items-center justify-center text-[var(--foreground)] transition-all hover:bg-[var(--bg-surface-light)]"
-            style={{
-              border: "2px solid var(--border-hard)",
-            }}
+            className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--foreground)] transition-colors hover:bg-[var(--bg-surface-light)] active:scale-95"
           >
             <X size={16} />
           </button>
@@ -185,31 +183,29 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
           {sent ? (
             <div className="flex flex-col items-center gap-4 py-8 text-center">
               <div
-                className="w-16 h-16 flex items-center justify-center"
+                className="w-16 h-16 flex items-center justify-center rounded-full"
                 style={{
                   backgroundColor: "var(--status-success-bg)",
-                  border: "2px solid var(--border-hard)",
-                  boxShadow: "var(--shadow-brutal-sm)",
                 }}
               >
-                <CheckCircle size={32} className="text-[var(--status-success-text)]" />
+                <CheckCircle weight="duotone" size={32} className="text-[var(--status-success-text)]" />
               </div>
-              <h3 className="text-xl font-extrabold uppercase text-[var(--foreground)]">Request Sent!</h3>
+              <h3 className="text-xl font-bold text-[var(--foreground)]">Request Sent!</h3>
               <p className="text-sm text-[var(--text-secondary)] font-medium">
                 Your hire request has been sent to @{builderName}. They will get back to you soon.
               </p>
               {requestId && (
                 <div
-                  className="w-full p-3 text-sm"
+                  className="w-full p-3 text-sm rounded-xl"
                   style={{
                     backgroundColor: "var(--bg-surface-light)",
-                    border: "2px solid var(--border-hard)",
+                    border: "1px solid var(--border-subtle)",
                   }}
                 >
-                  <p className="font-bold text-[var(--foreground)] mb-1">Continue the conversation:</p>
+                  <p className="font-semibold text-[var(--foreground)] mb-1">Continue the conversation:</p>
                   <a
                     href={`/hire/chat/${requestId}`}
-                    className="text-[var(--accent)] font-extrabold underline underline-offset-2 break-all"
+                    className="text-[var(--accent)] font-semibold underline underline-offset-2 break-all"
                   >
                     {typeof window !== "undefined" ? window.location.origin : ""}/hire/chat/{requestId}
                   </a>
@@ -229,10 +225,9 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
             <div className="space-y-4">
               {error && (
                 <div
-                  className="p-3 text-sm font-bold text-[var(--status-error-text)]"
+                  className="p-3 text-sm font-semibold rounded-xl text-[var(--status-error-text)]"
                   style={{
                     backgroundColor: "var(--status-error-border)",
-                    border: "2px solid var(--border-hard)",
                   }}
                 >
                   {error}
@@ -240,8 +235,8 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
               )}
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
-                  Your Name * {loggedInUser && <Lock size={10} className="inline ml-1" />}
+                <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
+                  Your Name * {loggedInUser && <Lock weight="fill" size={10} className="inline ml-1" />}
                 </label>
                 <input
                   type="text"
@@ -255,8 +250,8 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
-                  Your Email * {loggedInUser && <Lock size={10} className="inline ml-1" />}
+                <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
+                  Your Email * {loggedInUser && <Lock weight="fill" size={10} className="inline ml-1" />}
                 </label>
                 <input
                   type="email"
@@ -270,7 +265,7 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
+                <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
                   Budget
                 </label>
                 <select
@@ -288,7 +283,7 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
+                <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
                   Message *
                 </label>
                 <textarea

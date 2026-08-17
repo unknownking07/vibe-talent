@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, forwardRef } from "react";
-import { Wallet, Loader2, Check } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { Check, Wallet } from "@phosphor-icons/react";
 import { encodeFunctionData, parseAbi } from "viem";
 import { base, mainnet, arbitrum } from "viem/chains";
 import { createClient } from "@/lib/supabase/client";
@@ -64,7 +65,7 @@ const FALLBACK_PRICES: bigint[] = [
   BigInt(2_000_000),    // 0: Day        = $2.00
   BigInt(5_000_000),    // 1: 3-day      = $5.00 (hidden in UI; sits between Day and Week)
   BigInt(10_000_000),   // 2: Week       = $10.00  (29% off /day)
-  BigInt(29_000_000),   // 3: Month      = $29.00  (52% off /day — best value)
+  BigInt(29_000_000),   // 3: Month      = $29.00  (52% off /day: best value)
   BigInt(199_000_000),  // 4: Annual     = $199.00 (73% off /day; contract = Lifetime)
 ];
 
@@ -152,20 +153,20 @@ export const FeatureYourProjectCard = forwardRef<HTMLDivElement, Props>(function
         className="card-brutal relative p-6 flex flex-col md:min-h-[420px] overflow-hidden focus:outline-none"
         style={{ backgroundColor: "var(--bg-surface)" }}
       >
-        <h3 className="text-2xl font-extrabold uppercase leading-tight">
+        <h3 className="text-2xl font-bold leading-tight">
           <span className="block text-[var(--foreground)]">Feature</span>
           <span className="block" style={{ color: "var(--accent)" }}>Your Project</span>
         </h3>
         {process.env.NODE_ENV !== "production" ? (
           <div
-            className="mt-6 p-4 text-xs font-medium"
+            className="mt-6 p-4 text-xs font-medium rounded-xl"
             style={{
               border: "2px dashed var(--border-hard)",
               color: "var(--text-secondary)",
               backgroundColor: "var(--bg-surface-light)",
             }}
           >
-            <strong className="uppercase text-[var(--foreground)]">Promote form disabled.</strong>
+            <strong className="text-[var(--foreground)]">Promote form disabled.</strong>
             <span className="block mt-1">
               Set <code>NEXT_PUBLIC_PRIVY_APP_ID</code> in <code>.env.local</code> to enable wallet-based promotions.
             </span>
@@ -531,7 +532,7 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
   // Only relevant to the Solana lane.
   const solanaTokenToggle = isSol ? (
     <div className="mb-4">
-      <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">
+      <label className="block text-[10px] font-semibold text-[var(--text-muted)] mb-1.5">
         Token
       </label>
       <div className="grid grid-cols-2 gap-2">
@@ -542,9 +543,9 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
               key={t}
               type="button"
               onClick={() => setSelectedToken(t)}
-              className="px-3 py-2 text-xs font-extrabold uppercase transition-all"
+              className="px-3 py-2 text-xs font-semibold rounded-xl transition-all"
               style={{
-                border: `2px solid ${active ? "var(--accent)" : "var(--border-hard)"}`,
+                border: `1px solid ${active ? "var(--accent)" : "var(--border-subtle)"}`,
                 backgroundColor: active
                   ? "color-mix(in srgb, var(--accent) 14%, var(--bg-surface))"
                   : "var(--bg-surface)",
@@ -568,7 +569,7 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
       className="card-brutal relative p-6 flex flex-col md:min-h-[420px] overflow-hidden focus:outline-none"
       style={{ backgroundColor: "var(--bg-surface)" }}
     >
-      <h3 className="text-2xl font-extrabold uppercase leading-tight">
+      <h3 className="text-2xl font-bold leading-tight">
         <span className="block text-[var(--foreground)]">Feature</span>
         <span className="block" style={{ color: "var(--accent)" }}>Your Project</span>
       </h3>
@@ -581,11 +582,11 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
           <>
             {/* Idle stage */}
             <div className="flex items-center justify-between mb-2">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+              <label className="text-[10px] font-semibold text-[var(--text-muted)]">
                 Pay on
               </label>
               <span
-                className="font-mono text-[10px] font-bold px-2 py-0.5"
+                className="font-mono text-[10px] font-semibold px-2.5 py-0.5 rounded-full"
                 style={{ border: "1px solid var(--accent)", color: "var(--accent)" }}
               >
                 From {fromPerDay}/day
@@ -601,9 +602,9 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
                     key={key}
                     type="button"
                     onClick={() => setSelectedChain(chainKey)}
-                    className="flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-extrabold uppercase transition-all"
+                    className="flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-semibold rounded-xl transition-all"
                     style={{
-                      border: `2px solid ${isActive ? "var(--accent)" : "var(--border-hard)"}`,
+                      border: `1px solid ${isActive ? "var(--accent)" : "var(--border-subtle)"}`,
                       backgroundColor: isActive
                         ? "color-mix(in srgb, var(--accent) 14%, var(--bg-surface))"
                         : "var(--bg-surface)",
@@ -624,16 +625,16 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
             <div className="flex-1" />
 
             {!privyReady ? (
-              <p className="text-xs font-bold text-[var(--text-muted)] animate-pulse text-center py-2">
+              <p className="text-xs font-medium text-[var(--text-muted)] animate-pulse text-center py-2">
                 Loading wallet...
               </p>
             ) : (
               <button
                 type="button"
                 onClick={handleConnectWallet}
-                className="btn-brutal btn-brutal-primary btn-notched w-full text-sm flex items-center justify-center gap-2"
+                className="btn-brutal btn-brutal-primary w-full text-sm flex items-center justify-center gap-2"
               >
-                <Wallet size={16} /> Connect {isSol ? "Solana" : "EVM"} Wallet
+                <Wallet weight="fill" size={16} /> Connect {isSol ? "Solana" : "EVM"} Wallet
               </button>
             )}
 
@@ -641,7 +642,7 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
               href="/pricing"
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-3 text-center text-[10px] font-bold uppercase underline underline-offset-4 hover:opacity-80 transition-opacity"
+              className="mt-3 text-center text-[10px] font-semibold underline underline-offset-4 hover:opacity-80 transition-opacity"
               style={{ color: "var(--accent)" }}
             >
               View Pricing &amp; Guidelines
@@ -651,30 +652,30 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
           <>
             {/* Expanded stage */}
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] font-mono truncate">
+              <span className="text-[10px] font-semibold text-[var(--text-muted)] font-mono truncate">
                 {walletDisplay}
               </span>
               <button
                 type="button"
                 onClick={handleDisconnectWallet}
-                className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors"
+                className="text-[10px] font-semibold text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors"
               >
                 Disconnect
               </button>
             </div>
 
             <div className="mb-3">
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">
+              <label className="block text-[10px] font-semibold text-[var(--text-muted)] mb-1">
                 Project
               </label>
               {loadingProjects ? (
                 <p className="text-xs text-[var(--text-muted)] animate-pulse">Loading projects...</p>
               ) : projects.length === 0 ? (
                 <div
-                  className="p-3 text-center"
-                  style={{ border: "2px solid var(--border-hard)", backgroundColor: "var(--background)" }}
+                  className="p-3 text-center rounded-xl"
+                  style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--background)" }}
                 >
-                  <p className="text-xs font-bold text-[var(--text-muted)] mb-2">No projects yet</p>
+                  <p className="text-xs font-semibold text-[var(--text-muted)] mb-2">No projects yet</p>
                   <a href="/dashboard" className="btn-brutal btn-brutal-primary text-[10px] inline-flex items-center gap-1">
                     Add a Project
                   </a>
@@ -683,10 +684,10 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
                 <select
                   value={selectedProject}
                   onChange={(e) => setSelectedProject(e.target.value)}
-                  className="w-full px-3 py-2 text-xs font-medium"
+                  className="w-full px-3 py-2 text-xs font-medium rounded-xl"
                   style={{
                     backgroundColor: "var(--background)",
-                    border: "2px solid var(--border-hard)",
+                    border: "1px solid var(--border-hard)",
                     color: "var(--foreground)",
                     outline: "none",
                     cursor: "pointer",
@@ -703,7 +704,7 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
             {solanaTokenToggle}
 
             <div className="mb-3">
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">
+              <label className="block text-[10px] font-semibold text-[var(--text-muted)] mb-1.5">
                 Package
               </label>
               <div className="flex flex-col gap-1.5">
@@ -714,17 +715,17 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
                       key={pkg.value}
                       type="button"
                       onClick={() => setSelectedPkg(pkg.value)}
-                      className="flex items-center justify-between px-3 py-2 transition-colors"
+                      className="flex items-center justify-between px-3 py-2 rounded-xl transition-colors"
                       style={{
-                        border: `2px solid ${isActive ? "var(--accent)" : "var(--border-hard)"}`,
+                        border: `1px solid ${isActive ? "var(--accent)" : "var(--border-subtle)"}`,
                         backgroundColor: isActive
                           ? "color-mix(in srgb, var(--accent) 14%, var(--bg-surface))"
                           : "var(--bg-surface)",
                       }}
                       aria-pressed={isActive}
                     >
-                      <span className="text-xs font-extrabold uppercase text-[var(--foreground)]">{pkg.label}</span>
-                      <span className="font-mono text-[11px] font-bold text-[var(--foreground)]">
+                      <span className="text-xs font-semibold text-[var(--foreground)]">{pkg.label}</span>
+                      <span className="font-mono text-[11px] font-semibold text-[var(--foreground)]">
                         ${(Number(prices[pkg.value]) / 1e6).toFixed(2)}
                       </span>
                     </button>
@@ -738,9 +739,9 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
                 role={status.type === "error" ? "alert" : "status"}
                 aria-live={status.type === "error" ? "assertive" : "polite"}
                 aria-atomic="true"
-                className="mb-3 px-3 py-2 text-[11px] font-bold uppercase"
+                className="mb-3 px-3 py-2 text-[11px] font-semibold rounded-xl"
                 style={{
-                  border: "2px solid var(--border-hard)",
+                  border: "1px solid var(--border-subtle)",
                   backgroundColor:
                     status.type === "error" ? "var(--status-error-bg)" :
                     status.type === "success" ? "var(--status-success-bg)" :
@@ -759,7 +760,7 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
               type="button"
               onClick={handlePromote}
               disabled={busy || !hasProject}
-              className="btn-brutal btn-brutal-primary btn-notched w-full text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-brutal btn-brutal-primary w-full text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {busy ? (
                 <>
@@ -767,7 +768,7 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBo
                 </>
               ) : (
                 <>
-                  <Check size={16} /> Approve {priceStr} &amp; Promote
+                  <Check weight="bold" size={16} /> Approve {priceStr} &amp; Promote
                 </>
               )}
             </button>

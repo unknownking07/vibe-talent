@@ -17,6 +17,82 @@ export function validateUsername(value: string): string | null {
   return null;
 }
 
+/** Longest derived candidate before the collision suffix is appended. */
+const MAX_SEED_LENGTH = 20;
+
+/**
+ * Normalize what someone types into a username field, live.
+ *
+ * Separators (whitespace, dots, hyphens) become underscores instead of being
+ * deleted. The previous filter dropped them outright, so typing a real name
+ * made characters vanish mid-keystroke ("Abhinav K" → "abhinavk") and read as
+ * a broken input rather than as validation.
+ *
+ * Deliberately does NOT collapse or trim underscores — doing that on every
+ * keystroke fights someone typing a deliberate `a__b`. Tidying is
+ * `sanitizeUsernameSeed`'s job, and it only runs on derived candidates.
+ */
+export function normalizeUsernameInput(raw: string): string {
+  return raw
+    .toLowerCase()
+    .replace(/[\s.\-]+/g, "_")
+    .replace(/[^a-z0-9_]/g, "");
+}
+
+/**
+ * Turn a piece of identity text (GitHub handle, email local-part, display
+ * name) into a username candidate, or "" if nothing usable survives.
+ *
+ * Unlike `normalizeUsernameInput` this tidies aggressively — collapse repeated
+ * underscores, trim the ends, cap the length — because the result is proposed
+ * to the user rather than typed by them.
+ */
+export function sanitizeUsernameSeed(raw: string | null | undefined): string {
+  if (!raw) return "";
+  const seed = normalizeUsernameInput(String(raw))
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, MAX_SEED_LENGTH)
+    // The slice can re-expose a trailing underscore ("abhinav_kumar_x" → "…_").
+    .replace(/_+$/, "");
+  return validateUsername(seed) === null ? seed : "";
+}
+
+/**
+ * Pick the first free username from ordered identity `seeds` (most preferred
+ * first), so onboarding can pre-fill its one required field instead of showing
+ * a blank box.
+ *
+ * Tries every bare candidate before falling back to numeric suffixes on the
+ * preferred one — `abhinavk` (their email handle) beats `abhinav_2`. Returns
+ * null when no seed yields anything usable; the caller then leaves the field
+ * empty, exactly as before.
+ *
+ * On a lookup failure it returns the preferred candidate rather than null: a
+ * pre-filled handle that *might* collide still beats a blank required field,
+ * and the unique constraint catches a real clash on submit with a clear,
+ * recoverable "already taken" message.
+ */
+export async function suggestAvailableUsername(
+  client: UsernameLookupClient,
+  seeds: (string | null | undefined)[],
+  opts: { maxSuffix?: number } = {}
+): Promise<string | null> {
+  const { maxSuffix = 5 } = opts;
+  const bases = [...new Set(seeds.map(sanitizeUsernameSeed).filter(Boolean))];
+  if (bases.length === 0) return null;
+
+  const attempts = [...bases];
+  for (let n = 2; n <= maxSuffix; n++) attempts.push(`${bases[0]}_${n}`);
+
+  for (const candidate of attempts) {
+    const { available, error } = await checkUsernameAvailable(client, candidate);
+    if (error) return bases[0];
+    if (available) return candidate;
+  }
+  return null;
+}
+
 /**
  * True when `err` is a Postgres unique-violation (23505) on the username
  * constraint — i.e. the handle is already taken. Gated on the SQLSTATE first,

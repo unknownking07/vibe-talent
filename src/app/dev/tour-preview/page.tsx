@@ -34,7 +34,7 @@ export default async function TourPreviewPage({ searchParams }: PageProps) {
   return (
     <div className="min-h-screen flex items-center justify-center p-8" style={{ backgroundColor: "var(--background)" }}>
       <div className="text-center max-w-md">
-        <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)] mb-2">
+        <h1 className="text-2xl font-bold text-[var(--foreground)] mb-2">
           Onboarding Tour Preview
         </h1>
         <p className="text-sm text-[var(--text-secondary)] font-medium">

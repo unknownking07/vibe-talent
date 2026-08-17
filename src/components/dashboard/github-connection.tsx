@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Github, CheckCircle2, Unlink } from "lucide-react";
+import { Unlink } from "lucide-react";
+import { CheckCircle, GithubLogo } from "@phosphor-icons/react";
 import { createClient } from "@/lib/supabase/client";
 
 interface GithubConnectionProps {
@@ -72,7 +73,7 @@ export function GithubConnection({ githubUsername, onUnlinked, oauthErrorCode }:
     if (githubIdentity) {
       if (identities.length < 2) {
         setError(
-          "GitHub is your only sign-in method. Add Google or email login first, then unlink — otherwise you'd be locked out."
+          "GitHub is your only sign-in method. Add Google or email login first, then unlink: otherwise you'd be locked out."
         );
         setUnlinking(false);
         return;
@@ -117,7 +118,7 @@ export function GithubConnection({ githubUsername, onUnlinked, oauthErrorCode }:
 
   return (
     <div>
-      <span className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">GitHub</span>
+      <span className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">GitHub</span>
 
       {/* Post-connect banners from the OAuth callback round-trip. Supabase
           returns error_code=identity_already_exists both when the link
@@ -125,19 +126,19 @@ export function GithubConnection({ githubUsername, onUnlinked, oauthErrorCode }:
           someone else (handle absent) — disambiguate on githubUsername. */}
       {!bannerDismissed && oauthErrorCode === "identity_already_exists" && githubUsername && (
         <div
-          className="mb-2 p-3 flex items-start gap-2 text-sm"
-          style={{ backgroundColor: "var(--status-success-bg)", border: "2px solid var(--border-hard)" }}
+          className="mb-2 p-3 flex items-start gap-2 text-sm rounded-xl"
+          style={{ backgroundColor: "var(--status-success-bg)", border: "1px solid var(--border-hard)" }}
         >
-          <CheckCircle2 size={16} className="mt-0.5 shrink-0" style={{ color: "var(--status-success-text)" }} />
+          <CheckCircle weight="fill" size={16} className="mt-0.5 shrink-0" style={{ color: "var(--status-success-text)" }} />
           <span className="font-bold text-[var(--status-success-text)]">GitHub connected successfully!</span>
         </div>
       )}
       {!bannerDismissed && oauthErrorCode === "identity_already_exists" && !githubUsername && (
         <div
-          className="mb-2 p-3 flex items-start gap-2 text-sm"
-          style={{ backgroundColor: "var(--status-error-bg)", border: "2px solid var(--border-hard)" }}
+          className="mb-2 p-3 flex items-start gap-2 text-sm rounded-xl"
+          style={{ backgroundColor: "var(--status-error-bg)", border: "1px solid var(--border-hard)" }}
         >
-          <Github size={16} className="mt-0.5 shrink-0" style={{ color: "var(--status-error-text)" }} />
+          <GithubLogo weight="fill" size={16} className="mt-0.5 shrink-0" style={{ color: "var(--status-error-text)" }} />
           <span className="font-bold text-[var(--foreground)]">
             This GitHub account is already linked to another user. Use a different GitHub account or contact support.
           </span>
@@ -147,18 +148,18 @@ export function GithubConnection({ githubUsername, onUnlinked, oauthErrorCode }:
       {githubUsername ? (
         <div className="space-y-2">
           <div
-            className="flex items-center gap-2 px-3 py-2.5 text-sm"
-            style={{ backgroundColor: "var(--status-success-bg)", border: "2px solid var(--border-hard)" }}
+            className="flex items-center gap-2 px-3 py-2.5 text-sm rounded-xl"
+            style={{ backgroundColor: "var(--status-success-bg)", border: "1px solid var(--border-hard)" }}
           >
-            <CheckCircle2 size={16} className="text-[var(--status-success-text)] flex-shrink-0" />
+            <CheckCircle weight="fill" size={16} className="text-[var(--status-success-text)] flex-shrink-0" />
             <span className="font-bold text-[var(--status-success-text)] truncate">@{githubUsername}</span>
-            <span className="text-xs font-bold uppercase text-[var(--status-success-text)] opacity-70 ml-auto">Verified</span>
+            <span className="text-xs font-semibold text-[var(--status-success-text)] opacity-70 ml-auto">Verified</span>
           </div>
 
           {confirmingUnlink ? (
             <div
-              className="p-3 space-y-2"
-              style={{ backgroundColor: "var(--status-error-bg)", border: "2px solid var(--border-hard)" }}
+              className="p-3 space-y-2 rounded-xl"
+              style={{ backgroundColor: "var(--status-error-bg)", border: "1px solid var(--border-hard)" }}
             >
               <p className="text-xs font-bold text-[var(--foreground)] leading-relaxed">
                 Unlink @{githubUsername}? Daily streak sync stops until you connect a GitHub account again. Your projects, score, and endorsements stay.
@@ -187,7 +188,7 @@ export function GithubConnection({ githubUsername, onUnlinked, oauthErrorCode }:
             <button
               type="button"
               onClick={() => { setConfirmingUnlink(true); setBannerDismissed(true); }}
-              className="inline-flex items-center gap-1 text-xs font-bold text-[var(--text-muted)] hover:text-red-500 transition-colors"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--text-muted)] hover:text-red-500 transition-colors"
             >
               <Unlink size={12} />
               Unlink account
@@ -200,10 +201,10 @@ export function GithubConnection({ githubUsername, onUnlinked, oauthErrorCode }:
             type="button"
             onClick={handleConnect}
             disabled={connecting}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-extrabold uppercase tracking-wide text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-[var(--bg-pill-hover)]"
-            style={{ backgroundColor: "var(--bg-inverted)", border: "2px solid var(--border-hard)" }}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-semibold text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-[var(--bg-pill-hover)] rounded-xl"
+            style={{ backgroundColor: "var(--bg-inverted)", border: "1px solid var(--border-hard)" }}
           >
-            <Github size={16} />
+            <GithubLogo weight="fill" size={16} />
             {connecting ? "Connecting..." : "Connect GitHub"}
           </button>
           {error && <p className="mt-1.5 text-xs font-bold text-red-600">{error}</p>}

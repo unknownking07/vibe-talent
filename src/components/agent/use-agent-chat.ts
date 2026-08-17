@@ -119,7 +119,7 @@ export function useAgentChat(greeting: string) {
         }
       } catch {
         content = content
-          ? `${content}\n\nConnection issue — please try again.`
+          ? `${content}\n\nConnection issue: please try again.`
           : "Connection issue. Please try again.";
         includeInHistory = false;
         apply();

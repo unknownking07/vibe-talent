@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
-import { Send, MessageCircle, User, Wrench, ArrowLeft } from "lucide-react";
+import { Send, ArrowLeft } from "lucide-react";
+import { ChatCircle, User, Wrench } from "@phosphor-icons/react";
 import type { HireMessage } from "@/lib/types/database";
 import Link from "next/link";
 
@@ -128,15 +129,15 @@ export default function HireChatPage() {
     return (
       <div className="mx-auto max-w-2xl px-4 sm:px-6 py-12 text-center">
         <div
-          className="p-12"
+          className="p-12 rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
-          <MessageCircle size={48} className="mx-auto text-[var(--text-muted-soft)] mb-4" />
-          <h1 className="text-xl font-extrabold uppercase text-[var(--foreground)] mb-2">
+          <ChatCircle weight="duotone" size={48} className="mx-auto text-[var(--text-muted-soft)] mb-4" />
+          <h1 className="text-xl font-bold text-[var(--foreground)] mb-2">
             Conversation Not Found
           </h1>
           <p className="text-sm text-[var(--text-secondary)] font-medium">{error}</p>
@@ -156,28 +157,27 @@ export default function HireChatPage() {
     <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8">
       {/* Header */}
       <div
-        className="p-5 mb-6"
+        className="p-5 mb-6 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal-sm)",
         }}
       >
         <div className="flex items-center gap-3 mb-3">
           <div
-            className="w-10 h-10 flex items-center justify-center"
+            className="w-10 h-10 flex items-center justify-center rounded-xl"
             style={{
               backgroundColor: "var(--accent)",
-              border: "2px solid var(--border-hard)",
             }}
           >
-            <MessageCircle size={20} className="text-white" />
+            <ChatCircle weight="fill" size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-extrabold uppercase text-[var(--foreground)]">
+            <h1 className="text-lg font-bold text-[var(--foreground)]">
               Hire Request Chat
             </h1>
-            <p className="text-xs text-[var(--text-muted)] font-bold uppercase">
+            <p className="text-xs text-[var(--text-muted)] font-semibold">
               Conversation with builder
             </p>
           </div>
@@ -186,12 +186,12 @@ export default function HireChatPage() {
         {hireRequest && (
           <div className="text-sm text-[var(--text-secondary)]">
             <p>
-              <span className="font-bold text-[var(--foreground)]">From:</span>{" "}
+              <span className="font-semibold text-[var(--foreground)]">From:</span>{" "}
               {hireRequest.sender_name} ({hireRequest.sender_email})
             </p>
             {hireRequest.budget && (
               <p>
-                <span className="font-bold text-[var(--foreground)]">Budget:</span>{" "}
+                <span className="font-semibold text-[var(--foreground)]">Budget:</span>{" "}
                 {hireRequest.budget}
               </p>
             )}
@@ -211,10 +211,10 @@ export default function HireChatPage() {
 
       {/* Messages */}
       <div
-        className="mb-4"
+        className="mb-4 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface-light)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal-sm)",
           minHeight: "400px",
           maxHeight: "60vh",
@@ -227,16 +227,16 @@ export default function HireChatPage() {
             <div className="flex justify-start">
               <div className="max-w-[80%]">
                 <div className="flex items-center gap-2 mb-1">
-                  <User size={12} className="text-[var(--text-muted)]" />
-                  <span className="text-xs font-bold uppercase text-[var(--text-muted)]">
+                  <User weight="fill" size={12} className="text-[var(--text-muted)]" />
+                  <span className="text-xs font-semibold text-[var(--text-muted)]">
                     {hireRequest.sender_name} (You)
                   </span>
                 </div>
                 <div
-                  className="p-3"
+                  className="p-3 rounded-2xl"
                   style={{
                     backgroundColor: "var(--bg-surface)",
-                    border: "2px solid var(--border-hard)",
+                    border: "1px solid var(--border-subtle)",
                     boxShadow: "var(--shadow-brutal-xs)",
                   }}
                 >
@@ -269,20 +269,20 @@ export default function HireChatPage() {
                     }`}
                   >
                     {isClient ? (
-                      <User size={12} className="text-[var(--text-muted)]" />
+                      <User weight="fill" size={12} className="text-[var(--text-muted)]" />
                     ) : (
-                      <Wrench size={12} className="text-[var(--accent)]" />
+                      <Wrench weight="fill" size={12} className="text-[var(--accent)]" />
                     )}
-                    <span className="text-xs font-bold uppercase text-[var(--text-muted)]">
+                    <span className="text-xs font-semibold text-[var(--text-muted)]">
                       {isClient ? "You" : "Builder"}
                     </span>
                   </div>
                   <div
-                    className="p-3"
+                    className="p-3 rounded-2xl"
                     style={{
                       backgroundColor: isClient ? "var(--bg-surface)" : "var(--accent)",
                       color: isClient ? "var(--text-tertiary)" : "var(--text-on-inverted)",
-                      border: "2px solid var(--border-hard)",
+                      border: isClient ? "1px solid var(--border-subtle)" : "none",
                       boxShadow: "var(--shadow-brutal-xs)",
                     }}
                   >
@@ -309,10 +309,9 @@ export default function HireChatPage() {
       {/* Error */}
       {error && (
         <div
-          className="p-3 mb-4 text-sm font-bold text-[var(--status-error-text)]"
+          className="p-3 mb-4 rounded-xl text-sm font-semibold text-[var(--status-error-text)]"
           style={{
             backgroundColor: "var(--status-error-border)",
-            border: "2px solid var(--border-hard)",
           }}
         >
           {error}
@@ -321,10 +320,10 @@ export default function HireChatPage() {
 
       {/* Input */}
       <div
-        className="p-4"
+        className="p-4 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal-sm)",
         }}
       >

@@ -76,7 +76,7 @@ export default async function UserProjectsPage({
   if (!username || username.length > USERNAME_MAX_LENGTH || !USERNAME_PATTERN.test(username)) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-        <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Invalid username</h1>
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">Invalid username</h1>
         <p className="mt-2 text-[var(--text-secondary)] font-medium">This is not a valid username.</p>
       </div>
     );
@@ -87,7 +87,7 @@ export default async function UserProjectsPage({
   if (!user) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-        <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Builder not found</h1>
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">Builder not found</h1>
         <p className="mt-2 text-[var(--text-secondary)] font-medium">@{username} does not exist on VibeTalent.</p>
       </div>
     );
@@ -132,14 +132,14 @@ export default async function UserProjectsPage({
 
       <Link
         href={`/profile/${user.username}`}
-        className="inline-flex items-center gap-1.5 text-sm font-bold uppercase text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors mb-6"
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors mb-6"
       >
         <ArrowLeft size={14} />
         Back to profile
       </Link>
 
       <div className="mb-8">
-        <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">
+        <h1 className="text-3xl font-bold text-[var(--foreground)]">
           @{user.username}&apos;s Projects
         </h1>
         <p className="mt-2 text-[var(--text-secondary)] font-medium">
@@ -160,10 +160,10 @@ export default async function UserProjectsPage({
         </div>
       ) : (
         <div
-          className="p-8 text-center font-bold uppercase text-[var(--text-muted)]"
+          className="p-8 text-center font-semibold text-[var(--text-muted)] rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
           }}
         >
           No projects yet.

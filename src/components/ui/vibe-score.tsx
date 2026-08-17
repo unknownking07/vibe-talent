@@ -1,6 +1,7 @@
 "use client";
 
-import { Zap } from "lucide-react";
+import { Lightning } from "@phosphor-icons/react";
+
 
 interface VibeScoreProps {
   score: number;
@@ -18,7 +19,7 @@ export function VibeScore({ score, size = "md" }: VibeScoreProps) {
 
   return (
     <div className="inline-flex items-center gap-1.5 text-[var(--accent)]">
-      <Zap size={config.icon} className="fill-[var(--accent)]" />
+      <Lightning size={config.icon} weight="fill" />
       <span className={`font-extrabold ${config.text} font-mono`}>{score}</span>
     </div>
   );

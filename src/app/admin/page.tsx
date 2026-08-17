@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Shield, Plus, Trash2, Rocket, Target, BarChart3, Calendar, TrendingUp, Users, Code2, Flame, RefreshCw } from "lucide-react";
+import { Plus, Trash2, RefreshCw } from "lucide-react";
+import { CalendarBlank, ChartBar, Code, Fire, RocketLaunch, Shield, Target, TrendUp, UsersThree } from "@phosphor-icons/react";
 import { ADMIN_USERNAMES } from "@/lib/admin";
 
 type Initiative = { id: string; title: string; status: "active" | "planned" | "done" | "paused"; owner: string; notes: string; deadline: string };
@@ -79,40 +80,40 @@ export default function AdminPage() {
   if (loading) return <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>Loading...</div>;
   if (!authorized) return (
     <div style={{ minHeight: "80vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", padding: "24px" }}>
-      <Shield size={48} style={{ color: "var(--accent)" }} />
-      <h1 style={{ fontSize: "1.5rem", fontWeight: 800 }}>Admin Access Only</h1>
+      <Shield weight="duotone" size={48} style={{ color: "var(--accent)" }} />
+      <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>Admin Access Only</h1>
       <p style={{ color: "var(--text-muted)", textAlign: "center", maxWidth: 400 }}>Sign in with an authorized GitHub account.</p>
-      <a href="/auth/login" style={{ padding: "12px 24px", background: "var(--accent)", color: "white", borderRadius: 8, fontWeight: 700, textDecoration: "none", border: "2px solid var(--border-hard)", boxShadow: "var(--shadow-brutal-sm)" }}>Sign In</a>
+      <a href="/auth/login" style={{ padding: "12px 24px", background: "var(--accent)", color: "white", borderRadius: "var(--radius-control)", fontWeight: 600, textDecoration: "none", boxShadow: "var(--shadow-brutal-sm)" }}>Sign In</a>
     </div>
   );
 
-  const card: React.CSSProperties = { background: "var(--bg-surface)", border: "2px solid var(--border-hard)", borderRadius: 12, padding: 16, boxShadow: "var(--shadow-brutal-sm)" };
-  const inp: React.CSSProperties = { padding: "6px 10px", borderRadius: 6, border: "2px solid var(--border-subtle)", fontSize: "0.78rem", background: "var(--bg-surface-light)", color: "var(--foreground)" };
-  const btn: React.CSSProperties = { display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "var(--accent)", color: "white", border: "2px solid var(--border-hard)", borderRadius: 8, fontWeight: 700, fontSize: "0.82rem", cursor: "pointer", boxShadow: "var(--shadow-brutal-sm)" };
-  const sel = (c: string): React.CSSProperties => ({ padding: "4px 8px", borderRadius: 6, border: "2px solid var(--border-subtle)", fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", color: c, background: "var(--bg-surface)", cursor: "pointer" });
-  const del: React.CSSProperties = { background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 4 };
+  const card: React.CSSProperties = { background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-card)", padding: 16, boxShadow: "var(--shadow-brutal-sm)" };
+  const inp: React.CSSProperties = { padding: "6px 10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-subtle)", fontSize: "0.78rem", background: "var(--bg-surface-light)", color: "var(--foreground)" };
+  const btn: React.CSSProperties = { display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", background: "var(--accent)", color: "white", border: "none", borderRadius: "var(--radius-control)", fontWeight: 600, fontSize: "0.82rem", cursor: "pointer", boxShadow: "var(--shadow-brutal-sm)" };
+  const sel = (c: string): React.CSSProperties => ({ padding: "4px 8px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-subtle)", fontSize: "0.72rem", fontWeight: 600, color: c, background: "var(--bg-surface)", cursor: "pointer" });
+  const del: React.CSSProperties = { background: "none", border: "none", borderRadius: 999, cursor: "pointer", color: "var(--text-muted)", padding: 4 };
   const tit: React.CSSProperties = { flex: 1, minWidth: 200, fontSize: "0.95rem", fontWeight: 700, background: "transparent", border: "none", color: "var(--foreground)", outline: "none" };
   const statCard: React.CSSProperties = { ...card, textAlign: "center", padding: "20px 16px" };
-  const statNum: React.CSSProperties = { fontSize: "1.6rem", fontWeight: 900, fontFamily: "var(--font-jetbrains-mono)", color: "var(--foreground)" };
-  const statLabel: React.CSSProperties = { fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", marginTop: 4 };
+  const statNum: React.CSSProperties = { fontSize: "1.6rem", fontWeight: 800, fontFamily: "var(--font-jetbrains-mono)", color: "var(--foreground)" };
+  const statLabel: React.CSSProperties = { fontSize: "0.65rem", fontWeight: 500, color: "var(--text-muted)", marginTop: 4 };
 
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto", padding: "24px 16px 80px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 32, flexWrap: "wrap", gap: 12 }}>
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}><Shield size={20} style={{ color: "var(--accent)" }} /><h1 style={{ fontSize: "1.5rem", fontWeight: 900 }}>VibeTalent HQ</h1></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}><Shield weight="fill" size={20} style={{ color: "var(--accent)" }} /><h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>VibeTalent HQ</h1></div>
           <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>Signed in as <strong>{user?.username}</strong></p>
         </div>
-        <div style={{ display: "flex", gap: 4, background: "var(--bg-surface)", border: "2px solid var(--border-hard)", borderRadius: 10, padding: 4, boxShadow: "var(--shadow-brutal-sm)" }}>
+        <div style={{ display: "flex", gap: 4, background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: "var(--radius-control)", padding: 4, boxShadow: "var(--shadow-brutal-sm)" }}>
           {(["initiatives", "roadmap", "metrics"] as const).map(t => (
-            <button key={t} onClick={() => handleTabClick(t)} style={{ padding: "8px 16px", borderRadius: 6, border: "none", cursor: "pointer", fontWeight: 700, fontSize: "0.82rem", textTransform: "capitalize", background: tab === t ? "var(--accent)" : "transparent", color: tab === t ? "white" : "var(--text-muted)" }}>{t}</button>
+            <button key={t} onClick={() => handleTabClick(t)} style={{ padding: "8px 16px", borderRadius: "var(--radius-sm)", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.82rem", textTransform: "capitalize", background: tab === t ? "var(--accent)" : "transparent", color: tab === t ? "white" : "var(--text-muted)" }}>{t}</button>
           ))}
         </div>
       </div>
 
       {tab === "initiatives" && <div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}><Rocket size={18} /> Active Initiatives</h2>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}><RocketLaunch weight="fill" size={18} /> Active Initiatives</h2>
           <button onClick={() => setInitiatives(p => [...p, { id: Date.now().toString(), title: "New Initiative", status: "planned", owner: "", notes: "", deadline: "" }])} style={btn}><Plus size={14} /> Add</button>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -134,7 +135,7 @@ export default function AdminPage() {
 
       {tab === "roadmap" && <div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}><Target size={18} /> Feature Roadmap</h2>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}><Target weight="fill" size={18} /> Feature Roadmap</h2>
           <button onClick={() => setRoadmap(p => [...p, { id: Date.now().toString(), title: "New Feature", priority: "medium", status: "todo", notes: "" }])} style={btn}><Plus size={14} /> Add Feature</button>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -153,7 +154,7 @@ export default function AdminPage() {
 
       {tab === "metrics" && <div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}><BarChart3 size={18} /> Live Platform Stats</h2>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}><ChartBar weight="fill" size={18} /> Live Platform Stats</h2>
           <button onClick={() => fetchLiveStats()} style={{ ...btn, background: statsLoading ? "var(--text-muted)" : "var(--accent)" }} disabled={statsLoading}>
             <RefreshCw size={14} style={{ animation: statsLoading ? "spin 1s linear infinite" : "none" }} /> Refresh
           </button>
@@ -161,20 +162,20 @@ export default function AdminPage() {
 
         {liveStats ? <>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginBottom: 16 }}>
-            <div style={statCard}><Users size={18} style={{ color: "var(--accent)", margin: "0 auto 6px" }} /><div style={statNum}>{liveStats.builders}</div><div style={statLabel}>Total Builders</div></div>
-            <div style={statCard}><Code2 size={18} style={{ color: "var(--accent)", margin: "0 auto 6px" }} /><div style={statNum}>{liveStats.projects}</div><div style={statLabel}>Projects Shipped</div></div>
-            <div style={statCard}><Flame size={18} style={{ color: "var(--accent)", margin: "0 auto 6px" }} /><div style={statNum}>{liveStats.activeStreaks}</div><div style={statLabel}>Active Streaks</div></div>
-            <div style={statCard}><TrendingUp size={18} style={{ color: liveStats.growth.pct >= 0 ? "#16a34a" : "#EF4444", margin: "0 auto 6px" }} /><div style={{ ...statNum, color: liveStats.growth.pct >= 0 ? "#16a34a" : "#EF4444" }}>{liveStats.growth.pct >= 0 ? "+" : ""}{liveStats.growth.pct}%</div><div style={statLabel}>Growth (7d)</div></div>
+            <div style={statCard}><UsersThree weight="fill" size={18} style={{ color: "var(--accent)", margin: "0 auto 6px" }} /><div style={statNum}>{liveStats.builders}</div><div style={statLabel}>Total Builders</div></div>
+            <div style={statCard}><Code weight="fill" size={18} style={{ color: "var(--accent)", margin: "0 auto 6px" }} /><div style={statNum}>{liveStats.projects}</div><div style={statLabel}>Projects Shipped</div></div>
+            <div style={statCard}><Fire weight="fill" size={18} style={{ color: "var(--accent)", margin: "0 auto 6px" }} /><div style={statNum}>{liveStats.activeStreaks}</div><div style={statLabel}>Active Streaks</div></div>
+            <div style={statCard}><TrendUp size={18} style={{ color: liveStats.growth.pct >= 0 ? "#16a34a" : "#EF4444", margin: "0 auto 6px" }} /><div style={{ ...statNum, color: liveStats.growth.pct >= 0 ? "#16a34a" : "#EF4444" }}>{liveStats.growth.pct >= 0 ? "+" : ""}{liveStats.growth.pct}%</div><div style={statLabel}>Growth (7d)</div></div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
             <div style={card}>
-              <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Streak Stats</div>
+              <div style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--text-muted)", marginBottom: 12 }}>Streak Stats</div>
               {[["Avg Streak", `${liveStats.avgStreak} days`], ["Longest Streak", `${liveStats.maxStreak} days`], ["Avg Vibe Score", `${liveStats.avgVibeScore}`], ["Hire Requests", `${liveStats.hires}`], ["Endorsements", `${liveStats.endorsements}`]].map(([l, v]) => (
                 <div key={l} style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}><span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>{l}</span><span style={{ fontWeight: 700, fontFamily: "var(--font-jetbrains-mono)" }}>{v}</span></div>
               ))}
             </div>
             <div style={card}>
-              <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Badge Distribution</div>
+              <div style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--text-muted)", marginBottom: 12 }}>Badge Distribution</div>
               {Object.entries(liveStats.badges).map(([level, count]) => (
                 <div key={level} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <span style={{ fontSize: "0.82rem", color: "var(--text-muted)", textTransform: "capitalize" }}>{level === "none" ? "No badge" : level}</span>
@@ -187,7 +188,7 @@ export default function AdminPage() {
             </div>
           </div>
           <div style={card}>
-            <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>Weekly Signups</div>
+            <div style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--text-muted)", marginBottom: 8 }}>Weekly Signups</div>
             <div style={{ display: "flex", gap: 24 }}>
               <div><span style={{ fontFamily: "var(--font-jetbrains-mono)", fontWeight: 700, fontSize: "1.1rem" }}>{liveStats.growth.thisWeek}</span> <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>this week</span></div>
               <div><span style={{ fontFamily: "var(--font-jetbrains-mono)", fontWeight: 700, fontSize: "1.1rem" }}>{liveStats.growth.lastWeek}</span> <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>last week</span></div>
@@ -198,7 +199,7 @@ export default function AdminPage() {
 
         <div style={{ marginTop: 24 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <h3 style={{ fontSize: "0.95rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}><Calendar size={16} /> Manual Notes</h3>
+            <h3 style={{ fontSize: "0.95rem", fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}><CalendarBlank weight="fill" size={16} /> Manual Notes</h3>
             <button onClick={() => setMetrics(p => [{ id: Date.now().toString(), date: new Date().toISOString().slice(0, 10), builders: 0, projects: 0, hires: 0, visits: 0, notes: "" }, ...p])} style={{ ...btn, fontSize: "0.75rem", padding: "6px 12px" }}><Plus size={12} /> Add Note</button>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

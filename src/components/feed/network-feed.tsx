@@ -94,21 +94,21 @@ const FEED_STYLES = `
 .feed-layout { display: grid; grid-template-columns: 240px 1fr 320px; gap: 48px; max-width: 1440px; margin: 0 auto; padding: 40px; min-height: 100vh; }
 .feed-layout::before { content: ''; position: fixed; top: -20vh; left: 20vw; width: 60vw; height: 60vw; background: radial-gradient(circle, rgba(255,74,42,0.06) 0%, transparent 60%); z-index: -1; pointer-events: none; }
 .fl-sidebar { position: sticky; top: 100px; height: calc(100vh - 140px); display: flex; flex-direction: column; gap: 32px; }
-.fl-nav-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-radius: 999px; color: var(--text-muted, #8A8B94); text-decoration: none; font-size: 14px; font-weight: 700; transition: all 0.2s ease; border: 1px solid transparent; cursor: pointer; background: none; width: 100%; text-align: left; font-family: inherit; }
+.fl-nav-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-radius: 999px; color: var(--text-muted, #8A8B94); text-decoration: none; font-size: 14px; font-weight: 600; transition: all 0.2s ease; border: 1px solid transparent; cursor: pointer; background: none; width: 100%; text-align: left; font-family: inherit; }
 .fl-nav-item:hover { color: var(--foreground, #fff); background: var(--bg-surface, #15151A); }
 .fl-nav-item.active { color: #0A0A0E; background: var(--accent, #FF4A2A); }
 .fl-nav-count { background: var(--bg-surface-light, #F5F5F5); color: inherit; padding: 2px 8px; border-radius: 999px; font-size: 12px; opacity: 0.8; }
 .fl-nav-item.active .fl-nav-count { background: rgba(0,0,0,0.15); }
-.fl-feed-item { display: flex; gap: 16px; padding: 24px 0; border-bottom: 1px solid var(--border-subtle, #D4D4D4); transition: all 0.2s; padding-left: 16px; border-left: 3px solid transparent; }
-.fl-feed-item:hover { background: var(--bg-surface-light, #F5F5F5); border-radius: 0 8px 8px 0; }
-.fl-feed-item--accent { border-left-color: var(--accent, #FF4A2A); }
-.fl-feed-item--endorsement { border-left-color: var(--accent-green, #4ade80); }
-.fl-feed-item--review { border-left-color: #a78bfa; }
-.fl-feed-item--badge { border-left-color: var(--accent, #FF4A2A); }
-.fl-feed-item--badge-bronze { border-left-color: var(--badge-bronze, #cd7f32); }
-.fl-feed-item--badge-silver { border-left-color: var(--badge-silver, #c0c0c0); }
-.fl-feed-item--badge-gold { border-left-color: var(--badge-gold, #ffd700); }
-.fl-feed-item--badge-diamond { border-left-color: var(--badge-diamond, #b9f2ff); }
+.fl-feed-item { display: flex; gap: 16px; padding: 24px 16px; border-bottom: 1px solid var(--border-subtle, #D4D4D4); border-radius: 12px; transition: all 0.2s; }
+.fl-feed-item--accent { background: color-mix(in srgb, var(--accent, #FF4A2A) 5%, transparent); }
+.fl-feed-item--endorsement { background: color-mix(in srgb, var(--accent-green, #4ade80) 7%, transparent); }
+.fl-feed-item--review { background: color-mix(in srgb, #a78bfa 8%, transparent); }
+.fl-feed-item--badge { background: color-mix(in srgb, var(--accent, #FF4A2A) 5%, transparent); }
+.fl-feed-item--badge-bronze { background: color-mix(in srgb, var(--badge-bronze, #cd7f32) 8%, transparent); }
+.fl-feed-item--badge-silver { background: color-mix(in srgb, var(--badge-silver, #c0c0c0) 10%, transparent); }
+.fl-feed-item--badge-gold { background: color-mix(in srgb, var(--badge-gold, #ffd700) 8%, transparent); }
+.fl-feed-item--badge-diamond { background: color-mix(in srgb, var(--badge-diamond, #b9f2ff) 10%, transparent); }
+.fl-feed-item:hover { background: var(--bg-surface-light, #F5F5F5); }
 .fl-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--bg-surface-light, #15151A); border: 1px solid var(--border-hard, #2A2A33); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
 .fl-avatar img { width: 100%; height: 100%; object-fit: cover; opacity: 1; }
 .fl-avatar.orange { background: var(--accent, #FF4A2A); border-color: var(--accent, #FF4A2A); color: #0A0A0E; font-weight: 600; font-size: 14px; }
@@ -121,8 +121,8 @@ const FEED_STYLES = `
 .fl-attachment { margin-top: 12px; padding: 16px; border-radius: 12px; background: var(--bg-surface, #15151A); border: 1px solid var(--border-hard, #2A2A33); display: flex; align-items: center; justify-content: space-between; }
 .fl-attachment.milestone { border-color: var(--accent, #FF4A2A); background: rgba(255,74,42,0.06); }
 .fl-attachment-badge { padding: 12px 16px; }
-.fl-card-pale { background: var(--accent-pale, #E8F1EF); border-radius: 24px; padding: 24px; color: #0A0A0E; display: flex; flex-direction: column; gap: 20px; }
-.fl-card-dark { border: 1px solid var(--border-hard, #2A2A33); border-radius: 24px; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.fl-card-pale { background: var(--accent-pale, #E8F1EF); border-radius: var(--radius-card, 16px); padding: 24px; color: #0A0A0E; display: flex; flex-direction: column; gap: 20px; }
+.fl-card-dark { border: 1px solid var(--border-hard, #2A2A33); border-radius: var(--radius-card, 16px); padding: 24px; display: flex; flex-direction: column; gap: 16px; }
 .fl-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .fl-section-label { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-muted, #8A8B94); margin-bottom: 16px; }
 .fl-section-num { font-variant-numeric: tabular-nums; }
@@ -329,8 +329,7 @@ export function NetworkFeed({
                 gridTemplateColumns: "auto 1fr",
                 gap: "16px",
                 alignItems: "center",
-                padding: "24px 0 24px 16px",
-                borderLeft: "3px solid transparent",
+                padding: "24px 16px",
                 borderBottom: "1px solid var(--border-subtle, #2a2a2a)",
               }}
             >
@@ -378,7 +377,7 @@ export function NetworkFeed({
 
         {visibleRows.length === 0 && (
           <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted, #8A8B94)", fontSize: "0.9rem" }}>
-            No activity yet for this filter — check back soon.
+            No activity yet for this filter: check back soon.
           </div>
         )}
 

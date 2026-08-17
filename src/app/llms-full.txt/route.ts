@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const LLMS_FULL_TXT = `# VibeTalent — Full Documentation for LLMs
+const LLMS_FULL_TXT = `# VibeTalent: Full Documentation for LLMs
 
 > The marketplace for vibe coders who actually ship.
 
@@ -15,7 +15,7 @@ VibeTalent solves a fundamental problem in developer hiring: resumes and intervi
 The platform connects two audiences:
 
 - **Developers (Builders)**: Software engineers who want to build a public, verifiable reputation based on real work. They sign up, connect their GitHub account, add projects with live URLs, and let the platform track their daily output.
-- **Clients (Hirers)**: Founders, CTOs, and product teams looking to hire developers with proven track records. They browse talent by tech stack, streak length, badge level, and vibe score — or use VibeTalent's AI agent for automated matching.
+- **Clients (Hirers)**: Founders, CTOs, and product teams looking to hire developers with proven track records. They browse talent by tech stack, streak length, badge level, and vibe score, or use VibeTalent's AI agent for automated matching.
 
 ---
 
@@ -36,7 +36,7 @@ Vibe coders prioritize:
 The vibe score is VibeTalent's core reputation metric. It is a single number that represents how consistently and effectively a developer ships code. The score is calculated from four weighted components:
 
 1. **Streak Days (40% weight)**: The number of consecutive days a developer has committed code to GitHub. Longer streaks earn exponentially more points.
-2. **Project Quality Scores (30% weight)**: Each project receives a quality score based on GitHub repo health metrics — stars, forks, commit frequency, README completeness, and deployment status.
+2. **Project Quality Scores (30% weight)**: Each project receives a quality score based on GitHub repo health metrics: stars, forks, commit frequency, README completeness, and deployment status.
 3. **GitHub Activity (20% weight)**: Overall GitHub contribution metrics including commits, pull requests, code reviews, and issue participation.
 4. **Peer Endorsements (10% weight)**: Other VibeTalent users can endorse a developer for specific skills. Endorsements from higher-scored developers carry more weight.
 
@@ -54,9 +54,9 @@ A coding streak tracks the number of consecutive days a developer has committed 
 | Badge    | Requirement      | What It Signals                            |
 |----------|-----------------|---------------------------------------------|
 | Bronze   | 30-day streak    | Basic consistency and commitment.           |
-| Silver   | 90-day streak    | Serious dedication — three months of daily coding. |
-| Gold     | 180-day streak   | Elite consistency — half a year of daily work. |
-| Diamond  | 365-day streak   | The highest tier — a full year of daily shipping. |
+| Silver   | 90-day streak    | Serious dedication: three months of daily coding. |
+| Gold     | 180-day streak   | Elite consistency: half a year of daily work. |
+| Diamond  | 365-day streak   | The highest tier: a full year of daily shipping. |
 
 Badges are permanent once earned, even if a streak resets.
 
@@ -75,7 +75,7 @@ Badges are permanent once earned, even if a streak resets.
 
 ### For Clients
 
-1. Browse talent on the explore page — filter by language, framework, streak, badge level, and vibe score.
+1. Browse talent on the explore page: filter by language, framework, streak, badge level, and vibe score.
 2. Check the leaderboard for top-ranked developers.
 3. Use the AI agent to describe your project needs and get matched.
 4. Review profiles with streak history, projects, quality scores, and endorsements.
@@ -87,8 +87,8 @@ Badges are permanent once earned, even if a streak resets.
 
 VibeTalent includes an AI-powered agent for talent matching:
 
-- **https://www.vibetalent.work/agent** — Landing page with pre-built queries
-- **https://www.vibetalent.work/agent/chat** — Conversational chat interface
+- **https://www.vibetalent.work/agent**: Landing page with pre-built queries
+- **https://www.vibetalent.work/agent/chat**: Conversational chat interface
 
 The agent searches developers by skill, framework, language, streak, badge, or project type and explains why each match fits.
 

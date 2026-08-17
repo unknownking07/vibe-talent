@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchVibeUsdCached } from "@/lib/promotion-pricing";
+import { fetchVibeBalance, balanceUsd } from "@/lib/vibe-balance";
+import { BASE_FREEZES, freezeAllowanceFor } from "@/lib/vibe-config";
 
 /**
  * Cron job: Reset streak freezes for all users on the 1st of every month.
@@ -41,12 +44,12 @@ export async function GET(req: NextRequest) {
   const supabase = createAdminClient();
 
   try {
-    // Reset all users' freeze counts
+    // Everyone starts from the base allowance; $VIBE holders are raised below.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { count, error } = await (supabase as any)
       .from("users")
       .update({
-        streak_freezes_remaining: 2,
+        streak_freezes_remaining: BASE_FREEZES,
         streak_freezes_used: 0,
       })
       .neq("id", "")
@@ -60,9 +63,69 @@ export async function GET(req: NextRequest) {
     const resetCount = count ?? 0;
     console.log(`Reset streak freezes for ${resetCount} users`);
 
+    // ── Holder tiers ──
+    //
+    // Evaluated once, here, at grant time — and the allowance then holds for
+    // the whole month regardless of price. At this market cap a single trade
+    // moves $VIBE ~30%, so re-checking mid-month would flicker people in and
+    // out of their tier.
+    //
+    // If $VIBE can't be priced, everyone keeps the base allowance: better to
+    // under-grant than to hand out a tier we couldn't verify.
+    let upgraded = 0;
+    let tiersSkipped = false;
+    let vibeUsd: number | null = null;
+    try {
+      vibeUsd = await fetchVibeUsdCached();
+    } catch {
+      tiersSkipped = true;
+      console.warn("Could not price $VIBE — holder tiers skipped this cycle");
+    }
+
+    if (vibeUsd != null) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: linked } = await (supabase as any)
+        .from("users")
+        .select("id, username, solana_wallet")
+        .not("solana_wallet", "is", null);
+
+      for (const u of (linked ?? []) as Array<{
+        id: string;
+        username: string;
+        solana_wallet: string;
+      }>) {
+        const balance = await fetchVibeBalance(u.solana_wallet);
+        // null means the RPC failed, not that they hold nothing — skip rather
+        // than silently demote someone to the base allowance.
+        if (balance == null) {
+          console.warn(`Balance unreadable for ${u.username}; left at base allowance`);
+          continue;
+        }
+        const allowance = freezeAllowanceFor(balanceUsd(balance, vibeUsd));
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: tierError } = await (supabase as any)
+          .from("users")
+          .update({
+            streak_freezes_remaining: allowance,
+            vibe_balance: balance.toString(),
+            vibe_balance_at: new Date().toISOString(),
+          })
+          .eq("id", u.id);
+
+        if (tierError) {
+          console.error(`Failed to grant tier freezes for ${u.username}:`, tierError);
+          continue;
+        }
+        if (allowance > BASE_FREEZES) upgraded++;
+      }
+    }
+
     return NextResponse.json({
-      message: `Reset freezes for ${resetCount} users`,
+      message: `Reset freezes for ${resetCount} users, ${upgraded} upgraded by holdings`,
       count: resetCount,
+      upgraded,
+      ...(tiersSkipped ? { tiersSkipped: true } : {}),
     });
   } catch (error) {
     console.error("Freeze reset cron error:", error);

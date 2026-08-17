@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { jsonLdHtml } from "@/lib/json-ld";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BookOpen, ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import { BookOpen } from "@phosphor-icons/react/dist/ssr";
 import { siteUrl } from "@/lib/seo";
 import { GLOSSARY_TERMS, getGlossaryTerm } from "@/lib/glossary";
 
@@ -93,34 +94,34 @@ export default async function GlossaryTermPage({
 
       <Link
         href="/glossary"
-        className="inline-flex items-center gap-1 text-xs font-bold uppercase text-[var(--text-muted)] hover:text-[var(--accent)] mb-6"
+        className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--accent)] mb-6"
       >
         <ArrowLeft size={12} /> Glossary
       </Link>
 
       <div
-        className="inline-flex items-center gap-2 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-[var(--foreground)] mb-6"
+        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold text-[var(--foreground)] mb-6"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
-          boxShadow: "var(--shadow-brutal-sm)",
+          border: "1px solid var(--border-subtle)",
+          boxShadow: "var(--shadow-brutal-xs)",
         }}
       >
-        <BookOpen size={14} className="text-[var(--accent)]" />
+        <BookOpen weight="fill" size={14} className="text-[var(--accent)]" />
         Definition
       </div>
 
-      <h1 className="text-3xl sm:text-4xl font-extrabold uppercase text-[var(--foreground)] leading-tight mb-6">
+      <h1 className="text-3xl sm:text-4xl font-bold text-[var(--foreground)] leading-tight mb-6">
         {term.title}
       </h1>
 
       {/* Answer block — the 35-90 word summary lives here so AI engines and
           humans both get the answer in the first paragraph, not buried below. */}
       <div
-        className="p-6 sm:p-8 mb-8"
+        className="p-6 sm:p-8 mb-8 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
@@ -136,8 +137,8 @@ export default async function GlossaryTermPage({
       </div>
 
       {related.length > 0 && (
-        <section className="mt-12 pt-8" style={{ borderTop: "2px solid var(--border-hard)" }}>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">
+        <section className="mt-12 pt-8" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">
             Related terms
           </h2>
           <div className="grid sm:grid-cols-2 gap-4">
@@ -145,17 +146,17 @@ export default async function GlossaryTermPage({
               <Link
                 key={r.slug}
                 href={`/glossary/${r.slug}`}
-                className="block p-4 transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
+                className="block p-4 rounded-2xl transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-brutal-hover)]"
                 style={{
                   backgroundColor: "var(--bg-surface)",
-                  border: "2px solid var(--border-hard)",
+                  border: "1px solid var(--border-subtle)",
                   boxShadow: "var(--shadow-brutal-sm)",
                 }}
               >
-                <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)] mb-1">
+                <h3 className="text-sm font-bold text-[var(--foreground)] mb-1">
                   {r.shortLabel}
                 </h3>
-                <span className="inline-flex items-center gap-1 text-xs font-bold uppercase text-[var(--accent)]">
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--accent)]">
                   Read <ArrowRight size={11} />
                 </span>
               </Link>
@@ -164,14 +165,14 @@ export default async function GlossaryTermPage({
         </section>
       )}
 
-      <section className="mt-12 p-6 sm:p-8 text-center"
+      <section className="mt-12 p-6 sm:p-8 text-center rounded-2xl"
         style={{
           backgroundColor: "var(--bg-inverted)",
-          border: "2px solid var(--border-hard)",
-          boxShadow: "8px 8px 0 var(--accent)",
+          border: "1px solid var(--border-subtle)",
+          boxShadow: "var(--shadow-brutal-accent)",
         }}
       >
-        <h2 className="text-xl sm:text-2xl font-extrabold uppercase text-white mb-3">
+        <h2 className="text-xl sm:text-2xl font-bold text-white mb-3">
           See it in practice
         </h2>
         <p className="text-sm text-[var(--text-muted-soft)] font-medium mb-5 max-w-md mx-auto">

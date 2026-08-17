@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Eye, TrendingUp, Users } from "lucide-react";
+import { Eye, TrendUp, UsersThree } from "@phosphor-icons/react";
 
 interface Viewer {
   username: string;
@@ -33,34 +33,28 @@ export function ProfileViewsWidget() {
 
   return (
     <div
-      className="p-5"
+      className="p-5 rounded-2xl"
       style={{
         backgroundColor: "var(--bg-surface)",
-        border: "2px solid var(--border-hard)",
+        border: "1px solid var(--border-hard)",
         boxShadow: "var(--shadow-brutal)",
       }}
     >
-      <h2 className="text-base font-extrabold uppercase flex items-center gap-2 text-[var(--foreground)] mb-4">
-        <Eye size={16} className="text-[var(--accent)]" />
+      <h2 className="text-base font-bold flex items-center gap-2 text-[var(--foreground)] mb-4">
+        <Eye weight="fill" size={16} className="text-[var(--accent)]" />
         Who Viewed Your Profile
       </h2>
 
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <div
-          className="p-3 text-center"
-          style={{ backgroundColor: "var(--status-warning-bg)", border: "2px solid var(--border-hard)" }}
-        >
-          <TrendingUp size={16} className="mx-auto text-[var(--accent)] mb-1" />
+        <div className="text-center">
+          <TrendUp weight="bold" size={16} className="mx-auto text-[var(--accent)] mb-1" />
           <div className="text-xl font-extrabold text-[var(--foreground)] font-mono">{data.views_today}</div>
-          <div className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)]">Today</div>
+          <div className="text-[10px] font-medium text-[var(--text-muted)]">Today</div>
         </div>
-        <div
-          className="p-3 text-center"
-          style={{ backgroundColor: "var(--bg-surface-light)", border: "2px solid var(--border-hard)" }}
-        >
-          <Users size={16} className="mx-auto text-[var(--accent)] mb-1" />
+        <div className="text-center">
+          <UsersThree weight="fill" size={16} className="mx-auto text-[var(--accent)] mb-1" />
           <div className="text-xl font-extrabold text-[var(--foreground)] font-mono">{data.views_this_week}</div>
-          <div className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)]">This Week</div>
+          <div className="text-[10px] font-medium text-[var(--text-muted)]">This Week</div>
         </div>
       </div>
 
@@ -70,11 +64,11 @@ export function ProfileViewsWidget() {
             <a
               key={viewer.username}
               href={`/profile/${viewer.username}`}
-              className="flex items-center gap-3 p-2 transition-colors hover:bg-[var(--bg-surface-light)]"
+              className="flex items-center gap-3 p-2 rounded-xl transition-colors hover:bg-[var(--bg-surface-light)]"
               style={{ border: "1px solid var(--border-subtle)" }}
             >
               <div
-                className="w-8 h-8 flex items-center justify-center text-xs font-extrabold text-white shrink-0"
+                className="w-8 h-8 flex items-center justify-center text-xs font-bold text-white shrink-0 rounded-full overflow-hidden"
                 style={{ backgroundColor: "var(--bg-inverted)" }}
               >
                 {viewer.avatar_url ? (
@@ -100,7 +94,7 @@ export function ProfileViewsWidget() {
         </div>
       ) : (
         <div className="text-center py-4">
-          <Eye size={24} className="mx-auto mb-2 text-[var(--text-muted-soft)]" />
+          <Eye weight="fill" size={24} className="mx-auto mb-2 text-[var(--text-muted-soft)]" />
           <p className="text-sm font-medium text-[var(--text-muted-soft)]">No profile views yet this week</p>
           <p className="text-xs text-[var(--text-muted-soft)] mt-1">Share your profile to get noticed!</p>
         </div>

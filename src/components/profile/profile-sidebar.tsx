@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Github, Globe, Bot, Code2, Share2, Link2 as LinkIcon, Check, Send, BadgeCheck } from "lucide-react";
+import { Link2 as LinkIcon, Send } from "lucide-react";
+import { Check, Code, GithubLogo, Globe, Robot, SealCheck, ShareNetwork } from "@phosphor-icons/react";
 import Link from "next/link";
 import type { UserWithSocials, BadgeLevel } from "@/lib/types/database";
 import { HireModal } from "@/components/ui/hire-modal";
@@ -73,7 +74,7 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
     ? `${window.location.origin}/profile/${user.username}`
     : `https://vibetalent.work/profile/${user.username}`;
 
-  const shareText = `Check out @${user.username} on VibeTalent — ${user.streak}-day streak, ${(user.projects ?? []).length} projects shipped!`;
+  const shareText = `Check out @${user.username} on VibeTalent: ${user.streak}-day streak, ${(user.projects ?? []).length} projects shipped!`;
 
   const handleShareTwitter = () => {
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(profileUrl)}`;
@@ -104,10 +105,10 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
 
   return (
     <aside
-      className="flex flex-col gap-6 p-6"
+      className="flex flex-col gap-6 p-6 rounded-2xl"
       style={{
         backgroundColor: "var(--bg-surface)",
-        border: "2px solid var(--border-hard)",
+        border: "1px solid var(--border-subtle)",
         boxShadow: "var(--shadow-brutal)",
       }}
     >
@@ -115,10 +116,10 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
       <div className="flex flex-col items-center text-center gap-4">
         <div className="relative">
           <div
-            className="w-[120px] h-[120px] flex items-center justify-center text-3xl font-extrabold text-white"
+            className="w-[120px] h-[120px] flex items-center justify-center text-3xl font-extrabold text-white rounded-full overflow-hidden"
             style={{
               backgroundColor: "var(--bg-inverted)",
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
             }}
           >
             {user.avatar_url ? (
@@ -136,11 +137,12 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
 
           {badgeLabel && (
             <div
-              className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 text-xs font-extrabold uppercase tracking-wider whitespace-nowrap"
+              className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 text-xs font-semibold whitespace-nowrap rounded-full"
               style={{
                 backgroundColor: getBadgeBg(user.badge_level),
-                border: "2px solid var(--border-hard)",
+                border: "1px solid var(--border-hard)",
                 color: "var(--foreground)",
+                boxShadow: "var(--shadow-brutal-xs)",
               }}
             >
               {badgeLabel}
@@ -150,7 +152,7 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
 
         {/* Name + handle + role */}
         <div className="mt-2">
-          <h1 className="text-xl font-extrabold uppercase tracking-tight text-[var(--foreground)] flex items-center justify-center gap-1.5">
+          <h1 className="text-xl font-bold tracking-tight text-[var(--foreground)] flex items-center justify-center gap-1.5">
             <span>{user.display_name || `@${user.username}`}</span>
             {user.github_username && (
               <span
@@ -158,18 +160,14 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
                 title={`GitHub ownership verified: @${user.github_username}`}
                 aria-label={`GitHub verified as @${user.github_username}`}
               >
-                <BadgeCheck
-                  size={20}
-                  className="text-white fill-[#1D9BF0]"
-                  strokeWidth={2.5}
-                />
+                <SealCheck weight="fill" size={20} className="text-white" />
               </span>
             )}
           </h1>
           {user.display_name && (
             <p className="text-sm font-medium text-[var(--text-muted)] mt-0.5">@{user.username}</p>
           )}
-          <p className="text-sm font-bold text-[var(--text-muted)] uppercase mt-0.5">{deriveRole(user.projects)}</p>
+          <p className="text-sm font-medium text-[var(--text-muted)] mt-0.5">{deriveRole(user.projects)}</p>
         </div>
 
         {/* Bio */}
@@ -186,14 +184,9 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${user.username} on GitHub`}
-            className="w-10 h-10 flex items-center justify-center text-[var(--foreground)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_var(--border-hard)]"
-            style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "2px solid var(--border-hard)",
-              boxShadow: "var(--shadow-brutal-sm)",
-            }}
+            className="w-10 h-10 flex items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:text-[var(--foreground)] hover:bg-[var(--bg-surface-light)]"
           >
-            <Github size={16} />
+            <GithubLogo weight="fill" size={16} />
           </a>
         )}
         {twitterHandle && (
@@ -202,12 +195,7 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${user.username} on X (Twitter)`}
-            className="w-10 h-10 flex items-center justify-center text-[var(--foreground)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_var(--border-hard)]"
-            style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "2px solid var(--border-hard)",
-              boxShadow: "var(--shadow-brutal-sm)",
-            }}
+            className="w-10 h-10 flex items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:text-[var(--foreground)] hover:bg-[var(--bg-surface-light)]"
           >
             <svg aria-hidden="true" width={16} height={16} viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
           </a>
@@ -218,12 +206,7 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${user.username} on Telegram`}
-            className="w-10 h-10 flex items-center justify-center text-[var(--foreground)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_var(--border-hard)]"
-            style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "2px solid var(--border-hard)",
-              boxShadow: "var(--shadow-brutal-sm)",
-            }}
+            className="w-10 h-10 flex items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:text-[var(--foreground)] hover:bg-[var(--bg-surface-light)]"
           >
             <Send size={16} />
           </a>
@@ -236,14 +219,9 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`${user.username}'s website`}
-              className="w-10 h-10 flex items-center justify-center text-[var(--foreground)] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0_var(--border-hard)]"
-              style={{
-                backgroundColor: "var(--bg-surface)",
-                border: "2px solid var(--border-hard)",
-                boxShadow: "var(--shadow-brutal-sm)",
-              }}
+              className="w-10 h-10 flex items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:text-[var(--foreground)] hover:bg-[var(--bg-surface-light)]"
             >
-              <Globe size={16} />
+              <Globe weight="fill" size={16} />
             </a>
           ) : null;
         })()}
@@ -252,14 +230,13 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
       {/* IDE Badge */}
       {socials?.farcaster && (
         <div
-          className="flex items-center gap-2 px-3 py-2 text-xs font-extrabold uppercase"
+          className="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-full"
           style={{
             backgroundColor: "var(--status-warning-bg)",
-            border: "2px solid var(--border-hard)",
-            boxShadow: "var(--shadow-brutal-sm)",
+            border: "1px solid var(--border-subtle)",
           }}
         >
-          <Code2 size={14} className="text-[var(--accent)]" />
+          <Code weight="fill" size={14} className="text-[var(--accent)]" />
           <span className="text-[var(--foreground)]">{socials.farcaster}</span>
         </div>
       )}
@@ -285,33 +262,33 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
           onClick={() => setShareCardOpen(true)}
           className="btn-brutal btn-brutal-secondary w-full justify-center text-sm flex items-center gap-2"
         >
-          <Share2 size={14} />
+          <ShareNetwork weight="fill" size={14} />
           Share Card
         </button>
 
         <div className="grid grid-cols-3 gap-1">
           <button
             onClick={() => handleShareTwitter()}
-            className="flex items-center justify-center gap-1 text-[10px] font-bold uppercase py-1.5 cursor-pointer hover:opacity-80"
-            style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}
+            className="flex items-center justify-center gap-1 text-[10px] font-semibold py-1.5 rounded-lg cursor-pointer transition-colors hover:bg-[var(--bg-surface-light)]"
+            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
           >
             <svg width={10} height={10} viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             Post
           </button>
           <button
             onClick={() => handleShareLinkedIn()}
-            className="flex items-center justify-center gap-1 text-[10px] font-bold uppercase py-1.5 cursor-pointer hover:opacity-80"
-            style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}
+            className="flex items-center justify-center gap-1 text-[10px] font-semibold py-1.5 rounded-lg cursor-pointer transition-colors hover:bg-[var(--bg-surface-light)]"
+            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
           >
             <svg width={10} height={10} viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
             Share
           </button>
           <button
             onClick={() => handleCopyLink()}
-            className="flex items-center justify-center gap-1 text-[10px] font-bold uppercase py-1.5 cursor-pointer hover:opacity-80"
-            style={{ backgroundColor: linkCopied ? "var(--status-success-bg)" : "var(--bg-surface)", border: "2px solid var(--border-hard)" }}
+            className="flex items-center justify-center gap-1 text-[10px] font-semibold py-1.5 rounded-lg cursor-pointer transition-colors hover:bg-[var(--bg-surface-light)]"
+            style={{ backgroundColor: linkCopied ? "var(--status-success-bg)" : "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
           >
-            {linkCopied ? <Check size={10} className="text-emerald-600" /> : <LinkIcon size={10} />}
+            {linkCopied ? <Check weight="bold" size={10} className="text-emerald-600" /> : <LinkIcon size={10} />}
             {linkCopied ? "Copied!" : "Link"}
           </button>
         </div>
@@ -328,7 +305,7 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
         href={`/agent/evaluate/${user.username}`}
         className="btn-brutal btn-brutal-dark w-full justify-center text-sm flex items-center gap-2"
       >
-        <Bot size={14} />
+        <Robot weight="fill" size={14} />
         VibeFinder Evaluate
       </Link>
     </aside>

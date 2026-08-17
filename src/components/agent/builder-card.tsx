@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Bot, Flame, ArrowRight, BadgeCheck } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Fire, SealCheck } from "@phosphor-icons/react";
 import { BadgeDisplay } from "@/components/ui/badge-display";
 import type { AgentBuilderCard } from "@/lib/agent/types";
+import { BotMark } from "@/components/icons/brand";
 
 interface BuilderCardProps {
   builder: AgentBuilderCard;
@@ -26,10 +28,10 @@ export function BuilderCard({ builder, rank }: BuilderCardProps) {
 
   return (
     <div
-      className="p-5 transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)]"
+      className="p-5 rounded-2xl transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-brutal-hover)]"
       style={{
         backgroundColor: "var(--bg-surface)",
-        border: "2px solid var(--border-hard)",
+        border: "1px solid var(--border-subtle)",
         boxShadow: rank === 1 ? "var(--shadow-brutal-accent)" : "var(--shadow-brutal)",
       }}
     >
@@ -37,14 +39,14 @@ export function BuilderCard({ builder, rank }: BuilderCardProps) {
         {/* Rank + Avatar */}
         <div className="flex flex-col items-center gap-2">
           <div
-            className="text-xs font-extrabold text-white px-2 py-0.5"
+            className="text-xs font-bold text-white px-2 py-0.5 rounded-full"
             style={{ backgroundColor: rank === 1 ? "var(--accent)" : "var(--bg-inverted)" }}
           >
             #{rank}
           </div>
           <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center text-sm font-extrabold text-white overflow-hidden"
-            style={{ backgroundColor: "var(--bg-inverted)", border: "2px solid var(--border-hard)" }}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white overflow-hidden"
+            style={{ backgroundColor: "var(--bg-inverted)", border: "1px solid var(--border-subtle)" }}
           >
             {builder.avatar_url ? (
               <Image
@@ -64,7 +66,7 @@ export function BuilderCard({ builder, rank }: BuilderCardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-extrabold uppercase text-[var(--foreground)]">
+              <h3 className="font-bold text-[var(--foreground)]">
                 @{builder.username}
               </h3>
               <BadgeDisplay level={builder.badge_level} size="sm" />
@@ -80,17 +82,17 @@ export function BuilderCard({ builder, rank }: BuilderCardProps) {
           </div>
 
           {/* Live stats */}
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold uppercase text-[var(--text-muted)]">
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-[var(--text-muted)]">
             <span>Vibe {builder.vibe_score}</span>
             {builder.streak > 0 && (
               <span className="flex items-center gap-1">
-                <Flame size={11} className="text-[var(--accent)]" />
+                <Fire weight="fill" size={11} className="text-[var(--accent)]" />
                 {builder.streak}d streak
               </span>
             )}
             {builder.verified_projects_count > 0 && (
               <span className="flex items-center gap-1">
-                <BadgeCheck size={12} className="text-[#16A34A]" />
+                <SealCheck weight="fill" size={12} className="text-[#16A34A]" />
                 {builder.verified_projects_count} verified
               </span>
             )}
@@ -104,7 +106,7 @@ export function BuilderCard({ builder, rank }: BuilderCardProps) {
                   key={i}
                   className="flex items-center gap-2 text-sm text-[var(--text-secondary)] font-medium"
                 >
-                  <Bot size={12} className="text-[var(--accent)] shrink-0" />
+                  <BotMark weight="fill" size={12} className="text-[var(--accent)] shrink-0" />
                   {reason}
                 </div>
               ))}
@@ -117,7 +119,7 @@ export function BuilderCard({ builder, rank }: BuilderCardProps) {
               {builder.tech_stack.map((tech) => (
                 <span
                   key={tech}
-                  className="px-2 py-0.5 text-xs font-bold uppercase"
+                  className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
                   style={{
                     backgroundColor: "var(--status-warning-bg)",
                     border: "1px solid var(--accent)",
@@ -142,7 +144,7 @@ export function BuilderCard({ builder, rank }: BuilderCardProps) {
               href={`/agent/contact/${builder.username}`}
               className="btn-brutal btn-brutal-secondary text-xs py-1.5 px-4 flex items-center gap-1"
             >
-              <Bot size={12} />
+              <BotMark weight="fill" size={12} />
               Contact
             </Link>
           </div>

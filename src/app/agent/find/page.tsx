@@ -6,7 +6,8 @@ import { matchUsers } from "@/lib/agent-scoring";
 import type { UserWithSocials } from "@/lib/types/database";
 import { AgentThinking } from "@/components/agent/agent-thinking";
 import { MatchCard } from "@/components/agent/match-card";
-import { Bot, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { BotMark } from "@/components/icons/brand";
 import type { MatchResult, TaskRequest, AgentStep } from "@/lib/types/agent";
 
 const matchSteps: AgentStep[] = [
@@ -56,34 +57,33 @@ export default function FindTalentPage() {
       <div className="mx-auto max-w-2xl px-4 sm:px-6 py-12">
         <div className="flex items-center gap-3 mb-8">
           <div
-            className="w-10 h-10 flex items-center justify-center"
+            className="w-10 h-10 flex items-center justify-center rounded-xl"
             style={{
               backgroundColor: "var(--accent)",
-              border: "2px solid var(--border-hard)",
               boxShadow: "var(--shadow-brutal-sm)",
             }}
           >
             <Search size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Find Talent</h1>
+            <h1 className="text-2xl font-bold text-[var(--foreground)]">Find Talent</h1>
             <p className="text-sm text-[var(--text-secondary)] font-medium">
-              Describe your project and let VibeFinder Bot find the best vibe coders
+              Describe your project and let VibeFinder Robot find the best vibe coders
             </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div
-            className="p-6 space-y-5"
+            className="p-6 space-y-5 rounded-2xl"
             style={{
               backgroundColor: "var(--bg-surface)",
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
               boxShadow: "var(--shadow-brutal)",
             }}
           >
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
+              <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
                 Project Description
               </label>
               <textarea
@@ -97,7 +97,7 @@ export default function FindTalentPage() {
             </div>
 
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
+              <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
                 Required Tech Stack
               </label>
               <input
@@ -112,7 +112,7 @@ export default function FindTalentPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
+                <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
                   Project Type
                 </label>
                 <select
@@ -127,7 +127,7 @@ export default function FindTalentPage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
+                <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
                   Timeline
                 </label>
                 <select
@@ -144,7 +144,7 @@ export default function FindTalentPage() {
             </div>
 
             <div>
-              <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
+              <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
                 Budget Range
               </label>
               <select
@@ -153,8 +153,8 @@ export default function FindTalentPage() {
                 className="input-brutal"
               >
                 <option value="under_500">Under $500</option>
-                <option value="500_2k">$500 — $2,000</option>
-                <option value="2k_5k">$2,000 — $5,000</option>
+                <option value="500_2k">$500: $2,000</option>
+                <option value="2k_5k">$2,000: $5,000</option>
                 <option value="5k_plus">$5,000+</option>
               </select>
             </div>
@@ -163,7 +163,7 @@ export default function FindTalentPage() {
               type="submit"
               className="btn-brutal btn-brutal-primary w-full justify-center text-base flex items-center gap-2"
             >
-              <Bot size={18} />
+              <BotMark weight="fill" size={18} />
               Find My Vibe Coder
             </button>
           </div>
@@ -176,17 +176,16 @@ export default function FindTalentPage() {
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
       <div className="flex items-center gap-3 mb-8">
         <div
-          className="w-10 h-10 flex items-center justify-center"
+          className="w-10 h-10 flex items-center justify-center rounded-xl"
           style={{
             backgroundColor: "var(--accent)",
-            border: "2px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
-          <Bot size={20} className="text-white" />
+          <BotMark weight="fill" size={20} className="text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">VibeFinder Results</h1>
+          <h1 className="text-2xl font-bold text-[var(--foreground)]">VibeFinder Results</h1>
           <p className="text-sm text-[var(--text-secondary)] font-medium">
             Ranked matches for your project
           </p>
@@ -200,13 +199,13 @@ export default function FindTalentPage() {
       {!thinking && matches.length > 0 && (
         <div className="space-y-4 mt-6">
           <div
-            className="p-4 text-sm font-bold text-[var(--foreground)]"
+            className="p-4 rounded-xl text-sm font-semibold text-[var(--foreground)]"
             style={{
               backgroundColor: "var(--status-warning-bg)",
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
             }}
           >
-            <Bot size={14} className="inline mr-2 text-[var(--accent)]" />
+            <BotMark weight="fill" size={14} className="inline mr-2 text-[var(--accent)]" />
             Found {matches.length} matching vibe coders. Ranked by skill match, consistency, and reputation.
           </div>
 

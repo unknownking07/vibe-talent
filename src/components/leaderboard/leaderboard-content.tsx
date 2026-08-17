@@ -5,10 +5,10 @@ import { BadgeDisplay } from "@/components/ui/badge-display";
 import type { UserWithSocials } from "@/lib/types/database";
 import { StreakCounter } from "@/components/ui/streak-counter";
 import { VibeScore } from "@/components/ui/vibe-score";
-import { Trophy, Flame, Code2, Zap, BadgeCheck } from "lucide-react";
 import { Pagination } from "@/components/ui/pagination";
 import Link from "next/link";
 import Image from "next/image";
+import { Code, Fire, Lightning, SealCheck } from "@phosphor-icons/react";
 
 const PAGE_SIZE = 15;
 type Tab = "vibe_score" | "streak" | "projects";
@@ -45,10 +45,17 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
       }
     });
 
-  const tabs: { id: Tab; label: string; icon: typeof Trophy }[] = [
-    { id: "vibe_score", label: "Vibe Score", icon: Zap },
-    { id: "streak", label: "Longest Streak", icon: Flame },
-    { id: "projects", label: "Most Projects", icon: Code2 },
+  // Shape-typed rather than `typeof Trophy`: the map now mixes Phosphor
+  // components with the hand-drawn brand glyphs, which are plain function
+  // components rather than forwardRef exotics.
+  const tabs: {
+    id: Tab;
+    label: string;
+    icon: React.ComponentType<{ size?: number; weight?: "fill" | "duotone" | "regular" | "bold"; className?: string }>;
+  }[] = [
+    { id: "vibe_score", label: "Vibe Score", icon: Lightning },
+    { id: "streak", label: "Longest Streak", icon: Fire },
+    { id: "projects", label: "Most Projects", icon: Code },
   ];
 
   const podium = sortedUsers.slice(0, 3);
@@ -63,22 +70,18 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
     <>
       {/* Tabs */}
       <div className="flex justify-center mb-10">
-        <div
-          className="inline-flex gap-0"
-          style={{ border: "2px solid var(--border-hard)" }}
-        >
+        <div className="inline-flex rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-1">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold uppercase tracking-wide transition-colors"
-              style={{
-                backgroundColor: activeTab === tab.id ? "var(--accent)" : "var(--bg-surface)",
-                color: activeTab === tab.id ? "var(--background)" : "var(--foreground)",
-                borderRight: "2px solid var(--border-hard)",
-              }}
+              className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-colors ${
+                activeTab === tab.id
+                  ? "bg-[var(--accent)] text-white"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface-light)]"
+              }`}
             >
-              <tab.icon size={16} />
+              <tab.icon weight="fill" size={16} />
               {tab.label}
             </button>
           ))}
@@ -98,23 +101,22 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
             <Link
               href={`/profile/${user.username}`}
               key={user.id}
-              className={`p-5 text-center transition-all hover:translate-x-[2px] hover:translate-y-[2px] ${
-                isFirst ? "order-2" : rank === 2 ? "order-1" : "order-3"
+              className={`p-5 text-center rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] transition-all hover:-translate-y-0.5 ${
+                isFirst
+                  ? "order-2 shadow-[var(--shadow-brutal-accent)]"
+                  : `shadow-[var(--shadow-brutal-sm)] hover:shadow-[var(--shadow-brutal-hover)] ${rank === 2 ? "order-1" : "order-3"}`
               }`}
               style={{
-                backgroundColor: "var(--bg-surface)",
-                border: "2px solid var(--border-hard)",
-                boxShadow: isFirst ? "var(--shadow-brutal-accent)" : "var(--shadow-brutal)",
                 transform: isFirst ? "translateY(-16px)" : undefined,
               }}
             >
               <div
-                className={`mx-auto flex items-center justify-center font-extrabold text-white mb-3 overflow-hidden ${
+                className={`mx-auto flex items-center justify-center rounded-full font-bold text-white mb-3 overflow-hidden ${
                   isFirst ? "h-16 w-16 text-lg" : "h-12 w-12 text-sm"
                 }`}
                 style={{
                   backgroundColor: isFirst ? "var(--accent)" : "var(--bg-inverted)",
-                  border: "2px solid var(--border-hard)",
+                  border: "1px solid var(--border-hard)",
                 }}
               >
                 {user.avatar_url ? (
@@ -123,16 +125,11 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                   initials
                 )}
               </div>
-              <div className="text-xs font-extrabold text-[var(--text-muted)] mb-1 uppercase">#{rank}</div>
-              <div className="font-extrabold text-[var(--foreground)] text-sm uppercase flex items-center justify-center gap-1">
+              <div className="text-xs font-mono font-bold text-[var(--text-muted)] mb-1">#{rank}</div>
+              <div className="font-bold uppercase text-[var(--foreground)] text-sm flex items-center justify-center gap-1">
                 {user.display_name || `@${user.username}`}
                 {user.github_username && (
-                  <BadgeCheck
-                    size={14}
-                    className="text-white fill-[#1D9BF0] shrink-0"
-                    strokeWidth={2.5}
-                    aria-label="GitHub verified"
-                  />
+                  <SealCheck weight="fill" size={14} className="text-white shrink-0" aria-label="GitHub verified" />
                 )}
               </div>
               {user.display_name && (
@@ -155,22 +152,16 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
           Keeping `overflow-x-auto` as a safety net for the rare locale that
           pushes a column wider, but the previous `min-w-[500px]` forced a
           carousel on every mobile render and is gone. */}
-      <div
-        className="overflow-x-auto"
-        style={{
-          border: "2px solid var(--border-hard)",
-          boxShadow: "var(--shadow-brutal)",
-        }}
-      >
+      <div className="overflow-x-auto rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-brutal-sm)]">
         <table className="w-full">
           <thead>
             <tr style={{ backgroundColor: "var(--bg-inverted)" }}>
-              <th className="px-3 sm:px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-white">Rank</th>
-              <th className="px-3 sm:px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-white">Builder</th>
-              <th className="px-3 sm:px-4 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-white">Vibe Score</th>
-              <th className="px-3 sm:px-4 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-white hidden sm:table-cell">Streak</th>
-              <th className="px-3 sm:px-4 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-white hidden sm:table-cell">Projects</th>
-              <th className="px-3 sm:px-4 py-3 text-right text-xs font-extrabold uppercase tracking-wide text-white">Badge</th>
+              <th className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-white">Rank</th>
+              <th className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-white">Builder</th>
+              <th className="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-white">Vibe Score</th>
+              <th className="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-white hidden sm:table-cell">Streak</th>
+              <th className="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-white hidden sm:table-cell">Projects</th>
+              <th className="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-white">Badge</th>
             </tr>
           </thead>
           <tbody>
@@ -180,18 +171,14 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
               return (
                 <tr
                   key={user.id}
-                  className="transition-colors hover:bg-[var(--bg-surface-light)]"
-                  style={{
-                    backgroundColor: "var(--bg-surface)",
-                    borderBottom: "2px solid var(--border-hard)",
-                  }}
+                  className="bg-[var(--bg-surface)] border-b border-[var(--border-subtle)] last:border-b-0 transition-colors hover:bg-[var(--bg-surface-light)]"
                 >
-                  <td className="px-3 sm:px-4 py-3 text-sm font-extrabold font-mono text-[var(--text-muted)]">#{rank}</td>
+                  <td className="px-3 sm:px-4 py-3 text-sm font-bold font-mono text-[var(--text-muted)]">#{rank}</td>
                   <td className="px-3 sm:px-4 py-3">
                     <Link href={`/profile/${user.username}`} className="flex items-center gap-3 hover:text-[var(--accent)] transition-colors">
                       <div
-                        className="flex h-8 w-8 items-center justify-center text-xs font-extrabold text-white shrink-0 overflow-hidden"
-                        style={{ backgroundColor: "var(--bg-inverted)", border: "2px solid var(--border-hard)" }}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white shrink-0 overflow-hidden"
+                        style={{ backgroundColor: "var(--bg-inverted)", border: "1px solid var(--border-hard)" }}
                       >
                         {user.avatar_url ? (
                           <Image src={user.avatar_url} alt={user.username} width={64} height={64} className="w-full h-full object-cover" />
@@ -200,19 +187,14 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                         )}
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className="font-bold text-sm uppercase flex items-center gap-1 truncate">
+                        <span className="font-bold text-sm flex items-center gap-1 truncate">
                           {user.display_name || `@${user.username}`}
                           {user.github_username && (
-                            <BadgeCheck
-                              size={14}
-                              className="text-white fill-[#1D9BF0] shrink-0"
-                              strokeWidth={2.5}
-                              aria-label="GitHub verified"
-                            />
+                            <SealCheck weight="fill" size={14} className="text-white shrink-0" aria-label="GitHub verified" />
                           )}
                         </span>
                         {user.display_name && (
-                          <span className="text-xs font-medium text-[var(--text-muted)] normal-case truncate">@{user.username}</span>
+                          <span className="text-xs font-medium text-[var(--text-muted)] truncate">@{user.username}</span>
                         )}
                       </div>
                     </Link>

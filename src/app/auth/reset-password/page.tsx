@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { Lock, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { CheckCircle, Lock } from "@phosphor-icons/react";
+import { AuthShell, AuthHeader, AuthPrimaryButton } from "@/components/auth/auth-shell";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -58,118 +59,87 @@ export default function ResetPasswordPage() {
     setLoading(false);
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div
-          className="p-8"
-          style={{
-            backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
-            boxShadow: "var(--shadow-brutal)",
-          }}
-        >
-          {success ? (
-            <div className="text-center">
-              <div
-                className="inline-flex items-center justify-center w-16 h-16 mb-4"
-                style={{
-                  backgroundColor: "#D1FAE5",
-                  border: "2px solid var(--border-hard)",
-                }}
-              >
-                <Check size={32} className="text-emerald-700" />
-              </div>
-              <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Password Updated</h1>
-              <p className="mt-3 text-sm text-[var(--text-secondary)] font-medium">
-                Your password has been reset. Redirecting to dashboard...
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="text-center mb-6">
-                <div
-                  className="inline-flex items-center justify-center w-16 h-16 mb-4"
-                  style={{
-                    backgroundColor: "var(--status-warning-bg)",
-                    border: "2px solid var(--border-hard)",
-                  }}
-                >
-                  <Lock size={32} className="text-[var(--accent)]" />
-                </div>
-                <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Set New Password</h1>
-                <p className="mt-2 text-sm text-[var(--text-secondary)] font-medium">
-                  Choose a new password for your account
-                </p>
-              </div>
-
-              {!sessionReady && (
-                <div
-                  className="p-3 mb-4 text-sm font-bold text-amber-800"
-                  style={{ backgroundColor: "var(--status-warning-bg)", border: "2px solid var(--border-hard)" }}
-                >
-                  Verifying reset link... If this persists, request a new link.
-                </div>
-              )}
-
-              {error && (
-                <div
-                  className="p-3 mb-4 text-sm font-bold text-red-800"
-                  style={{ backgroundColor: "var(--status-error-border)", border: "2px solid var(--border-hard)" }}
-                >
-                  {error}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
-                    New Password
-                  </label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="At least 6 characters"
-                    className="input-brutal"
-                    required
-                    minLength={6}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
-                    Confirm Password
-                  </label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repeat your password"
-                    className="input-brutal"
-                    required
-                    minLength={6}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading || !sessionReady}
-                  className="btn-brutal btn-brutal-primary w-full justify-center text-base disabled:opacity-50"
-                >
-                  {loading ? "Updating..." : "Update Password"}
-                </button>
-              </form>
-
-              <div className="mt-4 text-center">
-                <Link href="/auth/forgot-password" className="text-sm font-bold text-[var(--accent)] hover:underline">
-                  Request a new reset link
-                </Link>
-              </div>
-            </>
-          )}
-        </div>
+  if (success) {
+    return (
+      <div className="mx-auto max-w-md px-4 sm:px-6 py-24 text-center">
+        <CheckCircle weight="fill" size={56} className="mx-auto mb-5" style={{ color: "#16A34A" }} />
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">Password updated</h1>
+        <p className="mt-3 text-sm text-[var(--text-secondary)] font-medium">
+          Your password has been reset. Redirecting to dashboard...
+        </p>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <AuthShell>
+      <AuthHeader title="Set new password" subtitle="Choose a new password for your account" />
+
+      {!sessionReady && (
+        <div
+          className="p-3 mb-4 text-sm font-semibold text-[var(--status-warning-text)] rounded-xl"
+          style={{ backgroundColor: "var(--status-warning-bg)", border: "1px solid var(--border-subtle)" }}
+        >
+          Verifying reset link... If this persists, request a new link.
+        </div>
+      )}
+
+      {error && (
+        <div
+          className="p-3 mb-4 text-sm font-semibold text-[var(--status-error-text)] rounded-xl"
+          style={{ backgroundColor: "var(--status-error-bg)", border: "1px solid var(--status-error-border)" }}
+        >
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
+            New Password
+          </label>
+          <div className="relative">
+            <Lock weight="fill" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="At least 6 characters"
+              className="input-brutal" style={{ paddingLeft: "2.5rem" }}
+              required
+              minLength={6}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
+            Confirm Password
+          </label>
+          <div className="relative">
+            <Lock weight="fill" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Repeat your password"
+              className="input-brutal" style={{ paddingLeft: "2.5rem" }}
+              required
+              minLength={6}
+            />
+          </div>
+        </div>
+
+        <AuthPrimaryButton type="submit" disabled={loading || !sessionReady}>
+          {loading ? "Updating..." : "Update Password"}
+        </AuthPrimaryButton>
+      </form>
+
+      <div className="mt-6 text-center">
+        <Link href="/auth/forgot-password" className="text-sm font-semibold text-[var(--accent)] hover:underline">
+          Request a new reset link
+        </Link>
+      </div>
+    </AuthShell>
   );
 }

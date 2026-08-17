@@ -11,7 +11,13 @@ import {
   saveOnboardingProfile,
   type ProfileWriteClient,
 } from "@/lib/onboarding-profile";
-import { isUsernameTakenError, validateUsername } from "@/lib/username";
+import {
+  isUsernameTakenError,
+  normalizeUsernameInput,
+  suggestAvailableUsername,
+  validateUsername,
+  type UsernameLookupClient,
+} from "@/lib/username";
 import { useUsernameAvailability } from "@/lib/use-username-availability";
 import {
   Flame,
@@ -127,12 +133,15 @@ export default function ProfileSetupPage() {
       // or a prior linkIdentity flow). This is the only trusted source.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: userRow } = await (supabase.from("users") as any)
-        .select("display_name, github_username, github_id")
+        .select("username, display_name, github_username, github_id")
         .eq("id", user.id)
         .maybeSingle();
       if (userRow?.display_name) {
         setProfile((p) => ({ ...p, display_name: userRow.display_name }));
       }
+      // Whichever handle we end up trusting, from either branch below — it's
+      // the preferred seed for the username pre-fill.
+      let resolvedGithub: string | null = userRow?.github_username ?? null;
       if (userRow?.github_username) {
         setVerifiedGithub(userRow.github_username);
         setSocials((s) => ({ ...s, github: userRow.github_username }));
@@ -161,6 +170,7 @@ export default function ProfileSetupPage() {
         const ghId =
           rawGhId != null && /^\d+$/.test(String(rawGhId)) ? Number(rawGhId) : null;
         if (ghUsername) {
+          resolvedGithub = ghUsername;
           setVerifiedGithub(ghUsername);
           setSocials((s) => ({ ...s, github: ghUsername }));
           if (ghId !== null && Number.isFinite(ghId)) {
@@ -179,6 +189,27 @@ export default function ProfileSetupPage() {
             { user_id: user.id, github: ghUsername },
             { onConflict: "user_id" }
           );
+        }
+      }
+
+      // Pre-fill the username. It is the only required field on this step and
+      // was the only one left blank, so every signup had to invent a handle
+      // before they could go anywhere — and the `users` row isn't written
+      // until step 1 succeeds, so anyone who hesitated here left no row at all
+      // and became invisible to every lifecycle email (they all read `users`).
+      // The GitHub handle is already trusted above; email local-part and
+      // display name cover Google and email signups.
+      if (userRow?.username) {
+        setProfile((p) => (p.username ? p : { ...p, username: userRow.username }));
+      } else {
+        const suggestion = await suggestAvailableUsername(
+          supabase as unknown as UsernameLookupClient,
+          [resolvedGithub, user.email?.split("@")[0], oauthFullName]
+        );
+        // Guard against clobbering anything typed while the lookup was in
+        // flight, same as the display_name pre-fill above.
+        if (suggestion) {
+          setProfile((p) => (p.username ? p : { ...p, username: suggestion }));
         }
       }
 
@@ -470,7 +501,7 @@ export default function ProfileSetupPage() {
         <div key={s} className="flex items-center gap-2">
           <div className="flex flex-col items-center gap-1">
             <div
-              className="w-8 h-8 flex items-center justify-center text-xs font-extrabold border-2 border-[var(--border-hard)]"
+              className="w-8 h-8 flex items-center justify-center text-xs font-extrabold border border-[var(--border-hard)]"
               style={{
                 backgroundColor:
                   s < step ? "var(--foreground)" : s === step ? "#FF3A00" : "var(--bg-surface)",
@@ -479,7 +510,7 @@ export default function ProfileSetupPage() {
             >
               {s < step ? "✓" : s}
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-secondary)]">
+            <span className="text-[10px] font-semibold text-[var(--text-secondary)]">
               {STEP_LABELS[s - 1]}
             </span>
           </div>
@@ -500,10 +531,10 @@ export default function ProfileSetupPage() {
 
   const errorBox = error ? (
     <div
-      className="p-3 text-sm font-bold text-[var(--status-error-text)]"
+      className="p-3 text-sm font-bold text-[var(--status-error-text)] rounded-xl"
       style={{
         backgroundColor: "var(--status-error-bg)",
-        border: "2px solid var(--border-hard)",
+        border: "1px solid var(--border-subtle)",
       }}
     >
       {error}
@@ -516,16 +547,16 @@ export default function ProfileSetupPage() {
     <div className="space-y-5">
       <div className="flex items-center gap-3 mb-2">
         <div
-          className="w-10 h-10 flex items-center justify-center"
+          className="w-10 h-10 flex items-center justify-center rounded-2xl"
           style={{
             backgroundColor: "#FF3A00",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
           }}
         >
           <Zap size={20} className="text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-extrabold uppercase text-[var(--foreground)]">
+          <h2 className="text-xl font-bold text-[var(--foreground)]">
             Profile Basics
           </h2>
           <p className="text-xs text-[var(--text-secondary)] font-medium">
@@ -535,7 +566,7 @@ export default function ProfileSetupPage() {
       </div>
 
       <div>
-        <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5 block">
+        <label className="text-xs font-semibold text-[var(--text-secondary)] mb-1.5 block">
           Username *
         </label>
         <input
@@ -544,7 +575,7 @@ export default function ProfileSetupPage() {
           onChange={(e) =>
             setProfile({
               ...profile,
-              username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""),
+              username: normalizeUsernameInput(e.target.value),
             })
           }
           placeholder="your_username"
@@ -576,7 +607,7 @@ export default function ProfileSetupPage() {
       </div>
 
       <div>
-        <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5 block">
+        <label className="text-xs font-semibold text-[var(--text-secondary)] mb-1.5 block">
           Display Name
         </label>
         <input
@@ -593,7 +624,7 @@ export default function ProfileSetupPage() {
       </div>
 
       <div>
-        <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5 block">
+        <label className="text-xs font-semibold text-[var(--text-secondary)] mb-1.5 block">
           Bio
         </label>
         <textarea
@@ -625,16 +656,16 @@ export default function ProfileSetupPage() {
     <div className="space-y-5">
       <div className="flex items-center gap-3 mb-2">
         <div
-          className="w-10 h-10 flex items-center justify-center"
+          className="w-10 h-10 flex items-center justify-center rounded-2xl"
           style={{
             backgroundColor: "#FF3A00",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
           }}
         >
           <LinkIcon size={20} className="text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-extrabold uppercase text-[var(--foreground)]">
+          <h2 className="text-xl font-bold text-[var(--foreground)]">
             Social Links
           </h2>
           <p className="text-xs text-[var(--text-secondary)] font-medium">
@@ -645,15 +676,15 @@ export default function ProfileSetupPage() {
 
       {verifiedGithub ? (
         <div
-          className="flex items-center gap-3 px-4 py-3"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl"
           style={{
             backgroundColor: "var(--status-success-bg)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
           }}
         >
           <Github size={18} className="text-[var(--status-success-text)] shrink-0" />
           <span className="font-bold text-[var(--status-success-text)]">@{verifiedGithub}</span>
-          <span className="text-xs font-bold uppercase text-[var(--status-success-text)] opacity-70 ml-auto">
+          <span className="text-xs font-semibold text-[var(--status-success-text)] opacity-70 ml-auto">
             Verified ✓
           </span>
         </div>
@@ -661,10 +692,10 @@ export default function ProfileSetupPage() {
         <div>
           {searchParams.get("error_code") === "identity_already_exists" && (
             <div
-              className="mb-2 p-3 flex items-start gap-2 text-sm"
+              className="mb-2 p-3 flex items-start gap-2 text-sm rounded-xl"
               style={{
                 backgroundColor: "var(--status-error-bg)",
-                border: "2px solid var(--border-hard)",
+                border: "1px solid var(--border-subtle)",
               }}
             >
               <Github size={16} className="mt-0.5 shrink-0" style={{ color: "var(--status-error-text)" }} />
@@ -677,10 +708,10 @@ export default function ProfileSetupPage() {
             type="button"
             onClick={handleConnectGithub}
             disabled={connectingGithub}
-            className="w-full flex items-center justify-center gap-2 px-5 py-3 text-sm font-extrabold uppercase tracking-wide text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-[var(--bg-pill-hover)]"
+            className="w-full flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-[var(--bg-pill-hover)] rounded-xl"
             style={{
               backgroundColor: "var(--bg-inverted)",
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
             }}
           >
             <Github size={18} />
@@ -767,16 +798,16 @@ export default function ProfileSetupPage() {
     <div className="space-y-5">
       <div className="flex items-center gap-3 mb-2">
         <div
-          className="w-10 h-10 flex items-center justify-center"
+          className="w-10 h-10 flex items-center justify-center rounded-2xl"
           style={{
             backgroundColor: "#FF3A00",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
           }}
         >
           <FolderGit2 size={20} className="text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-extrabold uppercase text-[var(--foreground)]">
+          <h2 className="text-xl font-bold text-[var(--foreground)]">
             First Project
           </h2>
           <p className="text-xs text-[var(--text-secondary)] font-medium">
@@ -786,7 +817,7 @@ export default function ProfileSetupPage() {
       </div>
 
       <div>
-        <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5 block">
+        <label className="text-xs font-semibold text-[var(--text-secondary)] mb-1.5 block">
           Project Title *
         </label>
         <input
@@ -799,7 +830,7 @@ export default function ProfileSetupPage() {
       </div>
 
       <div>
-        <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5 block">
+        <label className="text-xs font-semibold text-[var(--text-secondary)] mb-1.5 block">
           Description *
         </label>
         <textarea
@@ -814,7 +845,7 @@ export default function ProfileSetupPage() {
       </div>
 
       <div>
-        <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5 block">
+        <label className="text-xs font-semibold text-[var(--text-secondary)] mb-1.5 block">
           Tech Stack
         </label>
         <input
@@ -830,7 +861,7 @@ export default function ProfileSetupPage() {
       </div>
 
       <div>
-        <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-1.5 block">
+        <label className="text-xs font-semibold text-[var(--text-secondary)] mb-1.5 block">
           GitHub URL *
         </label>
         <input
@@ -878,7 +909,7 @@ export default function ProfileSetupPage() {
           setError("");
           setStep(4);
         }}
-        className="w-full text-center text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)] hover:text-[#FF3A00] transition-colors"
+        className="w-full text-center text-xs font-semibold text-[var(--text-secondary)] hover:text-[#FF3A00] transition-colors"
       >
         Skip this step
       </button>
@@ -891,16 +922,16 @@ export default function ProfileSetupPage() {
     <div className="space-y-6 text-center">
       <div className="flex items-center justify-center gap-3 mb-2">
         <div
-          className="w-10 h-10 flex items-center justify-center"
+          className="w-10 h-10 flex items-center justify-center rounded-2xl"
           style={{
             backgroundColor: "#FF3A00",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
           }}
         >
           <Flame size={20} className="text-white" />
         </div>
         <div className="text-left">
-          <h2 className="text-xl font-extrabold uppercase text-[var(--foreground)]">
+          <h2 className="text-xl font-bold text-[var(--foreground)]">
             Start Your Streak
           </h2>
           <p className="text-xs text-[var(--text-secondary)] font-medium">
@@ -912,10 +943,10 @@ export default function ProfileSetupPage() {
       {!streakLogged ? (
         <>
           <div
-            className="p-8"
+            className="p-8 rounded-2xl"
             style={{
               backgroundColor: "var(--bg-surface-light)",
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
             }}
           >
             <Flame
@@ -923,7 +954,7 @@ export default function ProfileSetupPage() {
               className="mx-auto mb-4"
               style={{ color: "#FF3A00" }}
             />
-            <p className="text-sm font-bold text-[var(--foreground)] uppercase mb-1">
+            <p className="text-sm font-bold text-[var(--foreground)] mb-1">
               Day 1 starts now
             </p>
             <p className="text-xs text-[var(--text-secondary)]">
@@ -947,10 +978,10 @@ export default function ProfileSetupPage() {
       ) : (
         <>
           <div
-            className="p-8"
+            className="p-8 rounded-2xl"
             style={{
               backgroundColor: "var(--status-success-bg)",
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
               boxShadow: "var(--shadow-brutal)",
             }}
           >
@@ -969,7 +1000,7 @@ export default function ProfileSetupPage() {
                 style={{ color: "#FF3A00" }}
               />
             </div>
-            <p className="text-lg font-extrabold uppercase text-[var(--foreground)]">
+            <p className="text-lg font-bold text-[var(--foreground)]">
               Streak Started!
             </p>
             <p className="text-sm text-[var(--text-secondary)] mt-1">
@@ -982,10 +1013,10 @@ export default function ProfileSetupPage() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Join the VibeTalent Telegram community (opens in new tab)"
-            className="flex items-center gap-3 p-4 text-left transition-all hover:translate-x-[1px] hover:translate-y-[1px]"
+            className="flex items-center gap-3 p-4 text-left transition-all hover:-translate-y-0.5 rounded-xl"
             style={{
               backgroundColor: "var(--bg-surface)",
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
               boxShadow: "var(--shadow-brutal-sm)",
             }}
           >
@@ -996,7 +1027,7 @@ export default function ProfileSetupPage() {
               <TelegramIcon size={20} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-extrabold uppercase tracking-wide text-[var(--foreground)]">
+              <p className="text-sm font-semibold text-[var(--foreground)]">
                 Join our Telegram
               </p>
               <p className="text-xs text-[var(--text-muted)] mt-0.5">
@@ -1072,16 +1103,16 @@ export default function ProfileSetupPage() {
       {/* Header */}
       <div className="text-center mb-6">
         <div
-          className="inline-flex items-center justify-center w-14 h-14 mb-4"
+          className="inline-flex items-center justify-center w-14 h-14 mb-4 rounded-2xl"
           style={{
             backgroundColor: "#FF3A00",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
           <Flame size={28} className="text-white" />
         </div>
-        <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)]">
+        <h1 className="text-3xl font-bold text-[var(--foreground)]">
           Set Up Profile
         </h1>
         <p className="mt-2 text-sm text-[var(--text-secondary)] font-medium">
@@ -1094,10 +1125,10 @@ export default function ProfileSetupPage() {
 
       {/* Card */}
       <div
-        className="p-6"
+        className="p-6 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >

@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import { Mail, ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { CheckCircle, Envelope } from "@phosphor-icons/react";
+import { AuthShell, AuthHeader, AuthPrimaryButton } from "@/components/auth/auth-shell";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -29,98 +31,69 @@ export default function ForgotPasswordPage() {
     setLoading(false);
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+  if (sent) {
+    return (
+      <div className="mx-auto max-w-md px-4 sm:px-6 py-24 text-center">
+        <CheckCircle weight="fill" size={56} className="mx-auto mb-5" style={{ color: "#16A34A" }} />
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">Check your email</h1>
+        <p className="mt-3 text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
+          We sent a password reset link to <strong className="text-[var(--foreground)]">{email}</strong>. Click the
+          link to set a new password.
+        </p>
         <Link
           href="/auth/login"
-          className="inline-flex items-center gap-2 text-sm font-bold uppercase text-[var(--text-muted)] hover:text-[var(--accent)] mb-6"
+          className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-[var(--accent)] hover:underline"
         >
           <ArrowLeft size={14} />
           Back to Login
         </Link>
-
-        <div
-          className="p-8"
-          style={{
-            backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
-            boxShadow: "var(--shadow-brutal)",
-          }}
-        >
-          {sent ? (
-            <div className="text-center">
-              <div
-                className="inline-flex items-center justify-center w-16 h-16 mb-4"
-                style={{
-                  backgroundColor: "#D1FAE5",
-                  border: "2px solid var(--border-hard)",
-                }}
-              >
-                <Check size={32} className="text-emerald-700" />
-              </div>
-              <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Check Your Email</h1>
-              <p className="mt-3 text-sm text-[var(--text-secondary)] font-medium">
-                We sent a password reset link to <strong>{email}</strong>. Click the link to set a new password.
-              </p>
-              <Link href="/auth/login" className="btn-brutal btn-brutal-secondary text-sm mt-6 inline-flex">
-                Back to Login
-              </Link>
-            </div>
-          ) : (
-            <>
-              <div className="text-center mb-6">
-                <div
-                  className="inline-flex items-center justify-center w-16 h-16 mb-4"
-                  style={{
-                    backgroundColor: "var(--status-warning-bg)",
-                    border: "2px solid var(--border-hard)",
-                  }}
-                >
-                  <Mail size={32} className="text-[var(--accent)]" />
-                </div>
-                <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">Forgot Password</h1>
-                <p className="mt-2 text-sm text-[var(--text-secondary)] font-medium">
-                  Enter your email and we&apos;ll send you a reset link
-                </p>
-              </div>
-
-              {error && (
-                <div
-                  className="p-3 mb-4 text-sm font-bold text-red-800"
-                  style={{ backgroundColor: "var(--status-error-border)", border: "2px solid var(--border-hard)" }}
-                >
-                  {error}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="input-brutal"
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn-brutal btn-brutal-primary w-full justify-center text-base"
-                >
-                  {loading ? "Sending..." : "Send Reset Link"}
-                </button>
-              </form>
-            </>
-          )}
-        </div>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <AuthShell>
+      <Link
+        href="/auth/login"
+        className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-muted)] hover:text-[var(--accent)] mb-8"
+      >
+        <ArrowLeft size={14} />
+        Back to Login
+      </Link>
+
+      <AuthHeader title="Forgot password" subtitle="Enter your email and we'll send you a reset link" />
+
+      {error && (
+        <div
+          className="p-3 mb-4 text-sm font-semibold text-[var(--status-error-text)] rounded-xl"
+          style={{ backgroundColor: "var(--status-error-bg)", border: "1px solid var(--status-error-border)" }}
+        >
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
+            Email Address
+          </label>
+          <div className="relative">
+            <Envelope weight="fill" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="input-brutal" style={{ paddingLeft: "2.5rem" }}
+              required
+            />
+          </div>
+        </div>
+
+        <AuthPrimaryButton type="submit" disabled={loading}>
+          {loading ? "Sending..." : "Send Reset Link"}
+        </AuthPrimaryButton>
+      </form>
+    </AuthShell>
   );
 }

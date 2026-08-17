@@ -12,6 +12,19 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+
+    // Generated output and local tooling that are not part of the app.
+    ".open-next/**",
+    ".wrangler/**",
+    ".agents/**",
+    ".claude/**",
+    "vibecoders/**",
+    "skills/**",
+    "demo-video/**",
+    "vibetalent-video/**",
+    "infographics/**",
+    "seo-audit/**",
+    "coverage/**",
   ]),
 ]);
 

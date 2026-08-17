@@ -1,6 +1,7 @@
 "use client";
 
-import { Github, Shield, User, Mail, BookOpen, X } from "lucide-react";
+import { X } from "lucide-react";
+import { BookOpen, Envelope, GithubLogo, Shield, User } from "@phosphor-icons/react";
 
 type Provider = "github" | "google";
 
@@ -13,12 +14,12 @@ interface OAuthConsentModalProps {
 const providerConfig = {
   github: {
     name: "GitHub",
-    icon: <Github size={24} />,
+    icon: <GithubLogo weight="fill" size={24} />,
     color: "#24292e",
     permissions: [
-      { icon: <User size={18} />, label: "Profile information", detail: "Your name, username, and avatar" },
-      { icon: <Mail size={18} />, label: "Email address", detail: "Your primary email on GitHub" },
-      { icon: <BookOpen size={18} />, label: "Public repositories", detail: "Read-only access to your public repos" },
+      { icon: <User weight="fill" size={18} />, label: "Profile information", detail: "Your name, username, and avatar" },
+      { icon: <Envelope weight="fill" size={18} />, label: "Email address", detail: "Your primary email on GitHub" },
+      { icon: <BookOpen weight="fill" size={18} />, label: "Public repositories", detail: "Read-only access to your public repos" },
     ],
     privacyNote: "VibeTalent will never push code, create repos, or modify your GitHub account.",
   },
@@ -34,8 +35,8 @@ const providerConfig = {
     ),
     color: "#4285F4",
     permissions: [
-      { icon: <User size={18} />, label: "Name and profile picture", detail: "Your display name and avatar" },
-      { icon: <Mail size={18} />, label: "Email address", detail: "Your Google email address" },
+      { icon: <User weight="fill" size={18} />, label: "Name and profile picture", detail: "Your display name and avatar" },
+      { icon: <Envelope weight="fill" size={18} />, label: "Email address", detail: "Your Google email address" },
     ],
     privacyNote: "VibeTalent will never access your contacts, drive, or any other Google services.",
   },
@@ -51,10 +52,10 @@ export default function OAuthConsentModal({ provider, onConfirm, onCancel }: OAu
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-sm"
+        className="relative w-full max-w-sm rounded-2xl overflow-hidden"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-hard)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
@@ -69,17 +70,17 @@ export default function OAuthConsentModal({ provider, onConfirm, onCancel }: OAu
         {/* Header */}
         <div className="p-6 pb-4 text-center">
           <div
-            className="inline-flex items-center justify-center w-12 h-12 mb-3"
+            className="inline-flex items-center justify-center w-12 h-12 mb-3 rounded-xl"
             style={{
               backgroundColor: config.color,
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-hard)",
               boxShadow: "var(--shadow-brutal-sm)",
               color: "var(--text-on-inverted)",
             }}
           >
             {config.icon}
           </div>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)]">
+          <h2 className="text-lg font-bold text-[var(--foreground)]">
             Sign in with {config.name}
           </h2>
           <p className="mt-1 text-xs font-medium text-[var(--text-muted)]">
@@ -93,7 +94,7 @@ export default function OAuthConsentModal({ provider, onConfirm, onCancel }: OAu
             <div
               key={i}
               className="flex items-start gap-3 py-3"
-              style={{ borderTop: i === 0 ? "2px solid var(--border-subtle)" : "1px solid var(--border-subtle)" }}
+              style={{ borderTop: i === 0 ? "1px solid var(--border-subtle)" : "1px solid var(--border-subtle)" }}
             >
               <div className="mt-0.5 text-[var(--text-secondary)]">{perm.icon}</div>
               <div>
@@ -106,13 +107,13 @@ export default function OAuthConsentModal({ provider, onConfirm, onCancel }: OAu
 
         {/* Privacy note */}
         <div
-          className="mx-6 mt-4 p-3 flex items-start gap-2"
+          className="mx-6 mt-4 p-3 flex items-start gap-2 rounded-xl"
           style={{
             backgroundColor: "var(--status-success-bg)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-hard)",
           }}
         >
-          <Shield size={16} className="mt-0.5 text-[#16A34A] shrink-0" />
+          <Shield weight="fill" size={16} className="mt-0.5 text-[#16A34A] shrink-0" />
           <p className="text-xs font-medium text-[var(--status-success-text)]">{config.privacyNote}</p>
         </div>
 
@@ -120,18 +121,18 @@ export default function OAuthConsentModal({ provider, onConfirm, onCancel }: OAu
         <div className="p-6 space-y-2">
           <button
             onClick={onConfirm}
-            className="w-full flex items-center justify-center px-5 py-3 text-sm font-extrabold uppercase tracking-wide cursor-pointer transition-colors hover:opacity-90"
+            className="w-full flex items-center justify-center px-5 py-3 text-sm font-semibold cursor-pointer transition-colors hover:opacity-90 rounded-xl"
             style={{
               backgroundColor: config.color,
               color: "#FFFFFF",
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-hard)",
             }}
           >
             Continue with {config.name}
           </button>
           <button
             onClick={onCancel}
-            className="w-full flex items-center justify-center px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] cursor-pointer hover:text-[var(--foreground)] transition-colors"
+            className="w-full flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-[var(--text-muted)] cursor-pointer hover:text-[var(--foreground)] transition-colors"
           >
             Cancel
           </button>

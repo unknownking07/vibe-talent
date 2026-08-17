@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Share2 } from "lucide-react";
 import { BadgeMedallion } from "@/components/achievements/badge-medallion";
 import { getBadgeArt } from "@/lib/achievements/badge-art";
+import { ShareNetwork } from "@phosphor-icons/react";
 import {
   CATEGORY_LABELS,
   type AchievementView,
@@ -241,13 +241,12 @@ export function AchievementCelebration({
             marginTop: 30,
             fontFamily: "var(--font-jetbrains-mono), ui-monospace, monospace",
             fontSize: 13,
-            fontWeight: 800,
-            letterSpacing: "0.3em",
+            fontWeight: 600,
             color: accent,
             animation: anim("cel-up-fade 0.5s 0.18s both"),
           }}
         >
-          ACHIEVEMENT UNLOCKED
+          Achievement unlocked
         </div>
         <h2
           id="cel-title"
@@ -258,8 +257,7 @@ export function AchievementCelebration({
             fontSize: 42,
             fontWeight: 700,
             lineHeight: 1,
-            textTransform: "uppercase",
-            color: "#fff",
+                         color: "#fff",
             animation: anim("cel-up-fade 0.5s 0.25s both"),
           }}
         >
@@ -272,11 +270,10 @@ export function AchievementCelebration({
             marginTop: 12,
             padding: "4px 12px",
             fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
+            fontWeight: 500,
             color: "#A89C95",
-            border: "2px solid #4A433D",
+            border: "1px solid #4A433D",
+            borderRadius: 999,
             animation: anim("cel-up-fade 0.5s 0.3s both"),
           }}
         >
@@ -314,16 +311,14 @@ export function AchievementCelebration({
             style={{
               padding: "13px 26px",
               fontSize: 13,
-              fontWeight: 800,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
+              fontWeight: 600,
               color: "#fff",
               background: accent,
-              border: "2px solid #0F0F0F",
-              boxShadow: "4px 4px 0 #000",
+              border: "none",
+              boxShadow: "var(--shadow-brutal-accent)",
             }}
           >
-            <Share2 size={15} strokeWidth={2.4} />
+            <ShareNetwork weight="fill" size={15} />
             {shared ? "Link copied!" : "Share badge"}
           </button>
           <button
@@ -333,12 +328,11 @@ export function AchievementCelebration({
             style={{
               padding: "13px 26px",
               fontSize: 13,
-              fontWeight: 800,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
+              fontWeight: 600,
               color: "#fff",
               background: "#1A1715",
-              border: "2px solid #4A433D",
+              border: "1px solid #4A433D",
+              borderRadius: "var(--radius-control)",
               cursor: "pointer",
             }}
           >

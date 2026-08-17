@@ -62,7 +62,7 @@ export const TOUR_CARDS: readonly TourCard[] = [
   },
   {
     title: "Daily Streaks",
-    body: "Commit to GitHub each day and we auto-detect activity to grow your streak. Miss a day and the counter resets — consistency is the whole point.",
+    body: "Commit to GitHub each day and we auto-detect activity to grow your streak. Miss a day and the counter resets: consistency is the whole point.",
     icon: Flame,
     ctaLabel: "View my streak",
     ctaHref: "/dashboard#streak",
@@ -70,7 +70,7 @@ export const TOUR_CARDS: readonly TourCard[] = [
   },
   {
     title: "Earn Your Badge",
-    body: "Bronze at 30 days, Silver at 90, Gold at 180, Diamond at 365. Your longest streak unlocks the badge — it never downgrades.",
+    body: "Bronze at 30 days, Silver at 90, Gold at 180, Diamond at 365. Your longest streak unlocks the badge. It never downgrades.",
     icon: Award,
     ctaLabel: "See badge tiers",
     ctaHref: null,
@@ -86,7 +86,7 @@ export const TOUR_CARDS: readonly TourCard[] = [
   },
   {
     title: "Project Quality Scores",
-    body: "Every verified project gets a 0–100 score from GitHub stars, code depth, tests, CI, and maintenance — proof your projects are real.",
+    body: "Every verified project gets a 0-100 score from GitHub stars, code depth, tests, CI, and maintenance: proof your projects are real.",
     icon: Sparkles,
     ctaLabel: "Add a project",
     ctaHref: "/projects",
@@ -94,7 +94,7 @@ export const TOUR_CARDS: readonly TourCard[] = [
   },
   {
     title: "Your Public Profile",
-    body: "A shareable URL with your streak, vibe score, badges, and shipped projects. Drop the link anywhere — clients can vet you in seconds.",
+    body: "A shareable URL with your streak, vibe score, badges, and shipped projects. Drop the link anywhere: clients can vet you in seconds.",
     icon: User,
     ctaLabel: "View my profile",
     ctaHref: (username) => `/profile/${username}`,
@@ -110,7 +110,7 @@ export const TOUR_CARDS: readonly TourCard[] = [
   },
   {
     title: "Live Builder Feed",
-    body: "Watch what every builder shipped today — commits, projects, milestones. Comment, react, find collaborators for hackathons.",
+    body: "Watch what every builder shipped today: commits, projects, milestones. Comment, react, find collaborators for hackathons.",
     icon: Activity,
     ctaLabel: "Open feed",
     ctaHref: "/feed",

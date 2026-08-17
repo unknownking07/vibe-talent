@@ -1,99 +1,75 @@
 import Link from "next/link";
-import { Users, Code2, Flame, Target, Check } from "lucide-react";
+import { CheckCircle } from "@phosphor-icons/react/dist/ssr";
 import { HeroCTA } from "@/components/ui/hero-cta";
 import { HeroSceneStyles, BuilderScene, HirerScene } from "@/components/homepage/hero-scenes";
 
-interface ForkHeroProps {
-  stats: {
-    totalBuilders: number;
-    totalProjects: number;
-    avgStreak: number;
-    topVibers: number;
-  };
-}
-
-export function ForkHero({ stats }: ForkHeroProps) {
-  const statItems = [
-    { label: "Active Builders", value: String(stats.totalBuilders), icon: Users },
-    { label: "Projects Shipped", value: String(stats.totalProjects), icon: Code2 },
-    { label: "Avg. Streak", value: `${stats.avgStreak} ${stats.avgStreak === 1 ? "day" : "days"}`, icon: Flame },
-    { label: "Top Vibers", value: String(stats.topVibers), icon: Target },
-  ];
-
+/**
+ * The builder/hirer fork. Used to be the whole hero (headline + stat strip);
+ * the headline moved into ProofWallHero and the stat strip died with it, so
+ * this is now purely the self-select section that follows the wall.
+ *
+ * Hiring leads. The wall above already argues the builder case and its CTA is
+ * "Start your streak", so a second equally-loud builder pitch here was the
+ * page repeating itself. Hirers, who never get a pitch above the fold and may
+ * never sign up at all (browsing and hiring are free), get the primary card:
+ * listed first, accent CTA, brighter surface. The builder card stays as the
+ * quieter second option for anyone who scrolled past the hero CTA.
+ */
+export function ForkHero() {
   return (
     <section className="relative">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-12 pb-10">
-        <div className="text-center">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pb-10">
+        <HeroSceneStyles />
+        <div className="grid gap-5 sm:grid-cols-2 max-w-4xl mx-auto stagger-children">
+          {/* Hiring path — primary */}
           <div
-            className="inline-flex items-center gap-2 px-4 py-1.5 text-sm font-bold uppercase tracking-wide text-[var(--foreground)] mb-6"
-            style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)", boxShadow: "var(--shadow-brutal-sm)" }}
+            className="p-7 flex flex-col rounded-2xl"
+            style={{
+              backgroundColor: "var(--bg-surface)",
+              border: "1px solid var(--accent)",
+              boxShadow: "var(--shadow-brutal-accent)",
+            }}
           >
-            <span>The vibe coders marketplace</span>
+            <HirerScene />
+            <h2 className="mt-5 text-2xl font-bold text-[var(--foreground)]">I&apos;m hiring</h2>
+            <p className="mt-2 text-[var(--text-secondary)] font-semibold">Hire vibe coders who actually ship.</p>
+            <ul className="mt-4 space-y-2">
+              {["Ranked by proof of work, not resumes", "Browse by streak, stack & vibe score", "See live projects before you reach out"].map((f) => (
+                <li key={f} className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)]">
+                  <CheckCircle size={17} weight="fill" className="text-[var(--accent)] shrink-0" /> {f}
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/explore"
+              className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-xl text-sm font-semibold text-white transition-[background-color,transform] hover:bg-[var(--accent-hover)] active:scale-[0.98]"
+              style={{ backgroundColor: "var(--accent)" }}
+            >
+              Explore Talent
+            </Link>
           </div>
 
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight uppercase text-[var(--foreground)]">
-            Vibe coders who <span className="text-accent-brutal">actually ship.</span>
-          </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-[var(--text-secondary)] font-medium">
-            VibeTalent gives developers a GitHub-verified track record — daily coding streaks, real shipped projects, and one Vibe Score — so the best get discovered and hired on proof, not résumés.
-          </p>
-        </div>
-
-        {/* The explicit fork — the visitor self-selects */}
-        <HeroSceneStyles />
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 max-w-4xl mx-auto stagger-children">
-          {/* Builder path */}
+          {/* Builder path — secondary; the hero CTA already covers this intent */}
           <div
-            className="p-7 flex flex-col"
-            style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)", boxShadow: "var(--shadow-brutal)" }}
+            className="p-7 flex flex-col rounded-2xl"
+            style={{
+              backgroundColor: "var(--bg-surface)",
+              border: "1px solid var(--border-subtle)",
+              boxShadow: "var(--shadow-brutal-sm)",
+            }}
           >
             <BuilderScene />
-            <h2 className="mt-5 text-2xl font-extrabold uppercase text-[var(--foreground)]">I&apos;m a builder</h2>
+            <h2 className="mt-5 text-2xl font-bold text-[var(--foreground)]">I&apos;m a builder</h2>
             <p className="mt-2 text-[var(--text-secondary)] font-semibold">Build your reputation. Get discovered.</p>
             <ul className="mt-4 space-y-2">
               {["Daily streaks, verified from GitHub", "Shipped projects with quality scores", "A vibe score that gets you hired"].map((f) => (
                 <li key={f} className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)]">
-                  <Check size={16} className="text-[var(--accent)] shrink-0" /> {f}
+                  <CheckCircle size={17} weight="fill" className="text-[var(--accent)] shrink-0" /> {f}
                 </li>
               ))}
             </ul>
             <HeroCTA className="mt-6 inline-flex w-full justify-center" />
           </div>
-
-          {/* Hiring path */}
-          <div
-            className="p-7 flex flex-col"
-            style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)", boxShadow: "var(--shadow-brutal)" }}
-          >
-            <HirerScene />
-            <h2 className="mt-5 text-2xl font-extrabold uppercase text-[var(--foreground)]">I&apos;m hiring</h2>
-            <p className="mt-2 text-[var(--text-secondary)] font-semibold">Hire vibe coders who actually ship.</p>
-            <ul className="mt-4 space-y-2">
-              {["Ranked by proof of work, not resumes", "Browse by streak, stack & vibe score", "See live projects before you reach out"].map((f) => (
-                <li key={f} className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)]">
-                  <Check size={16} className="text-[var(--accent)] shrink-0" /> {f}
-                </li>
-              ))}
-            </ul>
-            <Link href="/explore" className="btn-brutal btn-brutal-secondary text-base mt-6 w-full justify-center inline-flex">
-              Explore Talent
-            </Link>
-          </div>
-        </div>
-
-        {/* Shared proof strip */}
-        <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto">
-          {statItems.map((stat) => (
-            <div
-              key={stat.label}
-              className="text-center p-3"
-              style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)", boxShadow: "var(--shadow-brutal-sm)" }}
-            >
-              <stat.icon size={18} className="mx-auto text-[var(--accent)] mb-1.5" />
-              <div className="text-xl font-extrabold text-[var(--foreground)] font-mono">{stat.value}</div>
-              <div className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mt-0.5">{stat.label}</div>
-            </div>
-          ))}
         </div>
       </div>
     </section>

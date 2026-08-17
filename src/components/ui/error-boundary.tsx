@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
+import { Warning } from "@phosphor-icons/react";
 
 interface Props {
   children: React.ReactNode;
@@ -31,15 +32,15 @@ export class ErrorBoundary extends React.Component<Props, State> {
       return (
         <div className="min-h-[400px] flex items-center justify-center p-8">
           <div
-            className="max-w-md w-full p-8 text-center"
+            className="max-w-md w-full p-8 text-center rounded-2xl"
             style={{
               backgroundColor: "var(--bg-surface)",
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
               boxShadow: "var(--shadow-brutal)",
             }}
           >
-            <AlertTriangle size={48} className="mx-auto mb-4 text-[var(--accent)]" />
-            <h2 className="text-xl font-extrabold uppercase text-[var(--foreground)] mb-2">
+            <Warning weight="fill" size={48} className="mx-auto mb-4 text-[var(--accent)]" />
+            <h2 className="text-xl font-bold text-[var(--foreground)] mb-2">
               Something went wrong
             </h2>
             <p className="text-sm text-[var(--text-secondary)] font-medium mb-6">

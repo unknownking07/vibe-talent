@@ -11,7 +11,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Flame, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
+import { Fire } from "@phosphor-icons/react";
 import {
   fetchPromotions,
   enrichPromotions,
@@ -98,7 +99,7 @@ export function PromoBillboardClient({ initialPromos }: PromoBillboardClientProp
       className="promo-billboard-marquee"
       style={{
         backgroundColor: "var(--accent)",
-        borderBottom: "2px solid var(--border-hard)",
+        borderBottom: "1px solid var(--border-hard)",
         overflow: "hidden",
         position: "relative",
         height: 36,
@@ -122,14 +123,12 @@ export function PromoBillboardClient({ initialPromos }: PromoBillboardClientProp
           backgroundColor: "var(--accent)",
           color: "#0F0F0F",
           fontSize: 10,
-          fontWeight: 800,
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-          borderRight: "2px solid var(--border-hard)",
+          fontWeight: 600,
+          borderRight: "1px solid var(--border-hard)",
           whiteSpace: "nowrap",
         }}
       >
-        <Flame size={12} />
+        <Fire weight="fill" size={12} />
         <span>Sponsored</span>
       </div>
 
@@ -208,21 +207,19 @@ function PromoItem({ promo }: { promo: EnrichedPromotion }) {
     alignItems: "center",
     gap: 8,
     fontSize: 12,
-    fontWeight: 700,
-    textTransform: "uppercase",
-    letterSpacing: "0.02em",
+    fontWeight: 600,
   };
 
   const inner = (
     <>
-      <span style={{ fontWeight: 900 }}>{title}</span>
-      <span style={{ opacity: 0.7, fontWeight: 600 }}>{byline}</span>
+      <span style={{ fontWeight: 700 }}>{title}</span>
+      <span style={{ opacity: 0.7, fontWeight: 500 }}>{byline}</span>
       <span
         style={{
           display: "inline-flex",
           alignItems: "center",
           gap: 4,
-          fontWeight: 900,
+          fontWeight: 600,
           textDecoration: "underline",
           textUnderlineOffset: 3,
         }}

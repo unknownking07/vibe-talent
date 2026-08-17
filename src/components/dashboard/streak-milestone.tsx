@@ -1,6 +1,6 @@
 "use client";
 
-import { Flame, Target } from "lucide-react";
+import { Fire, Target } from "@phosphor-icons/react";
 
 const MILESTONES = [7, 14, 30, 60, 100, 200, 365, 500, 1000];
 
@@ -49,25 +49,25 @@ export function StreakMilestone({ streak }: StreakMilestoneProps) {
 
   return (
     <div
-      className="p-6 mb-8"
+      className="p-6 mb-8 rounded-2xl"
       style={{
         backgroundColor: "var(--bg-surface)",
-        border: "2px solid var(--border-hard)",
+        border: "1px solid var(--border-hard)",
         boxShadow: "var(--shadow-brutal)",
       }}
     >
       {/* Motivation Message */}
       <div className="mb-5">
         <h2
-          className="text-2xl font-extrabold uppercase tracking-tight"
+          className="text-2xl font-bold tracking-tight"
           style={{
             color: "var(--accent)",
           }}
         >
-          <Flame className="inline-block mr-2 -mt-1" size={24} />
+          <Fire weight="fill" className="inline-block mr-2 -mt-1" size={24} />
           {motivation}
         </h2>
-        <p className="text-sm font-medium text-[var(--text-muted)] mt-1 uppercase tracking-wide">
+        <p className="text-sm font-medium text-[var(--text-muted)] mt-1">
           Log today&apos;s shipping activity to maintain your streak.
         </p>
       </div>
@@ -76,8 +76,8 @@ export function StreakMilestone({ streak }: StreakMilestoneProps) {
       {nextMilestone && (
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <Target size={16} className="text-[var(--text-muted)]" />
-            <span className="text-xs font-extrabold uppercase tracking-wide text-[var(--foreground)]">
+            <Target weight="fill" size={16} className="text-[var(--text-muted)]" />
+            <span className="text-xs font-semibold text-[var(--foreground)]">
               Next Milestone
             </span>
           </div>
@@ -92,10 +92,10 @@ export function StreakMilestone({ streak }: StreakMilestoneProps) {
           </div>
           {/* Progress Bar */}
           <div
-            className="w-full h-4 overflow-hidden"
+            className="w-full h-4 overflow-hidden rounded-full"
             style={{
               backgroundColor: "var(--bg-surface-light)",
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-hard)",
             }}
           >
             <div
@@ -106,14 +106,14 @@ export function StreakMilestone({ streak }: StreakMilestoneProps) {
               }}
             />
           </div>
-          <p className="text-xs font-extrabold uppercase tracking-wide text-[var(--foreground)] mt-2">
+          <p className="text-xs font-semibold text-[var(--foreground)] mt-2">
             {remaining} days remaining
           </p>
         </div>
       )}
 
       {!nextMilestone && (
-        <p className="text-sm font-extrabold uppercase text-[var(--accent)]">
+        <p className="text-sm font-bold text-[var(--accent)]">
           You&apos;ve conquered all milestones! Keep shipping.
         </p>
       )}

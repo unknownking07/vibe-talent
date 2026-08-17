@@ -3,10 +3,10 @@ import { jsonLdHtml } from "@/lib/json-ld";
 import { siteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Live Feed — See What Builders Are Shipping",
+  title: "Live Feed: See What Builders Are Shipping",
   description: "Real-time GitHub activity from vibe coders on VibeTalent. Watch developers push code, ship projects, merge PRs, and maintain their coding streaks.",
   openGraph: {
-    title: "Live Feed — VibeTalent",
+    title: "Live Feed: VibeTalent",
     description: "Real-time GitHub activity from vibe coders. Watch developers push code, ship projects, and maintain coding streaks.",
     url: `${siteUrl}/feed`,
     siteName: "VibeTalent",
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Live Feed — VibeTalent",
+    title: "Live Feed: VibeTalent",
     description: "Real-time GitHub activity from vibe coders. Watch developers push code, ship projects, and maintain coding streaks.",
   },
   alternates: {

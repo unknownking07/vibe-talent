@@ -6,17 +6,32 @@ import { countToLevel } from "@/lib/heatmap-utils";
 interface ActivityHeatmapProps {
   data: Record<string, number>;
   totalOverride?: number;
+  /**
+   * Dates (YYYY-MM-DD) kept by a streak freeze or a paid restore rather than
+   * real activity. Optional, so existing callers are unaffected; where it is
+   * supplied those days are marked instead of passing as work.
+   */
+  protectedDates?: Record<string, "freeze" | "restore">;
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
 
-function dayLabel(count: number, date: string): string {
+function dayLabel(
+  count: number,
+  date: string,
+  protection?: "freeze" | "restore",
+): string {
+  // Say so explicitly: a protected day looks like a worked day on the grid, and
+  // the whole point of tracking provenance is not to imply work that never
+  // happened.
+  if (protection === "freeze") return `Streak freeze used on ${date} (no activity)`;
+  if (protection === "restore") return `Streak restored with $VIBE on ${date} (no activity)`;
   if (count <= 0) return `No contributions on ${date}`;
   return `${count} ${count === 1 ? "contribution" : "contributions"} on ${date}`;
 }
 
-export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
+export function ActivityHeatmap({ data, totalOverride, protectedDates }: ActivityHeatmapProps) {
   const { weeks, monthLabels } = useMemo(() => {
     const result: { date: string; count: number; dayOfWeek: number }[][] = [];
     const today = new Date();
@@ -87,15 +102,15 @@ export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wide">
+        <h3 className="text-sm font-semibold text-[var(--text-secondary)]">
           {totalContributions} contributions in the last year
         </h3>
-        <div className="flex items-center gap-1 text-xs font-bold text-[var(--text-muted)] uppercase">
+        <div className="flex items-center gap-1 text-xs font-medium text-[var(--text-muted)]">
           <span>Less</span>
           {[0, 1, 2, 3, 4].map((level) => (
             <div
               key={level}
-              className="w-3 h-3"
+              className="w-3 h-3 rounded-[3px]"
               style={{
                 backgroundColor: getLevelColor(level),
                 border: "1px solid var(--border-subtle)",
@@ -115,7 +130,7 @@ export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
             return (
               <div
                 key={`${m.label}-${m.col}`}
-                className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)]"
+                className="text-[10px] font-medium text-[var(--text-muted)]"
                 style={{ width: span * 15, flexShrink: 0 }}
               >
                 {m.label}
@@ -131,7 +146,7 @@ export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
             {DAY_LABELS.map((label, i) => (
               <div
                 key={i}
-                className="h-3 flex items-center text-[10px] font-bold text-[var(--text-muted)]"
+                className="h-3 flex items-center text-[10px] font-medium text-[var(--text-muted)]"
               >
                 {label}
               </div>
@@ -143,14 +158,20 @@ export function ActivityHeatmap({ data, totalOverride }: ActivityHeatmapProps) {
             {weeks.map((week, wi) => (
               <div key={wi} className="flex flex-col gap-[3px]">
                 {week.map((day) => {
-                  const label = dayLabel(day.count, day.date);
+                  const protection = protectedDates?.[day.date];
+                  const label = dayLabel(day.count, day.date, protection);
                   return (
                     <div
                       key={day.date}
-                      className="w-3 h-3"
+                      className="w-3 h-3 rounded-[3px]"
                       style={{
-                        backgroundColor: getLevelColor(countToLevel(day.count)),
-                        border: "1px solid var(--border-subtle)",
+                        backgroundColor: protection
+                          ? "transparent"
+                          : getLevelColor(countToLevel(day.count)),
+                        // Outlined rather than filled: visibly "held", not earned.
+                        border: protection
+                          ? "1px dashed var(--accent)"
+                          : "1px solid var(--border-subtle)",
                       }}
                       title={label}
                       aria-label={label}

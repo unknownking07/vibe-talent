@@ -2,25 +2,13 @@ import type { Metadata } from "next";
 import { jsonLdHtml } from "@/lib/json-ld";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  Flame,
-  Zap,
-  Shield,
-  Star,
-  Coins,
-  Timer,
-  Users,
-  CalendarClock,
-  FolderGit2,
-  Radar,
-  Github,
-  ExternalLink,
-  AlertTriangle,
-} from "lucide-react";
+import { ExternalLink } from "lucide-react";
+import { Broadcast, CalendarDots, Coins, Fire, FolderSimple, GithubLogo, Lightning, Shield, Star, Timer, UsersThree, Warning } from "@phosphor-icons/react/dist/ssr";
+import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
 import { siteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: { absolute: "VibeTalent Roadmap 2026 — $VIBE, Multichain USDC & Squad Hiring" },
+  title: { absolute: "VibeTalent Roadmap 2026: $VIBE, Multichain USDC & Squad Hiring" },
   description:
     "The VibeTalent public roadmap for 2026. $VIBE is live on Solana (CA: FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS). USDC payments already live on Base and Solana. Q2: $VIBE utility (streak protect, project featuring). Q3: stake-to-vouch profiles + Ethereum USDC. Q4: try-before-you-hire, squad hiring, retainers, auto-generated portfolios, shipping radar, and GitHub PR badges.",
   keywords: [
@@ -37,7 +25,7 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: `${siteUrl}/roadmap` },
   openGraph: {
-    title: "VibeTalent Roadmap — 2026",
+    title: "VibeTalent Roadmap: 2026",
     description:
       "Powering talented builders and global hiring. Q2 $VIBE utility, Q3 stake-to-vouch + multichain USDC, Q4 try-before-you-hire, squad hiring, retainers, auto portfolios, shipping radar, and PR badges.",
     url: `${siteUrl}/roadmap`,
@@ -48,13 +36,13 @@ export const metadata: Metadata = {
         url: `${siteUrl}/roadmap.png`,
         width: 1024,
         height: 1536,
-        alt: "VibeTalent 2026 Roadmap — Q2 $VIBE utility, Q3 stake-to-vouch and multichain USDC, Q4 hiring and builder distribution",
+        alt: "VibeTalent 2026 Roadmap: Q2 $VIBE utility, Q3 stake-to-vouch and multichain USDC, Q4 hiring and builder distribution",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "VibeTalent Roadmap — 2026",
+    title: "VibeTalent Roadmap: 2026",
     description:
       "Q2: $VIBE utility. Q3: stake-to-vouch + multichain USDC. Q4: try-before-you-hire, squad hiring, retainers, auto portfolios, shipping radar, PR badges.",
     images: [`${siteUrl}/roadmap.png`],
@@ -66,7 +54,7 @@ type Milestone = {
   year: string;
   title: string;
   summary: string;
-  items: { icon: React.ComponentType<{ size?: number; className?: string }>; title: string; text: string }[];
+  items: { icon: PhosphorIcon; title: string; text: string }[];
 };
 
 const milestones: Milestone[] = [
@@ -75,7 +63,7 @@ const milestones: Milestone[] = [
     year: "2026",
     title: "$VIBE Token Utility",
     summary:
-      "$VIBE is already live on Solana (CA: FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS). Q2 activates its first two utility functions — giving builders tools to protect their reputation and amplify their best work.",
+      "$VIBE is already live on Solana (CA: FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS). Q2 activates its first two utility functions, giving builders tools to protect their reputation and amplify their best work.",
     items: [
       {
         icon: Shield,
@@ -102,7 +90,7 @@ const milestones: Milestone[] = [
         text: "Put $VIBE behind a builder you vouch for. Skin-in-the-game endorsements replace fake LinkedIn recommendations with verifiable economic signal.",
       },
       {
-        icon: Zap,
+        icon: Lightning,
         title: "Ethereum USDC Support",
         text: "USDC payments on Base and Solana are already live. Q3 adds Ethereum so clients and builders can pick the chain with the lowest fees and fastest finality for every hire.",
       },
@@ -113,7 +101,7 @@ const milestones: Milestone[] = [
     year: "2026",
     title: "Hiring, Portfolios & Builder Distribution",
     summary:
-      "The hiring experience gets rebuilt from the ground up — low-friction trials, pod hiring, recurring work, live portfolios, and a free distribution flywheel.",
+      "The hiring experience gets rebuilt from the ground up: low-friction trials, pod hiring, recurring work, live portfolios, and a free distribution flywheel.",
     items: [
       {
         icon: Timer,
@@ -121,27 +109,27 @@ const milestones: Milestone[] = [
         text: "Paid $50 trial task, 1 hour. Low-friction first contact that turns cold DMs into paid introductions and lets clients feel a builder's work before committing.",
       },
       {
-        icon: Users,
+        icon: UsersThree,
         title: "Squad Hiring",
-        text: "Hire a pod — developer + designer + product manager — not a solo contractor. Ship a full product with one transaction instead of three separate hires.",
+        text: "Hire a pod (developer + designer + product manager) not a solo contractor. Ship a full product with one transaction instead of three separate hires.",
       },
       {
-        icon: CalendarClock,
+        icon: CalendarDots,
         title: "Recurring Retainers",
         text: "Monthly engagements instead of one-off gigs. Predictable income for builders, predictable output for clients.",
       },
       {
-        icon: FolderGit2,
+        icon: FolderSimple,
         title: "Auto-Generated Portfolios",
-        text: "Pull live demos straight from GitHub deploys. Zero manual upkeep — the portfolio updates itself every time a builder ships.",
+        text: "Pull live demos straight from GitHub deploys. Zero manual upkeep: the portfolio updates itself every time a builder ships.",
       },
       {
-        icon: Radar,
-        title: "Shipping Radar",
+        icon: Broadcast,
+        title: "Shipping Broadcast",
         text: "Public weekly digest of who shipped what. A content loop that doubles as an SEO and GEO fuel engine for the entire builder ecosystem.",
       },
       {
-        icon: Github,
+        icon: GithubLogo,
         title: "GitHub PR Badge",
         text: "\u201cBuilt by a VibeTalent builder\u201d badge auto-added to every PR. Free distribution on every repo a builder touches.",
       },
@@ -171,7 +159,7 @@ export default function RoadmapPage() {
       m.items.map((it, iIdx) => ({
         "@type": "ListItem",
         position: qIdx * 10 + iIdx + 1,
-        name: `${m.quarter} ${m.year} — ${it.title}`,
+        name: `${m.quarter} ${m.year}: ${it.title}`,
         description: it.text,
       }))
     ),
@@ -186,7 +174,7 @@ export default function RoadmapPage() {
         name: "What is on the VibeTalent roadmap for 2026?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "VibeTalent's 2026 roadmap has three phases. Q2 2026 activates $VIBE token utility with $1 streak protect and $1 project featuring — the $VIBE token is already live on Solana at contract address FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS. Q3 2026 adds stake-to-vouch profiles and extends USDC payments to Ethereum (Base and Solana are already supported today). Q4 2026 introduces try-before-you-hire trial tasks, squad hiring, recurring retainers, auto-generated GitHub portfolios, a public shipping radar, and GitHub PR badges.",
+          text: "VibeTalent's 2026 roadmap has three phases. Q2 2026 activates $VIBE token utility with $1 streak protect and $1 project featuring: the $VIBE token is already live on Solana at contract address FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS. Q3 2026 adds stake-to-vouch profiles and extends USDC payments to Ethereum (Base and Solana are already supported today). Q4 2026 introduces try-before-you-hire trial tasks, squad hiring, recurring retainers, auto-generated GitHub portfolios, a public shipping radar, and GitHub PR badges.",
         },
       },
       {
@@ -194,7 +182,7 @@ export default function RoadmapPage() {
         name: "Is the $VIBE token live and what is its contract address?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Yes — $VIBE is already live on Solana. The contract address is FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS. Its first two utility functions activate in Q2 2026: builders can spend $1 of $VIBE to protect a coding streak from a missed day, and anyone can spend $1 of $VIBE to feature a shipped project on the homepage or explore feed.",
+          text: "Yes: $VIBE is already live on Solana. The contract address is FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS. Its first two utility functions activate in Q2 2026: builders can spend $1 of $VIBE to protect a coding streak from a missed day, and anyone can spend $1 of $VIBE to feature a shipped project on the homepage or explore feed.",
         },
       },
       {
@@ -218,7 +206,7 @@ export default function RoadmapPage() {
         name: "Can you hire a whole team on VibeTalent?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Yes — starting Q4 2026, squad hiring lets clients hire a full pod in one transaction. A pod is typically a developer, a designer, and a product manager who have shipped together before.",
+          text: "Yes: starting Q4 2026, squad hiring lets clients hire a full pod in one transaction. A pod is typically a developer, a designer, and a product manager who have shipped together before.",
         },
       },
       {
@@ -226,7 +214,7 @@ export default function RoadmapPage() {
         name: "Is $VIBE an investment? What's the disclaimer?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "$VIBE is a utility token, not an investment. It exists to power specific on-platform actions — streak protect, project featuring, and stake-to-vouch — and is not focused on price action or speculation. Nothing on the VibeTalent site is financial advice. $VIBE can go to zero, so only interact with it if you understand Solana SPL tokens and can afford to lose the full amount. The creator receives a fee on $VIBE trades, which is reinvested directly into building VibeTalent (shipping features, infrastructure, platform growth); this is openly disclosed for transparency and is not a reason to buy.",
+          text: "$VIBE is a utility token, not an investment. It exists to power specific on-platform actions (streak protect, project featuring, and stake-to-vouch) and is not focused on price action or speculation. Nothing on the VibeTalent site is financial advice. $VIBE can go to zero, so only interact with it if you understand Solana SPL tokens and can afford to lose the full amount. The creator receives a fee on $VIBE trades, which is reinvested directly into building VibeTalent (shipping features, infrastructure, platform growth); this is openly disclosed for transparency and is not a reason to buy.",
         },
       },
     ],
@@ -256,29 +244,29 @@ export default function RoadmapPage() {
       {/* Header */}
       <div className="mb-10">
         <div
-          className="inline-flex items-center gap-2 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-[var(--foreground)] mb-6"
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold text-[var(--foreground)] mb-6"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
-            boxShadow: "var(--shadow-brutal-sm)",
+            border: "1px solid var(--border-subtle)",
+            boxShadow: "var(--shadow-brutal-xs)",
           }}
         >
-          <Flame size={14} className="text-[var(--accent)]" />
+          <Fire weight="fill" size={14} className="text-[var(--accent)]" />
           Public Roadmap
         </div>
-        <h1 className="text-3xl sm:text-5xl font-extrabold uppercase text-[var(--foreground)] leading-tight">
+        <h1 className="text-3xl sm:text-5xl font-bold text-[var(--foreground)] leading-tight">
           Powering talented builders{" "}
           <span className="text-[var(--accent)]">and global hiring.</span>
         </h1>
         <p className="mt-5 max-w-2xl text-sm sm:text-base text-[var(--text-secondary)] font-medium leading-relaxed">
-          Everything we&apos;re shipping across 2026 — token utility, onchain reputation,
+          Everything we&apos;re shipping across 2026: token utility, onchain reputation,
           multichain USDC payments, and a complete rebuild of how developers get hired.
           Dates are targets, not promises. Follow{" "}
           <a
             href="https://x.com/abhiontwt"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[var(--accent)] hover:underline font-bold"
+            className="text-[var(--accent)] hover:underline font-semibold"
           >
             @abhiontwt
           </a>{" "}
@@ -288,10 +276,10 @@ export default function RoadmapPage() {
 
       {/* Roadmap infographic */}
       <section
-        className="p-4 sm:p-6 mb-10"
+        className="p-4 sm:p-6 mb-10 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-inverted)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
@@ -311,26 +299,25 @@ export default function RoadmapPage() {
         return (
           <section
             key={m.quarter + m.year}
-            className="p-6 sm:p-8 mb-8"
+            className="p-6 sm:p-8 mb-8 rounded-2xl"
             style={{
               backgroundColor: stripes[idx] ?? "var(--bg-surface)",
-              border: "2px solid var(--border-hard)",
-              boxShadow: inverted ? "8px 8px 0 var(--accent)" : "var(--shadow-brutal)",
+              border: "1px solid var(--border-subtle)",
+              boxShadow: inverted ? "var(--shadow-brutal-accent)" : "var(--shadow-brutal)",
             }}
           >
             <div className="flex flex-wrap items-baseline gap-3 mb-3">
               <span
-                className="px-3 py-1 text-xs font-extrabold uppercase tracking-wide"
+                className="px-3 py-1 rounded-full text-xs font-semibold"
                 style={{
                   backgroundColor: "var(--accent)",
                   color: "white",
-                  border: "2px solid var(--border-hard)",
                 }}
               >
                 {m.quarter} {m.year}
               </span>
               <h2
-                className="text-xl sm:text-2xl font-extrabold uppercase leading-tight"
+                className="text-xl sm:text-2xl font-bold leading-tight"
                 style={{ color: inverted ? "white" : "var(--foreground)" }}
               >
                 {m.title}
@@ -346,17 +333,16 @@ export default function RoadmapPage() {
               {m.items.map((it) => (
                 <div key={it.title} className="flex gap-3">
                   <div
-                    className="w-10 h-10 flex items-center justify-center shrink-0"
+                    className="w-10 h-10 flex items-center justify-center rounded-xl shrink-0"
                     style={{
                       backgroundColor: "var(--accent)",
-                      border: "2px solid var(--border-hard)",
                     }}
                   >
-                    <it.icon size={18} className="text-white" />
+                    <it.icon weight="fill" size={18} className="text-white" />
                   </div>
                   <div>
                     <h3
-                      className="text-sm font-extrabold uppercase mb-1"
+                      className="text-sm font-bold mb-1"
                       style={{ color: inverted ? "white" : "var(--foreground)" }}
                     >
                       {it.title}
@@ -381,27 +367,26 @@ export default function RoadmapPage() {
 
       {/* $VIBE Disclaimer */}
       <section
-        className="p-6 sm:p-8 mb-8"
+        className="p-6 sm:p-8 mb-8 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal)",
         }}
         aria-labelledby="vibe-disclaimer-heading"
       >
         <div className="flex items-center gap-3 mb-4">
           <div
-            className="w-10 h-10 flex items-center justify-center shrink-0"
+            className="w-10 h-10 flex items-center justify-center rounded-xl shrink-0"
             style={{
               backgroundColor: "var(--accent)",
-              border: "2px solid var(--border-hard)",
             }}
           >
-            <AlertTriangle size={18} className="text-white" />
+            <Warning weight="fill" size={18} className="text-white" />
           </div>
           <h2
             id="vibe-disclaimer-heading"
-            className="text-lg sm:text-xl font-extrabold uppercase text-[var(--foreground)]"
+            className="text-lg sm:text-xl font-bold text-[var(--foreground)]"
           >
             $VIBE Disclaimer
           </h2>
@@ -409,8 +394,8 @@ export default function RoadmapPage() {
         <div className="space-y-3 text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
           <p>
             <strong className="text-[var(--foreground)]">$VIBE is a utility token, not an investment.</strong>{" "}
-            It exists to power specific on-platform actions — streak protect,
-            project featuring, and stake-to-vouch — not as a vehicle for price
+            It exists to power specific on-platform actions: streak protect,
+            project featuring, and stake-to-vouch, not as a vehicle for price
             speculation. The roadmap is focused on utility and shipping, not price
             action.
           </p>
@@ -423,7 +408,7 @@ export default function RoadmapPage() {
           <p>
             <strong className="text-[var(--foreground)]">Creator fee disclosure.</strong>{" "}
             The creator receives a fee on $VIBE trades. That fee is reinvested
-            directly into building VibeTalent — shipping new features, covering
+            directly into building VibeTalent: shipping new features, covering
             infrastructure costs, and growing the platform for builders and
             clients. It is disclosed openly here for full transparency, is not a
             reason to buy, and does not change the fact that $VIBE is a utility
@@ -434,37 +419,37 @@ export default function RoadmapPage() {
 
       {/* FAQ block (for GEO/AI citations) */}
       <section
-        className="p-6 sm:p-8 mb-8"
+        className="p-6 sm:p-8 mb-8 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        <h2 className="text-xl font-extrabold uppercase text-[var(--foreground)] mb-5">
+        <h2 className="text-xl font-bold text-[var(--foreground)] mb-5">
           Frequently Asked
         </h2>
         <div className="space-y-5 text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
           <div>
-            <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)] mb-1">
+            <h3 className="text-sm font-bold text-[var(--foreground)] mb-1">
               Is $VIBE live? What&apos;s the contract address?
             </h3>
             <p>
-              Yes — $VIBE is already live on Solana. Contract address:{" "}
+              Yes: $VIBE is already live on Solana. Contract address:{" "}
               <a
                 href="https://solscan.io/token/FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[var(--accent)] hover:underline font-bold break-all"
+                className="text-[var(--accent)] hover:underline font-semibold break-all"
               >
                 FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS
               </a>
-              . Its first utility functions — streak protect and project featuring, both
-              priced at $1 per action — activate in Q2 2026.
+. Its first utility functions: streak protect and project featuring, both
+              priced at $1 per action: activate in Q2 2026.
             </p>
           </div>
           <div>
-            <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)] mb-1">
+            <h3 className="text-sm font-bold text-[var(--foreground)] mb-1">
               What chains does VibeTalent support for payments?
             </h3>
             <p>
@@ -474,7 +459,7 @@ export default function RoadmapPage() {
             </p>
           </div>
           <div>
-            <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)] mb-1">
+            <h3 className="text-sm font-bold text-[var(--foreground)] mb-1">
               How does stake-to-vouch work?
             </h3>
             <p>
@@ -484,37 +469,37 @@ export default function RoadmapPage() {
             </p>
           </div>
           <div>
-            <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)] mb-1">
+            <h3 className="text-sm font-bold text-[var(--foreground)] mb-1">
               Can I hire more than one person at a time?
             </h3>
             <p>
-              Yes — squad hiring launches in Q4 2026. Hire a full pod (developer +
+              Yes: squad hiring launches in Q4 2026. Hire a full pod (developer +
               designer + product manager) in a single transaction instead of sourcing
               three separate contractors.
             </p>
           </div>
           <div>
-            <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)] mb-1">
+            <h3 className="text-sm font-bold text-[var(--foreground)] mb-1">
               Is $VIBE an investment?
             </h3>
             <p>
-              No. $VIBE is a pure utility token — it powers streak protect,
+              No. $VIBE is a pure utility token. It powers streak protect,
               project featuring, and stake-to-vouch. It is not a security, it is
               not financial advice, and it can go to zero. The creator earns a
               fee on $VIBE trades (openly disclosed) which is reinvested into
-              building VibeTalent — new features, infrastructure, and platform
+              building VibeTalent: new features, infrastructure, and platform
               growth. The project is not focused on price action. Only interact
               with $VIBE if you understand the risks and can afford to lose the
               full amount.
             </p>
           </div>
           <div>
-            <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)] mb-1">
+            <h3 className="text-sm font-bold text-[var(--foreground)] mb-1">
               What is the shipping radar?
             </h3>
             <p>
               A free public weekly digest of who shipped what across the VibeTalent
-              ecosystem. It doubles as a content loop for SEO and AI search visibility —
+              ecosystem. It doubles as a content loop for SEO and AI search visibility
               every builder who ships gets distribution.
             </p>
           </div>
@@ -523,15 +508,15 @@ export default function RoadmapPage() {
 
       {/* CTA */}
       <section
-        className="p-8 text-center"
+        className="p-8 text-center rounded-2xl"
         style={{
           backgroundColor: "var(--bg-inverted)",
-          border: "2px solid var(--border-hard)",
-          boxShadow: "8px 8px 0 var(--accent)",
+          border: "1px solid var(--border-subtle)",
+          boxShadow: "var(--shadow-brutal-accent)",
         }}
       >
-        <Zap size={32} className="mx-auto text-[var(--accent)] mb-3" />
-        <h2 className="text-2xl font-extrabold uppercase text-white mb-3">
+        <Lightning weight="duotone" size={32} className="mx-auto text-[var(--accent)] mb-3" />
+        <h2 className="text-2xl font-bold text-white mb-3">
           Build · Ship · Get Vouched
         </h2>
         <p className="text-sm text-[var(--text-muted-soft)] font-medium max-w-lg mx-auto mb-6">
@@ -542,7 +527,6 @@ export default function RoadmapPage() {
           <Link
             href="/auth/signup"
             className="btn-brutal btn-brutal-primary text-sm inline-flex items-center gap-2"
-            style={{ boxShadow: "6px 6px 0 var(--background)" }}
           >
             Create Your Profile
           </Link>
@@ -550,11 +534,11 @@ export default function RoadmapPage() {
             href="https://x.com/abhiontwt"
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-brutal text-sm inline-flex items-center gap-2"
+            className="btn-brutal text-sm inline-flex items-center gap-2 rounded-xl"
             style={{
               backgroundColor: "var(--bg-surface)",
               color: "var(--foreground)",
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
             }}
           >
             Follow Updates

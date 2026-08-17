@@ -275,3 +275,107 @@ export const fetchStreakLogsCached = (userId: string) =>
     [`streak-logs-${userId}`],
     { revalidate: 60 }
   )();
+
+// ---------------------------------------------------------------------------
+// Proof wall (homepage hero)
+// ---------------------------------------------------------------------------
+
+export interface ProofWallData {
+  /** ISO dates, oldest -> newest, spanning the wall window. */
+  days: string[];
+  /** One row per builder; cells keyed by ISO date -> commit count. */
+  rows: { username: string; cells: Record<string, number> }[];
+  totalBuilderDays: number;
+  longestStreak: number;
+  buildersTracked: number;
+}
+
+const PROOF_WALL_DAYS = 70;
+const PROOF_WALL_ROWS = 8;
+
+async function _fetchProofWall(): Promise<ProofWallData> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = getPublicClient() as any;
+
+  const cutoff = new Date();
+  cutoff.setUTCDate(cutoff.getUTCDate() - (PROOF_WALL_DAYS - 1));
+  const cutoffIso = cutoff.toISOString().slice(0, 10);
+
+  // Pick the builders FIRST, then fetch only their logs.
+  //
+  // The obvious version (scan every log in the window, rank by row count)
+  // cannot work: PostgREST enforces a server-side max-rows of 1000, which
+  // `.range()` cannot raise, and the window holds ~3.9k rows. That silently
+  // returned an arbitrary 1000-row slice covering only ~20 of the 70 days, so
+  // the wall rendered three weeks and looked broken. Selecting 8 builders up
+  // front bounds the log query at 8 x 70 = 560 rows, comfortably under the cap.
+  const [topUsersRes, totalRes, buildersRes] = await Promise.all([
+    sb
+      .from("users")
+      .select("id, username, longest_streak")
+      .not("username", "is", null)
+      .order("longest_streak", { ascending: false })
+      .limit(PROOF_WALL_ROWS),
+    sb.from("streak_logs").select("*", { count: "exact", head: true }),
+    sb.from("users").select("id", { count: "exact", head: true }).not("username", "is", null),
+  ]);
+
+  // Throw on error so unstable_cache does NOT cache an empty wall
+  if (topUsersRes.error) throw new Error(`Failed to fetch proof wall builders: ${topUsersRes.error.message}`);
+
+  type TopUser = { id: string; username: string; longest_streak: number };
+  const topUsers: TopUser[] = topUsersRes.data ?? [];
+
+  let logs: { user_id: string; activity_date: string; commit_count: number | null }[] = [];
+  if (topUsers.length) {
+    const logsRes = await sb
+      .from("streak_logs")
+      .select("user_id, activity_date, commit_count")
+      .in("user_id", topUsers.map((u) => u.id))
+      .gte("activity_date", cutoffIso);
+    if (logsRes.error) throw new Error(`Failed to fetch proof wall logs: ${logsRes.error.message}`);
+    logs = logsRes.data ?? [];
+  }
+
+  const perUser = new Map<string, Record<string, number>>();
+  for (const log of logs) {
+    const cells = perUser.get(log.user_id) ?? {};
+    cells[log.activity_date] = Math.max(1, log.commit_count ?? 1);
+    perUser.set(log.user_id, cells);
+  }
+
+  const days: string[] = [];
+  for (let i = 0; i < PROOF_WALL_DAYS; i++) {
+    const d = new Date(cutoff);
+    d.setUTCDate(cutoff.getUTCDate() + i);
+    days.push(d.toISOString().slice(0, 10));
+  }
+
+  const rows = topUsers.map((u) => ({
+    username: u.username,
+    cells: perUser.get(u.id) ?? {},
+  }));
+
+  // Trim leading days where NO selected row has activity, so the wall never
+  // opens on a field of grey if the backfill has less history than the window.
+  const firstActive = days.findIndex((d) => rows.some((r) => r.cells[d]));
+  const visibleDays = firstActive > 0 ? days.slice(firstActive) : days;
+
+  return {
+    days: visibleDays,
+    rows,
+    totalBuilderDays: totalRes.count ?? 0,
+    longestStreak: topUsers[0]?.longest_streak ?? 0,
+    buildersTracked: buildersRes.count ?? 0,
+  };
+}
+
+// 5 minutes: the wall is a marketing artifact, not a live feed — a wider
+// window keeps the 70-day log scan (a few thousand rows) off the hot path.
+// Key is versioned: an earlier build cached a wall built from a truncated
+// 1000-row page, and that entry would otherwise keep serving a wall with
+// weeks missing until its TTL expired. Bump the suffix whenever the shape of
+// the returned data changes.
+export const fetchProofWallCached = unstable_cache(_fetchProofWall, ["proof-wall-v3"], {
+  revalidate: 300,
+});

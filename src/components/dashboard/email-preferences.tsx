@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Mail, Check } from "lucide-react";
+import { Check, Envelope } from "@phosphor-icons/react";
 
 interface Preferences {
   profile_view_digest: boolean;
@@ -65,31 +65,30 @@ export function EmailPreferences() {
 
   return (
     <div
-      className="p-5"
+      className="p-5 rounded-2xl"
       style={{
         backgroundColor: "var(--bg-surface)",
-        border: "2px solid var(--border-hard)",
+        border: "1px solid var(--border-hard)",
         boxShadow: "var(--shadow-brutal)",
       }}
     >
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-extrabold uppercase flex items-center gap-2 text-[var(--foreground)]">
-          <Mail size={16} className="text-[var(--accent)]" />
+        <h2 className="text-base font-bold flex items-center gap-2 text-[var(--foreground)]">
+          <Envelope weight="fill" size={16} className="text-[var(--accent)]" />
           Email Notifications
         </h2>
         {saved && (
           <span className="flex items-center gap-1 text-xs font-bold text-emerald-600">
-            <Check size={12} /> Saved
+            <Check weight="bold" size={12} /> Saved
           </span>
         )}
       </div>
 
-      <div className="space-y-3">
+      <div className="divide-y divide-[var(--border-subtle)]">
         {PREF_LABELS.map(({ key, label, description }) => (
           <div
             key={key}
-            className="flex items-center justify-between p-3"
-            style={{ border: "1px solid var(--border-subtle)" }}
+            className="flex items-center justify-between py-3"
           >
             <div className="min-w-0 flex-1 mr-3">
               <div className="text-sm font-bold text-[var(--foreground)]">{label}</div>
@@ -101,7 +100,7 @@ export function EmailPreferences() {
               className="w-10 h-6 rounded-full relative cursor-pointer transition-colors shrink-0"
               style={{
                 backgroundColor: prefs[key] ? "var(--accent)" : "var(--border-subtle)",
-                border: "2px solid var(--border-hard)",
+                border: "1px solid var(--border-hard)",
               }}
               aria-label={`Toggle ${label}`}
             >

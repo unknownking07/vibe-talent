@@ -1,7 +1,7 @@
 "use client";
 
 import type { EvaluationResult } from "@/lib/types/agent";
-import { Shield, AlertTriangle } from "lucide-react";
+import { Shield, Warning } from "@phosphor-icons/react";
 
 interface EvaluationReportProps {
   report: EvaluationResult;
@@ -28,14 +28,14 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
     <div className="space-y-6">
       {/* Overall Score */}
       <div
-        className="p-6 text-center"
+        className="p-6 text-center rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        <div className="text-xs font-extrabold uppercase tracking-wider text-[var(--text-muted)] mb-2">
+        <div className="text-xs font-medium text-[var(--text-muted)] mb-2">
           Agent Score
         </div>
         <div
@@ -44,38 +44,38 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
         >
           {report.overall_score}
         </div>
-        <div className="text-xs font-bold uppercase text-[var(--text-muted)] mt-1">/ 100</div>
+        <div className="text-xs font-medium text-[var(--text-muted)] mt-1">/ 100</div>
       </div>
 
       {/* Dimension Scores */}
       <div
-        className="p-6"
+        className="p-6 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        <h3 className="text-sm font-extrabold uppercase tracking-wide text-[var(--foreground)] mb-4">
+        <h3 className="text-sm font-semibold text-[var(--foreground)] mb-4">
           Dimension Analysis
         </h3>
         <div className="space-y-3">
           {Object.entries(report.dimensions).map(([key, value]) => (
             <div key={key}>
               <div className="flex justify-between text-sm mb-1">
-                <span className="font-bold uppercase text-[var(--foreground)]">
+                <span className="font-semibold text-[var(--foreground)]">
                   {dimensionLabels[key] || key}
                 </span>
-                <span className="font-extrabold font-mono" style={{ color: getScoreColor(value) }}>
+                <span className="font-bold font-mono" style={{ color: getScoreColor(value) }}>
                   {value}
                 </span>
               </div>
               <div
-                className="h-3"
-                style={{ backgroundColor: "var(--border-subtle)", border: "2px solid var(--border-hard)" }}
+                className="h-3 rounded-full overflow-hidden"
+                style={{ backgroundColor: "var(--border-subtle)" }}
               >
                 <div
-                  className="h-full transition-all duration-700"
+                  className="h-full rounded-full transition-all duration-700"
                   style={{
                     width: `${value}%`,
                     backgroundColor: getScoreColor(value),
@@ -89,14 +89,14 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
 
       {/* Summary */}
       <div
-        className="p-6"
+        className="p-6 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-subtle)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        <h3 className="text-sm font-extrabold uppercase tracking-wide text-[var(--foreground)] mb-3">
+        <h3 className="text-sm font-semibold text-[var(--foreground)] mb-3">
           AI Summary
         </h3>
         <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
@@ -107,21 +107,21 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
       {/* Strengths & Risks */}
       <div className="grid sm:grid-cols-2 gap-4">
         <div
-          className="p-5"
+          className="p-5 rounded-2xl"
           style={{
             backgroundColor: "var(--status-success-bg)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
-          <h4 className="text-sm font-extrabold uppercase text-[var(--status-success-text)] flex items-center gap-2 mb-3">
-            <Shield size={16} />
+          <h4 className="text-sm font-bold text-[var(--status-success-text)] flex items-center gap-2 mb-3">
+            <Shield weight="fill" size={16} />
             Strengths
           </h4>
           <ul className="space-y-2">
             {report.strengths.map((s, i) => (
               <li key={i} className="flex items-start gap-2 text-sm font-medium text-[var(--status-success-text)]">
-                <span className="mt-1 w-2 h-2 shrink-0" style={{ backgroundColor: "#16A34A" }} />
+                <span className="mt-1 w-2 h-2 shrink-0 rounded-full" style={{ backgroundColor: "#16A34A" }} />
                 {s}
               </li>
             ))}
@@ -129,21 +129,21 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
         </div>
 
         <div
-          className="p-5"
+          className="p-5 rounded-2xl"
           style={{
             backgroundColor: "var(--status-error-bg)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
-          <h4 className="text-sm font-extrabold uppercase text-[var(--status-error-text)] flex items-center gap-2 mb-3">
-            <AlertTriangle size={16} />
+          <h4 className="text-sm font-bold text-[var(--status-error-text)] flex items-center gap-2 mb-3">
+            <Warning weight="fill" size={16} />
             Risks
           </h4>
           <ul className="space-y-2">
             {report.risks.map((r, i) => (
               <li key={i} className="flex items-start gap-2 text-sm font-medium text-[var(--status-error-text)]">
-                <span className="mt-1 w-2 h-2 shrink-0" style={{ backgroundColor: "#DC2626" }} />
+                <span className="mt-1 w-2 h-2 shrink-0 rounded-full" style={{ backgroundColor: "#DC2626" }} />
                 {r}
               </li>
             ))}

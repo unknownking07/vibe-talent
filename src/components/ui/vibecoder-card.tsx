@@ -5,7 +5,8 @@ import Image from "next/image";
 import { BadgeDisplay } from "./badge-display";
 import { StreakCounter } from "./streak-counter";
 import { VibeScore } from "./vibe-score";
-import { Code2, ExternalLink, Activity, BadgeCheck } from "lucide-react";
+import { ExternalLink } from "lucide-react";
+import { Code, Pulse, SealCheck } from "@phosphor-icons/react";
 import type { UserWithSocials } from "@/lib/types/database";
 
 interface VibecoderCardProps {
@@ -38,14 +39,13 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
   return (
     <Link href={`/profile/${user.username}`}>
       <div
-        className="group relative p-5 transition-all card-brutal hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_var(--border-hard)] h-full flex flex-col"
+        className="group relative p-5 transition-all card-brutal hover:-translate-y-0.5 hover:shadow-[var(--shadow-brutal-hover)] h-full flex flex-col"
       >
         {rank && (
           <div
-            className="absolute -top-3 -left-3 flex h-8 w-8 items-center justify-center text-xs font-extrabold text-white"
+            className="absolute -top-3 -left-3 flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white shadow-[var(--shadow-brutal-xs)]"
             style={{
               backgroundColor: "var(--accent)",
-              border: "2px solid var(--border-hard)",
             }}
           >
             #{rank}
@@ -54,10 +54,10 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
 
         <div className="flex items-start gap-4 flex-1">
           <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center text-sm font-extrabold text-white overflow-hidden"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white overflow-hidden"
             style={{
               backgroundColor: "var(--bg-inverted)",
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
             }}
           >
             {user.avatar_url ? (
@@ -70,13 +70,13 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
           <div className="min-w-0 flex-1">
             <div className="flex items-start gap-2 flex-wrap">
               <div className="min-w-0">
-                <h3 className="font-extrabold uppercase text-[var(--foreground)] group-hover:text-[var(--accent)] transition-colors flex items-center gap-1 truncate">
+                <h3 className="font-bold text-[var(--foreground)] group-hover:text-[var(--accent)] transition-colors flex items-center gap-1 truncate">
                   {user.display_name || `@${user.username}`}
                   {user.github_username && (
-                    <BadgeCheck
+                    <SealCheck
                       size={16}
-                      className="text-white fill-[#1D9BF0] shrink-0"
-                      strokeWidth={2.5}
+                      weight="fill"
+                      className="text-[#1D9BF0] shrink-0"
                       aria-label={`GitHub verified as @${user.github_username}`}
                     />
                   )}
@@ -89,8 +89,8 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
             </div>
 
             {activity && (
-              <span className={`inline-flex items-center gap-1 text-xs font-bold ${activity.color} mt-0.5`}>
-                <Activity size={10} />
+              <span className={`inline-flex items-center gap-1 text-xs font-semibold ${activity.color} mt-0.5`}>
+                <Pulse size={11} weight="bold" />
                 {activity.text}
               </span>
             )}
@@ -102,8 +102,8 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
             <div className="mt-3 flex items-center gap-4 flex-wrap">
               <StreakCounter streak={user.streak} size="sm" />
               <VibeScore score={user.vibe_score} size="sm" />
-              <div className="flex items-center gap-1 text-sm font-bold text-[var(--text-secondary)]">
-                <Code2 size={14} />
+              <div className="flex items-center gap-1 text-sm font-semibold text-[var(--text-secondary)]">
+                <Code size={14} weight="fill" />
                 <span>{(user.projects ?? []).length} projects</span>
               </div>
             </div>
@@ -113,10 +113,10 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
                 (user.projects ?? []).slice(0, 3).map((p) => (
                   <span
                     key={p.id}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold text-[var(--text-tertiary)]"
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium text-[var(--text-tertiary)]"
                     style={{
                       backgroundColor: "var(--bg-surface-light)",
-                      border: "1px solid var(--border-hard)",
+                      border: "1px solid var(--border-subtle)",
                     }}
                   >
                     <ExternalLink size={10} />

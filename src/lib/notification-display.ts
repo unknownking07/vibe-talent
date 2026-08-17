@@ -1,18 +1,31 @@
-import { Bell, Flame, Trophy, CheckCircle, AlertTriangle, Mail, Star, Eye, BarChart3, Zap, LinkIcon, Users } from "lucide-react";
+import {
+  Fire,
+  Trophy,
+  CheckCircle,
+  Warning,
+  Envelope,
+  Star,
+  Eye,
+  ChartBar,
+  Lightning,
+  LinkSimple,
+  UsersThree,
+} from "@phosphor-icons/react";
+import type { Icon } from "@phosphor-icons/react";
 
-export const NOTIFICATION_ICONS: Record<string, typeof Bell> = {
-  hire_request: Mail,
-  streak_milestone: Flame,
-  streak_warning: AlertTriangle,
+export const NOTIFICATION_ICONS: Record<string, Icon> = {
+  hire_request: Envelope,
+  streak_milestone: Fire,
+  streak_warning: Warning,
   badge_earned: Trophy,
   project_verified: CheckCircle,
-  project_flagged: AlertTriangle,
+  project_flagged: Warning,
   new_review: Star,
   profile_view_summary: Eye,
-  weekly_digest: BarChart3,
-  vibe_score_milestone: Zap,
-  project_missing_links: LinkIcon,
-  referral_prompt: Users,
+  weekly_digest: ChartBar,
+  vibe_score_milestone: Lightning,
+  project_missing_links: LinkSimple,
+  referral_prompt: UsersThree,
 };
 
 export const NOTIFICATION_COLORS: Record<string, string> = {
@@ -143,4 +156,42 @@ export function notificationTimeAgo(dateStr: string): string {
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.floor(hrs / 24)}d ago`;
+}
+
+export type MessageSegment =
+  | { type: "text"; value: string }
+  | { type: "mention"; username: string };
+
+/**
+ * Split a notification message into plain text and @username mentions, so the
+ * UI can render the mentions as links to the profile.
+ *
+ * The charset matches signup validation (letters, digits, hyphen, underscore).
+ * A mention only counts when the "@" is not preceded by a word character or a
+ * dot, which keeps email addresses in message bodies from being torn apart:
+ * "ping me at bob@example.com" must not linkify "@example". Done by scanning
+ * rather than with a lookbehind, which Safari only gained in 16.4.
+ */
+export function parseNotificationMessage(message: string): MessageSegment[] {
+  if (!message) return [];
+  const segments: MessageSegment[] = [];
+  const pattern = /@([a-zA-Z0-9_-]{1,39})/g;
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(message)) !== null) {
+    const start = match.index;
+    const preceding = start > 0 ? message[start - 1] : "";
+    if (preceding && /[\w.]/.test(preceding)) continue; // part of an email/handle
+    if (start > cursor) {
+      segments.push({ type: "text", value: message.slice(cursor, start) });
+    }
+    segments.push({ type: "mention", username: match[1] });
+    cursor = start + match[0].length;
+  }
+
+  if (cursor < message.length) {
+    segments.push({ type: "text", value: message.slice(cursor) });
+  }
+  return segments;
 }

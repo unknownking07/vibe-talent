@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Geist, JetBrains_Mono } from "next/font/google";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { SignupBar } from "@/components/layout/signup-bar";
@@ -12,9 +12,14 @@ import "./globals.css";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+// Geist is the UI/display face. It replaced Space Grotesk once headings went
+// uppercase: Space Grotesk's caps carry a lot of personality that reads noisy
+// at display sizes, where Geist's stay even. `display: "swap"` keeps text
+// visible during the font load rather than blocking first paint (LCP).
+const geist = Geist({
+  variable: "--font-geist",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -24,14 +29,14 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Vibe Coders Marketplace — Hire Builders Who Ship | VibeTalent",
+    default: "Vibe Coders Marketplace: Hire Builders Who Ship | VibeTalent",
     template: "%s | VibeTalent",
   },
   description:
     "The marketplace for vibe coders. Build your reputation through streaks, proof of work, and shipping projects consistently.",
   metadataBase: new URL(siteUrl),
   openGraph: {
-    title: "VibeTalent — Find Vibe Coders Who Actually Ship",
+    title: "VibeTalent: Find Vibe Coders Who Actually Ship",
     description: "The marketplace for vibe coders who ship consistently.",
     url: siteUrl,
     siteName: "VibeTalent",
@@ -42,14 +47,14 @@ export const metadata: Metadata = {
         url: `${siteUrl}/og-image-v2.jpg`,
         width: 1200,
         height: 630,
-        alt: "VibeTalent — Find Vibe Coders Who Actually Ship",
+        alt: "VibeTalent: Find Vibe Coders Who Actually Ship",
         type: "image/jpeg",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "VibeTalent — Find Vibe Coders Who Actually Ship",
+    title: "VibeTalent: Find Vibe Coders Who Actually Ship",
     description: "The marketplace for vibe coders who ship consistently.",
     images: [`${siteUrl}/og-image-v2.jpg`],
     site: "@vibetalentwork",
@@ -84,7 +89,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    // The font variables must live on <html>, not <body>: globals.css maps
+    // `--font-sans` to them inside `@theme inline`, which resolves at :root.
+    // With the classes on <body> that lookup found nothing, so the whole site
+    // silently fell back to the system sans stack.
+    <html
+      lang="en"
+      className={`${geist.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <link rel="preconnect" href="https://unavatar.io" />
         <link rel="dns-prefetch" href="https://unavatar.io" />
@@ -110,9 +123,7 @@ export default function RootLayout({
           </Script>
         </>
       )}
-      <body
-        className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         <PromoBillboard />
         <Navbar />
         <ErrorBoundary>

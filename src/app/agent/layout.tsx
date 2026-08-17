@@ -3,14 +3,14 @@ import { jsonLdHtml } from "@/lib/json-ld";
 import { siteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Find a Developer with AI — VibeFinder Bot",
+  title: "Find a Developer with AI: VibeFinder Bot",
   alternates: {
     canonical: `${siteUrl}/agent`,
   },
   description:
     "Use AI to find the perfect vibe coder for your project. Describe what you need and get matched with builders who have the right skills and track record.",
   openGraph: {
-    title: "Find a Developer with AI — VibeTalent",
+    title: "Find a Developer with AI: VibeTalent",
     description: "Describe your project and let VibeFinder Bot match you with the right developer.",
     url: `${siteUrl}/agent`,
     siteName: "VibeTalent",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Find a Developer with AI — VibeTalent",
+    title: "Find a Developer with AI: VibeTalent",
     description: "Describe your project and let VibeFinder Bot match you with the right developer.",
   },
 };

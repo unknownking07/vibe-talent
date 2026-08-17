@@ -261,7 +261,7 @@ export async function sendHireNotification({
 }: HireNotificationParams): Promise<void> {
   const client = getResend();
   if (!client) {
-    console.warn("Resend not configured — skipping hire notification email");
+    console.warn("Resend not configured: skipping hire notification email");
     return;
   }
 
@@ -363,7 +363,7 @@ export async function sendBadgeEarnedEmail({
   const body = `
 ${eyebrow("Badge unlocked")}
 ${headline(`The ${escapeHtml(badgeName)} badge is yours`)}
-${paragraph(`Congrats <strong>@${escapeHtml(username)}</strong>. Your consistency just earned the <strong>${escapeHtml(badgeName)}</strong> badge — it lives on your profile permanently.`)}
+${paragraph(`Congrats <strong>@${escapeHtml(username)}</strong>. Your consistency just earned the <strong>${escapeHtml(badgeName)}</strong> badge. It lives on your profile permanently.`)}
 ${cta(`${siteUrl}/dashboard`, "View your profile")}
 `;
 
@@ -610,7 +610,7 @@ ${cta(`${siteUrl}/profile/${encodeURIComponent(username)}`, "View your profile")
   try {
     await sendEmail(client, {
       to: email,
-      subject: `Vibe score ${vibeScore} — milestone unlocked`,
+      subject: `Vibe score ${vibeScore}: milestone unlocked`,
       text: `Congrats @${username}! Your vibe score just hit ${vibeScore}, passing the ${milestone} milestone. Your consistency is paying off.\n\nView your profile: ${siteUrl}/profile/${encodeURIComponent(username)}\n\nUnsubscribe: ${unsubUrl(email)}`,
       html: renderEmail({
         preheader: `You just crossed the ${milestone} vibe score milestone.`,
@@ -645,7 +645,7 @@ export async function sendReEngagementEmail({
   const body = `
 ${eyebrow("We'd love your input")}
 ${headline("What would bring you back?")}
-${paragraph(`Hey <strong>@${escapeHtml(username)}</strong>, you haven't been on VibeTalent for <strong>${daysSinceLastActive} days</strong>. No guilt trip — we just want to understand what happened.`)}
+${paragraph(`Hey <strong>@${escapeHtml(username)}</strong>, you haven't been on VibeTalent for <strong>${daysSinceLastActive} days</strong>. No guilt trip. We just want to understand what happened.`)}
 ${paragraph(`Was something missing? Confusing? Not useful? Your honest answer genuinely shapes what we build next.`)}
 ${quoteCard({
   kicker: "Quick question",
@@ -659,7 +659,7 @@ ${inlineSecondary({ href: `${siteUrl}/dashboard`, prefix: "Or ", linkText: "head
     await sendEmail(client, {
       to: email,
       subject: `What would bring you back?`,
-      text: `Hey @${username}, you haven't been on VibeTalent for ${daysSinceLastActive} days. No guilt trip — we just want to understand what happened. Was something missing, confusing, or not useful?\n\nQuick question: What's the #1 thing that would bring you back?\n\nShare feedback (30 sec): ${feedbackUrl}\n\nYour answer genuinely shapes what we build next.\n\n— The VibeTalent team\n\nUnsubscribe: ${unsubUrl(email)}`,
+      text: `Hey @${username}, you haven't been on VibeTalent for ${daysSinceLastActive} days. No guilt trip. We just want to understand what happened. Was something missing, confusing, or not useful?\n\nQuick question: What's the #1 thing that would bring you back?\n\nShare feedback (30 sec): ${feedbackUrl}\n\nYour answer genuinely shapes what we build next.\n\n: The VibeTalent team\n\nUnsubscribe: ${unsubUrl(email)}`,
       html: renderEmail({
         preheader: `30 seconds of honest feedback genuinely shapes what we build next.`,
         body,
@@ -721,7 +721,7 @@ ${cta(`${siteUrl}/dashboard`, "View dashboard")}
       subject: `${rating}-star review from ${reviewerName}`,
       text: `Hey @${username}, you received a new review.\n\n${stars}\nFrom: ${reviewerName}\n${commentPlain}\n\nView dashboard: ${siteUrl}/dashboard\n\nUnsubscribe: ${unsubUrl(email)}`,
       html: renderEmail({
-        preheader: comment ? `${stars} — ${trimmed.slice(0, 80)}${trimmed.length > 80 ? "…" : ""}` : `${stars} from ${reviewerName}`,
+        preheader: comment ? `${stars}: ${trimmed.slice(0, 80)}${trimmed.length > 80 ? "…": ""}`: `${stars} from ${reviewerName}`,
         body,
         footerContext: "You received this because someone reviewed you on VibeTalent.",
         unsubLink: unsubUrl(email),
@@ -754,7 +754,7 @@ export function renderAllEmailPreviews(opts?: { logoUrl?: string }): EmailPrevie
 
   {
     const senderName = "Sarah Chen";
-    const message = "Loved your TerminalGPT project — clean implementation, fast UX. We're building a developer-tools platform and would love to chat about a 2-week contract to ship a similar feature in our app.";
+    const message = "Loved your TerminalGPT project: clean implementation, fast UX. We're building a developer-tools platform and would love to chat about a 2-week contract to ship a similar feature in our app.";
     const dashboardUrl = `${siteUrl}/dashboard`;
     const chatUrl = `${siteUrl}/hire/chat/preview-id`;
     const trimmed = message.slice(0, 200);
@@ -808,7 +808,7 @@ ${cta(`${siteUrl}/dashboard`, "View dashboard")}
     const body = `
 ${eyebrow("Badge unlocked")}
 ${headline(`The ${badgeName} badge is yours`)}
-${paragraph(`Congrats <strong>@${safeUser}</strong>. Your consistency just earned the <strong>${badgeName}</strong> badge — it lives on your profile permanently.`)}
+${paragraph(`Congrats <strong>@${safeUser}</strong>. Your consistency just earned the <strong>${badgeName}</strong> badge. It lives on your profile permanently.`)}
 ${cta(`${siteUrl}/dashboard`, "View your profile")}
 `;
     samples.push({
@@ -922,7 +922,7 @@ ${cta(`${siteUrl}/profile/${encodeURIComponent(username)}`, "View your profile")
     samples.push({
       key: "vibe-milestone",
       label: "Vibe score milestone",
-      subject: `Vibe score ${vibeScore} — milestone unlocked`,
+      subject: `Vibe score ${vibeScore}: milestone unlocked`,
       html: wrap({
         preheader: `You just crossed the ${milestone} vibe score milestone.`,
         body,
@@ -937,7 +937,7 @@ ${cta(`${siteUrl}/profile/${encodeURIComponent(username)}`, "View your profile")
     const body = `
 ${eyebrow("We'd love your input")}
 ${headline("What would bring you back?")}
-${paragraph(`Hey <strong>@${safeUser}</strong>, you haven't been on VibeTalent for <strong>${daysSinceLastActive} days</strong>. No guilt trip — we just want to understand what happened.`)}
+${paragraph(`Hey <strong>@${safeUser}</strong>, you haven't been on VibeTalent for <strong>${daysSinceLastActive} days</strong>. No guilt trip. We just want to understand what happened.`)}
 ${paragraph(`Was something missing? Confusing? Not useful? Your honest answer genuinely shapes what we build next.`)}
 ${quoteCard({
   kicker: "Quick question",
@@ -983,7 +983,7 @@ ${cta(`${siteUrl}/dashboard`, "View dashboard")}
       label: "New review",
       subject: `${rating}-star review from ${reviewerName}`,
       html: wrap({
-        preheader: `${stars} — ${trimmed.slice(0, 80)}`,
+        preheader: `${stars}: ${trimmed.slice(0, 80)}`,
         body,
         footerContext: "You received this because someone reviewed you on VibeTalent.",
       }),

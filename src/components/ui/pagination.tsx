@@ -53,10 +53,9 @@ function getPageNumbers(current: number, total: number): (number | "...")[] {
 }
 
 const btnBase =
-  "flex items-center justify-center w-12 h-12 rounded-xl font-bold transition-all";
+  "flex items-center justify-center w-12 h-12 rounded-lg font-bold transition-all";
 
-const ACTIVE_GLOW =
-  "0 0 0 4px rgba(255, 58, 0, 0.18), 0 8px 24px rgba(255, 58, 0, 0.35)";
+const ACTIVE_GLOW = "var(--shadow-brutal-accent)";
 
 export function Pagination({
   currentPage,
@@ -95,14 +94,14 @@ export function Pagination({
     <nav aria-label="Pagination" className="flex flex-col items-center gap-6 mt-4">
       {showHeader && (
         <div className="flex flex-col items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+          <span className="text-xs font-medium text-[var(--text-muted)]">
             {label}
           </span>
           <p className="text-base text-[var(--text-muted)]">
             Showing{" "}
             <span className="font-bold text-[var(--foreground)]">
               {(currentPage - 1) * pageSize + 1}
-              –{Math.min(currentPage * pageSize, totalItems)}
+{Math.min(currentPage * pageSize, totalItems)}
             </span>
             {" of "}
             <span className="font-bold text-[var(--foreground)]">
@@ -216,7 +215,7 @@ export function Pagination({
         >
           <label
             htmlFor={jumpInputId}
-            className="text-xs font-bold uppercase tracking-[0.15em] text-[var(--text-muted)]"
+            className="text-xs font-medium text-[var(--text-muted)]"
           >
             Go to page
           </label>
@@ -227,8 +226,8 @@ export function Pagination({
             max={totalPages}
             value={jumpValue}
             onChange={(e) => setJumpValue(e.target.value)}
-            placeholder={`1–${totalPages}`}
-            className="w-24 h-10 px-3 rounded-lg text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+            placeholder={`1: ${totalPages}`}
+            className="w-24 h-10 px-3 rounded-lg text-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
             style={{
               backgroundColor: "var(--background)",
               border: "1px solid var(--border-subtle)",
@@ -237,7 +236,7 @@ export function Pagination({
           />
           <button
             type="submit"
-            className="px-5 h-10 rounded-lg text-xs font-extrabold uppercase tracking-[0.1em] text-white transition-opacity hover:opacity-90"
+            className="px-5 h-10 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
             style={{ backgroundColor: "var(--accent)" }}
           >
             Jump

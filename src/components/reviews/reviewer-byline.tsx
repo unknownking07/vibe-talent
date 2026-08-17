@@ -42,8 +42,8 @@ export function ReviewerByline({
         </span>
       )}
       {tier && (
-        <span className={`${TIER_STYLES[tier]} text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-sm tracking-wider`}>
-          {tier.toUpperCase()}
+        <span className={`${TIER_STYLES[tier]} text-white text-[10px] font-semibold px-2 py-0.5 rounded-full`}>
+          {tier.charAt(0).toUpperCase() + tier.slice(1)}
         </span>
       )}
     </div>

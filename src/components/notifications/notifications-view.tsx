@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Bell, ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { Bell, Check } from "@phosphor-icons/react";
 import type { Notification } from "@/lib/types/database";
 import {
   NOTIFICATION_ICONS,
   NOTIFICATION_TAGS,
   HIRE_NOTIFICATION_TYPES,
   notificationTimeAgo,
+  parseNotificationMessage,
   notificationBucket,
   extractNotificationLink,
   extractNotificationAvatar,
@@ -47,7 +49,8 @@ function NotificationChip({ n }: { n: Notification }) {
             width: 46,
             height: 46,
             objectFit: "cover",
-            border: `2px solid ${read ? "var(--border-subtle)" : HARD}`,
+            borderRadius: "50%",
+            border: `1px solid ${read ? "var(--border-subtle)" : HARD}`,
             filter: read ? "grayscale(1) opacity(0.7)" : "none",
           }}
         />
@@ -61,12 +64,13 @@ function NotificationChip({ n }: { n: Notification }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            borderRadius: 999,
             background: read ? "var(--bg-surface-light)" : "var(--accent)",
-            border: `2px solid ${read ? "var(--border-subtle)" : HARD}`,
+            border: `1px solid ${read ? "var(--border-subtle)" : HARD}`,
             color: read ? "var(--text-muted-soft)" : "#fff",
           }}
         >
-          <Icon size={12} />
+          <Icon weight="fill" size={12} />
         </div>
       </div>
     );
@@ -80,13 +84,14 @@ function NotificationChip({ n }: { n: Notification }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        border: `2px solid ${read ? "var(--border-subtle)" : HARD}`,
+        borderRadius: 999,
+        border: `1px solid ${read ? "var(--border-subtle)" : HARD}`,
         color: read ? "var(--text-muted-soft)" : "var(--accent)",
         background: "var(--bg-surface)",
-        boxShadow: read ? "none" : `2.5px 2.5px 0 ${HARD}`,
+        boxShadow: read ? "none" : "var(--shadow-brutal-xs)",
       }}
     >
-      <Icon size={20} />
+      <Icon weight="fill" size={20} />
     </div>
   );
 }
@@ -111,9 +116,10 @@ function NotificationCard({
         gap: 14,
         alignItems: "flex-start",
         padding: "16px 18px",
-        border: `2px solid ${HARD}`,
+        borderRadius: "var(--radius-card)",
+        border: `1px solid ${read ? "var(--border-subtle)" : HARD}`,
         background: read ? "var(--bg-surface)" : "var(--bg-unread)",
-        boxShadow: read ? `3px 3px 0 ${HARD}` : `4px 4px 0 ${HARD}`,
+        boxShadow: read ? "var(--shadow-brutal-xs)" : "var(--shadow-brutal-sm)",
       }}
     >
       <div style={{ position: "relative", flexShrink: 0 }}>
@@ -156,7 +162,6 @@ function NotificationCard({
                 height: 9,
                 borderRadius: "50%",
                 background: "var(--accent)",
-                border: `1.5px solid ${HARD}`,
                 marginTop: 5,
               }}
             />
@@ -173,7 +178,30 @@ function NotificationCard({
             overflowWrap: "anywhere",
           }}
         >
-          {n.message}
+          {/* @mentions become profile links. `position: relative; z-index: 1`
+              lifts them above the title's stretched ::after overlay, which
+              covers the whole card — without it the card link swallows the
+              click and the mention is unreachable. */}
+          {parseNotificationMessage(n.message).map((seg, i) =>
+            seg.type === "mention" ? (
+              <Link
+                key={i}
+                href={`/profile/${seg.username}`}
+                className="ntf-mention"
+                style={{
+                  position: "relative",
+                  zIndex: 1,
+                  color: "var(--accent)",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                }}
+              >
+                @{seg.username}
+              </Link>
+            ) : (
+              <span key={i}>{seg.value}</span>
+            )
+          )}
         </p>
 
         <div
@@ -189,9 +217,7 @@ function NotificationCard({
             style={{
               fontFamily: MONO,
               fontSize: 10,
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
+              fontWeight: 500,
               color: "var(--text-muted-soft)",
             }}
           >
@@ -201,11 +227,10 @@ function NotificationCard({
             style={{
               fontFamily: MONO,
               fontSize: 10,
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              padding: "2px 7px",
-              border: `1.5px solid ${read ? "var(--border-subtle)" : HARD}`,
+              fontWeight: 500,
+              padding: "2px 8px",
+              borderRadius: 999,
+              border: `1px solid ${read ? "var(--border-subtle)" : HARD}`,
               color: read ? "var(--text-muted-soft)" : "var(--text-muted)",
             }}
           >
@@ -221,9 +246,7 @@ function NotificationCard({
                 alignItems: "center",
                 gap: 5,
                 fontSize: 11,
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
+                fontWeight: 600,
                 color: "var(--text-muted)",
                 background: "none",
                 border: "none",
@@ -231,7 +254,7 @@ function NotificationCard({
                 padding: 0,
               }}
             >
-              <Check size={12} strokeWidth={2.5} />
+              <Check weight="bold" size={12} />
               Mark read
             </button>
           )}
@@ -302,8 +325,9 @@ export function NotificationsView({
 
   const surfaceCard = {
     background: "var(--bg-surface)",
-    border: `2px solid ${HARD}`,
-    boxShadow: `5px 5px 0 ${HARD}`,
+    border: "1px solid var(--border-subtle)",
+    borderRadius: "var(--radius-card)",
+    boxShadow: "var(--shadow-brutal-sm)",
   } as const;
 
   return (
@@ -311,7 +335,7 @@ export function NotificationsView({
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "40px 16px 80px" }}>
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--text-muted)] hover:text-[var(--foreground)] no-underline"
+          className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[var(--text-muted)] hover:text-[var(--foreground)] no-underline"
           style={{ marginBottom: 22 }}
         >
           <ArrowLeft size={14} strokeWidth={2.5} />
@@ -338,14 +362,14 @@ export function NotificationsView({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                borderRadius: 999,
                 background: "var(--accent)",
-                border: `2px solid ${HARD}`,
-                boxShadow: `3px 3px 0 ${HARD}`,
+                boxShadow: "var(--shadow-brutal-accent)",
                 color: "#fff",
                 flexShrink: 0,
               }}
             >
-              <Bell size={22} />
+              <Bell weight="fill" size={22} />
             </div>
             <div style={{ minWidth: 0 }}>
               <h1
@@ -365,9 +389,7 @@ export function NotificationsView({
                   margin: "6px 0 0",
                   fontFamily: MONO,
                   fontSize: 11,
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
+                  fontWeight: 500,
                   color: "var(--text-muted)",
                 }}
               >
@@ -387,18 +409,17 @@ export function NotificationsView({
                 flexShrink: 0,
                 padding: "10px 15px",
                 fontSize: 12,
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
+                fontWeight: 600,
                 color: "#fff",
                 background: "var(--accent)",
-                border: `2px solid ${HARD}`,
-                boxShadow: `2.5px 2.5px 0 ${HARD}`,
+                border: "none",
+                borderRadius: "var(--radius-control)",
+                boxShadow: "var(--shadow-brutal-accent)",
                 cursor: marking ? "default" : "pointer",
                 opacity: marking ? 0.5 : 1,
               }}
             >
-              <Check size={14} strokeWidth={2.5} />
+              <Check weight="bold" size={14} />
               Mark all read
             </button>
           )}
@@ -418,14 +439,13 @@ export function NotificationsView({
                   gap: 8,
                   padding: "9px 15px",
                   fontSize: 12,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
+                  fontWeight: 600,
                   cursor: "pointer",
-                  border: `2px solid ${HARD}`,
+                  borderRadius: 999,
+                  border: `1px solid ${active ? "var(--foreground)" : "var(--border-subtle)"}`,
                   background: active ? "var(--foreground)" : "var(--bg-surface)",
                   color: active ? "var(--background)" : "var(--foreground)",
-                  boxShadow: active ? "none" : `2px 2px 0 ${HARD}`,
+                  boxShadow: active ? "none" : "var(--shadow-brutal-xs)",
                   transition: "all 0.12s",
                 }}
               >
@@ -435,9 +455,10 @@ export function NotificationsView({
                     style={{
                       fontFamily: MONO,
                       fontSize: 10,
-                      fontWeight: 700,
-                      padding: "1px 6px",
-                      border: `1.5px solid ${active ? "var(--background)" : HARD}`,
+                      fontWeight: 500,
+                      padding: "1px 7px",
+                      borderRadius: 999,
+                      border: `1px solid ${active ? "var(--background)" : "var(--border-subtle)"}`,
                       color: active ? "var(--background)" : "var(--text-muted)",
                     }}
                   >
@@ -466,12 +487,13 @@ export function NotificationsView({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                borderRadius: 999,
                 background: "var(--bg-surface-light)",
-                border: `2px solid ${HARD}`,
+                border: "1px solid var(--border-subtle)",
                 color: "var(--text-muted-soft)",
               }}
             >
-              <Bell size={26} />
+              <Bell weight="fill" size={26} />
             </div>
             <p style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 700, color: "var(--foreground)" }}>
               {filter === "unread" ? "No unread notifications" : "No notifications yet"}
@@ -489,15 +511,13 @@ export function NotificationsView({
                     style={{
                       fontFamily: MONO,
                       fontSize: 11,
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.12em",
+                      fontWeight: 500,
                       color: "var(--text-muted-soft)",
                     }}
                   >
                     {group.label}
                   </span>
-                  <span style={{ flex: 1, height: 2, background: "var(--border-subtle)" }} />
+                  <span style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {group.items.map((n) => (

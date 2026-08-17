@@ -78,10 +78,10 @@ export default async function ShareAchievementPage({ params }: PageParams) {
     <div className="flex justify-center p-4 sm:p-8">
       <div className="w-full max-w-[720px] flex flex-col gap-6">
         <section
-          className="flex flex-col items-center gap-6 p-8 text-center sm:p-12"
+          className="flex flex-col items-center gap-6 p-8 text-center sm:p-12 rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-subtle)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
@@ -97,13 +97,13 @@ export default async function ShareAchievementPage({ params }: PageParams) {
           </div>
           <div className="flex flex-col items-center gap-2">
             <span
-              className="text-xs font-extrabold uppercase tracking-widest"
+              className="text-xs font-semibold"
               style={{ color: "var(--text-secondary)" }}
             >
               {achievement.category}
             </span>
             <h1
-              className="text-3xl font-extrabold uppercase tracking-tight"
+              className="text-3xl font-bold tracking-tight"
               style={{ color: "var(--foreground)" }}
             >
               {achievement.title}
@@ -116,7 +116,7 @@ export default async function ShareAchievementPage({ params }: PageParams) {
             </p>
           </div>
           <div
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-extrabold uppercase tracking-wide"
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-full"
             style={{
               backgroundColor: achievement.earned
                 ? "var(--status-success-bg, #DCFCE7)"
@@ -124,7 +124,7 @@ export default async function ShareAchievementPage({ params }: PageParams) {
               color: achievement.earned
                 ? "var(--status-success-text, #166534)"
                 : "var(--text-muted)",
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-subtle)",
             }}
           >
             {achievement.earned
@@ -135,11 +135,10 @@ export default async function ShareAchievementPage({ params }: PageParams) {
 
         <Link
           href={`/profile/${user.username}/achievements`}
-          className="inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-extrabold uppercase tracking-wide"
+          className="inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-brutal-hover)]"
           style={{
             backgroundColor: "var(--bg-inverted)",
             color: "var(--bg-base)",
-            border: "2px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
@@ -154,7 +153,7 @@ export default async function ShareAchievementPage({ params }: PageParams) {
 function NotFound() {
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-      <h1 className="text-2xl font-extrabold uppercase text-[var(--foreground)]">
+      <h1 className="text-2xl font-bold text-[var(--foreground)]">
         Achievement not found
       </h1>
       <p className="mt-2 font-medium text-[var(--text-secondary)]">

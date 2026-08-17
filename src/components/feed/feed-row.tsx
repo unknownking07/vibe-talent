@@ -2,16 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import {
-  BadgeCheck,
-  ThumbsUp,
-  Star,
-  Award,
-  Flame,
-  Sparkles,
-} from "lucide-react";
 import { normalizeExternalUrl } from "@/lib/url-normalize";
 import type { GroupedFeedItem, BadgeTier } from "./feed-types";
+import { Fire, Medal, SealCheck, Sparkle, Star, ThumbsUp } from "@phosphor-icons/react";
 
 /** Avatar size in px. Compact variant uses a smaller value via a CSS variable. */
 const AVATAR_SIZE = 48;
@@ -154,12 +147,7 @@ export function FeedRow({ item, compact = false, nowMs = null }: FeedRowProps) {
           >
             {item.display_name || item.username}
             {item.github_verified && (
-              <BadgeCheck
-                size={14}
-                className="text-white fill-[#1D9BF0] shrink-0"
-                strokeWidth={2.5}
-                aria-label="GitHub verified"
-              />
+              <SealCheck weight="fill" size={14} className="text-white shrink-0" aria-label="GitHub verified" />
             )}
           </Link>
           {item.display_name && (
@@ -179,22 +167,14 @@ export function FeedRow({ item, compact = false, nowMs = null }: FeedRowProps) {
             <span className="fl-tag fl-tag-dark">{item.project_title}</span>
           )}
           {isEndorsement && (
-            <ThumbsUp
-              size={14}
-              style={{ color: "var(--accent-green, #4ade80)", marginLeft: 6, verticalAlign: "middle" }}
-              aria-hidden
-            />
+            <ThumbsUp weight="fill" size={14} style={{ color: "var(--accent-green, #4ade80)", marginLeft: 6, verticalAlign: "middle" }} aria-hidden />
           )}
 
           {/* Review stars */}
           {isReview && item.rating != null && (
             <span className="fl-tag fl-tag-stars" aria-label={`${item.rating} out of 5 stars`}>
               {Array.from({ length: 5 }).map((_, i) => (
-                <Star
-                  key={i}
-                  size={12}
-                  className={i < (item.rating ?? 0) ? "fl-star-filled" : "fl-star-empty"}
-                />
+                <Star weight="fill" key={i} size={12} className={i < (item.rating ?? 0) ? "fl-star-filled" : "fl-star-empty"} />
               ))}
             </span>
           )}
@@ -202,12 +182,12 @@ export function FeedRow({ item, compact = false, nowMs = null }: FeedRowProps) {
           {/* Streak milestone tag */}
           {item.streak >= 30 && item.type === "streak" && (
             <span className="fl-tag fl-tag-orange">
-              <Flame size={12} /> {item.streak}d streak
+              <Fire weight="fill" size={12} /> {item.streak}d streak
             </span>
           )}
           {item.streak > 1 && item.streak < 30 && (item.type === "push" || item.type === "streak") && (
             <span className="fl-tag fl-tag-dark">
-              <Flame size={12} /> {item.streak}d
+              <Fire weight="fill" size={12} /> {item.streak}d
             </span>
           )}
         </div>
@@ -268,7 +248,7 @@ export function FeedRow({ item, compact = false, nowMs = null }: FeedRowProps) {
         {isBadge && item.badge_tier && (
           <div className="fl-attachment fl-attachment-badge">
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Award size={16} style={{ color: `var(--badge-${item.badge_tier}, var(--accent))` }} />
+              <Medal weight="fill" size={16} style={{ color: `var(--badge-${item.badge_tier}, var(--accent))` }} />
               <span style={{ fontSize: 14, fontWeight: 500, color: "var(--foreground)" }}>
                 {BADGE_LABELS[item.badge_tier]} tier unlocked
               </span>
@@ -333,7 +313,7 @@ export function FeedRow({ item, compact = false, nowMs = null }: FeedRowProps) {
         {/* Joined milestone card */}
         {item.type === "joined" && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-            <Sparkles size={14} style={{ color: "var(--accent)" }} aria-hidden />
+            <Sparkle weight="fill" size={14} style={{ color: "var(--accent)" }} aria-hidden />
             <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
               New builder · welcome them
             </span>
@@ -345,7 +325,7 @@ export function FeedRow({ item, compact = false, nowMs = null }: FeedRowProps) {
           <div className="fl-attachment milestone">
             <div>
               <div style={{ fontSize: 14, fontWeight: 500, color: "var(--accent, #FF4A2A)" }}>
-                <Flame size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />
+                <Fire weight="fill" size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />
                 {item.streak} Day Streak
               </div>
               <div style={{ fontSize: 13, color: "var(--text-muted, #8A8B94)", marginTop: 2 }}>

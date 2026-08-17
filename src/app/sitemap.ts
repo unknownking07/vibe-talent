@@ -12,6 +12,7 @@ export const revalidate = 3600;
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     { url: siteUrl, lastModified: new Date("2026-04-06") },
+    { url: `${siteUrl}/hire-vibe-coders`, lastModified: new Date("2026-08-12") },
     { url: `${siteUrl}/explore`, lastModified: new Date("2026-04-01") },
     { url: `${siteUrl}/leaderboard`, lastModified: new Date("2026-04-01") },
     { url: `${siteUrl}/feed`, lastModified: new Date("2026-04-01") },
@@ -19,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/agent`, lastModified: new Date("2026-04-06") },
     { url: `${siteUrl}/about`, lastModified: new Date("2026-04-06") },
     { url: `${siteUrl}/roadmap`, lastModified: new Date("2026-04-23") },
+    { url: `${siteUrl}/token`, lastModified: new Date("2026-08-11") },
     { url: `${siteUrl}/privacy`, lastModified: new Date("2026-04-06") },
     { url: `${siteUrl}/terms`, lastModified: new Date("2026-04-06") },
     { url: `${siteUrl}/glossary`, lastModified: new Date("2026-05-22") },

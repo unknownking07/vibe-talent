@@ -1,101 +1,38 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Notification } from "@/lib/types/database";
-import { NotificationsView } from "@/components/notifications/notifications-view";
+import { NotificationsClient } from "./notifications-client";
 
-export default function NotificationsPage() {
-  const router = useRouter();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [marking, setMarking] = useState(false);
+/**
+ * Notifications are per-user and read straight from the request's session, so
+ * this page must render per request. (worker.ts already refuses to edge-cache
+ * any document carrying an auth cookie, so nothing here can leak across
+ * sessions — this is belt-and-braces for the Next.js side.)
+ */
+export const dynamic = "force-dynamic";
 
-  useEffect(() => {
-    // Fetch immediately on mount. We skip a separate client-side
-    // supabase.auth.getUser() round-trip (it only gated the redirect and is
-    // redundant — the API enforces auth itself) and act on the API's 401.
-    // This removes a full Supabase Auth round-trip from the critical path.
-    let cancelled = false;
-    fetch("/api/notifications")
-      .then(async (res) => {
-        if (cancelled) return;
-        if (res.status === 401) {
-          // The login page reads `?redirect=` (not `?next=`) to decide where to
-          // send the user back after sign-in. `replace` so the bounced-through
-          // page doesn't linger in history. Leave loading=true so the redirect
-          // doesn't flash the empty state.
-          router.replace("/auth/login?redirect=/notifications");
-          return;
-        }
-        if (res.ok) {
-          const data = await res.json();
-          if (!cancelled) setNotifications(data.data || []);
-        }
-        if (!cancelled) setLoading(false);
-      })
-      .catch(() => {
-        // Network drop / transient error — render the empty state.
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
+export default async function NotificationsPage() {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const handleMarkAllRead = async () => {
-    if (notifications.every((n) => n.read)) return;
-    setMarking(true);
-    try {
-      const res = await fetch("/api/notifications", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mark_all: true }),
-      });
-      if (res.ok) {
-        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-        window.dispatchEvent(new Event("notifications-updated"));
-      }
-    } catch {
-      // Silently fail
-    }
-    setMarking(false);
-  };
+  // The login page reads `?redirect=` (not `?next=`) to decide where to send
+  // the user after sign-in. Redirecting on the server means an unauthenticated
+  // visitor never downloads the page JS at all.
+  if (!user) redirect("/auth/login?redirect=/notifications");
 
-  const handleMarkRead = async (id: string) => {
-    // Snapshot only the row's prior read state — this page doesn't poll, so a
-    // silent server failure would leave the row marked read in the UI while
-    // the DB still treated it as unread. Reverting just this row (not the
-    // whole list) avoids clobbering concurrent updates from other handlers
-    // that may have fired between the optimistic write and the failure.
-    const previousRead = notifications.find((n) => n.id === id)?.read ?? false;
-    if (previousRead) return; // already read — nothing to do
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-    const revert = () =>
-      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: previousRead } : n)));
-    try {
-      const res = await fetch("/api/notifications", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-      if (!res.ok) {
-        revert();
-        return;
-      }
-      window.dispatchEvent(new Event("notifications-updated"));
-    } catch {
-      revert();
-    }
-  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = supabase as any;
+  const { data } = await sb
+    .from("notifications")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(50);
 
-  return (
-    <NotificationsView
-      notifications={notifications}
-      loading={loading}
-      marking={marking}
-      onMarkRead={handleMarkRead}
-      onMarkAllRead={handleMarkAllRead}
-    />
-  );
+  // The unread count that used to come back with this payload was only ever
+  // used by the bell, which polls `?count=1` on its own — so it is not fetched
+  // here. That drops one of the two round trips this page used to pay for.
+  return <NotificationsClient initialNotifications={(data as Notification[]) ?? []} />;
 }

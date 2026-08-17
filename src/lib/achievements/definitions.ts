@@ -254,7 +254,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   {
     id: "founding_member",
     title: "Founding Member",
-    description: "Joined VibeTalent before 2026 — a true early adopter.",
+    description: "Joined VibeTalent before 2026: a true early adopter.",
     category: "identity",
     threshold: 1,
     unit: "joined",

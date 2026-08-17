@@ -15,14 +15,13 @@ interface Props {
 function WeeklyShell({ children, loading }: { children: ReactNode; loading?: boolean }) {
   return (
     <div
-      className="bg-[var(--bg-surface)] border-2 border-[var(--border-hard)] rounded overflow-hidden"
-      style={{ boxShadow: "var(--shadow-brutal)" }}
+      className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-2xl overflow-hidden shadow-[var(--shadow-brutal-sm)]"
       aria-busy={loading || undefined}
       aria-label={loading ? "Loading active builders" : undefined}
     >
       <header className="bg-[var(--bg-inverted)] text-[var(--text-on-inverted)] px-5 py-4 flex justify-between items-center">
-        <h3 className="text-[15px] font-extrabold tracking-wider">ACTIVE BUILDERS</h3>
-        <span className="bg-[var(--accent)] text-white px-3 py-1 text-[12px] font-extrabold rounded-sm">LAST 7 DAYS</span>
+        <h3 className="text-[15px] font-bold">ACTIVE BUILDERS</h3>
+        <span className="bg-[var(--accent)] text-white px-3 py-1 text-[12px] font-semibold rounded-full">LAST 7 DAYS</span>
       </header>
       <div>{children}</div>
     </div>
@@ -68,7 +67,7 @@ function SkeletonRow() {
 export function WeeklyTab({ rows, error }: Props) {
   if (error) {
     return (
-      <div className="text-[13px] text-[var(--status-error-text)] bg-[var(--status-error-bg)] border border-[var(--status-error-border)] p-4 rounded">
+      <div className="text-[13px] text-[var(--status-error-text)] bg-[var(--status-error-bg)] border border-[var(--status-error-border)] p-4 rounded-xl">
         Couldn&apos;t load active builders ({error}).
       </div>
     );

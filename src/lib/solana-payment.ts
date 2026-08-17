@@ -9,6 +9,7 @@ import {
   getAssociatedTokenAddress,
   createTransferInstruction,
   createAssociatedTokenAccountInstruction,
+  createBurnCheckedInstruction,
   getAccount,
   TokenAccountNotFoundError,
 } from "@solana/spl-token";
@@ -75,6 +76,60 @@ export async function buildSolanaTokenTransfer({
   const { blockhash } = await connection.getLatestBlockhash();
   tx.recentBlockhash = blockhash;
   tx.feePayer = sender;
+
+  return tx.serialize({ requireAllSignatures: false });
+}
+
+/**
+ * Build an SPL burn of `amount` base units from the signer's own associated
+ * token account, with `memo` attached. Serialized unsigned for Privy to sign.
+ *
+ * Simpler than the transfer above: a burn has no recipient, so there's no
+ * associated-token-account to create. The memo binds the burn to one actor and
+ * one action so the server can verify it (see lib/vibe-burn.ts).
+ *
+ * The blockhash is supplied by the caller (fetched during preflight) so the
+ * client can show balance/availability errors before any signature is
+ * requested.
+ */
+export async function buildSolanaTokenBurn({
+  senderAddress,
+  mint: mintAddress,
+  decimals,
+  amount,
+  memo,
+  recentBlockhash,
+}: {
+  senderAddress: string;
+  mint: string;
+  decimals: number;
+  amount: bigint;
+  memo: string;
+  recentBlockhash: string;
+}): Promise<Uint8Array> {
+  if (!recentBlockhash) {
+    throw new Error("A recent blockhash is required to build the burn.");
+  }
+
+  const mint = new PublicKey(mintAddress);
+  const owner = new PublicKey(senderAddress);
+  const ata = await getAssociatedTokenAddress(mint, owner);
+
+  const tx = new Transaction();
+  // burnChecked (not burn) so the on-chain program validates the decimals we
+  // computed the amount with — a mismatch fails the tx instead of destroying
+  // the wrong quantity.
+  tx.add(createBurnCheckedInstruction(ata, mint, owner, amount, decimals));
+  tx.add(
+    new TransactionInstruction({
+      keys: [],
+      programId: MEMO_PROGRAM_ID,
+      data: Buffer.from(memo, "utf8"),
+    })
+  );
+
+  tx.recentBlockhash = recentBlockhash;
+  tx.feePayer = owner;
 
   return tx.serialize({ requireAllSignatures: false });
 }

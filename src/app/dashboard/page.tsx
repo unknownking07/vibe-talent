@@ -12,34 +12,28 @@ import { BadgeDisplay } from "@/components/ui/badge-display";
 import type { UserWithSocials } from "@/lib/types/database";
 import { StreakCounter } from "@/components/ui/streak-counter";
 import { ActivityHeatmap } from "@/components/ui/activity-heatmap";
+import { IS_STAGING_CLIENT } from "@/lib/staging-client";
+
+// Web3 stack — only pulled in when a restorable break actually exists.
+const LinkWallet = dynamic(
+  () => import("@/components/token/link-wallet").then((m) => ({ default: m.LinkWallet })),
+  { ssr: false, loading: () => <p className="text-xs text-[var(--text-muted)]">Loading wallet...</p> },
+);
+
+const StreakProtectCard = dynamic(
+  () =>
+    import("@/components/dashboard/streak-protect-card").then((m) => ({
+      default: m.StreakProtectCard,
+    })),
+  { ssr: false },
+);
 import { ProjectCard } from "@/components/ui/project-card";
 import { ProfileViewsWidget } from "@/components/dashboard/profile-views-widget";
 import { StreakMilestone } from "@/components/dashboard/streak-milestone";
 import { consumeTourTrigger, TOUR_FLAG_ENABLED } from "@/lib/onboarding";
 import type { HireRequest, HireMessage } from "@/lib/types/database";
-import {
-  Plus,
-  Save,
-  Flame,
-  Trophy,
-  Code2,
-  X,
-  Clock,
-  Check,
-  Inbox,
-  Mail,
-  MailOpen,
-  DollarSign,
-  Send,
-  MessageCircle,
-  User,
-  Wrench,
-  ExternalLink,
-  Camera,
-  Trash2,
-  ShieldCheck,
-  Zap,
-} from "lucide-react";
+import { Plus, Save, X, Send, ExternalLink, Trash2 } from "lucide-react";
+import { Camera, ChatCircle, Check, Clock, Code, CurrencyDollar, Envelope, EnvelopeOpen, Fire, Lightning, ShieldCheck, Tray, Trophy, User, Wrench } from "@phosphor-icons/react";
 
 // Column lists for the dashboard's own queries, kept to what the page (plus
 // the GitHub self-heal and mandatory-socials gating) actually reads, instead
@@ -50,7 +44,7 @@ import {
 // back to a generic checklist without it), and the Badge Holder chip reads
 // has_vibetalent_badge. It's a flat ~13-key object, so the egress is trivial.
 const DASHBOARD_USER_FIELDS =
-  "id, username, display_name, bio, avatar_url, github_username, vibe_score, streak, longest_streak, badge_level, streak_freezes_remaining, streak_freezes_used, referral_count, created_at";
+  "id, username, display_name, bio, avatar_url, github_username, vibe_score, streak, longest_streak, badge_level, streak_freezes_remaining, streak_freezes_used, referral_count, created_at, streak_before_break, streak_broken_at, solana_wallet";
 const DASHBOARD_PROJECT_FIELDS =
   "id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, endorsement_count, created_at";
 const DASHBOARD_SOCIAL_FIELDS = "id, user_id, twitter, telegram, github, website, farcaster";
@@ -136,7 +130,7 @@ export default function DashboardPage() {
   const [ghTotal, setGhTotal] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [hireRequests, setHireRequests] = useState<HireRequest[]>([]);
-  // Seed for the Inbox tab's "new" badge: a head-count fetched on initial
+  // Seed for the Tray tab's "new" badge: a head-count fetched on initial
   // load (the full list is deferred until the tab is opened). Once the list
   // has loaded, the badge derives from it directly — see newHireCount below —
   // so mark-read / delete / reply need no manual counter bookkeeping.
@@ -215,7 +209,7 @@ export default function DashboardPage() {
       // hire_requests fetch pulled every request ever received — full message
       // bodies included — plus a resolve-senders API call on every dashboard
       // visit, just to derive the tab's "new" badge. A head-count covers the
-      // badge; the Inbox tab loads the real list via loadInbox() when opened.
+      // badge; the Tray tab loads the real list via loadInbox() when opened.
       const results = await Promise.allSettled([
         sb.from("users").select(DASHBOARD_USER_FIELDS).eq("id", authUser.id).maybeSingle(),
         sb.from("projects").select(DASHBOARD_PROJECT_FIELDS).eq("user_id", authUser.id).order("created_at", { ascending: false }),
@@ -726,7 +720,7 @@ export default function DashboardPage() {
   };
 
   // Fetch the inbox directly from Supabase (skip API route hop). Called when
-  // the Inbox tab is opened — the initial dashboard load only fetches the
+  // the Tray tab is opened — the initial dashboard load only fetches the
   // "new" head-count for the tab badge.
   const loadInbox = async () => {
     setLoadingInbox(true);
@@ -977,7 +971,7 @@ export default function DashboardPage() {
     } catch (err) {
       console.error("Failed to log activity (network):", err);
       rollback();
-      setLogError("Network error — check your connection and try again.");
+      setLogError("Network error: check your connection and try again.");
       return;
     }
 
@@ -987,7 +981,7 @@ export default function DashboardPage() {
         const body = await res.json();
         if (body?.error && typeof body.error === "string") message = body.error;
       } catch {}
-      if (res.status === 401) message = "Your session expired — refresh and sign in again.";
+      if (res.status === 401) message = "Your session expired: refresh and sign in again.";
       console.error("Failed to log activity:", res.status, message);
       rollback();
       setLogError(message);
@@ -1029,7 +1023,7 @@ export default function DashboardPage() {
     const liveUrlTrim = projectForm.live_url.trim();
     const githubUrlTrim = projectForm.github_url.trim();
     if (!liveUrlTrim && !githubUrlTrim) {
-      setProjectError("Add a live URL or a GitHub repo — at least one is required so clients can verify your work.");
+      setProjectError("Add a live URL or a GitHub repo: at least one is required so clients can verify your work.");
       return;
     }
     // Validate + canonicalize URLs. Persist normalized forms so the DB
@@ -1144,7 +1138,7 @@ export default function DashboardPage() {
     const liveUrlTrim = projectForm.live_url.trim();
     const githubUrlTrim = projectForm.github_url.trim();
     if (!liveUrlTrim && !githubUrlTrim) {
-      setProjectError("Add a live URL or a GitHub repo — at least one is required so clients can verify your work.");
+      setProjectError("Add a live URL or a GitHub repo: at least one is required so clients can verify your work.");
       return;
     }
     let normalizedLiveUrl: string | null = null;
@@ -1246,13 +1240,13 @@ export default function DashboardPage() {
   if (!user) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12 text-center">
-        <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-4">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-[var(--foreground)] mb-4">Dashboard</h1>
         <p className="text-[var(--text-secondary)] font-medium">Please sign in to view your dashboard.</p>
       </div>
     );
   }
 
-  // Inbox "new" badge: derived from the fetched list once available, the
+  // Tray "new" badge: derived from the fetched list once available, the
   // initial head-count seed before that.
   const newHireCount = inboxLoaded
     ? hireRequests.filter((r) => r.status === "new").length
@@ -1266,41 +1260,36 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
-      <h1 className="text-3xl font-extrabold uppercase text-[var(--foreground)] mb-6">Dashboard</h1>
+      <h1 className="text-3xl font-bold text-[var(--foreground)] mb-6">Dashboard</h1>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-8">
         <button
           onClick={() => setActiveTab("overview")}
-          className="px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide transition-all"
-          style={{
-            backgroundColor: activeTab === "overview" ? "var(--accent)" : "var(--bg-surface)",
-            color: activeTab === "overview" ? "var(--text-on-inverted)" : "var(--foreground)",
-            border: "2px solid var(--border-hard)",
-            boxShadow: activeTab === "overview" ? "none" : "4px 4px 0 var(--border-hard)",
-          }}
+          className={`px-5 py-2.5 text-sm font-semibold transition-all rounded-xl ${
+            activeTab === "overview"
+              ? "bg-[var(--bg-inverted)] text-[var(--text-on-inverted)]"
+              : "border border-[var(--border-subtle)] bg-transparent text-[var(--foreground)]"
+          }`}
         >
           Overview
         </button>
         <button
           onClick={() => { setActiveTab("inbox"); if (user) loadInbox(); }}
-          className="px-5 py-2.5 text-sm font-extrabold uppercase tracking-wide transition-all flex items-center gap-2"
-          style={{
-            backgroundColor: activeTab === "inbox" ? "var(--accent)" : "var(--bg-surface)",
-            color: activeTab === "inbox" ? "var(--text-on-inverted)" : "var(--foreground)",
-            border: "2px solid var(--border-hard)",
-            boxShadow: activeTab === "inbox" ? "none" : "4px 4px 0 var(--border-hard)",
-          }}
+          className={`px-5 py-2.5 text-sm font-semibold transition-all rounded-xl flex items-center gap-2 ${
+            activeTab === "inbox"
+              ? "bg-[var(--bg-inverted)] text-[var(--text-on-inverted)]"
+              : "border border-[var(--border-subtle)] bg-transparent text-[var(--foreground)]"
+          }`}
         >
-          <Inbox size={16} />
-          Inbox
+          <Tray weight="fill" size={16} />
+          Tray
           {newHireCount > 0 && (
             <span
-              className="ml-1 px-2 py-0.5 text-xs font-extrabold"
+              className="ml-1 px-2 py-0.5 text-xs font-semibold rounded-full"
               style={{
                 backgroundColor: "var(--accent)",
                 color: "var(--text-on-inverted)",
-                border: "2px solid var(--border-hard)",
               }}
             >
               {newHireCount}
@@ -1314,26 +1303,26 @@ export default function DashboardPage() {
       {/* First Streak Nudge — shown to new users who haven't logged any activity yet */}
       {user.streak === 0 && user.longest_streak === 0 && !todayLogged && (
         <div
-          className="mb-8 p-6 relative overflow-hidden"
+          className="mb-8 p-6 relative overflow-hidden rounded-2xl"
           style={{
             backgroundColor: "var(--accent)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal)",
           }}
         >
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-4">
               <div
-                className="w-14 h-14 flex items-center justify-center shrink-0"
+                className="w-14 h-14 flex items-center justify-center shrink-0 rounded-xl"
                 style={{
                   backgroundColor: "var(--background)",
-                  border: "2px solid var(--border-hard)",
+                  border: "1px solid var(--border-hard)",
                 }}
               >
-                <Flame size={28} className="text-[var(--accent)]" />
+                <Fire weight="fill" size={28} className="text-[var(--accent)]" />
               </div>
               <div>
-                <h2 className="text-lg font-extrabold uppercase text-white">
+                <h2 className="text-lg font-bold text-white">
                   Start Your Streak Today!
                 </h2>
                 <p className="text-sm font-medium text-white/80 mt-0.5">
@@ -1353,7 +1342,7 @@ export default function DashboardPage() {
               }}
             >
               {logging ? "Logging..." : "Log Day 1"}
-              {!logging && <Flame size={18} className="ml-2 text-[var(--accent)]" />}
+              {!logging && <Fire weight="fill" size={18} className="ml-2 text-[var(--accent)]" />}
             </button>
           </div>
         </div>
@@ -1368,52 +1357,52 @@ export default function DashboardPage() {
       {/* Stats Overview */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div
-          className="p-5"
+          className="p-5 rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
-          <Flame size={20} className="text-[var(--accent)] mb-2" />
+          <Fire weight="fill" size={20} className="text-[var(--accent)] mb-2" />
           <div className="text-2xl font-extrabold font-mono text-[var(--foreground)]">{user.streak}</div>
-          <div className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mt-1">Current Streak</div>
+          <div className="text-xs font-medium text-[var(--text-muted)] mt-1">Current Streak</div>
         </div>
         <div
-          className="p-5"
+          className="p-5 rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
-          <Trophy size={20} className="text-[var(--status-warning-text)] mb-2" />
+          <Trophy weight="fill" size={20} className="text-[var(--status-warning-text)] mb-2" />
           <div className="text-2xl font-extrabold font-mono text-[var(--foreground)]">{user.longest_streak}</div>
-          <div className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mt-1">Longest Streak</div>
+          <div className="text-xs font-medium text-[var(--text-muted)] mt-1">Longest Streak</div>
         </div>
         <div
-          className="p-5"
+          className="p-5 rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
-          <Zap size={20} className="text-[var(--accent)] fill-[var(--accent)] mb-2" />
+          <Lightning weight="fill" size={20} className="text-[var(--accent)] mb-2" />
           <div className="text-2xl font-extrabold font-mono text-[var(--accent)]">{user.vibe_score}</div>
-          <div className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mt-1">Vibe Score</div>
+          <div className="text-xs font-medium text-[var(--text-muted)] mt-1">Vibe Score</div>
         </div>
         <div
-          className="p-5"
+          className="p-5 rounded-2xl"
           style={{
             backgroundColor: "var(--bg-surface)",
-            border: "2px solid var(--border-hard)",
+            border: "1px solid var(--border-hard)",
             boxShadow: "var(--shadow-brutal-sm)",
           }}
         >
-          <Code2 size={20} className="text-[var(--accent)] mb-2" />
+          <Code weight="fill" size={20} className="text-[var(--accent)] mb-2" />
           <div className="text-2xl font-extrabold font-mono text-[var(--foreground)]">{(user.projects ?? []).length}</div>
-          <div className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mt-1">Projects</div>
+          <div className="text-xs font-medium text-[var(--text-muted)] mt-1">Projects</div>
         </div>
       </div>
 
@@ -1422,21 +1411,32 @@ export default function DashboardPage() {
 
       {/* Activity Heatmap */}
       <div
-        className="p-6"
+        className="p-6 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-hard)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4">Your Activity</h2>
+        <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">Your Activity</h2>
+        {IS_STAGING_CLIENT &&
+        (user as unknown as { streak_broken_at?: string | null })?.streak_broken_at &&
+        ((user as unknown as { streak_before_break?: number | null })?.streak_before_break ?? 0) >= 3 ? (
+          <div className="mb-4">
+            <StreakProtectCard
+              userId={user!.id}
+              lostStreak={(user as unknown as { streak_before_break: number }).streak_before_break}
+              brokenAt={(user as unknown as { streak_broken_at: string }).streak_broken_at}
+            />
+          </div>
+        ) : null}
         <ActivityHeatmap data={heatmapData} totalOverride={ghTotal > 0 ? ghTotal : undefined} />
       </div>
 
       {/* Your Projects */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)]">Your Projects</h2>
+          <h2 className="text-lg font-bold text-[var(--foreground)]">Your Projects</h2>
           <button
             onClick={() => {
               if (showProjectForm) {
@@ -1462,8 +1462,8 @@ export default function DashboardPage() {
         {/* Verification Guide */}
         {showVerifyGuide && (
           <div
-            className="mb-4 p-4 relative"
-            style={{ backgroundColor: "var(--bg-surface)", border: "2px solid var(--border-hard)" }}
+            className="mb-4 p-4 relative rounded-2xl"
+            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-hard)" }}
           >
             <button
               onClick={() => setShowVerifyGuide(false)}
@@ -1472,8 +1472,8 @@ export default function DashboardPage() {
             >
               <X size={14} />
             </button>
-            <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)] flex items-center gap-2 mb-2">
-              <ShieldCheck size={16} className="text-green-600" />
+            <h3 className="text-sm font-bold text-[var(--foreground)] flex items-center gap-2 mb-2">
+              <ShieldCheck weight="fill" size={16} className="text-green-600" />
               How to Verify Your Projects
             </h3>
             <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed">
@@ -1484,7 +1484,7 @@ export default function DashboardPage() {
                 <strong className="text-[var(--foreground)]">Owner Match (automatic):</strong> If the GitHub repo URL belongs to your GitHub account (the one you signed in with), it verifies instantly.
               </li>
               <li>
-                <strong className="text-[var(--foreground)]">Verification File (for collaborators):</strong> Add a file named <code className="bg-[var(--bg-surface)] px-1.5 py-0.5 border border-[var(--border-subtle)] font-mono text-[10px]">.vibetalent</code> to the root of the repo containing your GitHub username. Then click the <strong>Verify</strong> button on the project card below.
+                <strong className="text-[var(--foreground)]">Verification File (for collaborators):</strong> Add a file named <code className="bg-[var(--bg-surface)] px-1.5 py-0.5 border border-[var(--border-subtle)] font-mono text-[10px] rounded-lg">.vibetalent</code> to the root of the repo containing your GitHub username. Then click the <strong>Verify</strong> button on the project card below.
               </li>
             </ol>
           </div>
@@ -1492,16 +1492,16 @@ export default function DashboardPage() {
 
         {showProjectForm && (
           <div
-            className="p-5 mb-4"
+            className="p-5 mb-4 rounded-2xl"
             style={{
               backgroundColor: "var(--bg-surface)",
-              border: "2px solid var(--border-hard)",
+              border: "1px solid var(--border-hard)",
               boxShadow: "var(--shadow-brutal-sm)",
             }}
           >
-            <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)] mb-3">{editingProjectId ? "Edit Project" : "New Project"}</h3>
+            <h3 className="text-sm font-bold text-[var(--foreground)] mb-3">{editingProjectId ? "Edit Project" : "New Project"}</h3>
             {projectError && (
-              <div className="p-3 mb-3 text-sm font-bold text-[var(--status-error-text)]" style={{ backgroundColor: "var(--status-error-border)", border: "2px solid var(--border-hard)" }}>
+              <div className="p-3 mb-3 text-sm font-bold text-[var(--status-error-text)] rounded-xl" style={{ backgroundColor: "var(--status-error-border)", border: "1px solid var(--border-hard)" }}>
                 {projectError}
               </div>
             )}
@@ -1522,7 +1522,7 @@ export default function DashboardPage() {
                   maxLength={500}
                   className="input-brutal resize-none"
                 />
-                <div className="mt-1 text-right text-xs font-bold text-[var(--text-muted)]">
+                <div className="mt-1 text-right text-xs font-medium text-[var(--text-muted)]">
                   {projectForm.description.length}/500
                 </div>
               </div>
@@ -1534,7 +1534,7 @@ export default function DashboardPage() {
                 className="input-brutal"
               />
               <p className="text-xs font-semibold text-[var(--text-secondary)]">
-                Add a live URL or a GitHub repo — at least one is required.
+                Add a live URL or a GitHub repo: at least one is required.
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <input
@@ -1569,11 +1569,11 @@ export default function DashboardPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1.5 block">Project Screenshot</label>
+                <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">Project Screenshot</label>
                 {projectImagePreview ? (
                   <div>
                     <div
-                      className="relative w-full border-2 border-[var(--border-hard)] overflow-hidden bg-[var(--bg-surface-light)]"
+                      className="relative w-full border border-[var(--border-hard)] overflow-hidden bg-[var(--bg-surface-light)] rounded-2xl"
                       style={{ aspectRatio: "16 / 9" }}
                     >
                       {(() => {
@@ -1613,12 +1613,12 @@ export default function DashboardPage() {
                       })()}
                       <div className="absolute top-2 right-2 flex gap-2">
                         <button type="button" onClick={(e) => { e.stopPropagation(); projectImageInputRef.current?.click(); }} className="w-7 h-7 bg-black/60 text-white rounded-full flex items-center justify-center text-xs hover:bg-black/80 transition-colors" title="Change image">
-                          <Camera size={14} />
+                          <Camera weight="fill" size={14} />
                         </button>
                         <button type="button" onClick={(e) => { e.stopPropagation(); setProjectImageFile(null); setPreviewBlobUrl(null); setProjectImagePreview(null); setImageError(null); }} className="w-7 h-7 bg-black/60 text-white rounded-full flex items-center justify-center text-xs hover:bg-black/80 transition-colors" title="Remove image">&times;</button>
                       </div>
                       {imageProcessing && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-[10px] font-bold uppercase tracking-wider text-white">
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-[10px] font-semibold text-white">
                           Processing…
                         </div>
                       )}
@@ -1627,7 +1627,7 @@ export default function DashboardPage() {
                 ) : (
                   <button
                     type="button"
-                    className={`w-full border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent)] ${imageDragging ? "border-[var(--accent)] bg-[rgba(255,58,0,0.06)]" : "border-[var(--border-hard)] hover:border-[var(--accent)]"}`}
+                    className={`w-full rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent)] ${imageDragging ? "border-[var(--accent)] bg-[rgba(255,58,0,0.06)]" : "border-[var(--border-hard)] hover:border-[var(--accent)]"}`}
                     style={{ aspectRatio: "16 / 9" }}
                     onClick={() => projectImageInputRef.current?.click()}
                     onDragOver={(e) => { e.preventDefault(); setImageDragging(true); }}
@@ -1642,11 +1642,11 @@ export default function DashboardPage() {
                     aria-busy={imageProcessing}
                   >
                     {imageProcessing ? (
-                      <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Processing…</span>
+                      <span className="text-xs font-semibold text-[var(--text-muted)]">Processing…</span>
                     ) : (
                       <>
-                        <Camera size={20} className="text-[var(--text-muted)]" />
-                        <span className="text-xs font-bold uppercase text-[var(--text-muted)]">Drag, click, or paste an image</span>
+                        <Camera weight="fill" size={20} className="text-[var(--text-muted)]" />
+                        <span className="text-xs font-semibold text-[var(--text-muted)]">Drag, click, or paste an image</span>
                         <span className="text-[10px] text-[var(--text-muted-soft)]">Auto-fitted to 16:9. Max 20MB. JPG, PNG, WebP, GIF.</span>
                       </>
                     )}
@@ -1681,12 +1681,12 @@ export default function DashboardPage() {
                 onVerify={verifyProject}
               />
               {verifyingProjectId === project.id && (
-                <div className="mt-1 px-4 py-1.5 text-[10px] font-bold text-[var(--text-muted)] uppercase">
+                <div className="mt-1 px-4 py-1.5 text-[10px] font-medium text-[var(--text-muted)]">
                   Verifying...
                 </div>
               )}
               {verifyMessage && verifyMessage.projectId === project.id && (
-                <div className={`mt-1 px-4 py-1.5 text-[10px] font-bold uppercase ${verifyMessage.success ? "text-green-600" : "text-orange-600"}`}>
+                <div className={`mt-1 px-4 py-1.5 text-[10px] font-semibold ${verifyMessage.success ? "text-green-600" : "text-orange-600"}`}>
                   {verifyMessage.text}
                 </div>
               )}
@@ -1702,17 +1702,17 @@ export default function DashboardPage() {
 
       {/* Log Activity */}
       <div
-        className="p-6"
+        className="p-6 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-hard)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
         <div className="flex flex-col gap-3">
           <div>
-            <h2 className="text-base font-extrabold uppercase flex items-center gap-2 text-[var(--foreground)]">
-              <Flame size={18} className="text-[var(--accent)]" />
+            <h2 className="text-base font-bold flex items-center gap-2 text-[var(--foreground)]">
+              <Fire weight="fill" size={18} className="text-[var(--accent)]" />
               {todayLogged ? "Logged Today" : "Log Activity"}
             </h2>
             <p className="text-xs text-[var(--text-secondary)] font-medium mt-1">
@@ -1723,19 +1723,19 @@ export default function DashboardPage() {
           </div>
           {todayLogged ? (
             <div
-              className="text-center px-3 py-2"
+              className="text-center px-3 py-2 rounded-xl"
               style={{
                 backgroundColor: "var(--status-success-bg)",
-                border: "2px solid var(--border-hard)",
+                border: "1px solid var(--border-hard)",
               }}
             >
               <div className="flex items-center justify-center gap-2 mb-1">
-                <Check size={14} className="text-[var(--status-success-text)]" />
-                <span className="text-xs font-bold uppercase text-[var(--status-success-text)]">Done for today</span>
+                <Check weight="bold" size={14} className="text-[var(--status-success-text)]" />
+                <span className="text-xs font-semibold text-[var(--status-success-text)]">Done for today</span>
               </div>
               <div className="flex items-center justify-center gap-1.5">
-                <Clock size={12} className="text-[var(--status-success-text)]" />
-                <span className="text-sm font-extrabold font-mono text-[var(--status-success-text)]">
+                <Clock weight="fill" size={12} className="text-[var(--status-success-text)]" />
+                <span className="text-sm font-bold font-mono text-[var(--status-success-text)]">
                   <MidnightCountdown onMidnight={handleMidnight} />
                 </span>
               </div>
@@ -1767,29 +1767,46 @@ export default function DashboardPage() {
         </div>
         <div className="mt-4 flex items-center gap-3">
           <StreakCounter streak={user.streak} size="lg" />
-          <span className="text-sm font-bold text-[var(--text-secondary)] uppercase">day streak</span>
+          <span className="text-sm font-bold text-[var(--text-secondary)]">day streak</span>
         </div>
         <div className="mt-2">
           <BadgeDisplay level={user.badge_level} />
         </div>
         {/* Streak Freeze Status */}
         <div className="mt-3 flex items-center gap-2">
-          <ShieldCheck size={16} className="text-cyan-600" />
+          <ShieldCheck weight="fill" size={16} className="text-cyan-600" />
           <span className="text-sm font-bold text-[var(--text-secondary)]">
-            {user.streak_freezes_remaining ?? 2} / 2 Freezes Available
+            {user.streak_freezes_remaining ?? 2} /{" "}
+            {(user.streak_freezes_remaining ?? 2) + (user.streak_freezes_used ?? 0)} Freezes
+            Available
           </span>
           {(user.streak_freezes_used ?? 0) > 0 && (
-            <span className="text-xs font-medium text-zinc-400">
+            <span className="text-xs font-medium text-[var(--text-muted-soft)]">
               ({user.streak_freezes_used} used this month)
             </span>
           )}
         </div>
+        {/* $VIBE wallet — sits with the freeze counter because holding is what
+            raises it, and it's the wallet vouching burns from. */}
+        {IS_STAGING_CLIENT && (
+          <div className="mt-4 pt-4 border-t border-[var(--border-subtle)]">
+            <div className="flex items-center gap-2 mb-2">
+              <Fire weight="fill" size={16} style={{ color: "var(--accent)" }} />
+              <span className="text-sm font-bold text-[var(--text-secondary)]">$VIBE Wallet</span>
+            </div>
+            <LinkWallet
+              initialAddress={
+                (user as unknown as { solana_wallet?: string | null })?.solana_wallet ?? null
+              }
+            />
+          </div>
+        )}
         {/* GitHub Sync */}
         {user.social_links?.github && (
-          <div className="mt-4 pt-4 border-t-2 border-zinc-100">
+          <div className="mt-4 pt-4 border-t border-[var(--border-subtle)]">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Code2 size={16} className="text-[var(--text-secondary)]" />
+                <Code weight="fill" size={16} className="text-[var(--text-secondary)]" />
                 <span className="text-sm font-bold text-[var(--text-secondary)]">GitHub Auto-Sync</span>
               </div>
               <button onClick={handleGithubSync} disabled={syncingGithub} className="btn-brutal btn-brutal-secondary text-xs py-1.5 px-3">
@@ -1797,12 +1814,12 @@ export default function DashboardPage() {
               </button>
             </div>
             {githubSyncResult && (
-              <p className={`text-xs mt-2 font-medium ${githubSyncResult.startsWith("\u2713") ? "text-emerald-700" : githubSyncResult.startsWith("\u26A0") ? "text-amber-700" : "text-zinc-500"}`}>
+              <p className={`text-xs mt-2 font-medium ${githubSyncResult.startsWith("\u2713") ? "text-emerald-700" : githubSyncResult.startsWith("\u26A0") ? "text-amber-700" : "text-[var(--text-muted)]"}`}>
                 {githubSyncResult}
               </p>
             )}
             {lastSyncLabel && !githubSyncResult && (
-              <p className="text-xs mt-2 font-medium text-zinc-400">
+              <p className="text-xs mt-2 font-medium text-[var(--text-muted-soft)]">
                 Last synced {lastSyncLabel}
               </p>
             )}
@@ -1815,14 +1832,14 @@ export default function DashboardPage() {
 
       {/* Embeddable Badge for GitHub */}
       <div
-        className="p-5"
+        className="p-5 rounded-2xl"
         style={{
           backgroundColor: "var(--bg-surface)",
-          border: "2px solid var(--border-hard)",
+          border: "1px solid var(--border-hard)",
           boxShadow: "var(--shadow-brutal)",
         }}
       >
-        <h2 className="text-base font-extrabold uppercase flex items-center gap-2 text-[var(--foreground)] mb-3">
+        <h2 className="text-base font-bold flex items-center gap-2 text-[var(--foreground)] mb-3">
           <ExternalLink size={16} className="text-[var(--accent)]" />
           Embeddable Badge
         </h2>
@@ -1834,24 +1851,24 @@ export default function DashboardPage() {
             weekly rescore. */}
         {badgedProjectCount > 0 ? (
           <div
-            className="mb-3 px-3 py-2 flex items-center gap-2"
-            style={{ backgroundColor: "var(--status-success-bg)", border: "2px solid var(--border-hard)" }}
+            className="mb-3 px-3 py-2 flex items-center gap-2 rounded-xl"
+            style={{ backgroundColor: "var(--status-success-bg)", border: "1px solid var(--border-hard)" }}
           >
-            <ShieldCheck size={14} className="text-[var(--status-success-text)] shrink-0" />
+            <ShieldCheck weight="fill" size={14} className="text-[var(--status-success-text)] shrink-0" />
             <span className="text-xs font-bold text-[var(--status-success-text)]">
-              Badge found in {badgedProjectCount} {badgedProjectCount === 1 ? "repo" : "repos"} — nice.
+              Badge found in {badgedProjectCount} {badgedProjectCount === 1 ? "repo": "repos"}: nice.
             </span>
           </div>
         ) : (
           <p className="mb-3 text-xs font-medium text-[var(--text-secondary)] leading-relaxed">
             Drop this in a repo README to show your streak and score where other
             developers actually look. We&apos;ll spot it on the next scan and add a
-            <span className="font-extrabold text-[var(--accent)]"> Badge Holder </span>
+            <span className="font-bold text-[var(--accent)]"> Badge Holder </span>
             chip to your projects.
           </p>
         )}
 
-        <div className="flex items-center gap-4 p-3 bg-zinc-50 border-2 border-zinc-200 mb-3">
+        <div className="flex items-center gap-4 p-3 bg-[var(--bg-surface-light)] border border-[var(--border-subtle)] rounded-xl mb-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={`/api/badge/${user.username}`}
@@ -1903,8 +1920,8 @@ export default function DashboardPage() {
 
       {activeTab === "inbox" && (
         <div>
-          <h2 className="text-lg font-extrabold uppercase text-[var(--foreground)] mb-4 flex items-center gap-2">
-            <Mail size={20} className="text-[var(--accent)]" />
+          <h2 className="text-lg font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">
+            <Envelope weight="fill" size={20} className="text-[var(--accent)]" />
             Hire Requests
           </h2>
 
@@ -1916,16 +1933,16 @@ export default function DashboardPage() {
             </div>
           ) : inboxError ? (
             <div
-              className="p-8 text-center"
+              className="p-8 text-center rounded-2xl"
               style={{
                 backgroundColor: "var(--bg-surface)",
-                border: "2px solid var(--border-hard)",
+                border: "1px solid var(--border-hard)",
                 boxShadow: "var(--shadow-brutal)",
               }}
               role="alert"
             >
-              <Inbox size={40} className="mx-auto text-[var(--text-muted-soft)] mb-3" />
-              <h3 className="text-base font-extrabold uppercase text-[var(--foreground)]">
+              <Tray weight="duotone" size={40} className="mx-auto text-[var(--text-muted-soft)] mb-3" />
+              <h3 className="text-base font-bold text-[var(--foreground)]">
                 Couldn&apos;t load your inbox
               </h3>
               <p className="text-sm text-[var(--text-secondary)] font-medium mt-2">{inboxError}</p>
@@ -1935,15 +1952,15 @@ export default function DashboardPage() {
             </div>
           ) : hireRequests.length === 0 ? (
             <div
-              className="p-12 text-center"
+              className="p-12 text-center rounded-2xl"
               style={{
                 backgroundColor: "var(--bg-surface)",
-                border: "2px solid var(--border-hard)",
+                border: "1px solid var(--border-hard)",
                 boxShadow: "var(--shadow-brutal)",
               }}
             >
-              <Inbox size={48} className="mx-auto text-[var(--text-muted-soft)] mb-4" />
-              <h3 className="text-lg font-extrabold uppercase text-[var(--foreground)]">No hire requests yet</h3>
+              <Tray weight="duotone" size={48} className="mx-auto text-[var(--text-muted-soft)] mb-4" />
+              <h3 className="text-lg font-bold text-[var(--foreground)]">No hire requests yet</h3>
               <p className="text-sm text-[var(--text-secondary)] font-medium mt-2">
                 When someone wants to hire you, their requests will appear here.
               </p>
@@ -1953,17 +1970,17 @@ export default function DashboardPage() {
               {hireRequests.map((request) => (
                 <div
                   key={request.id}
-                  className="p-5"
+                  className="p-5 rounded-2xl"
                   style={{
                     backgroundColor: request.status === "new" ? "var(--status-warning-bg)" : "var(--bg-surface)",
-                    border: "2px solid var(--border-hard)",
+                    border: "1px solid var(--border-hard)",
                     boxShadow: "var(--shadow-brutal-sm)",
                   }}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 flex-wrap">
-                        <h3 className="text-base font-extrabold text-[var(--foreground)]">
+                        <h3 className="text-base font-bold text-[var(--foreground)]">
                           {senderProfiles[request.id]?.username ? (
                             <Link
                               href={`/profile/${encodeURIComponent(senderProfiles[request.id].username)}`}
@@ -1978,7 +1995,7 @@ export default function DashboardPage() {
                           )}
                         </h3>
                         <span
-                          className="px-2.5 py-0.5 text-xs font-extrabold uppercase"
+                          className="px-2.5 py-0.5 text-xs font-semibold rounded-full"
                           style={{
                             backgroundColor:
                               request.status === "new"
@@ -1992,7 +2009,7 @@ export default function DashboardPage() {
                                 : request.status === "read"
                                 ? "var(--text-secondary)"
                                 : "var(--status-success-text)",
-                            border: "2px solid var(--border-hard)",
+                            border: "1px solid var(--border-hard)",
                           }}
                         >
                           {request.status}
@@ -2004,7 +2021,7 @@ export default function DashboardPage() {
 
                       {request.budget && (
                         <div className="flex items-center gap-1.5 mt-2">
-                          <DollarSign size={14} className="text-[var(--accent)]" />
+                          <CurrencyDollar weight="fill" size={14} className="text-[var(--accent)]" />
                           <span className="text-sm font-bold text-[var(--foreground)]">{request.budget}</span>
                         </div>
                       )}
@@ -2013,7 +2030,7 @@ export default function DashboardPage() {
                         {request.message}
                       </p>
 
-                      <p className="text-xs text-[var(--text-muted-soft)] font-bold uppercase mt-3">
+                      <p className="text-xs text-[var(--text-muted-soft)] font-semibold mt-3">
                         {new Date(request.created_at).toLocaleDateString("en-US", {
                           year: "numeric",
                           month: "short",
@@ -2030,7 +2047,7 @@ export default function DashboardPage() {
                           onClick={() => handleMarkAsRead(request.id)}
                           className="btn-brutal btn-brutal-secondary text-xs py-2 px-3 flex items-center gap-1.5"
                         >
-                          <MailOpen size={14} />
+                          <EnvelopeOpen weight="fill" size={14} />
                           Mark as Read
                         </button>
                       )}
@@ -2045,7 +2062,7 @@ export default function DashboardPage() {
                           color: "var(--text-on-inverted)",
                         }}
                       >
-                        <MessageCircle size={14} />
+                        <ChatCircle weight="fill" size={14} />
                         {replyingTo === request.id ? "Close Chat" : "Chat"}
                       </button>
                       <a
@@ -2089,9 +2106,9 @@ export default function DashboardPage() {
                   {/* Chat Thread */}
                   {replyingTo === request.id && (
                     <div
-                      className="mt-4"
+                      className="mt-4 rounded-xl overflow-hidden"
                       style={{
-                        border: "2px solid var(--border-hard)",
+                        border: "1px solid var(--border-hard)",
                       }}
                     >
                       {/* Messages area */}
@@ -2113,16 +2130,16 @@ export default function DashboardPage() {
                               <div className="flex justify-start">
                                 <div className="max-w-[80%]">
                                   <div className="flex items-center gap-2 mb-1">
-                                    <User size={12} className="text-[var(--text-muted)]" />
-                                    <span className="text-xs font-bold uppercase text-[var(--text-muted)]">
+                                    <User weight="fill" size={12} className="text-[var(--text-muted)]" />
+                                    <span className="text-xs font-semibold text-[var(--text-muted)]">
                                       {request.sender_name}
                                     </span>
                                   </div>
                                   <div
-                                    className="p-3"
+                                    className="p-3 rounded-xl"
                                     style={{
                                       backgroundColor: "var(--bg-surface)",
-                                      border: "2px solid var(--border-hard)",
+                                      border: "1px solid var(--border-hard)",
                                       boxShadow: "var(--shadow-brutal-xs)",
                                     }}
                                   >
@@ -2159,20 +2176,20 @@ export default function DashboardPage() {
                                         }`}
                                       >
                                         {isBuilder ? (
-                                          <Wrench size={12} className="text-[var(--accent)]" />
+                                          <Wrench weight="fill" size={12} className="text-[var(--accent)]" />
                                         ) : (
-                                          <User size={12} className="text-[var(--text-muted)]" />
+                                          <User weight="fill" size={12} className="text-[var(--text-muted)]" />
                                         )}
-                                        <span className="text-xs font-bold uppercase text-[var(--text-muted)]">
+                                        <span className="text-xs font-semibold text-[var(--text-muted)]">
                                           {isBuilder ? "You" : request.sender_name}
                                         </span>
                                       </div>
                                       <div
-                                        className="p-3"
+                                        className="p-3 rounded-xl"
                                         style={{
                                           backgroundColor: isBuilder ? "var(--accent)" : "var(--bg-surface)",
                                           color: isBuilder ? "var(--bg-surface)" : "var(--text-tertiary)",
-                                          border: "2px solid var(--border-hard)",
+                                          border: "1px solid var(--border-hard)",
                                           boxShadow: "var(--shadow-brutal-xs)",
                                         }}
                                       >
@@ -2216,7 +2233,7 @@ export default function DashboardPage() {
                         className="p-3 flex gap-2"
                         style={{
                           backgroundColor: "var(--bg-surface)",
-                          borderTop: "2px solid var(--border-hard)",
+                          borderTop: "1px solid var(--border-hard)",
                         }}
                       >
                         <textarea
