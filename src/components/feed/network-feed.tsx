@@ -91,7 +91,11 @@ const FILTER_ORDER: FeedFilter[] = [
  *  brings its own styles. The class names are `fl-` prefixed to avoid
  *  collisions. */
 const FEED_STYLES = `
-.feed-layout { display: grid; grid-template-columns: 240px 1fr 320px; gap: 48px; max-width: 1440px; margin: 0 auto; padding: 40px; min-height: 100vh; }
+/* minmax(0,1fr) not 1fr: a bare 1fr is minmax(auto,1fr), and the auto floor
+   refuses to shrink below the feed rows' min-content. Between the breakpoint
+   and ~1400px that inflated the centre column past its share, pushed the right
+   rail off-screen and gave the page a horizontal scrollbar. */
+.feed-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr) 320px; gap: 48px; max-width: 1440px; margin: 0 auto; padding: 40px; min-height: 100vh; }
 .feed-layout::before { content: ''; position: fixed; top: -20vh; left: 20vw; width: 60vw; height: 60vw; background: radial-gradient(circle, rgba(255,74,42,0.06) 0%, transparent 60%); z-index: -1; pointer-events: none; }
 .fl-sidebar { position: sticky; top: 100px; height: calc(100vh - 140px); display: flex; flex-direction: column; gap: 32px; }
 .fl-nav-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-radius: 999px; color: var(--text-muted, #8A8B94); text-decoration: none; font-size: 14px; font-weight: 600; transition: all 0.2s ease; border: 1px solid transparent; cursor: pointer; background: none; width: 100%; text-align: left; font-family: inherit; }
@@ -131,7 +135,11 @@ const FEED_STYLES = `
 .fl-chip { padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer; background: var(--bg-surface, #15151A); border: 1px solid var(--border-hard, #2A2A33); color: var(--text-muted, #8A8B94); transition: all 0.15s ease; font-family: inherit; }
 .fl-chip:hover { color: var(--foreground); }
 .fl-chip.active { background: var(--accent, #FF4A2A); color: #0A0A0E; border-color: var(--accent, #FF4A2A); }
-@media(max-width:1100px) { .feed-layout { grid-template-columns: 1fr; padding: 16px; gap: 24px; } .fl-sidebar { position: static; height: auto; } .fl-sidebar-right { display: none; } .fl-nav-list { display: flex; flex-wrap: wrap; gap: 6px; } .fl-nav-item { width: auto; padding: 8px 14px; font-size: 13px; } }
+/* 1240px, not 1100px: the rails plus gaps and padding eat 736px, so at 1100px
+   the centre column was left ~364px — narrower than a feed row's avatar, name
+   and tags need. Collapsing earlier keeps the three-column layout to widths
+   that can actually carry it. */
+@media(max-width:1240px) { .feed-layout { grid-template-columns: 1fr; padding: 16px; gap: 24px; } .fl-sidebar { position: static; height: auto; } .fl-sidebar-right { display: none; } .fl-nav-list { display: flex; flex-wrap: wrap; gap: 6px; } .fl-nav-item { width: auto; padding: 8px 14px; font-size: 13px; } }
 `;
 
 export interface NetworkFeedProps {
