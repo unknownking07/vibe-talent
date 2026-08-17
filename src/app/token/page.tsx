@@ -202,16 +202,16 @@ export default async function TokenPage() {
 
       {/* Live stats */}
       <section className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-3" aria-label="Token statistics">
-        <Stat label="Price" value={stats.priceUsd != null ? formatTokenPrice(stats.priceUsd): ": "} />
+        <Stat label="Price" value={stats.priceUsd != null ? formatTokenPrice(stats.priceUsd) : "—"} />
         <Stat
           label="Market Cap"
           value={
             stats.marketCapUsd != null
               ? `$${Math.round(stats.marketCapUsd).toLocaleString("en-US")}`
-: ": "
+              : "—"
           }
         />
-        <Stat label="Supply" value={stats.supply != null ? formatTokenCount(stats.supply): ": "} />
+        <Stat label="Supply" value={stats.supply != null ? formatTokenCount(stats.supply) : "—"} />
         <Stat label="Burned Forever" value={formatTokenCount(stats.burnedTotal)} accent />
       </section>
 

@@ -39,7 +39,7 @@ export function ReviewerStats({ reviewsGiven, reviewsLast30d, calibration, tier 
       <div className="grid grid-cols-2 gap-3">
         <Stat number={reviewsGiven.toString()} label="Reviews given" tooltip={`${reviewsLast30d} in last 30d`} />
         <Stat
-          number={calibration != null ? `${Math.round(calibration)}%`: ": "}
+          number={calibration != null ? `${Math.round(calibration)}%` : "—"}
           label="Calibration"
           tooltip={calibration != null ? "stars vs builder rank" : `need ${TIER_THRESHOLDS.bronze.minReviews - reviewsGiven} more reviews`}
         />
