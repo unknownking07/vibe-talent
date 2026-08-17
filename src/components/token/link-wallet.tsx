@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { usePrivy } from "@privy-io/react-auth";
 import {
   useWallets as useSolanaWallets,
@@ -22,7 +23,7 @@ export function LinkWallet({ initialAddress }: { initialAddress: string | null }
   if (!PRIVY_CONFIGURED) {
     return (
       <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-        Wallet linking is unavailable — NEXT_PUBLIC_PRIVY_APP_ID is not set.
+        Wallet linking is unavailable because NEXT_PUBLIC_PRIVY_APP_ID is not set.
       </p>
     );
   }
@@ -78,11 +79,21 @@ function LinkWalletBody({ initialAddress }: { initialAddress: string | null }) {
       const nonceRes = await fetch("/api/wallet/nonce");
       if (!nonceRes.ok) {
         const e = await nonceRes.json().catch(() => ({}));
-        throw new Error(e.error || "Couldn't start wallet linking.");
+        throw new Error(e.error || `Couldn't start wallet linking (HTTP ${nonceRes.status}).`);
       }
-      const { message } = await nonceRes.json();
+      const parsed: unknown = await nonceRes.json();
+      const message =
+        typeof parsed === "object" && parsed !== null
+          ? (parsed as Record<string, unknown>).message
+          : undefined;
+      if (typeof message !== "string" || message.length === 0) {
+        throw new Error("The server returned a malformed wallet-linking nonce.");
+      }
 
-      const { signature } = await signMessage({ message, wallet: connected });
+      const { signature } = await signMessage({
+        message: new TextEncoder().encode(message),
+        wallet: connected,
+      });
       const sig = typeof signature === "string" ? signature : signatureToString(signature);
 
       const linkRes = await fetch("/api/wallet/link", {
@@ -92,7 +103,7 @@ function LinkWalletBody({ initialAddress }: { initialAddress: string | null }) {
       });
       if (!linkRes.ok) {
         const e = await linkRes.json().catch(() => ({}));
-        throw new Error(e.error || "Couldn't link that wallet.");
+        throw new Error(e.error || `Couldn't link that wallet (HTTP ${linkRes.status}).`);
       }
       setLinked({ address: connected.address, balance: 0, usd: 0, freezes: BASE_FREEZES });
     } catch (e) {
@@ -107,7 +118,7 @@ function LinkWalletBody({ initialAddress }: { initialAddress: string | null }) {
     setError(null);
     try {
       const res = await fetch("/api/wallet/link", { method: "DELETE" });
-      if (!res.ok) throw new Error("Couldn't unlink that wallet.");
+      if (!res.ok) throw new Error(`Couldn't unlink that wallet (HTTP ${res.status}).`);
       setLinked(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't unlink that wallet.");
@@ -156,6 +167,14 @@ function LinkWalletBody({ initialAddress }: { initialAddress: string | null }) {
           </p>
         )}
 
+        <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+          Want to vouch for someone? Go to their profile and hit{" "}
+          <strong>Back this builder</strong>.{" "}
+          <Link href="/explore" style={{ textDecoration: "underline" }}>
+            Find a builder to back
+          </Link>
+        </p>
+
         {error && (
           <p role="alert" className="mt-2 text-xs font-bold" style={{ color: "var(--status-error-text)" }}>
             {error}
@@ -168,8 +187,9 @@ function LinkWalletBody({ initialAddress }: { initialAddress: string | null }) {
   return (
     <div>
       <p className="text-xs font-medium mb-3" style={{ color: "var(--text-secondary)" }}>
-        Link a Solana wallet to earn extra free streak freezes for holding $VIBE, and to have your
-        vouches credited to you. Signing proves ownership — it doesn&apos;t approve any transaction.
+        Link a Solana wallet to earn extra free streak freezes for holding $VIBE. Linking is optional:
+        you can still vouch for other builders without it. Signing proves ownership; it does not
+        approve any transaction.
       </p>
       <button
         type="button"
@@ -187,6 +207,13 @@ function LinkWalletBody({ initialAddress }: { initialAddress: string | null }) {
           </>
         )}
       </button>
+      <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
+        Vouching is done from another builder&apos;s profile: hit{" "}
+        <strong>Back this builder</strong>.{" "}
+        <Link href="/explore" style={{ textDecoration: "underline" }}>
+          Find a builder to back
+        </Link>
+      </p>
       {error && (
         <p role="alert" className="mt-2 text-xs font-bold" style={{ color: "var(--status-error-text)" }}>
           {error}

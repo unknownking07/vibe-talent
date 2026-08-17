@@ -8,13 +8,32 @@ import {
 import { CHAIN_CONFIGS, isSolanaChain } from "@/lib/chains-config";
 import { buildSolanaTokenBurn, signatureToString } from "@/lib/solana-payment";
 import { buildBurnMemo, type BurnAction } from "@/lib/vibe-burn";
+import { insufficientVibeMessage, friendlyBurnError } from "@/lib/burn-errors";
 
 export type BurnStatus = { msg: string; type: "info" | "error" | "success" } | null;
 
 export type BurnQuote = { amount: bigint; wholeTokens: number; usd: number };
 
+const SOLANA_UNAVAILABLE =
+  "Solana is temporarily unavailable. Your tokens were not burned. Please try again.";
+
+class UserFacingBurnError extends Error {}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function parseBaseUnits(value: unknown): bigint | null {
+  if (typeof value !== "string" || !/^\d+$/.test(value)) return null;
+  try {
+    return BigInt(value);
+  } catch {
+    return null;
+  }
+}
+
 /**
- * The shared burn flow: quote → build → sign → verify server-side.
+ * The shared burn flow: quote → preflight → build → sign → verify server-side.
  *
  * Both burn features run exactly this sequence, so keeping it in one place
  * means the retry policy and the memo binding can't drift between them.
@@ -60,15 +79,65 @@ export function useBurnFlow() {
 
       setBusy(true);
       setSignature(null);
+      let broadcastSignature: string | null = null;
+
       try {
+        setStatus({ msg: "Checking your $VIBE balance...", type: "info" });
+
+        let preflightRes: Response;
+        try {
+          preflightRes = await fetch("/api/vibe/preflight", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ wallet: wallet.address, amount: opts.amount.toString() }),
+          });
+        } catch {
+          throw new UserFacingBurnError(SOLANA_UNAVAILABLE);
+        }
+
+        let preflight: unknown;
+        try {
+          preflight = await preflightRes.json();
+        } catch {
+          throw new UserFacingBurnError(SOLANA_UNAVAILABLE);
+        }
+
+        if (!isRecord(preflight)) {
+          throw new UserFacingBurnError(SOLANA_UNAVAILABLE);
+        }
+
+        if (!preflightRes.ok) {
+          if (
+            preflightRes.status === 409 &&
+            preflight.code === "INSUFFICIENT_VIBE"
+          ) {
+            const required = parseBaseUnits(preflight.required);
+            const available = parseBaseUnits(preflight.available);
+            if (required !== null && available !== null) {
+              throw new UserFacingBurnError(
+                insufficientVibeMessage(required, available, solana.vibeDecimals),
+              );
+            }
+          }
+          throw new UserFacingBurnError(SOLANA_UNAVAILABLE);
+        }
+
+        if (
+          preflight.ok !== true ||
+          typeof preflight.blockhash !== "string" ||
+          preflight.blockhash.length === 0
+        ) {
+          throw new UserFacingBurnError(SOLANA_UNAVAILABLE);
+        }
+
         setStatus({ msg: "Building the burn...", type: "info" });
         const serialized = await buildSolanaTokenBurn({
           senderAddress: wallet.address,
-          rpcUrl: solana.rpc,
           mint: solana.vibeMint,
           decimals: solana.vibeDecimals,
           amount: opts.amount,
           memo: buildBurnMemo(opts.action),
+          recentBlockhash: preflight.blockhash,
         });
 
         setStatus({ msg: "Confirm in your wallet...", type: "info" });
@@ -77,9 +146,9 @@ export function useBurnFlow() {
           wallet,
           chain: "solana:mainnet",
         });
-        const sig =
+        broadcastSignature =
           typeof sigBytes === "string" ? sigBytes : signatureToString(sigBytes);
-        setSignature(sig);
+        setSignature(broadcastSignature);
 
         setStatus({ msg: "Verifying the burn...", type: "info" });
         for (let attempt = 0; attempt < 6; attempt++) {
@@ -87,18 +156,31 @@ export function useBurnFlow() {
           const res = await fetch(opts.endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...opts.body, signature: sig }),
+            body: JSON.stringify({ ...opts.body, signature: broadcastSignature }),
           });
-          if (res.ok) return { signature: sig, result: await res.json() };
+          if (res.ok) {
+            return { signature: broadcastSignature, result: await res.json() };
+          }
           if (res.status !== 404 && res.status !== 503) {
-            const e = await res.json().catch(() => ({}));
-            throw new Error(e.error || "That burn couldn't be verified.");
+            const payload: unknown = await res.json().catch(() => null);
+            const message =
+              isRecord(payload) && typeof payload.error === "string"
+                ? payload.error
+                : "That burn couldn't be verified.";
+            throw new UserFacingBurnError(message);
           }
         }
-        // The tokens ARE destroyed at this point — say so rather than implying
-        // the burn failed.
-        throw new Error(
+
+        throw new UserFacingBurnError(
           "Your $VIBE was burned, but the network hasn't confirmed it yet. It'll count once it finalizes.",
+        );
+      } catch (error) {
+        if (error instanceof UserFacingBurnError) throw error;
+        if (broadcastSignature === null) {
+          throw new Error(friendlyBurnError(error));
+        }
+        throw new Error(
+          "Your $VIBE was burned, but verification could not complete yet. It will count once the network catches up.",
         );
       } finally {
         setBusy(false);

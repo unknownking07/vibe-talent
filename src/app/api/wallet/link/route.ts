@@ -5,7 +5,13 @@ import { Redis } from "@upstash/redis";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { stagingOnlyResponse } from "@/lib/staging";
-import { nonceKey, nonceMessage, SOLANA_ADDRESS_RE } from "@/lib/wallet-link";
+import {
+  nonceKey,
+  nonceMessage,
+  SOLANA_ADDRESS_RE,
+  localConsumeNonce,
+  isLocalWalletNonceStoreEnabled,
+} from "@/lib/wallet-link";
 
 // Binds a Solana wallet to the signed-in account after verifying an ed25519
 // signature over a server-issued nonce.
@@ -31,26 +37,52 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid signature." }, { status: 400 });
     }
 
-    const url = process.env.UPSTASH_REDIS_REST_URL;
-    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-    if (!url || !token) {
-      return NextResponse.json(
-        { error: "Wallet linking is unavailable right now." },
-        { status: 503 },
-      );
-    }
+    const key = nonceKey(user.id);
 
     // Consume the nonce before verifying, so a failed attempt can't be retried
     // against the same challenge.
-    const redis = new Redis({ url, token });
-    const nonce = await redis.get<string>(nonceKey(user.id));
+    let nonce: string | null;
+    if (isLocalWalletNonceStoreEnabled()) {
+      nonce = localConsumeNonce(key);
+    } else {
+      const url = process.env.UPSTASH_REDIS_REST_URL;
+      const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+      if (!url || !token) {
+        return NextResponse.json(
+          { error: "Wallet linking is unavailable right now." },
+          { status: 503 },
+        );
+      }
+
+      let redis: Redis;
+      try {
+        redis = new Redis({ url, token });
+      } catch {
+        return NextResponse.json(
+          { error: "Wallet linking is unavailable right now." },
+          { status: 503 },
+        );
+      }
+
+      try {
+        // GETDEL makes nonce consumption atomic, so concurrent link attempts
+        // cannot both verify the same single-use challenge.
+        nonce = await redis.getdel<string>(key);
+      } catch {
+        console.error("Wallet link: Redis nonce consume failed");
+        return NextResponse.json(
+          { error: "Wallet linking is unavailable right now." },
+          { status: 503 },
+        );
+      }
+    }
+
     if (!nonce) {
       return NextResponse.json(
         { error: "That link request expired. Please try again." },
         { status: 400 },
       );
     }
-    await redis.del(nonceKey(user.id));
 
     let valid = false;
     try {
