@@ -6,6 +6,7 @@
 
 import { fetchVibeUsdCached } from "@/lib/promotion-pricing";
 import { CHAIN_CONFIGS, isSolanaChain } from "@/lib/chains-config";
+import { solanaRpcUrl } from "@/lib/solana-rpc";
 import { VIBE_MINT, VIBE_DECIMALS } from "@/lib/vibe-config";
 
 export type TokenStats = {
@@ -22,7 +23,7 @@ export async function fetchSupply(): Promise<number | null> {
   const solana = CHAIN_CONFIGS.solana;
   if (!isSolanaChain(solana)) return null;
   try {
-    const res = await fetch(solana.rpc, {
+    const res = await fetch(solanaRpcUrl(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

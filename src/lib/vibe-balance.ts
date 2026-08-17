@@ -4,6 +4,7 @@
 // renders must never depend on a live RPC round trip.
 
 import { CHAIN_CONFIGS, isSolanaChain } from "@/lib/chains-config";
+import { solanaRpcUrl } from "@/lib/solana-rpc";
 import { VIBE_MINT, VIBE_DECIMALS } from "@/lib/vibe-config";
 
 const REFRESH_COOLDOWN_MS = 60_000;
@@ -25,7 +26,7 @@ export async function fetchVibeBalance(wallet: string): Promise<bigint | null> {
   const solana = CHAIN_CONFIGS.solana;
   if (!isSolanaChain(solana)) return null;
   try {
-    const res = await fetch(solana.rpc, {
+    const res = await fetch(solanaRpcUrl(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

@@ -9,6 +9,7 @@
 // surfaces everything else immediately.
 
 import { CHAIN_CONFIGS, isSolanaChain } from "@/lib/chains-config";
+import { solanaRpcUrl } from "@/lib/solana-rpc";
 import {
   expectedTokenAmount,
   extractMemos,
@@ -68,7 +69,7 @@ export async function verifyBurnTransaction(
   //    reorgs are vanishingly rare on Solana.
   let txJson: { error?: unknown; result?: SolanaTx };
   try {
-    const res = await fetch(solana.rpc, {
+    const res = await fetch(solanaRpcUrl(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
