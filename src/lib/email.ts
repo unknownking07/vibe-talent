@@ -992,3 +992,65 @@ ${cta(`${siteUrl}/dashboard`, "View dashboard")}
 
   return samples;
 }
+
+/**
+ * Someone burned $VIBE to back this builder.
+ *
+ * Unlike a review or an endorsement, a vouch costs the sender real money and
+ * destroys the tokens permanently, so the email leads with the amount — that
+ * is the part which carries the signal.
+ */
+export async function sendVouchNotificationEmail({
+  email,
+  username,
+  backerLabel,
+  vibeDisplay,
+  usd,
+}: {
+  email: string;
+  username: string;
+  /** Display label for the backer, already "@handle" or "Someone". */
+  backerLabel: string;
+  /** Pre-formatted token count, e.g. "832.3K". */
+  vibeDisplay: string;
+  usd: number;
+}): Promise<void> {
+  const client = getResend();
+  if (!client) return;
+
+  const siteUrl = getSiteUrl();
+  const safeBacker = escapeHtml(backerLabel);
+  const safeVibe = escapeHtml(vibeDisplay);
+  const usdText = `$${usd.toFixed(2)}`;
+
+  const burnBlock = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 28px;background:${BRAND.bgSoft};">
+<tr><td style="padding:18px 22px;border-left:2px solid ${BRAND.accent};">
+<p style="margin:0 0 10px;font-family:${BRAND.fontMono};font-size:22px;font-weight:700;color:${BRAND.accent};">${safeVibe} $VIBE</p>
+<p style="margin:0;font-family:${BRAND.fontSans};font-size:15px;line-height:1.6;color:${BRAND.textBody};">burned permanently by <strong>${safeBacker}</strong> (~${escapeHtml(usdText)}) to back you.</p>
+</td></tr>
+</table>`;
+
+  const body = `
+${eyebrow("Backed")}
+${headline(`${safeBacker} backed you with $VIBE`)}
+${paragraph(`Hey <strong>@${escapeHtml(username)}</strong>, someone put real conviction behind your work. These tokens are destroyed forever &mdash; they cannot be sold or reclaimed.`)}
+${burnBlock}
+${cta(`${siteUrl}/profile/${encodeURIComponent(username)}`, "See who backed you")}
+`;
+
+  try {
+    await sendEmail(client, {
+      to: email,
+      subject: `${backerLabel} burned ${vibeDisplay} $VIBE to back you`,
+      text: `Hey @${username}, ${backerLabel} backed you on VibeTalent.\n\n${vibeDisplay} $VIBE (~${usdText}) burned permanently.\n\nSee your profile: ${siteUrl}/profile/${username}\n\nUnsubscribe: ${unsubUrl(email)}`,
+      html: renderEmail({
+        preheader: `${vibeDisplay} $VIBE (~${usdText}) burned permanently to back you.`,
+        body,
+        footerContext: "You received this because someone backed you on VibeTalent.",
+        unsubLink: unsubUrl(email),
+      }),
+    });
+  } catch (error) {
+    console.error("Failed to send vouch notification email:", error);
+  }
+}

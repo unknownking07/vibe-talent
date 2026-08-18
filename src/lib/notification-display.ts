@@ -26,6 +26,7 @@ export const NOTIFICATION_ICONS: Record<string, Icon> = {
   vibe_score_milestone: Lightning,
   project_missing_links: LinkSimple,
   referral_prompt: UsersThree,
+  vouch_received: Fire,
 };
 
 export const NOTIFICATION_COLORS: Record<string, string> = {
@@ -41,6 +42,7 @@ export const NOTIFICATION_COLORS: Record<string, string> = {
   vibe_score_milestone: "#FF3A00",
   project_missing_links: "#F59E0B",
   referral_prompt: "#FF3A00",
+  vouch_received: "#FF3A00",
 };
 
 /**
@@ -60,6 +62,7 @@ export const NOTIFICATION_TAGS: Record<string, string> = {
   vibe_score_milestone: "Score",
   project_missing_links: "Project",
   referral_prompt: "Referral",
+  vouch_received: "Backing",
 };
 
 /**
