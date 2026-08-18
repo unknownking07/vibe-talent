@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { stagingOnlyResponse } from "@/lib/staging";
 import {
   nonceKey,
   nonceMessage,
@@ -15,9 +14,6 @@ import {
 // same wallet again later.
 
 export async function GET() {
-  const gate = stagingOnlyResponse();
-  if (gate) return gate;
-
   try {
     const authClient = await createServerSupabaseClient();
     const {

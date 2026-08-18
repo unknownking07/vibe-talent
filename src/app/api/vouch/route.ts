@@ -6,7 +6,6 @@ import { createNotification } from "@/lib/notifications";
 import { sendVouchNotificationEmail } from "@/lib/email";
 import { formatTokenCount } from "@/lib/token-stats";
 import { vouchLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
-import { stagingOnlyResponse } from "@/lib/staging";
 import { verifyBurnTransaction } from "@/lib/vibe-burn-verify";
 import { VOUCH } from "@/lib/vibe-config";
 
@@ -19,9 +18,6 @@ import { VOUCH } from "@/lib/vibe-config";
 const SIGNATURE_RE = /^[1-9A-HJ-NP-Za-km-z]{64,100}$/;
 
 export async function POST(req: NextRequest) {
-  const gate = stagingOnlyResponse();
-  if (gate) return gate;
-
   try {
     const authClient = await createServerSupabaseClient();
     const {

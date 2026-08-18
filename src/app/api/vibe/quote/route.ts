@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CHAIN_CONFIGS, isSolanaChain } from "@/lib/chains-config";
 import { expectedTokenAmount, fetchVibeUsdCached } from "@/lib/promotion-pricing";
-import { stagingOnlyResponse } from "@/lib/staging";
 import { VOUCH } from "@/lib/vibe-config";
 
 // GET /api/vibe/quote?usd=5
@@ -18,9 +17,6 @@ import { VOUCH } from "@/lib/vibe-config";
 const MAX_QUOTE_USD = 500;
 
 export async function GET(req: NextRequest) {
-  const gate = stagingOnlyResponse();
-  if (gate) return gate;
-
   try {
     const usd = Number(new URL(req.url).searchParams.get("usd"));
     if (!Number.isFinite(usd) || usd < VOUCH.minUsd) {

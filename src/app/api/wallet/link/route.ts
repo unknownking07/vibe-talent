@@ -4,7 +4,6 @@ import bs58 from "bs58";
 import { Redis } from "@upstash/redis";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { stagingOnlyResponse } from "@/lib/staging";
 import {
   nonceKey,
   nonceMessage,
@@ -17,9 +16,6 @@ import {
 // signature over a server-issued nonce.
 
 export async function POST(req: NextRequest) {
-  const gate = stagingOnlyResponse();
-  if (gate) return gate;
-
   try {
     const authClient = await createServerSupabaseClient();
     const {
@@ -148,9 +144,6 @@ export async function POST(req: NextRequest) {
 
 /** Unlink the current wallet. */
 export async function DELETE() {
-  const gate = stagingOnlyResponse();
-  if (gate) return gate;
-
   const authClient = await createServerSupabaseClient();
   const {
     data: { user },

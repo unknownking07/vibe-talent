@@ -12,7 +12,6 @@ import { BadgeDisplay } from "@/components/ui/badge-display";
 import type { UserWithSocials } from "@/lib/types/database";
 import { StreakCounter } from "@/components/ui/streak-counter";
 import { ActivityHeatmap } from "@/components/ui/activity-heatmap";
-import { IS_STAGING_CLIENT } from "@/lib/staging-client";
 
 // Web3 stack — only pulled in when a restorable break actually exists.
 const LinkWallet = dynamic(
@@ -1419,8 +1418,7 @@ export default function DashboardPage() {
         }}
       >
         <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">Your Activity</h2>
-        {IS_STAGING_CLIENT &&
-        (user as unknown as { streak_broken_at?: string | null })?.streak_broken_at &&
+        {(user as unknown as { streak_broken_at?: string | null })?.streak_broken_at &&
         ((user as unknown as { streak_before_break?: number | null })?.streak_before_break ?? 0) >= 3 ? (
           <div className="mb-4">
             <StreakProtectCard
@@ -1788,19 +1786,17 @@ export default function DashboardPage() {
         </div>
         {/* $VIBE wallet — sits with the freeze counter because holding is what
             raises it, and it's the wallet vouching burns from. */}
-        {IS_STAGING_CLIENT && (
-          <div className="mt-4 pt-4 border-t border-[var(--border-subtle)]">
-            <div className="flex items-center gap-2 mb-2">
-              <Fire weight="fill" size={16} style={{ color: "var(--accent)" }} />
-              <span className="text-sm font-bold text-[var(--text-secondary)]">$VIBE Wallet</span>
-            </div>
-            <LinkWallet
-              initialAddress={
-                (user as unknown as { solana_wallet?: string | null })?.solana_wallet ?? null
-              }
-            />
+        <div className="mt-4 pt-4 border-t border-[var(--border-subtle)]">
+          <div className="flex items-center gap-2 mb-2">
+            <Fire weight="fill" size={16} style={{ color: "var(--accent)" }} />
+            <span className="text-sm font-bold text-[var(--text-secondary)]">$VIBE Wallet</span>
           </div>
-        )}
+          <LinkWallet
+            initialAddress={
+              (user as unknown as { solana_wallet?: string | null })?.solana_wallet ?? null
+            }
+          />
+        </div>
         {/* GitHub Sync */}
         {user.social_links?.github && (
           <div className="mt-4 pt-4 border-t border-[var(--border-subtle)]">

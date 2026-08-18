@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { stagingOnlyResponse } from "@/lib/staging";
 import { fetchVibeUsdCached } from "@/lib/promotion-pricing";
 import { fetchVibeBalance, isBalanceStale, toWholeVibe, balanceUsd } from "@/lib/vibe-balance";
 import { freezeAllowanceFor, BASE_FREEZES } from "@/lib/vibe-config";
@@ -12,9 +11,6 @@ import { freezeAllowanceFor, BASE_FREEZES } from "@/lib/vibe-config";
 // balance current between grants, so it is deliberately cheap and cached.
 
 export async function POST() {
-  const gate = stagingOnlyResponse();
-  if (gate) return gate;
-
   try {
     const authClient = await createServerSupabaseClient();
     const {

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CHAIN_CONFIGS, isSolanaChain } from "@/lib/chains-config";
 import { solanaRpcUrl } from "@/lib/solana-rpc";
-import { stagingOnlyResponse } from "@/lib/staging";
 
 // POST /api/vibe/preflight
 //
@@ -101,9 +100,6 @@ function extractBlockhash(data: unknown): string | null {
 }
 
 export async function POST(req: NextRequest) {
-  const gate = stagingOnlyResponse();
-  if (gate) return gate;
-
   const solana = CHAIN_CONFIGS.solana;
   if (!isSolanaChain(solana)) {
     return NextResponse.json(

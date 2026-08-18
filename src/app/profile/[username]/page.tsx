@@ -14,7 +14,6 @@ import { extractSocialHandle } from "@/lib/social-handles";
 import { ProfileProjectCard } from "@/components/profile/profile-project-card";
 import ReviewsSection from "@/components/profile/reviews-section";
 import { BackedBy } from "@/components/profile/backed-by";
-import { IS_STAGING_CLIENT } from "@/lib/staging-client";
 import { ProfileViewTracker } from "@/components/profile/profile-view-tracker";
 import { ShareButton } from "@/components/share/share-button";
 import Link from "next/link";
@@ -287,7 +286,6 @@ export default async function ProfilePage({
             builderId={user.id}
             builderUsername={user.username}
             viewer={viewer}
-            enabled={IS_STAGING_CLIENT}
           />
 
           {/* Projects Section */}
