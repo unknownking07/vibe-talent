@@ -43,13 +43,10 @@ export async function BackedBy({
   builderId,
   builderUsername,
   viewer,
-  enabled,
 }: {
   builderId: string;
   builderUsername: string;
   viewer: BackedByViewer;
-  /** Staging gate — the burn flow isn't released in production yet. */
-  enabled: boolean;
 }) {
   let backers: Backer[] = [];
   let totalTokens = 0;
@@ -114,7 +111,7 @@ export async function BackedBy({
 
   // Nobody can vouch for themselves, so the owner sees the block only once it
   // has content worth showing.
-  const canVouch = enabled && viewer !== null && viewer.id !== builderId;
+  const canVouch = viewer !== null && viewer.id !== builderId;
   if (backers.length === 0 && !canVouch) return null;
 
   return (

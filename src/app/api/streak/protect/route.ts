@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { stagingOnlyResponse } from "@/lib/staging";
 import { verifyBurnTransaction } from "@/lib/vibe-burn-verify";
 import { STREAK_PROTECT } from "@/lib/vibe-config";
 
@@ -19,9 +18,6 @@ function ymd(d: Date): string {
 }
 
 export async function POST(req: NextRequest) {
-  const gate = stagingOnlyResponse();
-  if (gate) return gate;
-
   try {
     const authClient = await createServerSupabaseClient();
     const {

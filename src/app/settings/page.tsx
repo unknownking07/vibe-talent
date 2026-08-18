@@ -13,7 +13,6 @@ import { EmailPreferences } from "@/components/dashboard/email-preferences";
 import { PrivacyPreferences } from "@/components/dashboard/privacy-preferences";
 import { GithubConnection } from "@/components/dashboard/github-connection";
 import dynamic from "next/dynamic";
-import { IS_STAGING_CLIENT } from "@/lib/staging-client";
 
 // ~60 web3 chunks; only load them when the wallet section actually renders.
 const LinkWallet = dynamic(
@@ -615,20 +614,18 @@ export default function SettingsPage() {
         <PrivacyPreferences />
       </div>
 
-      {/* $VIBE wallet — staging only until the burn features ship. */}
-      {IS_STAGING_CLIENT && (
-        <div className="mb-8 p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
-          <h2 className="text-lg font-bold text-[var(--foreground)] mb-1">$VIBE Wallet</h2>
-          <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
-            Link a Solana wallet to earn extra free streak freezes for holding $VIBE.
-          </p>
-          <LinkWallet
-            initialAddress={
-              (user as unknown as { solana_wallet?: string | null })?.solana_wallet ?? null
-            }
-          />
-        </div>
-      )}
+      {/* $VIBE wallet */}
+      <div className="mb-8 p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+        <h2 className="text-lg font-bold text-[var(--foreground)] mb-1">$VIBE Wallet</h2>
+        <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
+          Link a Solana wallet to earn extra free streak freezes for holding $VIBE.
+        </p>
+        <LinkWallet
+          initialAddress={
+            (user as unknown as { solana_wallet?: string | null })?.solana_wallet ?? null
+          }
+        />
+      </div>
 
       {/* Referral */}
       <div
