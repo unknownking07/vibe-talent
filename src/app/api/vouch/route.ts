@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createNotification } from "@/lib/notifications";
+import { sendVouchNotificationEmail } from "@/lib/email";
+import { formatTokenCount } from "@/lib/token-stats";
 import { vouchLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
 import { stagingOnlyResponse } from "@/lib/staging";
 import { verifyBurnTransaction } from "@/lib/vibe-burn-verify";
@@ -107,6 +110,53 @@ export async function POST(req: NextRequest) {
       console.error("Failed to record vouch:", insErr);
       return NextResponse.json({ error: "Couldn't record that vouch." }, { status: 500 });
     }
+
+    // Tell the builder. A vouch costs the sender real money and destroys the
+    // tokens permanently, so it was the one meaningful action on the platform
+    // whose recipient was never told it happened.
+    //
+    // Fire-and-forget, exactly like reviews: the burn is already confirmed
+    // on-chain and recorded, so a notification or mail failure must not turn a
+    // completed, irreversible action into an error for the backer.
+    // Resolved here rather than up front so a burn that fails verification
+    // never pays for the extra round trip. `username` is nullable, so fall
+    // back to a label that still reads correctly.
+    const { data: voucherRow } = await sb
+      .from("users")
+      .select("username")
+      .eq("id", user.id)
+      .single();
+    const backerLabel = voucherRow?.username ? `@${voucherRow.username}` : "Someone";
+    const vibeDisplay = formatTokenCount(Number(verdict.burned) / 1e9);
+    createNotification({
+      user_id: builder.id,
+      type: "vouch_received",
+      title: "Someone backed you",
+      message: `${backerLabel} burned ${vibeDisplay} $VIBE to back you`,
+      metadata: {
+        voucher_username: voucherRow?.username ?? null,
+        vibe_burned: verdict.burned.toString(),
+        usd: usdAmount,
+        tx_ref: signature,
+      },
+    }).catch(console.error);
+
+    (async () => {
+      try {
+        const { data: userData } = await sb.auth.admin.getUserById(builder.id);
+        const builderEmail = userData?.user?.email;
+        if (!builderEmail) return;
+        await sendVouchNotificationEmail({
+          email: builderEmail,
+          username: builder.username,
+          backerLabel,
+          vibeDisplay,
+          usd: usdAmount,
+        });
+      } catch (err) {
+        console.error("Failed to send vouch email:", err);
+      }
+    })();
 
     // Recompute the builder's score. Without this the vouch has no effect on
     // vibe_score until their next activity fires the streak_logs trigger.
