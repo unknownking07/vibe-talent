@@ -12,6 +12,20 @@
 
 import { CHAIN_CONFIGS, isSolanaChain } from "@/lib/chains-config";
 
+function publicFallback(): string {
+  const solana = CHAIN_CONFIGS.solana;
+  return isSolanaChain(solana) ? solana.rpc : "";
+}
+
+function isHttpUrl(value: string): boolean {
+  try {
+    const { protocol } = new URL(value);
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 /**
  * The Solana JSON-RPC endpoint for server-side calls.
  *
@@ -25,8 +39,21 @@ import { CHAIN_CONFIGS, isSolanaChain } from "@/lib/chains-config";
  */
 export function solanaRpcUrl(): string {
   const configured = process.env.SOLANA_RPC_URL?.trim();
-  if (configured) return configured;
 
-  const solana = CHAIN_CONFIGS.solana;
-  return isSolanaChain(solana) ? solana.rpc : "";
+  if (configured) {
+    if (isHttpUrl(configured)) return configured;
+
+    // Pasting the bare API key is the easy mistake: providers show the key and
+    // the endpoint as separate fields. `fetch()` would throw on it and the
+    // caller would report the same opaque "Solana unavailable" 503 this
+    // variable exists to fix, so name the misconfiguration instead of
+    // failing over in silence.
+    console.error(
+      "SOLANA_RPC_URL is set but is not an http(s) URL, so it was ignored. " +
+        "Expected the provider's full endpoint, e.g. " +
+        "https://mainnet.helius-rpc.com/?api-key=<key> — not the key alone.",
+    );
+  }
+
+  return publicFallback();
 }
