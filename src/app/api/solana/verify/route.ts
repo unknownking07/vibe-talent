@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { validateUUID } from "@/lib/validation";
 import { CHAIN_CONFIGS, isSolanaChain } from "@/lib/chains-config";
+import { solanaRpcUrl } from "@/lib/solana-rpc";
 import {
   isValidPackageId,
   expiresAtFor,
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 5. Fetch the finalized transaction.
-    const txRes = await fetch(solana.rpc, {
+    const txRes = await fetch(solanaRpcUrl(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

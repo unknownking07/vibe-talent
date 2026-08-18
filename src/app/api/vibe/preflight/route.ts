@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { CHAIN_CONFIGS, isSolanaChain } from "@/lib/chains-config";
+import { solanaRpcUrl } from "@/lib/solana-rpc";
 import { stagingOnlyResponse } from "@/lib/staging";
 
 // POST /api/vibe/preflight
@@ -168,7 +169,7 @@ export async function POST(req: NextRequest) {
   let blockhashRes: Response;
   try {
     [accountsRes, blockhashRes] = await Promise.all([
-      fetch(solana.rpc, {
+      fetch(solanaRpcUrl(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -182,7 +183,7 @@ export async function POST(req: NextRequest) {
           ],
         }),
       }),
-      fetch(solana.rpc, {
+      fetch(solanaRpcUrl(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
