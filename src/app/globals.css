@@ -20,7 +20,13 @@
    ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  --background: #F6F4F2;
+  /* Deeper than it looks like it should be, on purpose. Cards are pure white
+     (--bg-surface), so at the old #F6F4F2 the page and its cards differed by
+     1.10:1 — visually one sheet, with 8%-opacity borders carrying all the
+     structure. ~80% of painted area sat above 0.75 luminance and the UI read
+     as glaring in light mode. This drops the field and lets white cards
+     actually advance off it. Dark mode already layers warm greys this way. */
+  --background: #EDE7E1;
   --foreground: #141110;
 
   --bg-surface: #FFFFFF;
@@ -47,7 +53,11 @@
   --badge-gold: #CA8A04;
   --badge-diamond: #0891B2;
 
-  --hm-0: #ECE8E5;
+  /* Tracks --background. The empty cell must stay legible as absence: the
+     homepage proof wall sits directly on the page, so at the old #ECE8E5 it
+     disappeared once the background deepened. This holds the original
+     empty-cell-to-page ratio (1.12:1) against the new background. */
+  --hm-0: #E2DBD4;
   --hm-1: #FFD4C4;
   --hm-2: #FFA07A;
   --hm-3: #FF6B3A;

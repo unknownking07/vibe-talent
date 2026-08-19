@@ -8,12 +8,16 @@ import { HeroSceneStyles, BuilderScene, HirerScene } from "@/components/homepage
  * the headline moved into ProofWallHero and the stat strip died with it, so
  * this is now purely the self-select section that follows the wall.
  *
- * Hiring leads. The wall above already argues the builder case and its CTA is
- * "Start your streak", so a second equally-loud builder pitch here was the
- * page repeating itself. Hirers, who never get a pitch above the fold and may
- * never sign up at all (browsing and hiring are free), get the primary card:
- * listed first, accent CTA, brighter surface. The builder card stays as the
- * quieter second option for anyone who scrolled past the hero CTA.
+ * Hiring leads, matching the hero. VibeTalent is sold as a hiring platform and
+ * demand is the scarce side, so hirers get the primary card here — listed
+ * first, accent CTA, brighter surface — exactly as they get the accent button
+ * above. The builder card stays the quieter second option.
+ *
+ * This section expands a choice the hero has already offered: its primary
+ * "Hire builders" button points at the same /explore route as this card, and
+ * its secondary at the same signup as the other. Keep the two in sync — if the
+ * hero loses that pairing, this stops being the detailed version of a question
+ * already asked and goes back to interrupting the page with "who are you?".
  */
 export function ForkHero() {
   return (

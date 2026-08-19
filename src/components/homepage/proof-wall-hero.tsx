@@ -45,10 +45,15 @@ export function ProofWallHero({
   // Every figure here is a live count. Deliberately absent: the old
   // "Top Vibers" tile, which rendered topVibecoders.length against an array
   // hardcoded to .slice(0, 3) — it read "3" no matter what the data did.
+  //
+  // Also deliberate: no stat is accent-coloured. The hero is single-colour
+  // text by design, so the only accent above the fold is the primary button.
+  // "Builders tracked" used to carry an `accent: true` flag; don't put it back
+  // without changing that rule too.
   const stats = [
     { label: "GitHub-verified days", value: totalBuilderDays.toLocaleString("en-US") },
     { label: "Longest streak", value: longestStreak, suffix: "days" },
-    { label: "Builders tracked", value: buildersTracked, accent: true },
+    { label: "Builders tracked", value: buildersTracked },
     { label: "Projects shipped", value: totalProjects },
     { label: "Avg. streak", value: avgStreak, suffix: avgStreak === 1 ? "day" : "days" },
   ];
@@ -60,11 +65,12 @@ export function ProofWallHero({
         <h1 className="normal-case text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] text-[var(--foreground)]">
           The resume is dead.
           <br />
-          <span className="text-[var(--accent)]">the proof of work isn&apos;t</span>
+          The proof of work isn&apos;t.
         </h1>
         <p className="text-sm sm:text-base text-[var(--text-secondary)] font-medium leading-relaxed lg:pb-2">
           Every square below is a day a builder shipped, read straight from GitHub. Hover any square
-          for the builder, the day, and the commits.
+          for the builder, the day, and the commits. This is what you build here. It&apos;s also what
+          you hire on.
         </p>
       </div>
 
@@ -107,7 +113,7 @@ export function ProofWallHero({
         </p>
       </div>
 
-      {/* Real totals + the one CTA */}
+      {/* Real totals + the builder/hirer CTAs */}
       <div className="mt-8 flex flex-wrap items-end justify-between gap-x-10 gap-y-8">
         {/* Wording matters on the first tile. Roughly half of streak_logs
             predates the platform (the github-sync backfill reads a year of
@@ -121,11 +127,7 @@ export function ProofWallHero({
               <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                 {s.label}
               </div>
-              <div
-                className={`mt-1 text-3xl sm:text-4xl font-extrabold tracking-tight ${
-                  s.accent ? "text-[var(--accent)]" : "text-[var(--foreground)]"
-                }`}
-              >
+              <div className="mt-1 text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--foreground)]">
                 {s.value}
                 {s.suffix && (
                   <span className="ml-1.5 text-base font-bold text-[var(--text-muted)]">{s.suffix}</span>
@@ -134,13 +136,37 @@ export function ProofWallHero({
             </div>
           ))}
         </div>
-        <Link
-          href="/auth/signup"
-          className="inline-flex h-12 items-center justify-center rounded-xl px-6 text-sm font-semibold text-white transition-[background-color,transform] hover:bg-[var(--accent-hover)] active:scale-[0.98]"
-          style={{ backgroundColor: "var(--accent)" }}
-        >
-          Start your streak
-        </Link>
+        {/* Two doors, and hiring is the primary one. VibeTalent is sold as a
+            hiring platform: demand is the scarce side, builder supply is not,
+            so the accent goes to /explore and builder signup takes the quieter
+            slot. Keeping both here is what stops the builder/hirer fork below
+            from reading as an abrupt "who are you?" — that section is now the
+            detailed version of a choice the hero already offered.
+
+            "Hire builders" is deliberately unqualified and names the intent
+            rather than the mechanic. The old label led with "Hiring?", which
+            suits a secondary aside but makes a primary CTA hedge. "Start your
+            streak" needs no qualifier either — only builders have streaks, so
+            it self-selects on its own. */}
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <Link
+            href="/explore"
+            className="inline-flex h-12 w-full sm:w-auto items-center justify-center rounded-xl px-6 text-sm font-semibold text-white transition-[background-color,transform] hover:bg-[var(--accent-hover)] active:scale-[0.98]"
+            style={{ backgroundColor: "var(--accent)" }}
+          >
+            Hire builders
+          </Link>
+          <Link
+            href="/auth/signup"
+            className="inline-flex h-12 w-full sm:w-auto items-center justify-center rounded-xl px-6 text-sm font-semibold text-[var(--foreground)] transition-[background-color,transform] hover:bg-[var(--bg-surface-light)] active:scale-[0.98]"
+            style={{
+              backgroundColor: "var(--bg-surface)",
+              border: "1px solid var(--border-subtle)",
+            }}
+          >
+            Start your streak
+          </Link>
+        </div>
       </div>
     </section>
   );
