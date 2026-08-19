@@ -72,12 +72,30 @@ jobs:
           [ "$missing" -eq 0 ] || exit 1
 
       - name: Install postgresql-client 17
+        # 10 minutes is far longer than this needs; it exists so a step that
+        # stalls fails the run instead of burning the job's whole budget.
+        timeout-minutes: 10
+        env:
+          DEBIAN_FRONTEND: noninteractive
         run: |
           set -euo pipefail
-          # The runner image ships an older client; pg_dump must be >= the
-          # server (Postgres 17.6) or it refuses to dump.
+          # pg_dump must be >= the server (Postgres 17.6) or it refuses to dump.
+
+          # The runner image already ships a pg_dump, and it is periodically
+          # bumped. When it is already 17+, adding the pgdg repo is pure risk
+          # for no gain, so check first.
+          if command -v pg_dump >/dev/null && pg_dump --version | grep -qE '\b1[7-9]\.|\b[2-9][0-9]\.'; then
+            echo "Runner already has a new enough client:"
+            pg_dump --version
+            exit 0
+          fi
+
+          # --batch --yes: without them gpg PROMPTS "File exists. Overwrite?"
+          # when the image already carries the pgdg keyring, and a prompt on a
+          # runner never gets an answer — the step hangs until it is killed.
+          # That is exactly what happened on 2026-08-19.
           curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
-            | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+            | sudo gpg --batch --yes --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
           echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
             | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
           sudo apt-get update -qq
