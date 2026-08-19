@@ -14,6 +14,7 @@ import { extractSocialHandle } from "@/lib/social-handles";
 import { ProfileProjectCard } from "@/components/profile/profile-project-card";
 import ReviewsSection from "@/components/profile/reviews-section";
 import { BackedBy } from "@/components/profile/backed-by";
+import { BagsLaunches } from "@/components/profile/bags-launches";
 import { ProfileViewTracker } from "@/components/profile/profile-view-tracker";
 import { ShareButton } from "@/components/share/share-button";
 import Link from "next/link";
@@ -287,6 +288,11 @@ export default async function ProfilePage({
             builderUsername={user.username}
             viewer={viewer}
           />
+
+          {/* Sits directly under Backed by: both answer "has anyone put
+              something real behind this person", one in burned tokens and one
+              in shipped launches. */}
+          <BagsLaunches builderId={user.id} />
 
           {/* Projects Section */}
           {(() => {
