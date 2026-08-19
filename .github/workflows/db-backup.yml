@@ -80,37 +80,46 @@ jobs:
         run: |
           set -euo pipefail
           # pg_dump must be >= the server (Postgres 17.6) or it refuses to dump.
+          #
+          # /usr/bin/pg_dump is NOT the binary — it is a wrapper shipped by
+          # postgresql-client-common that dispatches to a versioned binary under
+          # /usr/lib/postgresql/<major>/bin. On the runner it keeps selecting 16
+          # even once 17 is installed, so `pg_dump --version` still reports
+          # 16.14 and the dump aborts on a version mismatch. Installing alone
+          # never fixes this; the dump step has to call the versioned binary.
 
-          # The runner image already ships a pg_dump, and it is periodically
-          # bumped. When it is already 17+, adding the pgdg repo is pure risk
-          # for no gain, so check first.
-          # Parse the major version as an integer. Do NOT pattern-match the
-          # raw string: `pg_dump (PostgreSQL) 16.14 (Ubuntu 16.14-1.pgdg24.04+1)`
-          # contains "24." in the packaging suffix, which a naive version regex
-          # reads as Postgres 24 and wrongly skips this install — that shipped
-          # once and cost a run.
-          HAVE=""
-          if command -v pg_dump >/dev/null; then
-            HAVE=$(pg_dump --version | sed -nE 's/^pg_dump \(PostgreSQL\) ([0-9]+).*/\1/p')
-          fi
-          if [ -n "$HAVE" ] && [ "$HAVE" -ge 17 ]; then
-            echo "Runner already has pg_dump major version $HAVE:"
-            pg_dump --version
-            exit 0
-          fi
-          echo "Runner pg_dump major version: ${HAVE:-none} - installing 17"
+          find_pg_dump() {
+            local d v
+            for d in $(ls -d /usr/lib/postgresql/*/bin 2>/dev/null | sort -Vr); do
+              [ -x "$d/pg_dump" ] || continue
+              v=$("$d/pg_dump" --version | sed -nE 's/^pg_dump \(PostgreSQL\) ([0-9]+).*/\1/p')
+              if [ -n "$v" ] && [ "$v" -ge 17 ]; then echo "$d/pg_dump"; return 0; fi
+            done
+            return 1
+          }
 
-          # --batch --yes: without them gpg PROMPTS "File exists. Overwrite?"
-          # when the image already carries the pgdg keyring, and a prompt on a
-          # runner never gets an answer — the step hangs until it is killed.
-          # That is exactly what happened on 2026-08-19.
-          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
-            | sudo gpg --batch --yes --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
-          echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
-            | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq postgresql-client-17
-          pg_dump --version
+          if PGDUMP=$(find_pg_dump); then
+            echo "Found a suitable client already installed."
+          else
+            echo "No pg_dump >= 17 present - installing."
+            # --batch --yes: without them gpg PROMPTS "File exists. Overwrite?"
+            # when the image already carries the pgdg keyring, and a prompt on a
+            # runner never gets an answer - the step hangs until it is killed.
+            curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+              | sudo gpg --batch --yes --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+            echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+              | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client-17
+            PGDUMP=$(find_pg_dump) || {
+              echo "::error::postgresql-client-17 installed but no pg_dump >= 17 found"
+              exit 1
+            }
+          fi
+
+          echo "PG_DUMP=$PGDUMP" >> "$GITHUB_ENV"
+          echo "Using: $PGDUMP"
+          "$PGDUMP" --version
 
       - name: Dump and encrypt
         env:
@@ -128,7 +137,7 @@ jobs:
           # --clean --if-exists: the dump is replayable onto a non-empty DB.
           # Piped straight into gzip → openssl so the plaintext dump is never
           # written to the runner's disk.
-          pg_dump "$DB_URL" \
+          "$PG_DUMP" "$DB_URL" \
             --schema=public \
             --schema=auth \
             --no-owner \
