@@ -84,11 +84,21 @@ jobs:
           # The runner image already ships a pg_dump, and it is periodically
           # bumped. When it is already 17+, adding the pgdg repo is pure risk
           # for no gain, so check first.
-          if command -v pg_dump >/dev/null && pg_dump --version | grep -qE '\b1[7-9]\.|\b[2-9][0-9]\.'; then
-            echo "Runner already has a new enough client:"
+          # Parse the major version as an integer. Do NOT pattern-match the
+          # raw string: `pg_dump (PostgreSQL) 16.14 (Ubuntu 16.14-1.pgdg24.04+1)`
+          # contains "24." in the packaging suffix, which a naive version regex
+          # reads as Postgres 24 and wrongly skips this install — that shipped
+          # once and cost a run.
+          HAVE=""
+          if command -v pg_dump >/dev/null; then
+            HAVE=$(pg_dump --version | sed -nE 's/^pg_dump \(PostgreSQL\) ([0-9]+).*/\1/p')
+          fi
+          if [ -n "$HAVE" ] && [ "$HAVE" -ge 17 ]; then
+            echo "Runner already has pg_dump major version $HAVE:"
             pg_dump --version
             exit 0
           fi
+          echo "Runner pg_dump major version: ${HAVE:-none} - installing 17"
 
           # --batch --yes: without them gpg PROMPTS "File exists. Overwrite?"
           # when the image already carries the pgdg keyring, and a prompt on a
