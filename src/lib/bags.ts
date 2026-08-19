@@ -104,3 +104,73 @@ export async function fetchLaunchesForWallet(wallet: string): Promise<string[] |
   // Drop anything that isn't a plausible mint rather than trusting the payload.
   return mints.filter((m): m is string => typeof m === "string" && SOLANA_ADDRESS_RE.test(m));
 }
+
+/** A launch this wallet genuinely created, as confirmed by the creator record. */
+export type BagsLaunch = {
+  tokenMint: string;
+  /** Verified X handle Bags holds for the creator, when it has one. */
+  twitterUsername: string | null;
+  /** Creator's share of fees, in basis points. */
+  royaltyBps: number;
+};
+
+type CreatorEntry = {
+  wallet?: unknown;
+  isCreator?: unknown;
+  twitterUsername?: unknown;
+  royaltyBps?: unknown;
+};
+
+/**
+ * Creator records for one token, or null when Bags could not answer.
+ *
+ * An empty array is a real answer: Bags knows the mint but holds no creator
+ * record for it.
+ */
+export async function fetchTokenCreators(tokenMint: string): Promise<CreatorEntry[] | null> {
+  if (!SOLANA_ADDRESS_RE.test(tokenMint)) return null;
+  const response = await bagsGet("/token-launch/creator/v3", { tokenMint });
+  return Array.isArray(response) ? (response as CreatorEntry[]) : null;
+}
+
+/**
+ * The launches a wallet actually created.
+ *
+ * Two steps, deliberately. `fee-share/admin/list` answers "which mints does
+ * this wallet hold fee-share authority over", which is NOT the same question as
+ * "what did this wallet launch" — it also returns tokens carrying no creator
+ * record at all. Reporting those as launches would credit a builder with work
+ * they did not do, which is the one failure this product cannot afford.
+ *
+ * So each candidate is confirmed against its creator record, and only mints
+ * listing this wallet with `isCreator: true` survive.
+ *
+ * Verified against production data: wallet 4Evn…WwX9 has three fee-share mints
+ * and exactly one real launch ($VIBE); the other two return no creators.
+ */
+export async function fetchCreatedLaunches(wallet: string): Promise<BagsLaunch[] | null> {
+  const candidates = await fetchLaunchesForWallet(wallet);
+  if (candidates === null) return null;
+  if (candidates.length === 0) return [];
+
+  const launches: BagsLaunch[] = [];
+  for (const tokenMint of candidates) {
+    const creators = await fetchTokenCreators(tokenMint);
+    if (!creators) continue; // couldn't confirm — omit rather than guess
+
+    const mine = creators.find(
+      (c) => typeof c.wallet === "string" && c.wallet === wallet && c.isCreator === true,
+    );
+    if (!mine) continue;
+
+    launches.push({
+      tokenMint,
+      twitterUsername:
+        typeof mine.twitterUsername === "string" && mine.twitterUsername.trim()
+          ? mine.twitterUsername.trim()
+          : null,
+      royaltyBps: typeof mine.royaltyBps === "number" ? mine.royaltyBps : 0,
+    });
+  }
+  return launches;
+}

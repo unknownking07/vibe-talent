@@ -1,6 +1,10 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 
-import { bagsConfigured, fetchLaunchesForWallet } from "@/lib/bags";
+import {
+  bagsConfigured,
+  fetchLaunchesForWallet,
+  fetchCreatedLaunches,
+} from "@/lib/bags";
 
 const WALLET = "DYp2cUmgoBEYPxN9xPwiqKZoi5WR4SRAWJnLD1d5QAdT";
 const MINT = "FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS";
@@ -125,5 +129,136 @@ describe("fetchLaunchesForWallet", () => {
 
     mockFetch({ success: true, response: { tokenMints: "nope" } });
     expect(await fetchLaunchesForWallet(WALLET)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fetchCreatedLaunches
+// ---------------------------------------------------------------------------
+// Regression suite for the bug this function exists to prevent.
+// fee-share/admin/list returns mints a wallet holds FEE AUTHORITY over, which
+// is not the same as mints it launched. Against production, wallet 4Evn…WwX9
+// returns three mints and has launched exactly one ($VIBE); the other two carry
+// no creator record. Reporting three would credit a builder with work they did
+// not do — the one failure a reputation product cannot ship.
+
+describe("fetchCreatedLaunches", () => {
+  const WALLET_A = "4EvnGaySWW6fhmQeTbjb7HXRbqzyCGWXPy8J8zziWwX9";
+  const MINT_REAL = "FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS";
+  const MINT_EMPTY = "5BXaYHuS3FPxQMac9Zensi85XZ3tHo7YdzaxUqTBAGS";
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  /** Route each URL to a canned payload so one test can span both endpoints. */
+  function routeFetch(routes: { admin: unknown; creators: Record<string, unknown> }) {
+    const fn = vi.fn().mockImplementation((input: URL | string) => {
+      const url = String(input);
+      const body = url.includes("/fee-share/admin/list")
+        ? routes.admin
+        : routes.creators[new URL(url).searchParams.get("tokenMint") ?? ""] ?? {
+            success: true,
+            response: [],
+          };
+      return Promise.resolve({ ok: true, status: 200, json: async () => body });
+    });
+    vi.stubGlobal("fetch", fn);
+    return fn;
+  }
+
+  it("keeps only mints where this wallet is a confirmed creator", async () => {
+    vi.stubEnv("BAGS_API_KEY", "k");
+    routeFetch({
+      admin: { success: true, response: { tokenMints: [MINT_EMPTY, MINT_REAL] } },
+      creators: {
+        [MINT_EMPTY]: { success: true, response: [] },
+        [MINT_REAL]: {
+          success: true,
+          response: [
+            { wallet: WALLET_A, isCreator: true, twitterUsername: "abhiontwt", royaltyBps: 8000 },
+          ],
+        },
+      },
+    });
+
+    const out = await fetchCreatedLaunches(WALLET_A);
+    expect(out).toEqual([
+      { tokenMint: MINT_REAL, twitterUsername: "abhiontwt", royaltyBps: 8000 },
+    ]);
+  });
+
+  it("excludes a token where the wallet is listed but is not the creator", async () => {
+    vi.stubEnv("BAGS_API_KEY", "k");
+    routeFetch({
+      admin: { success: true, response: { tokenMints: [MINT_REAL] } },
+      creators: {
+        [MINT_REAL]: {
+          success: true,
+          // fee-share recipient on someone else's launch
+          response: [{ wallet: WALLET_A, isCreator: false, royaltyBps: 1000 }],
+        },
+      },
+    });
+    expect(await fetchCreatedLaunches(WALLET_A)).toEqual([]);
+  });
+
+  it("excludes a token created by a different wallet", async () => {
+    vi.stubEnv("BAGS_API_KEY", "k");
+    routeFetch({
+      admin: { success: true, response: { tokenMints: [MINT_REAL] } },
+      creators: {
+        [MINT_REAL]: {
+          success: true,
+          response: [{ wallet: "SomeOtherWalletEntirely1111111111111111111", isCreator: true },
+          ],
+        },
+      },
+    });
+    expect(await fetchCreatedLaunches(WALLET_A)).toEqual([]);
+  });
+
+  it("omits a mint whose creator record could not be fetched, rather than assuming", async () => {
+    vi.stubEnv("BAGS_API_KEY", "k");
+    const fn = vi.fn().mockImplementation((input: URL | string) => {
+      const url = String(input);
+      if (url.includes("/fee-share/admin/list")) {
+        return Promise.resolve({
+          ok: true, status: 200,
+          json: async () => ({ success: true, response: { tokenMints: [MINT_REAL] } }),
+        });
+      }
+      return Promise.reject(new Error("network"));
+    });
+    vi.stubGlobal("fetch", fn);
+    expect(await fetchCreatedLaunches(WALLET_A)).toEqual([]);
+  });
+
+  it("propagates null when the candidate list itself is unavailable", async () => {
+    vi.stubEnv("BAGS_API_KEY", "k");
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("down")));
+    expect(await fetchCreatedLaunches(WALLET_A)).toBeNull();
+  });
+
+  it("returns [] without a second call when the wallet has no candidates", async () => {
+    vi.stubEnv("BAGS_API_KEY", "k");
+    const fn = routeFetch({ admin: { success: true, response: { tokenMints: [] } }, creators: {} });
+    expect(await fetchCreatedLaunches(WALLET_A)).toEqual([]);
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("defaults a missing twitter handle to null and missing royalty to 0", async () => {
+    vi.stubEnv("BAGS_API_KEY", "k");
+    routeFetch({
+      admin: { success: true, response: { tokenMints: [MINT_REAL] } },
+      creators: {
+        [MINT_REAL]: { success: true, response: [{ wallet: WALLET_A, isCreator: true }] },
+      },
+    });
+    expect(await fetchCreatedLaunches(WALLET_A)).toEqual([
+      { tokenMint: MINT_REAL, twitterUsername: null, royaltyBps: 0 },
+    ]);
   });
 });
