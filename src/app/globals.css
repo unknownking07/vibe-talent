@@ -48,6 +48,10 @@
   --accent-vibe: #FF3A00;
   --accent-soft: rgba(255, 58, 0, 0.08);
 
+  /* GitHub-verified tick. Darkened from the dark-mode blue so the glyph clears
+     3:1 against white cards — #1D9BF0 lands at exactly 3.00:1 there. */
+  --verified: #1A8CD8;
+
   --badge-bronze: #D97706;
   --badge-silver: #71717A;
   --badge-gold: #CA8A04;
@@ -111,6 +115,7 @@
   --text-tertiary: hsl(14, 6%, 78%);
 
   --accent-soft: rgba(255, 58, 0, 0.12);
+  --verified: #1D9BF0;
 
   --badge-bronze: #A0522D;
   --badge-silver: #A9A9A9;

@@ -147,7 +147,7 @@ export function FeedRow({ item, compact = false, nowMs = null }: FeedRowProps) {
           >
             {item.display_name || item.username}
             {item.github_verified && (
-              <SealCheck weight="fill" size={14} className="text-white shrink-0" aria-label="GitHub verified" />
+              <SealCheck weight="fill" size={14} className="text-[var(--verified)] shrink-0" aria-label="GitHub verified" />
             )}
           </Link>
           {item.display_name && (
