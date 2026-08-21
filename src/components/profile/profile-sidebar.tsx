@@ -160,7 +160,7 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
                 title={`GitHub ownership verified: @${user.github_username}`}
                 aria-label={`GitHub verified as @${user.github_username}`}
               >
-                <SealCheck weight="fill" size={20} className="text-white" />
+                <SealCheck weight="fill" size={20} className="text-[var(--verified)]" />
               </span>
             )}
           </h1>

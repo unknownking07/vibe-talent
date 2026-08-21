@@ -138,7 +138,7 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
               <div className="font-bold uppercase text-[var(--foreground)] text-sm flex items-center justify-center gap-1">
                 {user.display_name || `@${user.username}`}
                 {user.github_username && (
-                  <SealCheck weight="fill" size={14} className="text-white shrink-0" aria-label="GitHub verified" />
+                  <SealCheck weight="fill" size={14} className="text-[var(--verified)] shrink-0" aria-label="GitHub verified" />
                 )}
               </div>
               {user.display_name && (
@@ -201,7 +201,7 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                         <span className="font-bold text-sm flex items-center gap-1 truncate">
                           {user.display_name || `@${user.username}`}
                           {user.github_username && (
-                            <SealCheck weight="fill" size={14} className="text-white shrink-0" aria-label="GitHub verified" />
+                            <SealCheck weight="fill" size={14} className="text-[var(--verified)] shrink-0" aria-label="GitHub verified" />
                           )}
                         </span>
                         {user.display_name && (

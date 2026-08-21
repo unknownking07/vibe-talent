@@ -76,7 +76,7 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
                     <SealCheck
                       size={16}
                       weight="fill"
-                      className="text-[#1D9BF0] shrink-0"
+                      className="text-[var(--verified)] shrink-0"
                       aria-label={`GitHub verified as @${user.github_username}`}
                     />
                   )}

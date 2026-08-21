@@ -736,7 +736,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                 />
               </button>
               {userProfile?.github_username && (
-                <SealCheck size={18} weight="fill" className="text-[#1D9BF0] absolute -bottom-0.5 -right-0.5 pointer-events-none"
+                <SealCheck size={18} weight="fill" className="text-[var(--verified)] absolute -bottom-0.5 -right-0.5 pointer-events-none"
                   style={{ filter: "drop-shadow(0 0 2px var(--bg-base))" }}
                   aria-label="GitHub verified"
                 />
@@ -950,7 +950,7 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               <span className="text-sm font-extrabold text-[var(--foreground)] flex items-center gap-1">
                 {userProfile.username}
                 {userProfile.github_username && (
-                  <SealCheck size={14} weight="fill" className="text-[#1D9BF0] shrink-0"
+                  <SealCheck size={14} weight="fill" className="text-[var(--verified)] shrink-0"
                     aria-label="GitHub verified"
                   />
                 )}
