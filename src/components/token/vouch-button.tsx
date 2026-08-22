@@ -26,10 +26,18 @@ export function VouchButton(props: Props) {
   );
 }
 
-function Body({ viewerId, viewerVibeScore, builderUsername, builderId, onVouched }: Props) {
+function Body({
+  viewerId,
+  viewerVibeScore,
+  builderUsername,
+  builderId,
+  onVouched,
+}: Props) {
   const { login, authenticated, connectWallet } = usePrivy();
   const { wallet, busy, status, setStatus, quote, burn } = useBurnFlow();
-  const [step, setStep] = useState<"idle" | "amount" | "confirm" | "done">("idle");
+  const [step, setStep] = useState<"idle" | "amount" | "confirm" | "done">(
+    "idle",
+  );
   const [usd, setUsd] = useState<number>(VOUCH.presetsUsd[1]);
   const [q, setQ] = useState<BurnQuote | null>(null);
   const [sig, setSig] = useState<string | null>(null);
@@ -65,7 +73,10 @@ function Body({ viewerId, viewerVibeScore, builderUsername, builderId, onVouched
       setStatus({ msg: `You backed @${builderUsername}.`, type: "success" });
       onVouched?.();
     } catch (e) {
-      setStatus({ msg: e instanceof Error ? e.message : "That burn failed.", type: "error" });
+      setStatus({
+        msg: e instanceof Error ? e.message : "That burn failed.",
+        type: "error",
+      });
       setStep("amount");
     }
   }
@@ -84,7 +95,8 @@ function Body({ viewerId, viewerVibeScore, builderUsername, builderId, onVouched
             className="mt-2 inline-flex items-center gap-1 text-xs font-bold hover:underline"
             style={{ color: "var(--accent)" }}
           >
-            View the burn on Solscan <ArrowSquareOut size={12} aria-hidden="true" />
+            View the burn on Solscan{" "}
+            <ArrowSquareOut size={12} aria-hidden="true" />
           </a>
         )}
       </div>
@@ -97,7 +109,8 @@ function Body({ viewerId, viewerVibeScore, builderUsername, builderId, onVouched
         type="button"
         onClick={() => {
           if (!wallet) {
-            if (authenticated) connectWallet({ walletChainType: "solana-only" });
+            if (authenticated)
+              connectWallet({ walletChainType: "solana-only" });
             else login({ walletChainType: "solana-only" });
             return;
           }
@@ -105,7 +118,8 @@ function Body({ viewerId, viewerVibeScore, builderUsername, builderId, onVouched
         }}
         className="btn-brutal btn-brutal-primary btn-notched text-sm inline-flex items-center gap-2 cursor-pointer"
       >
-        <Fire weight="fill" size={16} aria-hidden="true" /> Back @{builderUsername}
+        <Fire weight="fill" size={16} aria-hidden="true" /> Back @
+        {builderUsername}
       </button>
     );
   }
@@ -134,7 +148,9 @@ function Body({ viewerId, viewerVibeScore, builderUsername, builderId, onVouched
                     backgroundColor: active
                       ? "color-mix(in srgb, var(--accent) 14%, var(--bg-surface))"
                       : "var(--bg-surface)",
-                    color: active ? "var(--foreground)" : "var(--text-secondary)",
+                    color: active
+                      ? "var(--foreground)"
+                      : "var(--text-secondary)",
                   }}
                 >
                   ${v}
@@ -143,12 +159,18 @@ function Body({ viewerId, viewerVibeScore, builderUsername, builderId, onVouched
             })}
           </div>
 
-          <p className="mt-3 text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+          <p
+            className="mt-3 text-xs font-medium"
+            style={{ color: "var(--text-secondary)" }}
+          >
             {q ? (
               <>
                 ${usd.toFixed(2)} ≈{" "}
                 <strong className="font-mono text-[var(--foreground)]">
-                  {q.wholeTokens.toLocaleString("en-US", { maximumFractionDigits: 0 })} $VIBE
+                  {q.wholeTokens.toLocaleString("en-US", {
+                    maximumFractionDigits: 0,
+                  })}{" "}
+                  $VIBE
                 </strong>
               </>
             ) : (
@@ -157,20 +179,31 @@ function Body({ viewerId, viewerVibeScore, builderUsername, builderId, onVouched
           </p>
 
           {belowFloor ? (
-            <p className="mt-2 text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
-              Your vouch will show publicly on their profile, but won&apos;t add to their score
-              until your own vibe score reaches {VOUCH.voucherMinVibeScore}.
+            <p
+              className="mt-2 text-xs leading-relaxed"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Your vouch will show publicly on their profile, but won&apos;t add
+              to their score until your own vibe score reaches{" "}
+              {VOUCH.voucherMinVibeScore}.
             </p>
           ) : (
             <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
-              Gives @{builderUsername} <strong className="text-[var(--accent)]">+{points}</strong>{" "}
-              vibe score.
-              {atCap ? " Score contribution caps here — more $VIBE won't add more." : ""}
+              Gives @{builderUsername}{" "}
+              <strong className="text-[var(--accent)]">+{points}</strong> vibe
+              score.
+              {atCap
+                ? " Score contribution caps here — more $VIBE won't add more."
+                : ""}
             </p>
           )}
 
           {status?.type === "error" && (
-            <p role="alert" className="mt-2 text-xs font-bold" style={{ color: "var(--status-error-text)" }}>
+            <p
+              role="alert"
+              className="mt-2 text-xs font-bold"
+              style={{ color: "var(--status-error-text)" }}
+            >
               {status.msg}
             </p>
           )}
@@ -189,7 +222,13 @@ function Body({ viewerId, viewerVibeScore, builderUsername, builderId, onVouched
               disabled={!q || busy}
               className="btn-brutal btn-brutal-primary btn-notched flex-1 text-sm inline-flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
-              {busy ? <CircleNotch size={16} className="animate-spin" aria-hidden="true" /> : null}
+              {busy ? (
+                <CircleNotch
+                  size={16}
+                  className="animate-spin"
+                  aria-hidden="true"
+                />
+              ) : null}
               Continue
             </button>
           </div>
@@ -218,7 +257,9 @@ function Body({ viewerId, viewerVibeScore, builderUsername, builderId, onVouched
               className="mt-2 text-xs font-bold"
               style={{
                 color:
-                  status.type === "error" ? "var(--status-error-text)" : "var(--text-secondary)",
+                  status.type === "error"
+                    ? "var(--status-error-text)"
+                    : "var(--text-secondary)",
               }}
             >
               {status.msg}

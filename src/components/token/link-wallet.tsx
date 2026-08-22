@@ -7,23 +7,39 @@ import {
   useWallets as useSolanaWallets,
   useSignMessage,
 } from "@privy-io/react-auth/solana";
-import { Wallet, CircleNotch, SealCheck, LinkBreak } from "@phosphor-icons/react";
+import {
+  Wallet,
+  CircleNotch,
+  SealCheck,
+  LinkBreak,
+} from "@phosphor-icons/react";
 import { signatureToString } from "@/lib/solana-payment";
 import { formatTokenCount } from "@/lib/token-stats";
 import { HOLDER_TIERS, BASE_FREEZES } from "@/lib/vibe-config";
 import { BurnProvider, PRIVY_CONFIGURED } from "./burn-provider";
+import { VerifyByTransfer } from "./verify-by-transfer";
 
 function shortAddr(a: string) {
   return `${a.slice(0, 6)}...${a.slice(-4)}`;
 }
 
-type Linked = { address: string; balance: number; usd: number; freezes: number } | null;
+type Linked = {
+  address: string;
+  balance: number;
+  usd: number;
+  freezes: number;
+} | null;
 
-export function LinkWallet({ initialAddress }: { initialAddress: string | null }) {
+export function LinkWallet({
+  initialAddress,
+}: {
+  initialAddress: string | null;
+}) {
   if (!PRIVY_CONFIGURED) {
     return (
       <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-        Wallet linking is unavailable because NEXT_PUBLIC_PRIVY_APP_ID is not set.
+        Wallet linking is unavailable because NEXT_PUBLIC_PRIVY_APP_ID is not
+        set.
       </p>
     );
   }
@@ -41,7 +57,9 @@ function LinkWalletBody({ initialAddress }: { initialAddress: string | null }) {
   const connected = wallets[0] ?? null;
 
   const [linked, setLinked] = useState<Linked>(
-    initialAddress ? { address: initialAddress, balance: 0, usd: 0, freezes: BASE_FREEZES } : null,
+    initialAddress
+      ? { address: initialAddress, balance: 0, usd: 0, freezes: BASE_FREEZES }
+      : null,
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +71,12 @@ function LinkWalletBody({ initialAddress }: { initialAddress: string | null }) {
       const d = await res.json();
       setLinked((prev) =>
         prev
-          ? { ...prev, balance: d.wholeTokens ?? 0, usd: d.usd ?? 0, freezes: d.freezes ?? BASE_FREEZES }
+          ? {
+              ...prev,
+              balance: d.wholeTokens ?? 0,
+              usd: d.usd ?? 0,
+              freezes: d.freezes ?? BASE_FREEZES,
+            }
           : prev,
       );
     } catch {
@@ -79,7 +102,9 @@ function LinkWalletBody({ initialAddress }: { initialAddress: string | null }) {
       const nonceRes = await fetch("/api/wallet/nonce");
       if (!nonceRes.ok) {
         const e = await nonceRes.json().catch(() => ({}));
-        throw new Error(e.error || `Couldn't start wallet linking (HTTP ${nonceRes.status}).`);
+        throw new Error(
+          e.error || `Couldn't start wallet linking (HTTP ${nonceRes.status}).`,
+        );
       }
       const parsed: unknown = await nonceRes.json();
       const message =
@@ -87,14 +112,19 @@ function LinkWalletBody({ initialAddress }: { initialAddress: string | null }) {
           ? (parsed as Record<string, unknown>).message
           : undefined;
       if (typeof message !== "string" || message.length === 0) {
-        throw new Error("The server returned a malformed wallet-linking nonce.");
+        throw new Error(
+          "The server returned a malformed wallet-linking nonce.",
+        );
       }
 
       const { signature } = await signMessage({
         message: new TextEncoder().encode(message),
         wallet: connected,
       });
-      const sig = typeof signature === "string" ? signature : signatureToString(signature);
+      const sig =
+        typeof signature === "string"
+          ? signature
+          : signatureToString(signature);
 
       const linkRes = await fetch("/api/wallet/link", {
         method: "POST",
@@ -103,9 +133,16 @@ function LinkWalletBody({ initialAddress }: { initialAddress: string | null }) {
       });
       if (!linkRes.ok) {
         const e = await linkRes.json().catch(() => ({}));
-        throw new Error(e.error || `Couldn't link that wallet (HTTP ${linkRes.status}).`);
+        throw new Error(
+          e.error || `Couldn't link that wallet (HTTP ${linkRes.status}).`,
+        );
       }
-      setLinked({ address: connected.address, balance: 0, usd: 0, freezes: BASE_FREEZES });
+      setLinked({
+        address: connected.address,
+        balance: 0,
+        usd: 0,
+        freezes: BASE_FREEZES,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't link that wallet.");
     } finally {
@@ -118,7 +155,8 @@ function LinkWalletBody({ initialAddress }: { initialAddress: string | null }) {
     setError(null);
     try {
       const res = await fetch("/api/wallet/link", { method: "DELETE" });
-      if (!res.ok) throw new Error(`Couldn't unlink that wallet (HTTP ${res.status}).`);
+      if (!res.ok)
+        throw new Error(`Couldn't unlink that wallet (HTTP ${res.status}).`);
       setLinked(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't unlink that wallet.");
@@ -128,13 +166,22 @@ function LinkWalletBody({ initialAddress }: { initialAddress: string | null }) {
   }
 
   const topTier = HOLDER_TIERS[0];
-  const nextTier = linked ? HOLDER_TIERS.slice().reverse().find((t) => linked.usd < t.minUsd) : null;
+  const nextTier = linked
+    ? HOLDER_TIERS.slice()
+        .reverse()
+        .find((t) => linked.usd < t.minUsd)
+    : null;
 
   if (linked) {
     return (
       <div>
         <div className="flex flex-wrap items-center gap-2">
-          <SealCheck weight="fill" size={16} style={{ color: "var(--accent)" }} aria-hidden="true" />
+          <SealCheck
+            weight="fill"
+            size={16}
+            style={{ color: "var(--accent)" }}
+            aria-hidden="true"
+          />
           <code className="font-mono text-xs font-bold text-[var(--foreground)]">
             {shortAddr(linked.address)}
           </code>
@@ -149,17 +196,22 @@ function LinkWalletBody({ initialAddress }: { initialAddress: string | null }) {
           </button>
         </div>
 
-        <p className="mt-2 text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+        <p
+          className="mt-2 text-xs font-medium"
+          style={{ color: "var(--text-secondary)" }}
+        >
           Holding{" "}
           <strong className="font-mono text-[var(--foreground)]">
             {formatTokenCount(linked.balance)} $VIBE
           </strong>{" "}
-          (~${linked.usd.toFixed(2)}) · {linked.freezes} free streak freezes a month
+          (~${linked.usd.toFixed(2)}) · {linked.freezes} free streak freezes a
+          month
         </p>
 
         {nextTier ? (
           <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
-            Hold ${nextTier.minUsd} to reach {nextTier.label} and get {nextTier.freezes}.
+            Hold ${nextTier.minUsd} to reach {nextTier.label} and get{" "}
+            {nextTier.freezes}.
           </p>
         ) : (
           <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
@@ -176,7 +228,11 @@ function LinkWalletBody({ initialAddress }: { initialAddress: string | null }) {
         </p>
 
         {error && (
-          <p role="alert" className="mt-2 text-xs font-bold" style={{ color: "var(--status-error-text)" }}>
+          <p
+            role="alert"
+            className="mt-2 text-xs font-bold"
+            style={{ color: "var(--status-error-text)" }}
+          >
             {error}
           </p>
         )}
@@ -186,10 +242,14 @@ function LinkWalletBody({ initialAddress }: { initialAddress: string | null }) {
 
   return (
     <div>
-      <p className="text-xs font-medium mb-3" style={{ color: "var(--text-secondary)" }}>
-        Link a Solana wallet to earn extra free streak freezes for holding $VIBE. Linking is optional:
-        you can still vouch for other builders without it. Signing proves ownership; it does not
-        approve any transaction.
+      <p
+        className="text-xs font-medium mb-3"
+        style={{ color: "var(--text-secondary)" }}
+      >
+        Link a Solana wallet to earn extra free streak freezes for holding
+        $VIBE. Linking is optional: you can still vouch for other builders
+        without it. Signing proves ownership; it does not approve any
+        transaction.
       </p>
       <button
         type="button"
@@ -199,11 +259,17 @@ function LinkWalletBody({ initialAddress }: { initialAddress: string | null }) {
       >
         {busy ? (
           <>
-            <CircleNotch size={16} className="animate-spin" aria-hidden="true" /> Linking...
+            <CircleNotch
+              size={16}
+              className="animate-spin"
+              aria-hidden="true"
+            />{" "}
+            Linking...
           </>
         ) : (
           <>
-            <Wallet size={16} aria-hidden="true" /> {connected ? "Verify ownership" : "Connect Solana wallet"}
+            <Wallet size={16} aria-hidden="true" />{" "}
+            {connected ? "Verify ownership" : "Connect Solana wallet"}
           </>
         )}
       </button>
@@ -215,10 +281,22 @@ function LinkWalletBody({ initialAddress }: { initialAddress: string | null }) {
         </Link>
       </p>
       {error && (
-        <p role="alert" className="mt-2 text-xs font-bold" style={{ color: "var(--status-error-text)" }}>
+        <p
+          role="alert"
+          className="mt-2 text-xs font-bold"
+          style={{ color: "var(--status-error-text)" }}
+        >
           {error}
         </p>
       )}
+      {/* Second option, deliberately below the primary one: broadcasting a
+          transaction is the riskier of the two operations, so connect-and-sign
+          stays the recommendation and this is for people who decline it. */}
+      <VerifyByTransfer
+        onLinked={(address) =>
+          setLinked({ address, balance: 0, usd: 0, freezes: BASE_FREEZES })
+        }
+      />
     </div>
   );
 }

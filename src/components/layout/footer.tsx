@@ -15,7 +15,10 @@ export function Footer() {
           <div className="sm:col-span-3 lg:col-span-2">
             <div className="flex items-center gap-2.5 mb-3">
               <Image src="/logo.png" alt="VibeTalent" width={36} height={36} className="object-contain" />
-              <span className="text-lg font-bold tracking-tight" style={{ color: "var(--foreground)" }}>
+              {/* Uppercased in CSS rather than in the text, so the accessible
+                  name stays "Vibe Talent" and screen readers do not spell it
+                  out a letter at a time. */}
+              <span className="text-lg font-bold uppercase tracking-tight" style={{ color: "var(--foreground)" }}>
                 Vibe Talent
               </span>
             </div>

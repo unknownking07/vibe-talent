@@ -10,7 +10,10 @@ import { buildSolanaTokenBurn, signatureToString } from "@/lib/solana-payment";
 import { buildBurnMemo, type BurnAction } from "@/lib/vibe-burn";
 import { insufficientVibeMessage, friendlyBurnError } from "@/lib/burn-errors";
 
-export type BurnStatus = { msg: string; type: "info" | "error" | "success" } | null;
+export type BurnStatus = {
+  msg: string;
+  type: "info" | "error" | "success";
+} | null;
 
 export type BurnQuote = { amount: bigint; wholeTokens: number; usd: number };
 
@@ -89,7 +92,10 @@ export function useBurnFlow() {
           preflightRes = await fetch("/api/vibe/preflight", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ wallet: wallet.address, amount: opts.amount.toString() }),
+            body: JSON.stringify({
+              wallet: wallet.address,
+              amount: opts.amount.toString(),
+            }),
           });
         } catch {
           throw new UserFacingBurnError(SOLANA_UNAVAILABLE);
@@ -115,7 +121,11 @@ export function useBurnFlow() {
             const available = parseBaseUnits(preflight.available);
             if (required !== null && available !== null) {
               throw new UserFacingBurnError(
-                insufficientVibeMessage(required, available, solana.vibeDecimals),
+                insufficientVibeMessage(
+                  required,
+                  available,
+                  solana.vibeDecimals,
+                ),
               );
             }
           }
@@ -156,7 +166,10 @@ export function useBurnFlow() {
           const res = await fetch(opts.endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...opts.body, signature: broadcastSignature }),
+            body: JSON.stringify({
+              ...opts.body,
+              signature: broadcastSignature,
+            }),
           });
           if (res.ok) {
             return { signature: broadcastSignature, result: await res.json() };
