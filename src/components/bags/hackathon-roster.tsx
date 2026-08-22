@@ -34,15 +34,32 @@ export function HackathonRoster({ entries }: { entries: RosterEntry[] }) {
           }}
         >
           <div className="min-w-0">
-            <div className="truncate text-[14px] font-bold text-[var(--bags-text)]">
-              {project.name}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="truncate text-[14px] font-bold text-[var(--bags-text)]">
+                {project.name}
+              </span>
+              {project.winner ? (
+                <span
+                  className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em]"
+                  style={{
+                    backgroundColor: "rgba(255, 200, 0, 0.16)",
+                    color: "#ffc800",
+                  }}
+                >
+                  Winner
+                </span>
+              ) : null}
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--bags-text-muted)]">
               <span>{project.track}</span>
-              <span className="inline-flex items-center gap-1">
-                <GithubLogo size={11} weight="fill" />
-                {project.githubOwner}
-              </span>
+              {project.githubOwner ? (
+                <span className="inline-flex items-center gap-1">
+                  <GithubLogo size={11} weight="fill" />
+                  {project.githubOwner}
+                </span>
+              ) : (
+                <span>announced, no submission</span>
+              )}
             </div>
           </div>
 
@@ -64,7 +81,7 @@ export function HackathonRoster({ entries }: { entries: RosterEntry[] }) {
             </Link>
           ) : (
             <span className="shrink-0 text-[11px] text-[var(--bags-text-faint)]">
-              not on VibeTalent
+              {project.githubOwner ? "not on VibeTalent" : "not matchable"}
             </span>
           )}
         </li>

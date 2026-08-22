@@ -207,7 +207,10 @@ async function loadHackathonRoster(): Promise<RosterEntry[]> {
 
   return HACKATHON_PROJECTS.map((project) => ({
     project,
-    builder: byOwner.get(project.githubOwner.toLowerCase()) ?? null,
+    // Winners announced without a repository cannot be matched to anyone.
+    builder: project.githubOwner
+      ? (byOwner.get(project.githubOwner.toLowerCase()) ?? null)
+      : null,
   }));
 }
 
@@ -299,22 +302,26 @@ export default async function BagsPage() {
           </p>
         </header>
 
-        <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4">
-          <StatChip
-            label={launchCount === 1 ? "verified launch" : "verified launches"}
-            value={launchCount}
-          />
-          <StatChip
-            label={board.length === 1 ? "builder" : "builders"}
-            value={board.length}
-          />
-        </div>
-
         <BoardViewToggle
           launchCount={launchCount + unverified.length}
           hackathonCount={roster.length}
           launches={
             <>
+              {/* Inside the panel, not above the toggle: these count launches,
+                  and displayed page-wide they read as totals for a view the
+                  reader may not be looking at. */}
+              <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4">
+                <StatChip
+                  label={
+                    launchCount === 1 ? "verified launch" : "verified launches"
+                  }
+                  value={launchCount}
+                />
+                <StatChip
+                  label={board.length === 1 ? "builder" : "builders"}
+                  value={board.length}
+                />
+              </div>
               {board.length > 0 ? (
                 <section aria-labelledby="board-heading">
                   <h2
@@ -387,6 +394,10 @@ export default async function BagsPage() {
           }
           hackathon={
             <section aria-labelledby="hackathon-heading">
+              <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4">
+                <StatChip label="projects tracked" value={roster.length} />
+                <StatChip label="on VibeTalent" value={matchedHackathon} />
+              </div>
               <h2
                 id="hackathon-heading"
                 className="bags-label mb-2 text-[11px] font-semibold text-[var(--bags-text-faint)]"
