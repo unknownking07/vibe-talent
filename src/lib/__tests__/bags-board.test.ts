@@ -7,19 +7,25 @@ import {
   type BagsLaunchRow,
 } from "@/lib/bags-board";
 
-function builder(over: Partial<BagsBuilderRow> & { id: string }): BagsBuilderRow {
+function builder(
+  over: Partial<BagsBuilderRow> & { id: string },
+): BagsBuilderRow {
   return {
     username: `u-${over.id}`,
     display_name: null,
     avatar_url: null,
-    github_username: null,
+    // Present by default: the board only carries GitHub-verified builders, so
+    // an unset handle is the exception a test opts into, not the baseline.
+    github_username: `gh-${over.id}`,
     vibe_score: 0,
     streak: 0,
     ...over,
   };
 }
 
-function launch(over: Partial<BagsLaunchRow> & { token_mint: string; user_id: string }): BagsLaunchRow {
+function launch(
+  over: Partial<BagsLaunchRow> & { token_mint: string; user_id: string },
+): BagsLaunchRow {
   return {
     royalty_bps: 0,
     first_seen_at: "2026-08-20T00:00:00Z",
@@ -79,6 +85,26 @@ describe("buildBagsBoard", () => {
     expect(board.map((e) => e.username)).toEqual(["bbb", "aaa", "ccc"]);
   });
 
+  it("drops a builder with no GitHub handle", () => {
+    // The board states in as many words that every builder on it is
+    // GitHub-verified, and linking a wallet does not require GitHub. A row
+    // without a handle would sit under that sentence and make it false.
+    const board = buildBagsBoard(
+      [
+        launch({ token_mint: "unverified", user_id: "no-gh" }),
+        launch({ token_mint: "blank-gh", user_id: "blank" }),
+        launch({ token_mint: "good", user_id: "ok" }),
+      ],
+      [
+        builder({ id: "no-gh", username: "nogh", github_username: null }),
+        builder({ id: "blank", username: "blank", github_username: "   " }),
+        builder({ id: "ok", username: "ok" }),
+      ],
+    );
+
+    expect(board.map((e) => e.username)).toEqual(["ok"]);
+  });
+
   it("drops launches whose builder is missing or has no username", () => {
     const board = buildBagsBoard(
       [
@@ -86,7 +112,10 @@ describe("buildBagsBoard", () => {
         launch({ token_mint: "nameless", user_id: "no-name" }),
         launch({ token_mint: "good", user_id: "ok" }),
       ],
-      [builder({ id: "no-name", username: null }), builder({ id: "ok", username: "ok" })],
+      [
+        builder({ id: "no-name", username: null }),
+        builder({ id: "ok", username: "ok" }),
+      ],
     );
 
     expect(board.map((e) => e.username)).toEqual(["ok"]);
@@ -95,9 +124,21 @@ describe("buildBagsBoard", () => {
   it("orders a builder's mints newest first and reports their earliest launch", () => {
     const board = buildBagsBoard(
       [
-        launch({ token_mint: "older", user_id: "1", first_seen_at: "2026-01-02T00:00:00Z" }),
-        launch({ token_mint: "newest", user_id: "1", first_seen_at: "2026-08-20T00:00:00Z" }),
-        launch({ token_mint: "middle", user_id: "1", first_seen_at: "2026-05-05T00:00:00Z" }),
+        launch({
+          token_mint: "older",
+          user_id: "1",
+          first_seen_at: "2026-01-02T00:00:00Z",
+        }),
+        launch({
+          token_mint: "newest",
+          user_id: "1",
+          first_seen_at: "2026-08-20T00:00:00Z",
+        }),
+        launch({
+          token_mint: "middle",
+          user_id: "1",
+          first_seen_at: "2026-05-05T00:00:00Z",
+        }),
       ],
       [builder({ id: "1" })],
     );
@@ -122,7 +163,9 @@ describe("buildBagsBoard", () => {
 
 describe("shortMint", () => {
   it("keeps both recognisable ends of a mint", () => {
-    expect(shortMint("FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS")).toBe("FfDYT3…BAGS");
+    expect(shortMint("FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS")).toBe(
+      "FfDYT3…BAGS",
+    );
   });
 
   it("leaves an already-short value alone", () => {

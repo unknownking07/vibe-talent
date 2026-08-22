@@ -139,7 +139,8 @@ export function TokenCard({
         />
         <Stat
           label="fee share"
-          value={royaltyBps ? `${royaltyBps / 100}%` : "—"}
+          // 0 bps is a real answer ("this creator takes no fee"), not a missing one.
+          value={royaltyBps != null ? `${royaltyBps / 100}%` : "—"}
         />
       </dl>
 

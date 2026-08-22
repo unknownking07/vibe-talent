@@ -186,6 +186,19 @@ export default function SettingsPage() {
     }
   }, [user, searchParams]);
 
+  // /bags sends launchers here with #wallet. The browser resolves that hash on
+  // first paint, while this page is still showing its loading state and the
+  // anchor does not exist yet, so the jump is silently dropped and the visitor
+  // lands at the top of a long settings page. Redo it once the form is mounted.
+  useEffect(() => {
+    if (!user) return;
+    if (window.location.hash !== "#wallet") return;
+    const timer = setTimeout(() => {
+      document.getElementById("wallet")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [user]);
+
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;

@@ -37,12 +37,16 @@ export const metadata: Metadata = {
 // an hour of staleness costs nothing and keeps this page off the ISR treadmill.
 export const revalidate = 3600;
 
+/** PostgREST caps a response anyway; this is the page size we read in. */
+const LAUNCH_PAGE_SIZE = 1000;
+
 /**
- * Guard against an unbounded scan as the table grows. Far above the current row
- * count; when the board approaches it, this page needs pagination rather than a
- * bigger number.
+ * Absolute ceiling on rows read for one board render, so a runaway table cannot
+ * hang the page. Truncating BELOW this would be worse than a slow page: the
+ * board groups and ranks after reading, so a cut-off read silently drops whole
+ * builders and understates the launch counts of the ones that survive.
  */
-const MAX_LAUNCHES = 500;
+const MAX_LAUNCHES = 20_000;
 
 const BUILDER_FIELDS =
   "id, username, display_name, avatar_url, github_username, vibe_score, streak";
@@ -55,21 +59,46 @@ function getPublicClient() {
   );
 }
 
+/**
+ * Every cached launch, read in pages.
+ *
+ * Ordered by token_mint as well as time so page boundaries stay deterministic
+ * when rows share a first_seen_at, which they do whenever one sync writes
+ * several launches at once.
+ */
+async function fetchAllLaunches(
+  sb: ReturnType<typeof getPublicClient>,
+): Promise<BagsLaunchRow[] | null> {
+  const rows: BagsLaunchRow[] = [];
+
+  for (let from = 0; from < MAX_LAUNCHES; from += LAUNCH_PAGE_SIZE) {
+    const { data, error } = await sb
+      .from("bags_launches")
+      .select("token_mint, user_id, royalty_bps, first_seen_at")
+      .order("first_seen_at", { ascending: false })
+      .order("token_mint", { ascending: true })
+      .range(from, from + LAUNCH_PAGE_SIZE - 1);
+
+    if (error) return null;
+    if (!data?.length) break;
+
+    rows.push(...(data as BagsLaunchRow[]));
+    if (data.length < LAUNCH_PAGE_SIZE) break;
+  }
+
+  return rows;
+}
+
 async function loadBoard() {
   try {
     const sb = getPublicClient();
 
-    const { data: launches, error } = await sb
-      .from("bags_launches")
-      .select("token_mint, user_id, royalty_bps, first_seen_at")
-      .order("first_seen_at", { ascending: false })
-      .limit(MAX_LAUNCHES);
+    const rows = await fetchAllLaunches(sb);
 
     // A missing table (migration not applied in this environment) must not take
     // the page down: the claim CTA below is useful even with no rows at all.
-    if (error || !launches?.length) return [];
+    if (!rows?.length) return [];
 
-    const rows = launches as BagsLaunchRow[];
     const userIds = [...new Set(rows.map((r) => r.user_id))];
 
     const { data: builders } = await sb
@@ -124,7 +153,7 @@ export default async function BagsPage() {
           "@type": "ListItem",
           position: i + 1,
           name: entry.username,
-          url: `${siteUrl}/profile/${entry.username}`,
+          url: `${siteUrl}/bags/${entry.username}`,
         })),
       },
     ],

@@ -57,7 +57,13 @@ export function buildBagsBoard(
 ): BagsBoardEntry[] {
   const byId = new Map<string, BagsBuilderRow>();
   for (const builder of builders) {
-    if (builder.username) byId.set(builder.id, builder);
+    // Two hard requirements, both load-bearing for what the page claims.
+    // A username, or the row cannot link to the profile that backs it. And a
+    // GitHub handle, because the board states in as many words that every
+    // builder on it is GitHub-verified: linking a wallet does not require
+    // GitHub, so without this an unverified account could sit under that
+    // sentence and make it false.
+    if (builder.username && builder.github_username?.trim()) byId.set(builder.id, builder);
   }
 
   const grouped = new Map<string, BagsLaunchRow[]>();

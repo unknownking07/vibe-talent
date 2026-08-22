@@ -15,7 +15,13 @@ function monthYear(iso: string): string | null {
   const date = new Date(iso);
   return Number.isNaN(date.getTime())
     ? null
-    : date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    : // Fixed to UTC: a timestamp just after midnight on the 1st would
+      // otherwise render as the previous month wherever the server sits.
+      date.toLocaleDateString("en-US", {
+        month: "short",
+        year: "numeric",
+        timeZone: "UTC",
+      });
 }
 
 /**

@@ -88,6 +88,11 @@ const loadBuilder = cache(
 
       if (!builder) return null;
 
+      // Same bar as the board: this page states the builder is GitHub-verified,
+      // and wallet linking does not require GitHub. Without a handle there is no
+      // verified identity to show, so there is no page.
+      if (!(builder as Builder).github_username?.trim()) return null;
+
       const { data: launches } = await sb
         .from("bags_launches")
         .select("token_mint, creator_wallet, royalty_bps, first_seen_at")
@@ -215,9 +220,14 @@ export default async function BagsBuilderPage({
   }));
   const cards = [...enriched, ...remaining];
 
-  // Bags' own record of who this is. Read from the first launch: the wallet is
-  // the same across their rows, so one call answers it. Fails soft — the page
-  // is about verified launches, and the handle is a nice-to-have on top.
+  // A builder can relink a different wallet later, and old rows keep the wallet
+  // that actually made them. So nothing here may assume one wallet made
+  // everything: identity is read from the newest launch's own (mint, wallet)
+  // pair, and the footer counts the wallets it really found.
+  const creatorWallets = [...new Set(launches.map((l) => l.creator_wallet))];
+
+  // Bags' own record of who this is. Fails soft — the page is about verified
+  // launches, and the handle is a nice-to-have on top.
   let creator: BagsCreatorProfile | null = null;
   const firstLaunch = launches[0];
   if (firstLaunch) {
@@ -380,14 +390,24 @@ export default async function BagsBuilderPage({
         </section>
 
         <p className="mt-8 text-xs leading-relaxed text-[var(--bags-text-faint)]">
-          Launched from{" "}
-          <span className="font-mono text-[var(--bags-text-muted)]">
-            {shortMint(launches[0]!.creator_wallet)}
-          </span>
-          , a wallet bound to this profile by signature and confirmed as the
-          creator of each coin above by the Bags creator record. Prices and
-          charts come from GeckoTerminal and are indicative only. Nothing here
-          is financial advice or an endorsement of any token.
+          {creatorWallets.length === 1 ? (
+            <>
+              Launched from{" "}
+              <span className="font-mono text-[var(--bags-text-muted)]">
+                {shortMint(creatorWallets[0]!)}
+              </span>
+              , a wallet bound to this profile by signature.
+            </>
+          ) : (
+            <>
+              Launched from {creatorWallets.length} wallets bound to this
+              profile by signature over time.
+            </>
+          )}{" "}
+          Each coin is confirmed against the Bags creator record for the wallet
+          that made it. Prices and charts come from GeckoTerminal and are
+          indicative only. Nothing here is financial advice or an endorsement of
+          any token.
         </p>
       </div>
     </div>

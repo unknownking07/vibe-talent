@@ -102,6 +102,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(user.created_at),
       }));
 
+    // Supabase returns data: null on a query error, so an unlogged failure here
+    // would look identical to "nobody has launched" and quietly drop every
+    // /bags URL from the sitemap.
+    if (bagsLaunchesResult.error) {
+      console.error(
+        "[sitemap] bags_launches query failed:",
+        bagsLaunchesResult.error,
+      );
+    }
+
     // Newest verification per builder, so <lastmod> moves when the daily sync
     // reconfirms a launch rather than sitting at whenever the profile was made.
     const lastVerifiedByUser = new Map<string, string>();
