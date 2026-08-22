@@ -26,51 +26,54 @@
      structure. ~80% of painted area sat above 0.75 luminance and the UI read
      as glaring in light mode. This drops the field and lets white cards
      actually advance off it. Dark mode already layers warm greys this way. */
-  --background: #EDE7E1;
+  --background: #ede7e1;
   --foreground: #141110;
 
-  --bg-surface: #FFFFFF;
-  --bg-surface-light: #F5F3F1;
-  --bg-unread: #FFF8F6;
+  --bg-surface: #ffffff;
+  --bg-surface-light: #f5f3f1;
+  --bg-unread: #fff8f6;
   --bg-pill: #141110;
   --bg-pill-hover: #2a2a2a;
   --border-hard: rgba(20, 17, 16, 0.14);
   --border-subtle: rgba(20, 17, 16, 0.08);
 
-  --text-muted: #71717A;
-  --text-muted-soft: #A1A1AA;
-  --text-secondary: #52525B;
-  --text-tertiary: #3F3F46;
+  --text-muted: #71717a;
+  --text-muted-soft: #a1a1aa;
+  --text-secondary: #52525b;
+  --text-tertiary: #3f3f46;
 
-  --accent: #FF3A00;
-  --accent-hover: #E03300;
-  --accent-streak: #FF3A00;
-  --accent-vibe: #FF3A00;
+  --accent: #ff3a00;
+  --accent-hover: #e03300;
+  --accent-streak: #ff3a00;
+  --accent-vibe: #ff3a00;
   --accent-soft: rgba(255, 58, 0, 0.08);
 
   /* GitHub-verified tick. Darkened from the dark-mode blue so the glyph clears
      3:1 against white cards — #1D9BF0 lands at exactly 3.00:1 there. */
-  --verified: #1A8CD8;
+  --verified: #1a8cd8;
 
-  --badge-bronze: #D97706;
-  --badge-silver: #71717A;
-  --badge-gold: #CA8A04;
-  --badge-diamond: #0891B2;
+  --badge-bronze: #d97706;
+  --badge-silver: #71717a;
+  --badge-gold: #ca8a04;
+  --badge-diamond: #0891b2;
 
   /* Tracks --background. The empty cell must stay legible as absence: the
      homepage proof wall sits directly on the page, so at the old #ECE8E5 it
      disappeared once the background deepened. This holds the original
      empty-cell-to-page ratio (1.12:1) against the new background. */
-  --hm-0: #E2DBD4;
-  --hm-1: #FFD4C4;
-  --hm-2: #FFA07A;
-  --hm-3: #FF6B3A;
-  --hm-4: #FF3A00;
+  --hm-0: #e2dbd4;
+  --hm-1: #ffd4c4;
+  --hm-2: #ffa07a;
+  --hm-3: #ff6b3a;
+  --hm-4: #ff3a00;
 
   /* Soft layered elevation (tinted toward the warm ink, never pure black). */
-  --shadow-brutal: 0 1px 2px rgba(20, 12, 8, 0.04), 0 8px 24px rgba(20, 12, 8, 0.07);
-  --shadow-brutal-sm: 0 1px 2px rgba(20, 12, 8, 0.04), 0 3px 10px rgba(20, 12, 8, 0.05);
-  --shadow-brutal-hover: 0 2px 4px rgba(20, 12, 8, 0.05), 0 14px 36px rgba(20, 12, 8, 0.10);
+  --shadow-brutal:
+    0 1px 2px rgba(20, 12, 8, 0.04), 0 8px 24px rgba(20, 12, 8, 0.07);
+  --shadow-brutal-sm:
+    0 1px 2px rgba(20, 12, 8, 0.04), 0 3px 10px rgba(20, 12, 8, 0.05);
+  --shadow-brutal-hover:
+    0 2px 4px rgba(20, 12, 8, 0.05), 0 14px 36px rgba(20, 12, 8, 0.1);
   --shadow-brutal-xs: 0 1px 2px rgba(20, 12, 8, 0.05);
   --shadow-brutal-accent: 0 4px 16px rgba(255, 58, 0, 0.25);
 
@@ -83,23 +86,23 @@
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 
   --bg-inverted: #141110;
-  --text-on-inverted: #FFFFFF;
+  --text-on-inverted: #ffffff;
 
-  --status-error-bg: #FEF2F2;
-  --status-error-text: #991B1B;
-  --status-error-border: #FEE2E2;
-  --status-success-bg: #F0FDF4;
+  --status-error-bg: #fef2f2;
+  --status-error-text: #991b1b;
+  --status-error-border: #fee2e2;
+  --status-success-bg: #f0fdf4;
   --status-success-text: #166534;
-  --status-warning-bg: #FFF7ED;
-  --status-warning-text: #92400E;
+  --status-warning-bg: #fff7ed;
+  --status-warning-text: #92400e;
 }
 
 [data-theme="dark"] {
-  --background: #0F0F0F;
-  --foreground: #FFFFFF;
+  --background: #0f0f0f;
+  --foreground: #ffffff;
 
   --bg-inverted: #262626;
-  --text-on-inverted: #FFFFFF;
+  --text-on-inverted: #ffffff;
 
   --bg-surface: hsl(14, 4%, 10%);
   --bg-surface-light: hsl(14, 4%, 15%);
@@ -115,32 +118,34 @@
   --text-tertiary: hsl(14, 6%, 78%);
 
   --accent-soft: rgba(255, 58, 0, 0.12);
-  --verified: #1D9BF0;
+  --verified: #1d9bf0;
 
-  --badge-bronze: #A0522D;
-  --badge-silver: #A9A9A9;
-  --badge-gold: #FFD700;
-  --badge-diamond: #FF3A00;
+  --badge-bronze: #a0522d;
+  --badge-silver: #a9a9a9;
+  --badge-gold: #ffd700;
+  --badge-diamond: #ff3a00;
 
   --hm-0: hsl(14, 4%, 23%);
   --hm-1: #6b3a1a;
   --hm-2: #b5501e;
-  --hm-3: #FF6A40;
-  --hm-4: #FF3A00;
+  --hm-3: #ff6a40;
+  --hm-4: #ff3a00;
 
-  --shadow-brutal: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.30);
-  --shadow-brutal-sm: 0 1px 2px rgba(0, 0, 0, 0.30), 0 3px 10px rgba(0, 0, 0, 0.25);
-  --shadow-brutal-hover: 0 2px 4px rgba(0, 0, 0, 0.35), 0 14px 36px rgba(0, 0, 0, 0.40);
-  --shadow-brutal-xs: 0 1px 2px rgba(0, 0, 0, 0.30);
-  --shadow-brutal-accent: 0 4px 16px rgba(255, 58, 0, 0.30);
+  --shadow-brutal: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.3);
+  --shadow-brutal-sm:
+    0 1px 2px rgba(0, 0, 0, 0.3), 0 3px 10px rgba(0, 0, 0, 0.25);
+  --shadow-brutal-hover:
+    0 2px 4px rgba(0, 0, 0, 0.35), 0 14px 36px rgba(0, 0, 0, 0.4);
+  --shadow-brutal-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-brutal-accent: 0 4px 16px rgba(255, 58, 0, 0.3);
 
-  --status-error-bg: #3B1111;
-  --status-error-text: #FCA5A5;
-  --status-error-border: #7F1D1D;
-  --status-success-bg: #052E16;
-  --status-success-text: #86EFAC;
+  --status-error-bg: #3b1111;
+  --status-error-text: #fca5a5;
+  --status-error-border: #7f1d1d;
+  --status-success-bg: #052e16;
+  --status-success-text: #86efac;
   --status-warning-bg: #431407;
-  --status-warning-text: #FED7AA;
+  --status-warning-text: #fed7aa;
 }
 
 @theme inline {
@@ -193,7 +198,9 @@ html {
 
 /* Notification card hover-lift */
 .ntf-card {
-  transition: transform 0.16s var(--ease-out), box-shadow 0.16s var(--ease-out);
+  transition:
+    transform 0.16s var(--ease-out),
+    box-shadow 0.16s var(--ease-out);
 }
 .ntf-card:hover {
   transform: translateY(-2px);
@@ -355,7 +362,9 @@ html {
   color: var(--foreground);
   font-weight: 500;
   font-size: 0.875rem;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
 }
 
 .input-brutal::placeholder {
@@ -429,13 +438,24 @@ select.input-brutal {
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.3; transform: scale(0.85); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.85);
+  }
 }
 
 .live-dot {
@@ -473,22 +493,51 @@ select.input-brutal {
 .stagger-children > * {
   animation: fadeInUp 0.25s var(--ease-out) backwards;
 }
-.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
-.stagger-children > *:nth-child(2) { animation-delay: 30ms; }
-.stagger-children > *:nth-child(3) { animation-delay: 60ms; }
-.stagger-children > *:nth-child(4) { animation-delay: 90ms; }
-.stagger-children > *:nth-child(5) { animation-delay: 120ms; }
-.stagger-children > *:nth-child(6) { animation-delay: 150ms; }
-.stagger-children > *:nth-child(7) { animation-delay: 180ms; }
-.stagger-children > *:nth-child(8) { animation-delay: 210ms; }
-.stagger-children > *:nth-child(9) { animation-delay: 240ms; }
-.stagger-children > *:nth-child(10) { animation-delay: 270ms; }
-.stagger-children > *:nth-child(11) { animation-delay: 300ms; }
-.stagger-children > *:nth-child(12) { animation-delay: 330ms; }
+.stagger-children > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.stagger-children > *:nth-child(2) {
+  animation-delay: 30ms;
+}
+.stagger-children > *:nth-child(3) {
+  animation-delay: 60ms;
+}
+.stagger-children > *:nth-child(4) {
+  animation-delay: 90ms;
+}
+.stagger-children > *:nth-child(5) {
+  animation-delay: 120ms;
+}
+.stagger-children > *:nth-child(6) {
+  animation-delay: 150ms;
+}
+.stagger-children > *:nth-child(7) {
+  animation-delay: 180ms;
+}
+.stagger-children > *:nth-child(8) {
+  animation-delay: 210ms;
+}
+.stagger-children > *:nth-child(9) {
+  animation-delay: 240ms;
+}
+.stagger-children > *:nth-child(10) {
+  animation-delay: 270ms;
+}
+.stagger-children > *:nth-child(11) {
+  animation-delay: 300ms;
+}
+.stagger-children > *:nth-child(12) {
+  animation-delay: 330ms;
+}
 
 /* Skeleton loading */
 .skeleton {
-  background: linear-gradient(90deg, var(--bg-surface-light) 25%, var(--bg-surface) 50%, var(--bg-surface-light) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--bg-surface-light) 25%,
+    var(--bg-surface) 50%,
+    var(--bg-surface-light) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border: 1px solid var(--border-subtle);
@@ -515,7 +564,9 @@ select.input-brutal {
   box-shadow: var(--shadow-brutal-sm);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.15s var(--ease-out), transform 0.15s var(--ease-out);
+  transition:
+    opacity 0.15s var(--ease-out),
+    transform 0.15s var(--ease-out);
 }
 .tooltip-brutal:hover::after {
   opacity: 1;
@@ -546,8 +597,13 @@ body:has(.chat-page-wrapper) main {
 
 /* Settings "New" field pulse — used when landing on /settings?complete=name */
 @keyframes settings-highlight-pulse {
-  0%, 100% { outline-color: var(--accent); }
-  50% { outline-color: transparent; }
+  0%,
+  100% {
+    outline-color: var(--accent);
+  }
+  50% {
+    outline-color: transparent;
+  }
 }
 .settings-highlight-pulse {
   animation: settings-highlight-pulse 1.6s ease-in-out infinite;
@@ -576,8 +632,13 @@ body:has(.chat-page-wrapper) main {
 
 /* Gentle idle float for earned medallions (opt-in via the `animate` prop). */
 @keyframes badge-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
 }
 .medallion-float {
   animation: badge-float 4.8s ease-in-out infinite;
@@ -587,26 +648,60 @@ body:has(.chat-page-wrapper) main {
    component and skipped entirely when the user prefers reduced motion (the
    component checks the media query in JS), so no override is needed here. */
 @keyframes cel-scrim-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes cel-pop-in {
-  0% { opacity: 0; transform: scale(0.3) rotate(-18deg); }
-  60% { opacity: 1; transform: scale(1.12) rotate(5deg); }
-  100% { opacity: 1; transform: scale(1) rotate(0); }
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-18deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.12) rotate(5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
 }
 @keyframes cel-up-fade {
-  0% { opacity: 0; transform: translateY(18px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @keyframes cel-spray-in {
-  0% { opacity: 0; transform: scale(0.2); }
-  100% { opacity: 0.8; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
 }
 @keyframes cel-splat-in {
-  0% { opacity: 0; transform: scale(0) rotate(var(--r, 0deg)); }
-  70% { opacity: 1; transform: scale(1.18) rotate(var(--r, 0deg)); }
-  100% { opacity: 0.92; transform: scale(1) rotate(var(--r, 0deg)); }
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(var(--r, 0deg));
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.18) rotate(var(--r, 0deg));
+  }
+  100% {
+    opacity: 0.92;
+    transform: scale(1) rotate(var(--r, 0deg));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -665,6 +760,9 @@ body:has(.chat-page-wrapper) main {
   background-color: var(--bags-bg);
   color: var(--bags-text);
   letter-spacing: -0.011em;
+  /* Open Runde, the face bags.fm serves. Falls back to the site stack if the
+     font variable is missing, so the scope never renders unstyled. */
+  font-family: var(--font-bags), var(--font-sans), system-ui, sans-serif;
 }
 
 /* Bags sets headings in sentence case; the site uppercases every h1-h3 from an

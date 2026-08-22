@@ -18,9 +18,9 @@ describe("formatVibeBaseUnits", () => {
   });
 
   it("huge bigint with decimals6", () => {
-    expect(
-      formatVibeBaseUnits(123456789012345678901234567890n, 6),
-    ).toBe("123,456,789,012,345,678,901,234.567");
+    expect(formatVibeBaseUnits(123456789012345678901234567890n, 6)).toBe(
+      "123,456,789,012,345,678,901,234.567",
+    );
   });
 
   it("decimals0: whole-number display", () => {
@@ -70,7 +70,9 @@ describe("friendlyBurnError", () => {
     expect(friendlyBurnError("insufficient sol for transaction fee")).toBe(
       "You need a small amount of SOL in this wallet to pay the network fee. Your $VIBE was not burned.",
     );
-    expect(friendlyBurnError("Transaction results in an underfunded rent")).toBe(
+    expect(
+      friendlyBurnError("Transaction results in an underfunded rent"),
+    ).toBe(
       "You need a small amount of SOL in this wallet to pay the network fee. Your $VIBE was not burned.",
     );
   });

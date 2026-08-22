@@ -17,13 +17,25 @@ const bal = (owner: string, mint: string, amount: string) => ({
 
 describe("buildBurnMemo / parseBurnMemo", () => {
   it("round-trips a vouch memo", () => {
-    const memo = buildBurnMemo({ kind: "vouch", actorId: "aaa", targetId: "bbb" });
+    const memo = buildBurnMemo({
+      kind: "vouch",
+      actorId: "aaa",
+      targetId: "bbb",
+    });
     expect(memo).toBe("vouch:aaa:bbb");
-    expect(parseBurnMemo(memo)).toEqual({ kind: "vouch", actorId: "aaa", targetId: "bbb" });
+    expect(parseBurnMemo(memo)).toEqual({
+      kind: "vouch",
+      actorId: "aaa",
+      targetId: "bbb",
+    });
   });
 
   it("round-trips a protect memo", () => {
-    const memo = buildBurnMemo({ kind: "protect", actorId: "aaa", breakDate: "2026-08-10" });
+    const memo = buildBurnMemo({
+      kind: "protect",
+      actorId: "aaa",
+      breakDate: "2026-08-10",
+    });
     expect(memo).toBe("protect:aaa:2026-08-10");
     expect(parseBurnMemo(memo)).toEqual({
       kind: "protect",

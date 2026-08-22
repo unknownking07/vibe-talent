@@ -25,13 +25,25 @@ describe("detectVibeTalentBadge", () => {
   });
 
   it("accepts http, no-www, and mixed case", () => {
-    expect(detectVibeTalentBadge("http://vibetalent.work/profile/alice", "alice")).toBe(true);
-    expect(detectVibeTalentBadge("HTTPS://WWW.VIBETALENT.WORK/PROFILE/ALICE", "alice")).toBe(true);
+    expect(
+      detectVibeTalentBadge("http://vibetalent.work/profile/alice", "alice"),
+    ).toBe(true);
+    expect(
+      detectVibeTalentBadge(
+        "HTTPS://WWW.VIBETALENT.WORK/PROFILE/ALICE",
+        "alice",
+      ),
+    ).toBe(true);
   });
 
   it("matches when the stored username is percent-encoded", () => {
     // The dashboard copy helpers run the username through encodeURIComponent.
-    expect(detectVibeTalentBadge("https://www.vibetalent.work/profile/alice", "alice")).toBe(true);
+    expect(
+      detectVibeTalentBadge(
+        "https://www.vibetalent.work/profile/alice",
+        "alice",
+      ),
+    ).toBe(true);
   });
 
   // --- The important negatives: this drives a visible trust chip. ---
@@ -47,15 +59,27 @@ describe("detectVibeTalentBadge", () => {
   });
 
   it("does NOT match a bare link to the site with no profile", () => {
-    expect(detectVibeTalentBadge("Check out https://vibetalent.work", "alice")).toBe(false);
-    expect(detectVibeTalentBadge("https://vibetalent.work/leaderboard", "alice")).toBe(false);
+    expect(
+      detectVibeTalentBadge("Check out https://vibetalent.work", "alice"),
+    ).toBe(false);
+    expect(
+      detectVibeTalentBadge("https://vibetalent.work/leaderboard", "alice"),
+    ).toBe(false);
   });
 
   it("does NOT match a lookalike domain", () => {
     expect(
-      detectVibeTalentBadge("https://vibetalent.work.evil.com/profile/alice", "alice")
+      detectVibeTalentBadge(
+        "https://vibetalent.work.evil.com/profile/alice",
+        "alice",
+      ),
     ).toBe(false);
-    expect(detectVibeTalentBadge("https://notvibetalent.work/profile/alice", "alice")).toBe(false);
+    expect(
+      detectVibeTalentBadge(
+        "https://notvibetalent.work/profile/alice",
+        "alice",
+      ),
+    ).toBe(false);
   });
 
   it("returns false for empty or missing inputs", () => {
@@ -67,20 +91,39 @@ describe("detectVibeTalentBadge", () => {
 
   it("treats regex metacharacters in a username as literal", () => {
     // A username can never compile into a wildcard that matches anyone.
-    expect(detectVibeTalentBadge("https://vibetalent.work/profile/a.ice", "a.ice")).toBe(true);
-    expect(detectVibeTalentBadge("https://vibetalent.work/profile/alice", "a.ice")).toBe(false);
-    expect(detectVibeTalentBadge("https://vibetalent.work/profile/xxxx", ".*")).toBe(false);
+    expect(
+      detectVibeTalentBadge("https://vibetalent.work/profile/a.ice", "a.ice"),
+    ).toBe(true);
+    expect(
+      detectVibeTalentBadge("https://vibetalent.work/profile/alice", "a.ice"),
+    ).toBe(false);
+    expect(
+      detectVibeTalentBadge("https://vibetalent.work/profile/xxxx", ".*"),
+    ).toBe(false);
   });
 });
 
 describe("toRepoQualityData", () => {
   const metrics: RepoQualityMetrics = {
-    stars: 12, forks: 3, open_issues: 2, contributors: 4, total_commits: 90,
-    languages: { TypeScript: 50000 }, has_tests: true, has_ci: true,
-    has_readme: true, readme_length: 3000, has_vibetalent_badge: true,
-    last_commit_date: "2026-07-01T00:00:00Z", created_at: "2026-01-01T00:00:00Z",
-    repo_age_days: 200, is_private: false, community_score: 80,
-    substance_score: 75, maintenance_score: 70, quality_score: 75,
+    stars: 12,
+    forks: 3,
+    open_issues: 2,
+    contributors: 4,
+    total_commits: 90,
+    languages: { TypeScript: 50000 },
+    has_tests: true,
+    has_ci: true,
+    has_readme: true,
+    readme_length: 3000,
+    has_vibetalent_badge: true,
+    last_commit_date: "2026-07-01T00:00:00Z",
+    created_at: "2026-01-01T00:00:00Z",
+    repo_age_days: 200,
+    is_private: false,
+    community_score: 80,
+    substance_score: 75,
+    maintenance_score: 70,
+    quality_score: 75,
   };
 
   it("carries the badge flag through to the persisted shape", () => {
@@ -89,7 +132,7 @@ describe("toRepoQualityData", () => {
 
   it("uses a caller-supplied analyzed_at when given", () => {
     expect(toRepoQualityData(metrics, "2026-07-20T00:00:00Z").analyzed_at).toBe(
-      "2026-07-20T00:00:00Z"
+      "2026-07-20T00:00:00Z",
     );
   });
 
@@ -98,9 +141,19 @@ describe("toRepoQualityData", () => {
     // the agreed projection rather than whatever analyzeRepository grows next.
     const keys = Object.keys(toRepoQualityData(metrics)).sort();
     expect(keys).toEqual([
-      "analyzed_at", "community_score", "contributors", "forks", "has_ci",
-      "has_readme", "has_tests", "has_vibetalent_badge", "maintenance_score",
-      "quality_score", "stars", "substance_score", "total_commits",
+      "analyzed_at",
+      "community_score",
+      "contributors",
+      "forks",
+      "has_ci",
+      "has_readme",
+      "has_tests",
+      "has_vibetalent_badge",
+      "maintenance_score",
+      "quality_score",
+      "stars",
+      "substance_score",
+      "total_commits",
     ]);
   });
 });

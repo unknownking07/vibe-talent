@@ -11,13 +11,21 @@ describe("mergeToolCallDelta", () => {
       function: { name: "search_", arguments: "" },
     });
     mergeToolCallDelta(acc, { index: 0, function: { name: "builders" } });
-    mergeToolCallDelta(acc, { index: 0, function: { arguments: '{"skills":' } });
-    mergeToolCallDelta(acc, { index: 0, function: { arguments: '["next.js"]}' } });
+    mergeToolCallDelta(acc, {
+      index: 0,
+      function: { arguments: '{"skills":' },
+    });
+    mergeToolCallDelta(acc, {
+      index: 0,
+      function: { arguments: '["next.js"]}' },
+    });
 
     expect(acc).toHaveLength(1);
     expect(acc[0].id).toBe("call_1");
     expect(acc[0].function.name).toBe("search_builders");
-    expect(JSON.parse(acc[0].function.arguments)).toEqual({ skills: ["next.js"] });
+    expect(JSON.parse(acc[0].function.arguments)).toEqual({
+      skills: ["next.js"],
+    });
   });
 
   it("keeps parallel tool calls separate by index", () => {

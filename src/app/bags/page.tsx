@@ -1,14 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
-import { BagSimple, SealCheck } from "@phosphor-icons/react/dist/ssr";
+import { SealCheck } from "@phosphor-icons/react/dist/ssr";
 
 import {
   buildBagsBoard,
+  buildUnverifiedLaunches,
   type BagsBuilderRow,
   type BagsLaunchRow,
 } from "@/lib/bags-board";
 import { BagsBuilderRow as BoardRow } from "@/components/bags/bags-builder-row";
+import { UnverifiedLaunchRow } from "@/components/bags/unverified-launch-row";
+import { BagsAttribution } from "@/components/bags/bags-attribution";
+import { BagsMark } from "@/components/bags/bags-mark";
+import { openRunde } from "./fonts";
 import { jsonLdHtml } from "@/lib/json-ld";
 import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
 
@@ -48,6 +53,9 @@ const LAUNCH_PAGE_SIZE = 1000;
  */
 const MAX_LAUNCHES = 20_000;
 
+/** How many unverified launches the board renders. The rest are counted, not listed. */
+const MAX_UNVERIFIED_SHOWN = 25;
+
 const BUILDER_FIELDS =
   "id, username, display_name, avatar_url, github_username, vibe_score, streak";
 
@@ -66,28 +74,61 @@ function getPublicClient() {
  * when rows share a first_seen_at, which they do whenever one sync writes
  * several launches at once.
  */
+/** Columns present on every deployment, migration applied or not. */
+const BASE_LAUNCH_COLUMNS = "token_mint, user_id, royalty_bps, first_seen_at";
+
+/** Everything the unclaimed section needs, added by 20260822_bags_unclaimed_launches. */
+const FULL_LAUNCH_COLUMNS =
+  `${BASE_LAUNCH_COLUMNS}, bags_username, twitter_username, token_name, ` +
+  "token_symbol, token_image_url, fdv_usd, volume_24h_usd";
+
 async function fetchAllLaunches(
   sb: ReturnType<typeof getPublicClient>,
 ): Promise<BagsLaunchRow[] | null> {
-  const rows: BagsLaunchRow[] = [];
+  // Migrations here are applied by hand, so there is a window where this code
+  // is live and the new columns are not. PostgREST rejects the whole query over
+  // one unknown column, which would blank the verified board as well, so a
+  // failure retries with the columns that have always existed. Removable once
+  // the migration is applied everywhere.
+  for (const columns of [FULL_LAUNCH_COLUMNS, BASE_LAUNCH_COLUMNS]) {
+    const rows: BagsLaunchRow[] = [];
+    let failed = false;
 
-  for (let from = 0; from < MAX_LAUNCHES; from += LAUNCH_PAGE_SIZE) {
-    const { data, error } = await sb
-      .from("bags_launches")
-      .select("token_mint, user_id, royalty_bps, first_seen_at")
-      .order("first_seen_at", { ascending: false })
-      .order("token_mint", { ascending: true })
-      .range(from, from + LAUNCH_PAGE_SIZE - 1);
+    for (let from = 0; from < MAX_LAUNCHES; from += LAUNCH_PAGE_SIZE) {
+      const { data, error } = await sb
+        .from("bags_launches")
+        .select(columns)
+        .order("first_seen_at", { ascending: false })
+        .order("token_mint", { ascending: true })
+        .range(from, from + LAUNCH_PAGE_SIZE - 1);
 
-    if (error) return null;
-    if (!data?.length) break;
+      if (error) {
+        if (columns === FULL_LAUNCH_COLUMNS) {
+          console.warn(
+            "bags board: falling back to base columns:",
+            error.message,
+          );
+        }
+        failed = true;
+        break;
+      }
+      if (!data?.length) break;
 
-    rows.push(...(data as BagsLaunchRow[]));
-    if (data.length < LAUNCH_PAGE_SIZE) break;
+      rows.push(...(data as unknown as BagsLaunchRow[]));
+      if (data.length < LAUNCH_PAGE_SIZE) break;
+    }
+
+    if (!failed) return rows;
   }
 
-  return rows;
+  return null;
 }
+
+/** Shape returned when there is nothing to show, so callers never branch on null. */
+const EMPTY_BOARD = {
+  verified: [] as ReturnType<typeof buildBagsBoard>,
+  unverified: [] as ReturnType<typeof buildUnverifiedLaunches>,
+};
 
 async function loadBoard() {
   try {
@@ -97,18 +138,28 @@ async function loadBoard() {
 
     // A missing table (migration not applied in this environment) must not take
     // the page down: the claim CTA below is useful even with no rows at all.
-    if (!rows?.length) return [];
+    if (!rows?.length) return EMPTY_BOARD;
 
-    const userIds = [...new Set(rows.map((r) => r.user_id))];
+    const userIds = [
+      ...new Set(
+        rows.map((r) => r.user_id).filter((id): id is string => Boolean(id)),
+      ),
+    ];
 
-    const { data: builders } = await sb
-      .from("users")
-      .select(BUILDER_FIELDS)
-      .in("id", userIds);
+    // Skip the lookup entirely when every launch is unclaimed: `.in()` with an
+    // empty list is a query that can only return nothing.
+    const { data: builders } = userIds.length
+      ? await sb.from("users").select(BUILDER_FIELDS).in("id", userIds)
+      : { data: [] };
 
-    return buildBagsBoard(rows, (builders as BagsBuilderRow[] | null) ?? []);
+    const builderRows = (builders as BagsBuilderRow[] | null) ?? [];
+
+    return {
+      verified: buildBagsBoard(rows, builderRows),
+      unverified: buildUnverifiedLaunches(rows, builderRows),
+    };
   } catch {
-    return [];
+    return EMPTY_BOARD;
   }
 }
 
@@ -133,7 +184,10 @@ function StatChip({ label, value }: { label: string; value: number }) {
 }
 
 export default async function BagsPage() {
-  const board = await loadBoard();
+  const { verified: board, unverified } = await loadBoard();
+  // Bounded render: the discovery cron adds rows every day, and an unbounded
+  // list would grow the page without limit. The full count is still stated.
+  const shownUnverified = unverified.slice(0, MAX_UNVERIFIED_SHOWN);
   const launchCount = board.reduce((sum, entry) => sum + entry.launchCount, 0);
 
   const jsonLd = {
@@ -160,7 +214,7 @@ export default async function BagsPage() {
   };
 
   return (
-    <div className="bags-theme min-h-screen">
+    <div className={`bags-theme min-h-screen ${openRunde.variable}`}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
@@ -172,11 +226,7 @@ export default async function BagsPage() {
             className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl"
             style={{ backgroundColor: "var(--bags-green-soft)" }}
           >
-            <BagSimple
-              weight="fill"
-              size={28}
-              style={{ color: "var(--bags-green)" }}
-            />
+            <BagsMark size={30} />
           </div>
           <h1 className="text-4xl font-bold tracking-[-0.035em] text-[var(--bags-text)] sm:text-5xl">
             Who&apos;s behind
@@ -185,10 +235,15 @@ export default async function BagsPage() {
           </h1>
           <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-[var(--bags-text-muted)]">
             On Bags, a launch is a wallet and an X handle. Neither tells you
-            whether that person ships anything. These builders linked their
-            launching wallet to a GitHub-verified VibeTalent profile, so every
-            row carries a real shipping record: projects, streaks, and a vibe
-            score earned from work rather than from minting.
+            whether that person ships anything. The builders at the top proved
+            their launching wallet by signature against a GitHub-verified
+            profile, so each of those rows carries a real shipping record. The
+            rest are launches we are tracking but cannot vouch for, each
+            labelled with exactly how much we know.
+          </p>
+          <p className="mt-4 text-[12px] text-[var(--bags-text-faint)]">
+            Launch data from <BagsAttribution />. VibeTalent is a Bags Hackathon
+            project building on the Bags ecosystem.
           </p>
         </header>
 
@@ -209,7 +264,7 @@ export default async function BagsPage() {
               id="board-heading"
               className="bags-label mb-3 text-[11px] font-semibold text-[var(--bags-text-faint)]"
             >
-              Ranked by vibe score
+              Verified builders, ranked by vibe score
             </h2>
             <ul className="flex flex-col gap-3">
               {board.map((entry, i) => (
@@ -234,6 +289,37 @@ export default async function BagsPage() {
             </p>
           </section>
         )}
+
+        {unverified.length > 0 ? (
+          <section className="mt-10" aria-labelledby="unverified-heading">
+            <h2
+              id="unverified-heading"
+              className="bags-label mb-2 text-[11px] font-semibold text-[var(--bags-text-faint)]"
+            >
+              {unverified.length} tracked{" "}
+              {unverified.length === 1 ? "launch" : "launches"}, not verified
+            </h2>
+            <p className="mb-4 max-w-xl text-[13px] leading-relaxed text-[var(--bags-text-muted)]">
+              Busiest first. Each row is labelled with what we actually know:
+              unclaimed means nobody has proved the wallet behind it, and
+              unverified means a VibeTalent profile owns it but has no
+              GitHub-verified record yet. Either way, no claim is being made
+              about the person. If one of them is yours, link the wallet and it
+              moves up.
+            </p>
+            <ul className="flex flex-col gap-2">
+              {shownUnverified.map((launch) => (
+                <UnverifiedLaunchRow key={launch.mint} launch={launch} />
+              ))}
+            </ul>
+            {unverified.length > shownUnverified.length ? (
+              <p className="mt-3 text-[12px] text-[var(--bags-text-faint)]">
+                Showing the {shownUnverified.length} busiest of{" "}
+                {unverified.length} tracked launches.
+              </p>
+            ) : null}
+          </section>
+        ) : null}
 
         <section
           className="mt-10 rounded-[20px] p-6 sm:p-8"
@@ -310,7 +396,7 @@ export default async function BagsPage() {
           <p className="mt-6 text-xs leading-relaxed text-[var(--bags-text-faint)]">
             Self-reported X handles are never used to match a launch to a
             builder. Nothing here is financial advice or an endorsement of any
-            token. VibeTalent is not affiliated with Bags.
+            token.
           </p>
         </section>
       </div>

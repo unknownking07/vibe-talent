@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { notificationTimeAgo, extractNotificationLink, parseNotificationMessage } from "../notification-display";
+import {
+  notificationTimeAgo,
+  extractNotificationLink,
+  parseNotificationMessage,
+} from "../notification-display";
 
 describe("notificationTimeAgo", () => {
   it("returns an empty string for unparseable input rather than 'undefined'", () => {
@@ -16,10 +20,18 @@ describe("notificationTimeAgo", () => {
 
   it("formats minutes, hours, and days against a recent timestamp", () => {
     const now = Date.now();
-    expect(notificationTimeAgo(new Date(now - 5_000).toISOString())).toBe("just now");
-    expect(notificationTimeAgo(new Date(now - 5 * 60_000).toISOString())).toBe("5m ago");
-    expect(notificationTimeAgo(new Date(now - 3 * 3600_000).toISOString())).toBe("3h ago");
-    expect(notificationTimeAgo(new Date(now - 2 * 86400_000).toISOString())).toBe("2d ago");
+    expect(notificationTimeAgo(new Date(now - 5_000).toISOString())).toBe(
+      "just now",
+    );
+    expect(notificationTimeAgo(new Date(now - 5 * 60_000).toISOString())).toBe(
+      "5m ago",
+    );
+    expect(
+      notificationTimeAgo(new Date(now - 3 * 3600_000).toISOString()),
+    ).toBe("3h ago");
+    expect(
+      notificationTimeAgo(new Date(now - 2 * 86400_000).toISOString()),
+    ).toBe("2d ago");
   });
 });
 
@@ -34,18 +46,28 @@ describe("extractNotificationLink", () => {
 
   it("accepts same-origin paths", () => {
     expect(extractNotificationLink({ link: "/dashboard" })).toBe("/dashboard");
-    expect(extractNotificationLink({ link: "/projects/abc?ref=x" })).toBe("/projects/abc?ref=x");
+    expect(extractNotificationLink({ link: "/projects/abc?ref=x" })).toBe(
+      "/projects/abc?ref=x",
+    );
   });
 
   it("accepts absolute http and https URLs", () => {
-    expect(extractNotificationLink({ link: "https://example.com/x" })).toBe("https://example.com/x");
-    expect(extractNotificationLink({ link: "http://example.com/x" })).toBe("http://example.com/x");
+    expect(extractNotificationLink({ link: "https://example.com/x" })).toBe(
+      "https://example.com/x",
+    );
+    expect(extractNotificationLink({ link: "http://example.com/x" })).toBe(
+      "http://example.com/x",
+    );
   });
 
   it("rejects javascript:, data:, and other dangerous schemes", () => {
     expect(extractNotificationLink({ link: "javascript:alert(1)" })).toBeNull();
     expect(extractNotificationLink({ link: "JaVaScRiPt:alert(1)" })).toBeNull();
-    expect(extractNotificationLink({ link: "data:text/html,<script>alert(1)</script>" })).toBeNull();
+    expect(
+      extractNotificationLink({
+        link: "data:text/html,<script>alert(1)</script>",
+      }),
+    ).toBeNull();
     expect(extractNotificationLink({ link: "vbscript:msgbox(1)" })).toBeNull();
     expect(extractNotificationLink({ link: "file:///etc/passwd" })).toBeNull();
   });
@@ -53,7 +75,9 @@ describe("extractNotificationLink", () => {
   it("rejects protocol-relative and backslash-trick URLs", () => {
     expect(extractNotificationLink({ link: "//evil.com" })).toBeNull();
     expect(extractNotificationLink({ link: "/\\evil.com" })).toBeNull();
-    expect(extractNotificationLink({ link: "/path\\with\\backslashes" })).toBeNull();
+    expect(
+      extractNotificationLink({ link: "/path\\with\\backslashes" }),
+    ).toBeNull();
   });
 
   it("rejects garbage that is neither a path nor a parseable URL", () => {
@@ -81,7 +105,9 @@ describe("parseNotificationMessage", () => {
 
   it("does not tear apart an email address", () => {
     const parsed = parseNotificationMessage("reply to bob@example.com soon");
-    expect(parsed).toEqual([{ type: "text", value: "reply to bob@example.com soon" }]);
+    expect(parsed).toEqual([
+      { type: "text", value: "reply to bob@example.com soon" },
+    ]);
   });
 
   it("returns plain text when there is no mention", () => {

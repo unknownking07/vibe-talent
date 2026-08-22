@@ -14,7 +14,9 @@ describe("validateDisplayName", () => {
 
   it("enforces a 30-character maximum", () => {
     expect(validateDisplayName("a".repeat(30))).toBeNull();
-    expect(validateDisplayName("a".repeat(31))).toMatch(/30 characters or less/);
+    expect(validateDisplayName("a".repeat(31))).toMatch(
+      /30 characters or less/,
+    );
   });
 
   it("accepts names with digits — the original regression that motivated the relaxed contract", () => {

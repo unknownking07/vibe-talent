@@ -116,9 +116,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // reconfirms a launch rather than sitting at whenever the profile was made.
     const lastVerifiedByUser = new Map<string, string>();
     for (const row of (bagsLaunchesResult.data ?? []) as {
-      user_id: string;
+      user_id: string | null;
       last_verified_at: string;
     }[]) {
+      // Unclaimed launches have no user and get no page of their own, so they
+      // contribute no URL here.
+      if (!row.user_id) continue;
       const seen = lastVerifiedByUser.get(row.user_id);
       if (!seen || row.last_verified_at > seen) {
         lastVerifiedByUser.set(row.user_id, row.last_verified_at);

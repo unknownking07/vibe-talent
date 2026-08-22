@@ -13,24 +13,26 @@ import { anonymizePrivateEventMessage } from "../feed-utils";
 describe("anonymizePrivateEventMessage", () => {
   it("maps each known event type to a generic private-repo message", () => {
     expect(anonymizePrivateEventMessage("pr")).toBe(
-      "opened a pull request in a private repo"
+      "opened a pull request in a private repo",
     );
     expect(anonymizePrivateEventMessage("create")).toBe(
-      "made changes in a private repo"
+      "made changes in a private repo",
     );
     expect(anonymizePrivateEventMessage("issue")).toBe(
-      "opened an issue in a private repo"
+      "opened an issue in a private repo",
     );
-    expect(anonymizePrivateEventMessage("push")).toBe("pushed to a private repo");
+    expect(anonymizePrivateEventMessage("push")).toBe(
+      "pushed to a private repo",
+    );
   });
 
   it("falls back to the push message for null/undefined/unknown types", () => {
     expect(anonymizePrivateEventMessage(null)).toBe("pushed to a private repo");
     expect(anonymizePrivateEventMessage(undefined)).toBe(
-      "pushed to a private repo"
+      "pushed to a private repo",
     );
     expect(anonymizePrivateEventMessage("something_unexpected")).toBe(
-      "pushed to a private repo"
+      "pushed to a private repo",
     );
   });
 

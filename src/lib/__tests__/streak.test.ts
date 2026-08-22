@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { calculateStreak, calculateVibeScore, calculateProjectScore, getBadgeLevel, getBadgeInfo } from "../streak";
+import {
+  calculateStreak,
+  calculateVibeScore,
+  calculateProjectScore,
+  getBadgeLevel,
+  getBadgeInfo,
+} from "../streak";
 import type { ProjectScoreInput } from "../streak";
 
 describe("calculateStreak", () => {
@@ -16,15 +22,24 @@ describe("calculateStreak", () => {
   });
 
   it("counts consecutive days correctly", () => {
-    const dates = ["2025-01-01", "2025-01-02", "2025-01-03", "2025-01-04", "2025-01-05"];
+    const dates = [
+      "2025-01-01",
+      "2025-01-02",
+      "2025-01-03",
+      "2025-01-04",
+      "2025-01-05",
+    ];
     const result = calculateStreak(dates);
     expect(result.longestStreak).toBe(5);
   });
 
   it("handles gaps between streaks", () => {
     const dates = [
-      "2025-01-01", "2025-01-02", "2025-01-03", // 3-day streak
-      "2025-01-10", "2025-01-11",                // 2-day streak
+      "2025-01-01",
+      "2025-01-02",
+      "2025-01-03", // 3-day streak
+      "2025-01-10",
+      "2025-01-11", // 2-day streak
     ];
     const result = calculateStreak(dates);
     expect(result.longestStreak).toBe(3);
@@ -77,7 +92,8 @@ describe("calculateStreak", () => {
   it("correctly identifies current streak when active yesterday", () => {
     const today = new Date();
     const dates: string[] = [];
-    const toLocalDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const toLocalDate = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     for (let i = 5; i >= 1; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
@@ -129,9 +145,9 @@ describe("calculateVibeScore", () => {
   });
 
   it("applies badge bonus correctly", () => {
-    expect(calculateVibeScore(0, 0, "bronze")).toBe(20);  // 10 + 10
-    expect(calculateVibeScore(0, 0, "silver")).toBe(30);  // 10 + 20
-    expect(calculateVibeScore(0, 0, "gold")).toBe(40);    // 10 + 30
+    expect(calculateVibeScore(0, 0, "bronze")).toBe(20); // 10 + 10
+    expect(calculateVibeScore(0, 0, "silver")).toBe(30); // 10 + 20
+    expect(calculateVibeScore(0, 0, "gold")).toBe(40); // 10 + 30
     expect(calculateVibeScore(0, 0, "diamond")).toBe(50); // 10 + 40
   });
 
@@ -154,7 +170,9 @@ describe("calculateVibeScore", () => {
 
   it("applies endorsement points correctly", () => {
     // 10 + 0 + 0 + 0 + 3*5 = 25
-    expect(calculateVibeScore(0, 0, "none", undefined, undefined, 0, 3)).toBe(25);
+    expect(calculateVibeScore(0, 0, "none", undefined, undefined, 0, 3)).toBe(
+      25,
+    );
   });
 });
 
@@ -169,7 +187,16 @@ describe("calculateProjectScore", () => {
   };
 
   it("returns 1 for unverified project regardless of quality", () => {
-    const project = { ...baseProject, verified: false, live_url: "https://example.com", github_url: "https://github.com/x", description: "A very long description that is over fifty characters for sure", image_url: "https://img.com/x.png", tech_stack: ["React", "Node", "PostgreSQL"] };
+    const project = {
+      ...baseProject,
+      verified: false,
+      live_url: "https://example.com",
+      github_url: "https://github.com/x",
+      description:
+        "A very long description that is over fifty characters for sure",
+      image_url: "https://img.com/x.png",
+      tech_stack: ["React", "Node", "PostgreSQL"],
+    };
     expect(calculateProjectScore(project)).toBe(1);
   });
 
@@ -178,23 +205,49 @@ describe("calculateProjectScore", () => {
   });
 
   it("adds 3 for live URL", () => {
-    expect(calculateProjectScore({ ...baseProject, live_url: "https://example.com" })).toBe(8);
+    expect(
+      calculateProjectScore({
+        ...baseProject,
+        live_url: "https://example.com",
+      }),
+    ).toBe(8);
   });
 
   it("adds 2 for GitHub URL", () => {
-    expect(calculateProjectScore({ ...baseProject, github_url: "https://github.com/x" })).toBe(7);
+    expect(
+      calculateProjectScore({
+        ...baseProject,
+        github_url: "https://github.com/x",
+      }),
+    ).toBe(7);
   });
 
   it("adds 2 for description >50 chars", () => {
-    expect(calculateProjectScore({ ...baseProject, description: "A very long description that is definitely over fifty characters long" })).toBe(7);
+    expect(
+      calculateProjectScore({
+        ...baseProject,
+        description:
+          "A very long description that is definitely over fifty characters long",
+      }),
+    ).toBe(7);
   });
 
   it("adds 1 for image", () => {
-    expect(calculateProjectScore({ ...baseProject, image_url: "https://img.com/x.png" })).toBe(6);
+    expect(
+      calculateProjectScore({
+        ...baseProject,
+        image_url: "https://img.com/x.png",
+      }),
+    ).toBe(6);
   });
 
   it("adds 2 for tech stack ≥3", () => {
-    expect(calculateProjectScore({ ...baseProject, tech_stack: ["React", "Node", "PostgreSQL"] })).toBe(7);
+    expect(
+      calculateProjectScore({
+        ...baseProject,
+        tech_stack: ["React", "Node", "PostgreSQL"],
+      }),
+    ).toBe(7);
   });
 
   it("maxes out at 15 for a fully loaded verified project", () => {
@@ -202,7 +255,8 @@ describe("calculateProjectScore", () => {
       verified: true,
       live_url: "https://example.com",
       github_url: "https://github.com/x",
-      description: "A very long description that is definitely over fifty characters long for quality",
+      description:
+        "A very long description that is definitely over fifty characters long for quality",
       image_url: "https://img.com/x.png",
       tech_stack: ["React", "Node", "PostgreSQL"],
     };
@@ -224,19 +278,26 @@ describe("calculateVibeScore with project details", () => {
     verified: true,
     live_url: "https://example.com",
     github_url: "https://github.com/x",
-    description: "A comprehensive project description that exceeds fifty characters easily",
+    description:
+      "A comprehensive project description that exceeds fifty characters easily",
     image_url: "https://img.com/x.png",
     tech_stack: ["React", "TypeScript", "Tailwind"],
   };
 
   it("scores project array correctly", () => {
     // 10 + 0*2 + 15 (quality) + 5 (bare) + 0 (badge) = 30
-    expect(calculateVibeScore(0, [qualityProject, bareProject], "none")).toBe(30);
+    expect(calculateVibeScore(0, [qualityProject, bareProject], "none")).toBe(
+      30,
+    );
   });
 
   it("quality projects outweigh streaks", () => {
     // 3 quality projects: 10 + 0*2 + 45 + 0 = 55
-    const qualityScore = calculateVibeScore(0, [qualityProject, qualityProject, qualityProject], "none");
+    const qualityScore = calculateVibeScore(
+      0,
+      [qualityProject, qualityProject, qualityProject],
+      "none",
+    );
     // 20-day streak, no projects: 10 + 20*2 + 0 + 0 = 50
     const streakScore = calculateVibeScore(20, [], "none");
     expect(qualityScore).toBeGreaterThan(streakScore);

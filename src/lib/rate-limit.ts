@@ -21,7 +21,7 @@ function getRedis(): Redis | null {
 function createRateLimiter(
   prefix: string,
   limit: number,
-  window: `${number} s` | `${number} m` | `${number} h` | `${number} d`
+  window: `${number} s` | `${number} m` | `${number} h` | `${number} d`,
 ): Ratelimit | null {
   const r = getRedis();
   if (!r) return null;
@@ -49,10 +49,12 @@ export function getIP(req: NextRequest): string {
  */
 export async function checkRateLimit(
   limiter: Ratelimit | null,
-  identifier: string
+  identifier: string,
 ): Promise<{ success: boolean }> {
   if (!limiter) {
-    console.warn("Rate limiter unavailable (Redis not configured): allowing request");
+    console.warn(
+      "Rate limiter unavailable (Redis not configured): allowing request",
+    );
     return { success: true };
   }
   try {
@@ -73,6 +75,9 @@ export const feedLimiter = createRateLimiter("feed", 30, "1 m");
 export const statsLimiter = createRateLimiter("stats", 20, "1 m");
 export const projectsLimiter = createRateLimiter("projects", 30, "1 m");
 export const buildersLimiter = createRateLimiter("builders", 30, "1 m");
+// Wallet-ownership proof. Generous enough for a user retrying a wallet prompt,
+// tight enough that a session cannot spin the nonce store or the verifier.
+export const walletLinkLimiter = createRateLimiter("wallet-link", 20, "10 m");
 export const hireApiLimiter = createRateLimiter("hire-api", 5, "1 h");
 export const feedbackLimiter = createRateLimiter("feedback", 10, "1 h");
 // Burn endpoints: each call verifies a real on-chain transaction, so the cost

@@ -151,3 +151,100 @@ export function changePct(closes: number[]): number | null {
   if (first === 0) return null;
   return ((last - first) / first) * 100;
 }
+
+/** One launch as GeckoTerminal lists it under the Bags dex. */
+export type BagsPoolListing = {
+  mint: string;
+  name: string | null;
+  symbol: string | null;
+  imageUrl: string | null;
+  fdvUsd: number | null;
+  volume24hUsd: number | null;
+  poolCreatedAt: string | null;
+};
+
+/**
+ * Bags launches, busiest first.
+ *
+ * This is the only way to enumerate launches we have no wallet for: the Bags
+ * public API is keyed by wallet and by mint, and exposes no listing endpoint.
+ *
+ * It is a PARTIAL view and the board must say so. Bags runs its bonding curve
+ * on Meteora, so a launch only appears under the `bags-fm` dex once it trades
+ * there; $VIBE itself is still on `meteora-dbc`, which is shared with other
+ * launchpads and so cannot be read as "Bags launches" without mislabelling
+ * other platforms' tokens.
+ *
+ * `include=base_token` folds the name, ticker and artwork into the same
+ * response, so a page of twenty launches costs one request rather than
+ * twenty-one.
+ */
+export async function fetchBagsDexPools(page = 1): Promise<BagsPoolListing[]> {
+  const body = await geckoGet(
+    `/networks/${NETWORK}/dexes/bags-fm/pools?page=${page}&sort=h24_volume_usd_desc&include=base_token`,
+  );
+  if (!isRecord(body) || !Array.isArray(body.data)) return [];
+
+  // Included token objects, keyed by mint, so each pool can find its own.
+  const tokens = new Map<string, Record<string, unknown>>();
+  if (Array.isArray(body.included)) {
+    for (const entry of body.included) {
+      if (!isRecord(entry) || entry.type !== "token") continue;
+      const attrs = entry.attributes;
+      if (!isRecord(attrs) || typeof attrs.address !== "string") continue;
+      tokens.set(attrs.address, attrs);
+    }
+  }
+
+  const listings: BagsPoolListing[] = [];
+  for (const pool of body.data) {
+    if (!isRecord(pool)) continue;
+
+    const relationships = pool.relationships;
+    if (!isRecord(relationships) || !isRecord(relationships.base_token))
+      continue;
+    const ref = relationships.base_token.data;
+    if (!isRecord(ref) || typeof ref.id !== "string") continue;
+
+    const mint = ref.id.replace(`${NETWORK}_`, "");
+    if (!mint) continue;
+
+    const attrs = isRecord(pool.attributes) ? pool.attributes : {};
+    const token = tokens.get(mint);
+
+    listings.push({
+      mint,
+      // Names and tickers here are attacker-controlled; callers must run them
+      // through the display sanitiser before they reach a page.
+      name: typeof token?.name === "string" ? token.name : null,
+      symbol: typeof token?.symbol === "string" ? token.symbol : null,
+      imageUrl: typeof token?.image_url === "string" ? token.image_url : null,
+      fdvUsd: toNumber(attrs.fdv_usd),
+      volume24hUsd: isRecord(attrs.volume_usd)
+        ? toNumber(attrs.volume_usd.h24)
+        : null,
+      poolCreatedAt:
+        typeof attrs.pool_created_at === "string"
+          ? attrs.pool_created_at
+          : null,
+    });
+  }
+
+  return listings;
+}
+
+/**
+ * A dollar amount, compact but not lied about.
+ *
+ * formatTokenCount rounds to whole units, which is right for supply and wrong
+ * for money: it renders $12.50 as $13 and $0.40 as $0. Volume and FDV on the
+ * board are frequently small enough for that to matter.
+ */
+export function formatUsdCompact(value: number): string {
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
+  if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
+  if (abs >= 1_000) return `$${(value / 1_000).toFixed(2)}K`;
+  if (value === 0) return "$0";
+  return `$${value.toFixed(2)}`;
+}

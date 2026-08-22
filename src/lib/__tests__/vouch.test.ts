@@ -56,12 +56,18 @@ describe("totalVouchPoints", () => {
   });
 
   it("caps a whale-backed profile so rank stays unbuyable", () => {
-    const many = Array.from({ length: 20 }, () => ({ usd: 25, voucherVibeScore: 300 }));
+    const many = Array.from({ length: 20 }, () => ({
+      usd: 25,
+      voucherVibeScore: 300,
+    }));
     expect(totalVouchPoints(many)).toBe(VOUCH.perProfileCapPoints);
   });
 
   it("ignores vouchers below the credibility floor entirely", () => {
-    const sybils = Array.from({ length: 30 }, () => ({ usd: 4, voucherVibeScore: 5 }));
+    const sybils = Array.from({ length: 30 }, () => ({
+      usd: 4,
+      voucherVibeScore: 5,
+    }));
     expect(totalVouchPoints(sybils)).toBe(0);
   });
 

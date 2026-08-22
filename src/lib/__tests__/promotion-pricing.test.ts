@@ -12,13 +12,15 @@ import {
 
 describe("expectedTokenAmount", () => {
   it("returns the USDC base units unchanged for USDC", () => {
-    expect(expectedTokenAmount(BigInt(10_000_000), "usdc", 0)).toBe(BigInt(10_000_000));
+    expect(expectedTokenAmount(BigInt(10_000_000), "usdc", 0)).toBe(
+      BigInt(10_000_000),
+    );
   });
 
   it("converts USD to $VIBE base units via the price", () => {
     // $5 at $0.000005/token = 1,000,000 $VIBE = 1e15 base units (9 decimals)
     expect(expectedTokenAmount(BigInt(5_000_000), "vibe", 0.000005)).toBe(
-      BigInt(1_000_000_000_000_000)
+      BigInt(1_000_000_000_000_000),
     );
   });
 
@@ -47,8 +49,12 @@ describe("passesSlippage", () => {
 describe("expiresAtFor", () => {
   const now = 1_700_000_000_000;
   it("computes a future expiry for timed packages", () => {
-    expect(new Date(expiresAtFor(2, now)!).getTime() - now).toBe(7 * 86_400_000);
-    expect(new Date(expiresAtFor(3, now)!).getTime() - now).toBe(30 * 86_400_000);
+    expect(new Date(expiresAtFor(2, now)!).getTime() - now).toBe(
+      7 * 86_400_000,
+    );
+    expect(new Date(expiresAtFor(3, now)!).getTime() - now).toBe(
+      30 * 86_400_000,
+    );
   });
   it("returns null (lifetime) for the Annual package", () => {
     expect(expiresAtFor(4, now)).toBeNull();
@@ -73,7 +79,9 @@ describe("pickReceivedDelta", () => {
   });
 
   it("computes the net delta for the receiving owner + mint", () => {
-    expect(pickReceivedDelta([bal(R, M, "100")], [bal(R, M, "600")], R, M)).toBe(BigInt(500));
+    expect(
+      pickReceivedDelta([bal(R, M, "100")], [bal(R, M, "600")], R, M),
+    ).toBe(BigInt(500));
   });
 
   it("treats a freshly-created ATA (no pre entry) as 0", () => {
@@ -82,7 +90,11 @@ describe("pickReceivedDelta", () => {
 
   it("ignores other owners and other mints", () => {
     const pre = [bal(R, M, "0")];
-    const post = [bal(R, M, "500"), bal("someoneElse", M, "999"), bal(R, "OtherMint", "999")];
+    const post = [
+      bal(R, M, "500"),
+      bal("someoneElse", M, "999"),
+      bal(R, "OtherMint", "999"),
+    ];
     expect(pickReceivedDelta(pre, post, R, M)).toBe(BigInt(500));
   });
 });
@@ -95,13 +107,15 @@ describe("extractMemos", () => {
   });
 
   it("returns memo text from spl-memo instructions", () => {
-    expect(extractMemos([memo("proj-123"), { program: "system", parsed: {} }])).toEqual([
-      "proj-123",
-    ]);
+    expect(
+      extractMemos([memo("proj-123"), { program: "system", parsed: {} }]),
+    ).toEqual(["proj-123"]);
   });
 
   it("ignores non-memo instructions and empty memos", () => {
-    expect(extractMemos([{ program: "spl-token", parsed: {} }, memo("")])).toEqual([]);
+    expect(
+      extractMemos([{ program: "spl-token", parsed: {} }, memo("")]),
+    ).toEqual([]);
   });
 
   it("handles an empty instruction list", () => {
@@ -139,12 +153,16 @@ function payload(pools: unknown[]) {
 
 describe("pickPriceFromPools", () => {
   it("returns the price when the target is the base token", () => {
-    const json = payload([pool(`solana_${MINT}`, "solana_other", 0.0042, 238.09, 5000)]);
+    const json = payload([
+      pool(`solana_${MINT}`, "solana_other", 0.0042, 238.09, 5000),
+    ]);
     expect(pickPriceFromPools(json, MINT)).toBe(0.0042);
   });
 
   it("returns the price when the target is the quote token", () => {
-    const json = payload([pool("solana_other", `solana_${MINT}`, 238.09, 0.0042, 5000)]);
+    const json = payload([
+      pool("solana_other", `solana_${MINT}`, 238.09, 0.0042, 5000),
+    ]);
     expect(pickPriceFromPools(json, MINT)).toBe(0.0042);
   });
 
@@ -218,47 +236,65 @@ describe("pickPriceFromPools", () => {
 
   it("rejects a pool whose matching token id only partially matches", () => {
     // A mint that is merely a substring of the target must not match.
-    const json = payload([pool("solana_77", "solana_other", 0.0042, 238.09, 5000)]);
+    const json = payload([
+      pool("solana_77", "solana_other", 0.0042, 238.09, 5000),
+    ]);
     expect(pickPriceFromPools(json, MINT)).toBeNull();
   });
 
   it("uses base_token_price_usd when the base token matches", () => {
-    const json = payload([pool(`solana_${MINT}`, "solana_usdc", 0.0042, 1.0, 5000)]);
+    const json = payload([
+      pool(`solana_${MINT}`, "solana_usdc", 0.0042, 1.0, 5000),
+    ]);
     expect(pickPriceFromPools(json, MINT)).toBe(0.0042);
   });
 
   it("uses quote_token_price_usd when the quote token matches", () => {
-    const json = payload([pool("solana_usdc", `solana_${MINT}`, 1.0, 0.0042, 5000)]);
+    const json = payload([
+      pool("solana_usdc", `solana_${MINT}`, 1.0, 0.0042, 5000),
+    ]);
     expect(pickPriceFromPools(json, MINT)).toBe(0.0042);
   });
 
   it("accepts a decimal-string reserve from a live-shaped pool", () => {
-    const json = payload([pool(`solana_${MINT}`, "solana_usdc", "0.0042", "238.09", "5000.50")]);
+    const json = payload([
+      pool(`solana_${MINT}`, "solana_usdc", "0.0042", "238.09", "5000.50"),
+    ]);
     expect(pickPriceFromPools(json, MINT)).toBe(0.0042);
   });
 
   it("accepts numeric reserve and numeric price", () => {
-    const json = payload([pool(`solana_${MINT}`, "solana_usdc", 0.0042, 238.09, 5000)]);
+    const json = payload([
+      pool(`solana_${MINT}`, "solana_usdc", 0.0042, 238.09, 5000),
+    ]);
     expect(pickPriceFromPools(json, MINT)).toBe(0.0042);
   });
 
   it("accepts a decimal-string price", () => {
-    const json = payload([pool(`solana_${MINT}`, "solana_usdc", "0.0042", "238.09", "5000")]);
+    const json = payload([
+      pool(`solana_${MINT}`, "solana_usdc", "0.0042", "238.09", "5000"),
+    ]);
     expect(pickPriceFromPools(json, MINT)).toBe(0.0042);
   });
 
   it("rejects whitespace-only reserve", () => {
-    const json = payload([pool(`solana_${MINT}`, "solana_a", 0.0042, 238.09, "   ")]);
+    const json = payload([
+      pool(`solana_${MINT}`, "solana_a", 0.0042, 238.09, "   "),
+    ]);
     expect(pickPriceFromPools(json, MINT)).toBeNull();
   });
 
   it("rejects malformed reserve strings", () => {
-    const json = payload([pool(`solana_${MINT}`, "solana_a", 0.0042, 238.09, "bad")]);
+    const json = payload([
+      pool(`solana_${MINT}`, "solana_a", 0.0042, 238.09, "bad"),
+    ]);
     expect(pickPriceFromPools(json, MINT)).toBeNull();
   });
 
   it("rejects boolean reserve", () => {
-    const json = payload([pool(`solana_${MINT}`, "solana_a", 0.0042, 238.09, true)]);
+    const json = payload([
+      pool(`solana_${MINT}`, "solana_a", 0.0042, 238.09, true),
+    ]);
     expect(pickPriceFromPools(json, MINT)).toBeNull();
   });
 
@@ -304,7 +340,9 @@ describe("pickPriceFromPools", () => {
 
   it("prefers exact base match when both sides match the target id", () => {
     // Both base and quote equal the target; base_token_price_usd must win.
-    const json = payload([pool(`solana_${MINT}`, `solana_${MINT}`, 0.0042, 238.09, 5000)]);
+    const json = payload([
+      pool(`solana_${MINT}`, `solana_${MINT}`, 0.0042, 238.09, 5000),
+    ]);
     expect(pickPriceFromPools(json, MINT)).toBe(0.0042);
   });
 });
@@ -341,7 +379,12 @@ describe("extractSimplePrice", () => {
   });
 
   it("rejects when the mint is absent from token_prices", () => {
-    expect(extractSimplePrice({ data: { attributes: { token_prices: { other: 0.0042 } } } }, MINT)).toBeNull();
+    expect(
+      extractSimplePrice(
+        { data: { attributes: { token_prices: { other: 0.0042 } } } },
+        MINT,
+      ),
+    ).toBeNull();
   });
 
   it("rejects non-string/non-number price values", () => {

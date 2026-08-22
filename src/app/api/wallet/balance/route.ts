@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchVibeUsdCached } from "@/lib/promotion-pricing";
-import { fetchVibeBalance, isBalanceStale, toWholeVibe, balanceUsd } from "@/lib/vibe-balance";
+import {
+  fetchVibeBalance,
+  isBalanceStale,
+  toWholeVibe,
+  balanceUsd,
+} from "@/lib/vibe-balance";
 import { freezeAllowanceFor, BASE_FREEZES } from "@/lib/vibe-config";
 
 // On-demand balance refresh for the tier display.
@@ -17,7 +22,10 @@ export async function POST() {
       data: { user },
     } = await authClient.auth.getUser();
     if (!user) {
-      return NextResponse.json({ error: "You must be signed in." }, { status: 401 });
+      return NextResponse.json(
+        { error: "You must be signed in." },
+        { status: 401 },
+      );
     }
 
     const sb = createAdminClient();
@@ -45,7 +53,10 @@ export async function POST() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (sb as any)
           .from("users")
-          .update({ vibe_balance: base.toString(), vibe_balance_at: new Date().toISOString() })
+          .update({
+            vibe_balance: base.toString(),
+            vibe_balance_at: new Date().toISOString(),
+          })
           .eq("id", user.id);
       }
     }

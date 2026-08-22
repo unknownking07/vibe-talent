@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { checkRateLimit, walletLinkLimiter } from "@/lib/rate-limit";
 import { Redis } from "@upstash/redis";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
@@ -20,7 +21,23 @@ export async function GET() {
       data: { user },
     } = await authClient.auth.getUser();
     if (!user) {
-      return NextResponse.json({ error: "You must be signed in." }, { status: 401 });
+      return NextResponse.json(
+        { error: "You must be signed in." },
+        { status: 401 },
+      );
+    }
+
+    // Keyed by account, not IP: the endpoint already requires a session, and
+    // the resource being protected (one nonce slot) is per-account anyway.
+    const { success } = await checkRateLimit(
+      walletLinkLimiter,
+      `nonce:${user.id}`,
+    );
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many attempts. Please wait a moment and try again." },
+        { status: 429 },
+      );
     }
 
     const nonce = crypto.randomUUID();
@@ -67,6 +84,9 @@ export async function GET() {
       "Wallet nonce: unexpected error:",
       e instanceof Error ? e.message : String(e),
     );
-    return NextResponse.json({ error: "Couldn't start wallet linking." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Couldn't start wallet linking." },
+      { status: 500 },
+    );
   }
 }

@@ -22,7 +22,14 @@ import {
 import type { UserWithSocials, Project } from "../types/database";
 import type { TaskRequest } from "../types/agent";
 
-const projectDefaults: Pick<Project, "quality_score" | "quality_metrics" | "live_url_ok" | "endorsement_count" | "is_private"> = {
+const projectDefaults: Pick<
+  Project,
+  | "quality_score"
+  | "quality_metrics"
+  | "live_url_ok"
+  | "endorsement_count"
+  | "is_private"
+> = {
   quality_score: 0,
   quality_metrics: null,
   live_url_ok: null,
@@ -35,7 +42,8 @@ function mkProject(overrides: Partial<Project> = {}): Project {
     id: "p-1",
     user_id: "u-1",
     title: "Project",
-    description: "A comprehensive test project description with many features and good documentation",
+    description:
+      "A comprehensive test project description with many features and good documentation",
     tech_stack: ["React", "TypeScript", "Node.js"],
     live_url: "https://example.com",
     github_url: "https://github.com/x/y",
@@ -99,8 +107,21 @@ const highScoreGold = mkUser({
   vibe_score: 650,
   badge_level: "gold",
   projects: [
-    mkProject({ quality_score: 80, quality_metrics: { has_tests: true, has_ci: true } as unknown as Project["quality_metrics"], live_url_ok: true, endorsement_count: 3 }),
-    mkProject({ id: "p-2", quality_score: 70, live_url_ok: true, endorsement_count: 2 }),
+    mkProject({
+      quality_score: 80,
+      quality_metrics: {
+        has_tests: true,
+        has_ci: true,
+      } as unknown as Project["quality_metrics"],
+      live_url_ok: true,
+      endorsement_count: 3,
+    }),
+    mkProject({
+      id: "p-2",
+      quality_score: 70,
+      live_url_ok: true,
+      endorsement_count: 2,
+    }),
     mkProject({ id: "p-3", quality_score: 60 }),
   ],
 });
@@ -122,8 +143,18 @@ const diamondBadge = mkUser({
   badge_level: "diamond",
   projects: [
     mkProject({ quality_score: 90, live_url_ok: true, endorsement_count: 5 }),
-    mkProject({ id: "p-2", quality_score: 85, live_url_ok: true, endorsement_count: 4 }),
-    mkProject({ id: "p-3", quality_score: 75, live_url_ok: true, endorsement_count: 2 }),
+    mkProject({
+      id: "p-2",
+      quality_score: 85,
+      live_url_ok: true,
+      endorsement_count: 4,
+    }),
+    mkProject({
+      id: "p-3",
+      quality_score: 75,
+      live_url_ok: true,
+      endorsement_count: 2,
+    }),
     mkProject({ id: "p-4", quality_score: 70 }),
   ],
 });
@@ -178,8 +209,14 @@ describe("matchUsers numeric baseline", () => {
 
   it("orders and scores across 5 personas deterministically", () => {
     const results = matchUsers(
-      [beginner, shipperBronze, highScoreGold, zeroStreakInactive, diamondBadge],
-      task
+      [
+        beginner,
+        shipperBronze,
+        highScoreGold,
+        zeroStreakInactive,
+        diamondBadge,
+      ],
+      task,
     );
     const shape = results.map((r) => ({
       username: r.user.username,
@@ -197,9 +234,7 @@ describe("matchUsers numeric baseline", () => {
 describe("calculateVibeScore numeric baseline", () => {
   it("beginner — 5 streak, 1 unverified, no badge", () => {
     expect(
-      calculateVibeScore(5, 1, "none", 0, [
-        { verified: false },
-      ])
+      calculateVibeScore(5, 1, "none", 0, [{ verified: false }]),
     ).toMatchSnapshot();
   });
 
@@ -209,7 +244,7 @@ describe("calculateVibeScore numeric baseline", () => {
         { verified: true, quality_score: 0 },
         { verified: true, quality_score: 0 },
         { verified: true, quality_score: 0 },
-      ])
+      ]),
     ).toMatchSnapshot();
   });
 
@@ -219,7 +254,7 @@ describe("calculateVibeScore numeric baseline", () => {
         { verified: true, quality_score: 80 },
         { verified: true, quality_score: 70 },
         { verified: true, quality_score: 60 },
-      ])
+      ]),
     ).toMatchSnapshot();
   });
 
@@ -237,8 +272,8 @@ describe("calculateVibeScore numeric baseline", () => {
           { verified: true, quality_score: 70 },
         ],
         30, // reviewBonus
-        8  // endorsementCount
-      )
+        8, // endorsementCount
+      ),
     ).toMatchSnapshot();
   });
 
@@ -251,7 +286,7 @@ describe("calculateVibeScore numeric baseline", () => {
       calculateVibeScore(10, 2, "none", 2, [
         { verified: true, quality_score: 50, flagged: true },
         { verified: true, quality_score: 50 },
-      ])
+      ]),
     ).toMatchSnapshot();
   });
 
@@ -262,7 +297,7 @@ describe("calculateVibeScore numeric baseline", () => {
     // 0 streak + 0 projects + no badge + 16k lifetime + 0 recent
     // = 10 + 0 + 0 + 0 + min(floor(sqrt(16000)), 250) + 0 = 10 + 126 = 136
     expect(
-      calculateVibeScore(0, 0, "none", undefined, undefined, 0, 0, 16000, 0)
+      calculateVibeScore(0, 0, "none", undefined, undefined, 0, 0, 16000, 0),
     ).toMatchSnapshot();
   });
 
@@ -284,8 +319,8 @@ describe("calculateVibeScore numeric baseline", () => {
         0,
         0,
         50000,
-        100
-      )
+        100,
+      ),
     ).toMatchSnapshot();
   });
 
@@ -294,17 +329,7 @@ describe("calculateVibeScore numeric baseline", () => {
     // = 10 + 10 + 1 + 0 + min(floor(sqrt(200)), 250) + floor(5*0.5)
     // = 10+10+1+0+14+2 = 37
     expect(
-      calculateVibeScore(
-        5,
-        1,
-        "none",
-        0,
-        [{ verified: false }],
-        0,
-        0,
-        200,
-        5
-      )
+      calculateVibeScore(5, 1, "none", 0, [{ verified: false }], 0, 0, 200, 5),
     ).toMatchSnapshot();
   });
 
@@ -313,14 +338,24 @@ describe("calculateVibeScore numeric baseline", () => {
     // sqrt(1M) = 1000, capped at 250 → +250
     // = 10 + 0 + 0 + 0 + 250 + 0 = 260
     expect(
-      calculateVibeScore(0, 0, "none", undefined, undefined, 0, 0, 1_000_000, 0)
+      calculateVibeScore(
+        0,
+        0,
+        "none",
+        undefined,
+        undefined,
+        0,
+        0,
+        1_000_000,
+        0,
+      ),
     ).toBe(260);
   });
 
   it("volume credit: brand-new user (0 lifetime) → no volume bonus", () => {
     // log10(max(1,0)) = 0, so volume bonus = 0
     expect(
-      calculateVibeScore(0, 0, "none", undefined, undefined, 0, 0, 0, 0)
+      calculateVibeScore(0, 0, "none", undefined, undefined, 0, 0, 0, 0),
     ).toBe(10);
   });
 
@@ -328,7 +363,7 @@ describe("calculateVibeScore numeric baseline", () => {
     // 200 contributions in 30d would be +100 uncapped, but cap is 50
     // = 10 + 0 + 0 + 0 + floor(log10(1)*4) + min(floor(200*0.5), 50) = 10+0+0+0+0+50 = 60
     expect(
-      calculateVibeScore(0, 0, "none", undefined, undefined, 0, 0, 0, 200)
+      calculateVibeScore(0, 0, "none", undefined, undefined, 0, 0, 0, 200),
     ).toBe(60);
   });
 });
@@ -345,7 +380,7 @@ describe("calculateProjectScore numeric baseline", () => {
         description: "",
         image_url: null,
         tech_stack: [],
-      })
+      }),
     ).toBe(1);
   });
 
@@ -355,10 +390,11 @@ describe("calculateProjectScore numeric baseline", () => {
         verified: true,
         live_url: "https://x.com",
         github_url: "https://github.com/x/y",
-        description: "A description that is clearly longer than fifty characters for the bonus",
+        description:
+          "A description that is clearly longer than fifty characters for the bonus",
         image_url: "https://img.com/x.png",
         tech_stack: ["a", "b", "c", "d"],
-      })
+      }),
     ).toBe(15);
   });
 
@@ -371,7 +407,7 @@ describe("calculateProjectScore numeric baseline", () => {
         description: "",
         image_url: null,
         tech_stack: [],
-      })
+      }),
     ).toBe(5);
   });
 
@@ -384,7 +420,7 @@ describe("calculateProjectScore numeric baseline", () => {
         description: "",
         image_url: null,
         tech_stack: [],
-      })
+      }),
     ).toBe(10);
   });
 });

@@ -14,6 +14,8 @@ import {
   nonceKey,
   nonceMessage,
   SOLANA_ADDRESS_RE,
+  BASE58_SIGNATURE_RE,
+  WALLET_LINK_DOMAIN,
   localStoreNonce,
   localConsumeNonce,
   isLocalWalletNonceStoreEnabled,
@@ -52,7 +54,9 @@ describe("nonceKey", () => {
 // ---------------------------------------------------------------------------
 describe("SOLANA_ADDRESS_RE", () => {
   it("matches a valid 44-char base58 pubkey", () => {
-    expect(SOLANA_ADDRESS_RE.test("9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM")).toBe(true);
+    expect(
+      SOLANA_ADDRESS_RE.test("9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"),
+    ).toBe(true);
   });
 
   it("rejects an empty string", () => {
@@ -156,5 +160,55 @@ describe("local nonce store", () => {
     expect(localConsumeNonce(key)).toBeNull();
 
     nowSpy.mockRestore();
+  });
+});
+
+describe("nonceMessage: what the signer is shown", () => {
+  it("names the site, so a wallet prompt can be checked against the address bar", () => {
+    // Hardcoded rather than derived from a request header, which an attacker
+    // controls. Someone reading the prompt should see where it came from.
+    expect(nonceMessage("abc")).toContain(`Site: ${WALLET_LINK_DOMAIN}`);
+    expect(WALLET_LINK_DOMAIN).toBe("vibetalent.work");
+  });
+
+  it("states how long the challenge is good for", () => {
+    expect(nonceMessage("abc")).toContain("Valid for: 5 minutes");
+  });
+
+  it("still says it authorises nothing", () => {
+    // A signature prompt is what a drainer looks like. The scope has to be
+    // legible before anyone approves it.
+    const msg = nonceMessage("abc");
+    expect(msg).toContain("does not approve any transaction");
+    expect(msg.toLowerCase()).toContain("proves you own the wallet");
+  });
+
+  it("changes with the nonce, so two challenges never share a signature", () => {
+    expect(nonceMessage("one")).not.toBe(nonceMessage("two"));
+  });
+});
+
+describe("BASE58_SIGNATURE_RE", () => {
+  const B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+  const sig = (n: number) =>
+    Array.from({ length: n }, (_, i) => B58[i % B58.length]).join("");
+
+  it("accepts the lengths a 64-byte ed25519 signature encodes to", () => {
+    for (const n of [86, 87, 88])
+      expect(BASE58_SIGNATURE_RE.test(sig(n))).toBe(true);
+  });
+
+  it("rejects input too short to be a signature", () => {
+    // The old guard was `length < 64`, which reads like a byte count and let
+    // anything above it through to the verifier.
+    expect(BASE58_SIGNATURE_RE.test(sig(64))).toBe(false);
+    expect(BASE58_SIGNATURE_RE.test("")).toBe(false);
+  });
+
+  it("rejects base58's excluded characters", () => {
+    // 0, O, I and l are absent from the alphabet precisely to stop confusion.
+    for (const c of ["0", "O", "I", "l"]) {
+      expect(BASE58_SIGNATURE_RE.test(sig(85) + c)).toBe(false);
+    }
   });
 });

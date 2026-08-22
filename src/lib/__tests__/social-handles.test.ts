@@ -3,8 +3,14 @@ import { normalizeSocialHandle, extractSocialHandle } from "../social-handles";
 
 describe("normalizeSocialHandle (twitter)", () => {
   it("accepts an empty string", () => {
-    expect(normalizeSocialHandle("", "twitter")).toEqual({ ok: true, handle: "" });
-    expect(normalizeSocialHandle("   ", "twitter")).toEqual({ ok: true, handle: "" });
+    expect(normalizeSocialHandle("", "twitter")).toEqual({
+      ok: true,
+      handle: "",
+    });
+    expect(normalizeSocialHandle("   ", "twitter")).toEqual({
+      ok: true,
+      handle: "",
+    });
   });
 
   it("accepts a bare username", () => {
@@ -30,7 +36,7 @@ describe("normalizeSocialHandle (twitter)", () => {
 
   it("extracts username from twitter.com URL", () => {
     expect(
-      normalizeSocialHandle("https://twitter.com/abhinav", "twitter")
+      normalizeSocialHandle("https://twitter.com/abhinav", "twitter"),
     ).toEqual({ ok: true, handle: "abhinav" });
   });
 
@@ -43,22 +49,23 @@ describe("normalizeSocialHandle (twitter)", () => {
 
   it("strips www and accepts subdomains like mobile.twitter.com", () => {
     expect(
-      normalizeSocialHandle("https://www.x.com/abhinav", "twitter")
+      normalizeSocialHandle("https://www.x.com/abhinav", "twitter"),
     ).toEqual({ ok: true, handle: "abhinav" });
     expect(
-      normalizeSocialHandle("https://mobile.twitter.com/abhinav", "twitter")
+      normalizeSocialHandle("https://mobile.twitter.com/abhinav", "twitter"),
     ).toEqual({ ok: true, handle: "abhinav" });
   });
 
   it("strips trailing slashes, query strings, and fragments", () => {
+    expect(normalizeSocialHandle("https://x.com/abhinav/", "twitter")).toEqual({
+      ok: true,
+      handle: "abhinav",
+    });
     expect(
-      normalizeSocialHandle("https://x.com/abhinav/", "twitter")
+      normalizeSocialHandle("https://x.com/abhinav?ref=foo", "twitter"),
     ).toEqual({ ok: true, handle: "abhinav" });
     expect(
-      normalizeSocialHandle("https://x.com/abhinav?ref=foo", "twitter")
-    ).toEqual({ ok: true, handle: "abhinav" });
-    expect(
-      normalizeSocialHandle("https://x.com/abhinav#bio", "twitter")
+      normalizeSocialHandle("https://x.com/abhinav#bio", "twitter"),
     ).toEqual({ ok: true, handle: "abhinav" });
   });
 
@@ -84,7 +91,7 @@ describe("normalizeSocialHandle (twitter)", () => {
 
   it("rejects multi-segment paths like status permalinks", () => {
     expect(
-      normalizeSocialHandle("https://x.com/abhinav/status/123", "twitter").ok
+      normalizeSocialHandle("https://x.com/abhinav/status/123", "twitter").ok,
     ).toBe(false);
   });
 
@@ -106,8 +113,14 @@ describe("normalizeSocialHandle (twitter)", () => {
   });
 
   it("accepts null and undefined as empty input", () => {
-    expect(normalizeSocialHandle(null, "twitter")).toEqual({ ok: true, handle: "" });
-    expect(normalizeSocialHandle(undefined, "twitter")).toEqual({ ok: true, handle: "" });
+    expect(normalizeSocialHandle(null, "twitter")).toEqual({
+      ok: true,
+      handle: "",
+    });
+    expect(normalizeSocialHandle(undefined, "twitter")).toEqual({
+      ok: true,
+      handle: "",
+    });
   });
 });
 
@@ -121,13 +134,13 @@ describe("normalizeSocialHandle (telegram)", () => {
 
   it("extracts username from t.me URL", () => {
     expect(
-      normalizeSocialHandle("https://t.me/unknownking7", "telegram")
+      normalizeSocialHandle("https://t.me/unknownking7", "telegram"),
     ).toEqual({ ok: true, handle: "unknownking7" });
   });
 
   it("extracts username from telegram.me URL", () => {
     expect(
-      normalizeSocialHandle("https://telegram.me/unknownking7", "telegram")
+      normalizeSocialHandle("https://telegram.me/unknownking7", "telegram"),
     ).toEqual({ ok: true, handle: "unknownking7" });
   });
 
@@ -139,24 +152,21 @@ describe("normalizeSocialHandle (telegram)", () => {
   });
 
   it("rejects a Twitter URL on the telegram field", () => {
-    const r = normalizeSocialHandle(
-      "https://x.com/unknownking7",
-      "telegram"
-    );
+    const r = normalizeSocialHandle("https://x.com/unknownking7", "telegram");
     expect(r.ok).toBe(false);
   });
 
   it("rejects a Telegram invite link with non-handle characters", () => {
-    const r = normalizeSocialHandle(
-      "https://t.me/+abc123def456",
-      "telegram"
-    );
+    const r = normalizeSocialHandle("https://t.me/+abc123def456", "telegram");
     expect(r.ok).toBe(false);
   });
 
   it("rejects legacy joinchat invite links", () => {
     expect(
-      normalizeSocialHandle("https://t.me/joinchat/AAAAAAAAAAAAAAAAAA", "telegram").ok
+      normalizeSocialHandle(
+        "https://t.me/joinchat/AAAAAAAAAAAAAAAAAA",
+        "telegram",
+      ).ok,
     ).toBe(false);
   });
 
@@ -171,12 +181,8 @@ describe("normalizeSocialHandle (telegram)", () => {
   });
 
   it("allows a 32-char handle and rejects 33", () => {
-    expect(
-      normalizeSocialHandle("a".repeat(32), "telegram").ok
-    ).toBe(true);
-    expect(
-      normalizeSocialHandle("a".repeat(33), "telegram").ok
-    ).toBe(false);
+    expect(normalizeSocialHandle("a".repeat(32), "telegram").ok).toBe(true);
+    expect(normalizeSocialHandle("a".repeat(33), "telegram").ok).toBe(false);
   });
 });
 
@@ -192,12 +198,18 @@ describe("extractSocialHandle (lenient read path)", () => {
   });
 
   it("extracts handle from a full URL stored in legacy data", () => {
-    expect(extractSocialHandle("https://x.com/abhinav", "twitter")).toBe("abhinav");
-    expect(extractSocialHandle("https://t.me/abhinav", "telegram")).toBe("abhinav");
+    expect(extractSocialHandle("https://x.com/abhinav", "twitter")).toBe(
+      "abhinav",
+    );
+    expect(extractSocialHandle("https://t.me/abhinav", "telegram")).toBe(
+      "abhinav",
+    );
   });
 
   it("returns null for unparseable values so render sites omit the link", () => {
-    expect(extractSocialHandle("https://google.com/abhinav", "twitter")).toBe(null);
+    expect(extractSocialHandle("https://google.com/abhinav", "twitter")).toBe(
+      null,
+    );
     expect(extractSocialHandle("not a handle!", "twitter")).toBe(null);
   });
 });

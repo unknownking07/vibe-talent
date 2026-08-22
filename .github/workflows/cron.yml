@@ -16,10 +16,11 @@ on:
     - cron: "30 5 * * *" # verify-backfill
     - cron: "0 15 * * 1,2" # weekly-digest (Mon + Tue)
     - cron: "30 7 * * *" # bags-sync — after the 06:00 daily fan-out has settled
+    - cron: "0 8 * * *" # bags-discover — after bags-sync, so claims land first
   workflow_dispatch:
     inputs:
       route:
-        description: "Cron route to run now (daily | check-live-urls | quality-rescore | verify-backfill | weekly-digest | bags-sync)"
+        description: "Cron route to run now (daily | check-live-urls | quality-rescore | verify-backfill | weekly-digest | bags-sync | bags-discover)"
         required: true
         default: "verify-backfill"
 
@@ -42,6 +43,7 @@ jobs:
             "30 5 * * *")   ROUTE=verify-backfill ;;
             "0 15 * * 1,2") ROUTE=weekly-digest ;;
             "30 7 * * *")   ROUTE=bags-sync ;;
+            "0 8 * * *")    ROUTE=bags-discover ;;
             *)              ROUTE="${{ github.event.inputs.route }}" ;;
           esac
           echo "route=$ROUTE" >> "$GITHUB_OUTPUT"

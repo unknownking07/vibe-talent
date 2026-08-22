@@ -1,9 +1,11 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 
 import {
+  formatUsdCompact,
   fetchTokenMarket,
   fetchDailyCloses,
   changePct,
+  fetchBagsDexPools,
 } from "@/lib/token-market";
 
 const MINT = "FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS";
@@ -140,5 +142,118 @@ describe("changePct", () => {
 
   it("refuses to divide by a zero open", () => {
     expect(changePct([0, 5])).toBeNull();
+  });
+});
+
+describe("fetchBagsDexPools", () => {
+  const POOL_BODY = {
+    data: [
+      {
+        attributes: {
+          name: "KIRK / SOL",
+          fdv_usd: "27519.51014",
+          volume_usd: { h24: "3858.62" },
+          pool_created_at: "2026-08-21T14:48:26Z",
+        },
+        relationships: {
+          base_token: { data: { id: "solana_MintKirk", type: "token" } },
+        },
+      },
+    ],
+    included: [
+      {
+        type: "token",
+        attributes: {
+          address: "MintKirk",
+          name: "OFFICIAL CHARLIE KIRK COIN",
+          symbol: "KIRK",
+          image_url: null,
+        },
+      },
+    ],
+  };
+
+  it("requests the Bags dex, busiest first, with the token included", async () => {
+    // The dex slug, the sort key and the include are what decide which launches
+    // the discovery cron ever sees. Without this, changing any of them keeps
+    // every other test green.
+    const fetchMock = mockFetch(POOL_BODY);
+    await fetchBagsDexPools(3);
+
+    const url = String(fetchMock.mock.calls[0]![0]);
+    expect(url).toContain("/networks/solana/dexes/bags-fm/pools");
+    expect(url).toContain("page=3");
+    expect(url).toContain("sort=h24_volume_usd_desc");
+    expect(url).toContain("include=base_token");
+  });
+
+  it("joins each pool to its included base token", async () => {
+    mockFetch(POOL_BODY);
+    const [listing] = await fetchBagsDexPools();
+
+    expect(listing).toEqual({
+      mint: "MintKirk",
+      name: "OFFICIAL CHARLIE KIRK COIN",
+      symbol: "KIRK",
+      imageUrl: null,
+      fdvUsd: 27519.51014,
+      volume24hUsd: 3858.62,
+      poolCreatedAt: "2026-08-21T14:48:26Z",
+    });
+  });
+
+  it("still lists a pool whose token was not included", async () => {
+    // The mint is the identifier that matters; a missing name is cosmetic.
+    mockFetch({ ...POOL_BODY, included: [] });
+    const [listing] = await fetchBagsDexPools();
+    expect(listing).toMatchObject({
+      mint: "MintKirk",
+      name: null,
+      symbol: null,
+    });
+  });
+
+  it("passes hostile names through untouched, for the caller to sanitise", async () => {
+    // Sanitising here would hide the raw value from anything that needs it;
+    // the contract is that display code cleans it.
+    const hostile = "\u202EAYNA";
+    mockFetch({
+      ...POOL_BODY,
+      included: [
+        { type: "token", attributes: { address: "MintKirk", name: hostile } },
+      ],
+    });
+    const [listing] = await fetchBagsDexPools();
+    expect(listing!.name).toBe(hostile);
+  });
+
+  it("skips entries with no usable base token reference", async () => {
+    mockFetch({ data: [{ attributes: {} }, "junk"], included: [] });
+    expect(await fetchBagsDexPools()).toEqual([]);
+  });
+
+  it("returns an empty list when GeckoTerminal cannot answer", async () => {
+    mockFetch({}, { ok: false, status: 500 });
+    expect(await fetchBagsDexPools()).toEqual([]);
+  });
+});
+
+describe("formatUsdCompact", () => {
+  it("keeps cents rather than rounding money to whole dollars", () => {
+    // formatTokenCount renders these as "$13" and "$0", which is wrong for a
+    // dollar amount and common at the volumes on this board.
+    expect(formatUsdCompact(12.5)).toBe("$12.50");
+    expect(formatUsdCompact(0.4)).toBe("$0.40");
+  });
+
+  it("abbreviates larger amounts without losing precision to rounding", () => {
+    expect(formatUsdCompact(1234.5)).toBe("$1.23K");
+    expect(formatUsdCompact(27519.51)).toBe("$27.52K");
+    expect(formatUsdCompact(2_500_000)).toBe("$2.50M");
+    expect(formatUsdCompact(3_100_000_000)).toBe("$3.10B");
+  });
+
+  it("renders a real zero as a zero", () => {
+    expect(formatUsdCompact(0)).toBe("$0");
   });
 });
