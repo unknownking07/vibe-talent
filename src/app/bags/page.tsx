@@ -394,11 +394,13 @@ export default async function BagsPage() {
                 The Bags Hackathon cohort
               </h2>
               <p className="mb-4 max-w-xl text-[13px] leading-relaxed text-[var(--bags-text-muted)]">
-                All {roster.length} submissions, matched to a builder wherever a
-                VibeTalent profile is GitHub-verified as the owner of the
-                submitted repository. {matchedHackathon} of them are. A badge
-                here means only that: it is not a placement, and says nothing
-                about any token.
+                All {roster.length} entries submitted through DoraHacks, matched
+                to a builder wherever a VibeTalent profile is GitHub-verified as
+                the owner of the submitted repository. {matchedHackathon} of
+                them are. Bags runs its own ranking of hackathon apps
+                separately, so this is the submission list rather than every
+                project in the programme. A badge here is not a placement, and
+                says nothing about any token.
               </p>
               <HackathonRoster entries={roster} />
             </section>
