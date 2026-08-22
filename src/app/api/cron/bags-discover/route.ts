@@ -18,8 +18,21 @@ import { fetchBagsDexPools } from "@/lib/token-market";
  * Protected by CRON_SECRET.
  */
 
-/** Pages of twenty. Three keeps the run near sixty Bags calls. */
-const PAGES = 3;
+/**
+ * Pages of twenty, and ten is the ceiling rather than a preference:
+ * GeckoTerminal's free tier refuses page 11 outright with a 401, so 200 pools
+ * is every Bags launch this source can enumerate at all.
+ *
+ * Measured yield is roughly one confirmed launch per twelve candidates, since
+ * most pools on the bags-fm dex are tokens Bags itself rejects as invalid
+ * mints. 200 candidates is therefore around 15-20 real launches.
+ *
+ * Note what this can never reach: Bags runs its bonding curve on Meteora, so a
+ * launch only appears on this dex once it trades on the Bags AMM. $VIBE is
+ * still on meteora-dbc. New launches, which is exactly where unknown builders
+ * are, are invisible here regardless of how deep we page.
+ */
+const PAGES = 10;
 
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
