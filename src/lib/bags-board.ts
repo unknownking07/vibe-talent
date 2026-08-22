@@ -8,12 +8,26 @@
 // count would reward minting, which is the one behaviour this page must not
 // flatter.
 
-/** A cached row from public.bags_launches. */
+/**
+ * A cached row from public.bags_launches.
+ *
+ * user_id is the claim flag: set means a builder proved the launching wallet by
+ * signature, null means the launch was discovered on Bags and nobody has
+ * claimed it.
+ */
 export type BagsLaunchRow = {
   token_mint: string;
-  user_id: string;
+  user_id: string | null;
   royalty_bps: number | null;
   first_seen_at: string;
+  creator_wallet?: string;
+  bags_username?: string | null;
+  twitter_username?: string | null;
+  token_name?: string | null;
+  token_symbol?: string | null;
+  token_image_url?: string | null;
+  fdv_usd?: number | null;
+  volume_24h_usd?: number | null;
 };
 
 /** The builder fields the board needs, as stored on public.users. */
@@ -63,12 +77,13 @@ export function buildBagsBoard(
     // builder on it is GitHub-verified: linking a wallet does not require
     // GitHub, so without this an unverified account could sit under that
     // sentence and make it false.
-    if (builder.username && builder.github_username?.trim()) byId.set(builder.id, builder);
+    if (builder.username && builder.github_username?.trim())
+      byId.set(builder.id, builder);
   }
 
   const grouped = new Map<string, BagsLaunchRow[]>();
   for (const launch of launches) {
-    if (!byId.has(launch.user_id)) continue;
+    if (!launch.user_id || !byId.has(launch.user_id)) continue;
     const existing = grouped.get(launch.user_id);
     if (existing) existing.push(launch);
     else grouped.set(launch.user_id, [launch]);
@@ -107,4 +122,71 @@ export function buildBagsBoard(
 /** Shorten a mint for display: the ends are what people actually recognise. */
 export function shortMint(mint: string): string {
   return mint.length <= 12 ? mint : `${mint.slice(0, 6)}…${mint.slice(-4)}`;
+}
+
+/**
+ * A launch the board lists WITHOUT vouching for the person behind it.
+ *
+ * Two different situations share this shape, and the label keeps them apart:
+ * "unclaimed" means nobody has proved the launching wallet, and "unverified"
+ * means a VibeTalent profile owns it but does not clear the bar the verified
+ * section states. Neither may ever be styled as, or mistaken for, verified.
+ */
+export type UnverifiedLaunch = {
+  mint: string;
+  /** Raw, straight from the launcher. Sanitise before rendering. */
+  name: string | null;
+  symbol: string | null;
+  imageUrl: string | null;
+  fdvUsd: number | null;
+  volume24hUsd: number | null;
+  /** Creator identity as Bags reports it. Never used to attribute the launch. */
+  bagsUsername: string | null;
+  twitterUsername: string | null;
+  /** Set only when a VibeTalent profile owns the launch but is not verified. */
+  profileUsername: string | null;
+};
+
+/**
+ * Launches the verified board cannot carry, busiest first.
+ *
+ * Deliberately includes claimed-but-unverified launches. Dropping them would
+ * mean a builder who linked a wallet sees their coin vanish from the board
+ * entirely, which reads as a bug and removes the nudge to finish verifying.
+ */
+export function buildUnverifiedLaunches(
+  launches: BagsLaunchRow[],
+  builders: BagsBuilderRow[],
+): UnverifiedLaunch[] {
+  const byId = new Map<string, BagsBuilderRow>();
+  for (const builder of builders) byId.set(builder.id, builder);
+
+  const out: UnverifiedLaunch[] = [];
+  for (const launch of launches) {
+    const builder = launch.user_id ? byId.get(launch.user_id) : undefined;
+
+    // Same bar as the verified board. A launch that clears it belongs there,
+    // not here.
+    if (builder?.username && builder.github_username?.trim()) continue;
+
+    out.push({
+      mint: launch.token_mint,
+      name: launch.token_name ?? null,
+      symbol: launch.token_symbol ?? null,
+      imageUrl: launch.token_image_url ?? null,
+      fdvUsd: launch.fdv_usd ?? null,
+      volume24hUsd: launch.volume_24h_usd ?? null,
+      bagsUsername: launch.bags_username ?? null,
+      twitterUsername: launch.twitter_username ?? null,
+      profileUsername: builder?.username ?? null,
+    });
+  }
+
+  // Busiest first: volume is the only ranking here that does not imply a
+  // judgement about the person, which is the whole point of this section.
+  return out.sort(
+    (a, b) =>
+      (b.volume24hUsd ?? 0) - (a.volume24hUsd ?? 0) ||
+      a.mint.localeCompare(b.mint),
+  );
 }

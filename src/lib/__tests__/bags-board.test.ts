@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import {
   buildBagsBoard,
+  buildUnverifiedLaunches,
   shortMint,
   type BagsBuilderRow,
   type BagsLaunchRow,
@@ -170,5 +171,96 @@ describe("shortMint", () => {
 
   it("leaves an already-short value alone", () => {
     expect(shortMint("SHORT")).toBe("SHORT");
+  });
+});
+
+describe("buildUnverifiedLaunches", () => {
+  it("lists a launch nobody has claimed", () => {
+    const board = buildUnverifiedLaunches(
+      [
+        launch({
+          token_mint: "orphan",
+          user_id: null as unknown as string,
+          token_name: "SOME COIN",
+          token_symbol: "SOME",
+          volume_24h_usd: 10,
+          bags_username: "someone",
+        }),
+      ],
+      [],
+    );
+
+    expect(board).toHaveLength(1);
+    expect(board[0]).toMatchObject({
+      mint: "orphan",
+      name: "SOME COIN",
+      bagsUsername: "someone",
+      profileUsername: null,
+    });
+  });
+
+  it("leaves verified launches to the verified board", () => {
+    const board = buildUnverifiedLaunches(
+      [launch({ token_mint: "good", user_id: "ok" })],
+      [builder({ id: "ok", username: "ok" })],
+    );
+    expect(board).toEqual([]);
+  });
+
+  it("keeps a claimed launch whose builder misses the verification bar", () => {
+    // Dropping it would make a builder's coin vanish after they linked a
+    // wallet, which reads as a bug and removes the nudge to finish verifying.
+    const board = buildUnverifiedLaunches(
+      [launch({ token_mint: "thin", user_id: "nogh" })],
+      [builder({ id: "nogh", username: "nogh", github_username: null })],
+    );
+
+    expect(board).toHaveLength(1);
+    expect(board[0]!.profileUsername).toBe("nogh");
+  });
+
+  it("ranks by 24h volume, then by mint so the order is stable", () => {
+    const board = buildUnverifiedLaunches(
+      [
+        launch({
+          token_mint: "bbb",
+          user_id: null as unknown as string,
+          volume_24h_usd: 5,
+        }),
+        launch({
+          token_mint: "aaa",
+          user_id: null as unknown as string,
+          volume_24h_usd: 5,
+        }),
+        launch({
+          token_mint: "busy",
+          user_id: null as unknown as string,
+          volume_24h_usd: 900,
+        }),
+        launch({
+          token_mint: "quiet",
+          user_id: null as unknown as string,
+          volume_24h_usd: null,
+        }),
+      ],
+      [],
+    );
+
+    expect(board.map((l) => l.mint)).toEqual(["busy", "aaa", "bbb", "quiet"]);
+  });
+
+  it("passes hostile names through for the renderer to sanitise", () => {
+    const hostile = "\u202EAYNA";
+    const board = buildUnverifiedLaunches(
+      [
+        launch({
+          token_mint: "spoof",
+          user_id: null as unknown as string,
+          token_name: hostile,
+        }),
+      ],
+      [],
+    );
+    expect(board[0]!.name).toBe(hostile);
   });
 });

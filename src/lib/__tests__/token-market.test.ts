@@ -4,6 +4,7 @@ import {
   fetchTokenMarket,
   fetchDailyCloses,
   changePct,
+  fetchBagsDexPools,
 } from "@/lib/token-market";
 
 const MINT = "FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS";
@@ -140,5 +141,84 @@ describe("changePct", () => {
 
   it("refuses to divide by a zero open", () => {
     expect(changePct([0, 5])).toBeNull();
+  });
+});
+
+describe("fetchBagsDexPools", () => {
+  const POOL_BODY = {
+    data: [
+      {
+        attributes: {
+          name: "KIRK / SOL",
+          fdv_usd: "27519.51014",
+          volume_usd: { h24: "3858.62" },
+          pool_created_at: "2026-08-21T14:48:26Z",
+        },
+        relationships: {
+          base_token: { data: { id: "solana_MintKirk", type: "token" } },
+        },
+      },
+    ],
+    included: [
+      {
+        type: "token",
+        attributes: {
+          address: "MintKirk",
+          name: "OFFICIAL CHARLIE KIRK COIN",
+          symbol: "KIRK",
+          image_url: null,
+        },
+      },
+    ],
+  };
+
+  it("joins each pool to its included base token", async () => {
+    mockFetch(POOL_BODY);
+    const [listing] = await fetchBagsDexPools();
+
+    expect(listing).toEqual({
+      mint: "MintKirk",
+      name: "OFFICIAL CHARLIE KIRK COIN",
+      symbol: "KIRK",
+      imageUrl: null,
+      fdvUsd: 27519.51014,
+      volume24hUsd: 3858.62,
+      poolCreatedAt: "2026-08-21T14:48:26Z",
+    });
+  });
+
+  it("still lists a pool whose token was not included", async () => {
+    // The mint is the identifier that matters; a missing name is cosmetic.
+    mockFetch({ ...POOL_BODY, included: [] });
+    const [listing] = await fetchBagsDexPools();
+    expect(listing).toMatchObject({
+      mint: "MintKirk",
+      name: null,
+      symbol: null,
+    });
+  });
+
+  it("passes hostile names through untouched, for the caller to sanitise", async () => {
+    // Sanitising here would hide the raw value from anything that needs it;
+    // the contract is that display code cleans it.
+    const hostile = "\u202EAYNA";
+    mockFetch({
+      ...POOL_BODY,
+      included: [
+        { type: "token", attributes: { address: "MintKirk", name: hostile } },
+      ],
+    });
+    const [listing] = await fetchBagsDexPools();
+    expect(listing!.name).toBe(hostile);
+  });
+
+  it("skips entries with no usable base token reference", async () => {
+    mockFetch({ data: [{ attributes: {} }, "junk"], included: [] });
+    expect(await fetchBagsDexPools()).toEqual([]);
+  });
+
+  it("returns an empty list when GeckoTerminal cannot answer", async () => {
+    mockFetch({}, { ok: false, status: 500 });
+    expect(await fetchBagsDexPools()).toEqual([]);
   });
 });
