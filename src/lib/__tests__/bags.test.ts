@@ -4,12 +4,16 @@ import {
   bagsConfigured,
   fetchLaunchesForWallet,
   fetchCreatedLaunches,
+  fetchCreatorProfile,
 } from "@/lib/bags";
 
 const WALLET = "DYp2cUmgoBEYPxN9xPwiqKZoi5WR4SRAWJnLD1d5QAdT";
 const MINT = "FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS";
 
-function mockFetch(body: unknown, init: { ok?: boolean; status?: number } = {}) {
+function mockFetch(
+  body: unknown,
+  init: { ok?: boolean; status?: number } = {},
+) {
   const fn = vi.fn().mockResolvedValue({
     ok: init.ok ?? true,
     status: init.status ?? 200,
@@ -118,7 +122,10 @@ describe("fetchLaunchesForWallet", () => {
 
   it("drops entries that are not plausible mints", async () => {
     vi.stubEnv("BAGS_API_KEY", "k");
-    mockFetch({ success: true, response: { tokenMints: [MINT, "", null, 42, "short"] } });
+    mockFetch({
+      success: true,
+      response: { tokenMints: [MINT, "", null, 42, "short"] },
+    });
     expect(await fetchLaunchesForWallet(WALLET)).toEqual([MINT]);
   });
 
@@ -154,15 +161,20 @@ describe("fetchCreatedLaunches", () => {
   });
 
   /** Route each URL to a canned payload so one test can span both endpoints. */
-  function routeFetch(routes: { admin: unknown; creators: Record<string, unknown> }) {
+  function routeFetch(routes: {
+    admin: unknown;
+    creators: Record<string, unknown>;
+  }) {
     const fn = vi.fn().mockImplementation((input: URL | string) => {
       const url = String(input);
       const body = url.includes("/fee-share/admin/list")
         ? routes.admin
-        : routes.creators[new URL(url).searchParams.get("tokenMint") ?? ""] ?? {
+        : (routes.creators[
+            new URL(url).searchParams.get("tokenMint") ?? ""
+          ] ?? {
             success: true,
             response: [],
-          };
+          });
       return Promise.resolve({ ok: true, status: 200, json: async () => body });
     });
     vi.stubGlobal("fetch", fn);
@@ -172,13 +184,21 @@ describe("fetchCreatedLaunches", () => {
   it("keeps only mints where this wallet is a confirmed creator", async () => {
     vi.stubEnv("BAGS_API_KEY", "k");
     routeFetch({
-      admin: { success: true, response: { tokenMints: [MINT_EMPTY, MINT_REAL] } },
+      admin: {
+        success: true,
+        response: { tokenMints: [MINT_EMPTY, MINT_REAL] },
+      },
       creators: {
         [MINT_EMPTY]: { success: true, response: [] },
         [MINT_REAL]: {
           success: true,
           response: [
-            { wallet: WALLET_A, isCreator: true, twitterUsername: "abhiontwt", royaltyBps: 8000 },
+            {
+              wallet: WALLET_A,
+              isCreator: true,
+              twitterUsername: "abhiontwt",
+              royaltyBps: 8000,
+            },
           ],
         },
       },
@@ -212,7 +232,11 @@ describe("fetchCreatedLaunches", () => {
       creators: {
         [MINT_REAL]: {
           success: true,
-          response: [{ wallet: "SomeOtherWalletEntirely1111111111111111111", isCreator: true },
+          response: [
+            {
+              wallet: "SomeOtherWalletEntirely1111111111111111111",
+              isCreator: true,
+            },
           ],
         },
       },
@@ -226,8 +250,12 @@ describe("fetchCreatedLaunches", () => {
       const url = String(input);
       if (url.includes("/fee-share/admin/list")) {
         return Promise.resolve({
-          ok: true, status: 200,
-          json: async () => ({ success: true, response: { tokenMints: [MINT_REAL] } }),
+          ok: true,
+          status: 200,
+          json: async () => ({
+            success: true,
+            response: { tokenMints: [MINT_REAL] },
+          }),
         });
       }
       return Promise.reject(new Error("network"));
@@ -244,7 +272,10 @@ describe("fetchCreatedLaunches", () => {
 
   it("returns [] without a second call when the wallet has no candidates", async () => {
     vi.stubEnv("BAGS_API_KEY", "k");
-    const fn = routeFetch({ admin: { success: true, response: { tokenMints: [] } }, creators: {} });
+    const fn = routeFetch({
+      admin: { success: true, response: { tokenMints: [] } },
+      creators: {},
+    });
     expect(await fetchCreatedLaunches(WALLET_A)).toEqual([]);
     expect(fn).toHaveBeenCalledTimes(1);
   });
@@ -254,11 +285,93 @@ describe("fetchCreatedLaunches", () => {
     routeFetch({
       admin: { success: true, response: { tokenMints: [MINT_REAL] } },
       creators: {
-        [MINT_REAL]: { success: true, response: [{ wallet: WALLET_A, isCreator: true }] },
+        [MINT_REAL]: {
+          success: true,
+          response: [{ wallet: WALLET_A, isCreator: true }],
+        },
       },
     });
     expect(await fetchCreatedLaunches(WALLET_A)).toEqual([
       { tokenMint: MINT_REAL, twitterUsername: null, royaltyBps: 0 },
     ]);
+  });
+});
+
+describe("fetchCreatorProfile", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("returns the Bags-side identity for the creating wallet", async () => {
+    vi.stubEnv("BAGS_API_KEY", "test-key");
+    mockFetch({
+      success: true,
+      response: [
+        {
+          wallet: WALLET,
+          isCreator: true,
+          bagsUsername: "defiunknownking",
+          twitterUsername: "abhiontwt",
+          pfp: "https://pbs.twimg.com/profile_images/abc.jpg",
+          royaltyBps: 8000,
+        },
+      ],
+    });
+
+    expect(await fetchCreatorProfile(MINT, WALLET)).toEqual({
+      bagsUsername: "defiunknownking",
+      twitterUsername: "abhiontwt",
+      pfpUrl: "https://pbs.twimg.com/profile_images/abc.jpg",
+      royaltyBps: 8000,
+    });
+  });
+
+  it("ignores fee-share recipients who did not create the token", async () => {
+    // Bags lists every fee recipient on a launch. Reading identity off the wrong
+    // one would print a stranger's handle under a builder's launch.
+    vi.stubEnv("BAGS_API_KEY", "test-key");
+    mockFetch({
+      success: true,
+      response: [
+        {
+          wallet: "OtherWallet1111111111111111111111111111111",
+          isCreator: true,
+          bagsUsername: "someoneelse",
+        },
+        { wallet: WALLET, isCreator: false, bagsUsername: "notthecreator" },
+      ],
+    });
+
+    expect(await fetchCreatorProfile(MINT, WALLET)).toBeNull();
+  });
+
+  it("blanks out empty strings rather than rendering them", async () => {
+    vi.stubEnv("BAGS_API_KEY", "test-key");
+    mockFetch({
+      success: true,
+      response: [
+        {
+          wallet: WALLET,
+          isCreator: true,
+          bagsUsername: "   ",
+          twitterUsername: "",
+        },
+      ],
+    });
+
+    expect(await fetchCreatorProfile(MINT, WALLET)).toEqual({
+      bagsUsername: null,
+      twitterUsername: null,
+      pfpUrl: null,
+      royaltyBps: 0,
+    });
+  });
+
+  it("returns null when Bags cannot answer", async () => {
+    vi.stubEnv("BAGS_API_KEY", "test-key");
+    mockFetch({ success: false }, { ok: false, status: 500 });
+    expect(await fetchCreatorProfile(MINT, WALLET)).toBeNull();
   });
 });

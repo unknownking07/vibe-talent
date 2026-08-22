@@ -614,8 +614,8 @@ export default function SettingsPage() {
         <PrivacyPreferences />
       </div>
 
-      {/* $VIBE wallet */}
-      <div className="mb-8 p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+      {/* $VIBE wallet. Anchored: /bags links here to convert a Bags launcher. */}
+      <div id="wallet" className="mb-8 p-6 rounded-2xl scroll-mt-24" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
         <h2 className="text-lg font-bold text-[var(--foreground)] mb-1">$VIBE Wallet</h2>
         <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
           Link a Solana wallet to earn extra free streak freezes for holding $VIBE.
