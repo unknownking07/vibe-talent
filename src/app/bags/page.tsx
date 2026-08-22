@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
-import { BagSimple, SealCheck } from "@phosphor-icons/react/dist/ssr";
+import { SealCheck } from "@phosphor-icons/react/dist/ssr";
 
 import {
   buildBagsBoard,
@@ -12,6 +12,7 @@ import {
 import { BagsBuilderRow as BoardRow } from "@/components/bags/bags-builder-row";
 import { UnverifiedLaunchRow } from "@/components/bags/unverified-launch-row";
 import { BagsAttribution } from "@/components/bags/bags-attribution";
+import { BagsMark } from "@/components/bags/bags-mark";
 import { openRunde } from "./fonts";
 import { jsonLdHtml } from "@/lib/json-ld";
 import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
@@ -219,11 +220,7 @@ export default async function BagsPage() {
             className="mb-5 inline-flex h-14 w-14 items-center justify-center rounded-2xl"
             style={{ backgroundColor: "var(--bags-green-soft)" }}
           >
-            <BagSimple
-              weight="fill"
-              size={28}
-              style={{ color: "var(--bags-green)" }}
-            />
+            <BagsMark size={30} />
           </div>
           <h1 className="text-4xl font-bold tracking-[-0.035em] text-[var(--bags-text)] sm:text-5xl">
             Who&apos;s behind
