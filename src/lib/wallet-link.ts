@@ -7,6 +7,16 @@
 
 export const NONCE_TTL_SECONDS = 300;
 
+/**
+ * The site named inside the signed message.
+ *
+ * Hardcoded rather than read from the request: a header-derived host is
+ * attacker-controllable, and the whole point of the line is to tell the signer
+ * which site they are approving. Someone reading a wallet prompt should be able
+ * to compare this against their address bar.
+ */
+export const WALLET_LINK_DOMAIN = "vibetalent.work";
+
 export function nonceKey(userId: string): string {
   return `wallet-nonce:${userId}`;
 }
@@ -22,7 +32,9 @@ export function nonceMessage(nonce: string): string {
   return [
     "Link this wallet to your VibeTalent account.",
     "",
+    `Site: ${WALLET_LINK_DOMAIN}`,
     `Nonce: ${nonce}`,
+    `Valid for: ${NONCE_TTL_SECONDS / 60} minutes`,
     "",
     "This proves you own the wallet. It does not approve any transaction, spend, or token transfer.",
   ].join("\n");
@@ -30,6 +42,9 @@ export function nonceMessage(nonce: string): string {
 
 /** Solana base58 pubkey. */
 export const SOLANA_ADDRESS_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+
+/** A 64-byte ed25519 signature, base58 encoded. */
+export const BASE58_SIGNATURE_RE = /^[1-9A-HJ-NP-Za-km-z]{86,90}$/;
 
 // ---------------------------------------------------------------------------
 // Local staging development nonce store
