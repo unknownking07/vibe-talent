@@ -68,10 +68,15 @@ export function CopyAddress({ address }: { address: string }) {
           aria-label={label}
           className="px-3 shrink-0 transition-colors"
           style={{
-            border: state === "copied" ? "1px solid var(--accent)" : "1px solid var(--border-subtle)",
+            border:
+              state === "copied"
+                ? "1px solid var(--accent)"
+                : "1px solid var(--border-subtle)",
             borderRadius: "var(--radius-control)",
-            backgroundColor: state === "copied" ? "var(--accent)" : "var(--bg-surface)",
-            color: state === "copied" ? "var(--bg-surface)" : "var(--foreground)",
+            backgroundColor:
+              state === "copied" ? "var(--accent)" : "var(--bg-surface)",
+            color:
+              state === "copied" ? "var(--bg-surface)" : "var(--foreground)",
           }}
         >
           {state === "copied" ? (

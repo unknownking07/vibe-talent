@@ -9,7 +9,8 @@ export const PRIVY_CONFIGURED = !!PRIVY_APP_ID;
 // Solana Wallet Standard connectors, so Privy detects installed wallets instead
 // of redirecting to download pages. Cached at module scope because Privy expects
 // a stable reference across re-renders — same approach as the promote card.
-let solanaConnectorsCache: ReturnType<typeof toSolanaWalletConnectors> | null = null;
+let solanaConnectorsCache: ReturnType<typeof toSolanaWalletConnectors> | null =
+  null;
 function getSolanaConnectors() {
   if (solanaConnectorsCache === null) {
     solanaConnectorsCache = toSolanaWalletConnectors();
@@ -32,7 +33,12 @@ export function BurnProvider({ children }: { children: React.ReactNode }) {
       config={{
         loginMethods: ["wallet"],
         appearance: {
-          walletList: ["phantom", "solflare", "backpack", "detected_solana_wallets"],
+          walletList: [
+            "phantom",
+            "solflare",
+            "backpack",
+            "detected_solana_wallets",
+          ],
           walletChainType: "solana-only",
         },
         externalWallets: { solana: { connectors: getSolanaConnectors() } },

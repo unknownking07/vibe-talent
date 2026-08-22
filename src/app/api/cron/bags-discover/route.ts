@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { bagsConfigured, fetchTokenCreators } from "@/lib/bags";
-import { fetchBagsDexPools } from "@/lib/token-market";
+import {
+  bagsConfigured,
+  fetchTokenCreators,
+  fetchLaunchFeed,
+} from "@/lib/bags";
+import { fetchTokenMarket } from "@/lib/token-market";
 
 /**
  * Cron job: discover Bags launches we have no wallet for.
@@ -19,20 +23,14 @@ import { fetchBagsDexPools } from "@/lib/token-market";
  */
 
 /**
- * Pages of twenty, and ten is the ceiling rather than a preference:
- * GeckoTerminal's free tier refuses page 11 outright with a 401, so 200 pools
- * is every Bags launch this source can enumerate at all.
+ * How many confirmed launches get live market data in one run.
  *
- * Measured yield is roughly one confirmed launch per twelve candidates, since
- * most pools on the bags-fm dex are tokens Bags itself rejects as invalid
- * mints. 200 candidates is therefore around 15-20 real launches.
- *
- * Note what this can never reach: Bags runs its bonding curve on Meteora, so a
- * launch only appears on this dex once it trades on the Bags AMM. $VIBE is
- * still on meteora-dbc. New launches, which is exactly where unknown builders
- * are, are invisible here regardless of how deep we page.
+ * GeckoTerminal's free tier rate-limits well below one call per launch, and
+ * price is enrichment: a row without it still names a real launch and its
+ * confirmed creator. Confirmation runs first, so this budget is only ever
+ * spent on launches that survived it.
  */
-const PAGES = 10;
+const MARKET_ENRICH_LIMIT = 20;
 
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
@@ -90,89 +88,100 @@ export async function GET(req: NextRequest) {
   let unattributable = 0;
   let lookupFailed = 0;
 
-  // A mint can back several bags-fm pools, and pages are enumerated
-  // independently, so the same launch shows up more than once. Without this
-  // each repeat costs another Bags call and another upsert, and inflates every
-  // number this route reports.
+  // The feed can carry the same mint more than once. Without this each repeat
+  // costs another Bags call and another upsert, and inflates every number this
+  // route reports.
   const processed = new Set<string>();
 
-  for (let page = 1; page <= PAGES; page++) {
-    const listings = await fetchBagsDexPools(page);
-    if (listings.length === 0) break;
+  const feed = await fetchLaunchFeed();
+  if (!feed) {
+    console.error("bags-discover: launch feed unavailable");
+    return NextResponse.json(
+      { error: "Launch feed unavailable" },
+      { status: 502 },
+    );
+  }
 
-    for (const listing of listings) {
-      if (processed.has(listing.mint)) continue;
-      processed.add(listing.mint);
-      seen += 1;
+  let enriched = 0;
 
-      const creators = await fetchTokenCreators(listing.mint);
-      // Null covers both "Bags could not answer" and "Bags rejected the mint",
-      // which are very different runs. Counted apart so a broken pass cannot
-      // report as a healthy one that simply found nothing.
-      if (!creators) {
-        lookupFailed += 1;
-        console.warn(`bags-discover: no creator answer for ${listing.mint}`);
-        continue;
-      }
+  for (const launch of feed) {
+    if (processed.has(launch.tokenMint)) continue;
+    processed.add(launch.tokenMint);
+    seen += 1;
 
-      // A launch Bags cannot name a creator for tells a reader nothing, so it
-      // is not listed.
-      const creator = creators.find(
-        (c) => c.isCreator === true && typeof c.wallet === "string" && c.wallet,
-      );
-      if (!creator) {
-        unattributable += 1;
-        continue;
-      }
-
-      const wallet = creator.wallet as string;
-      const userId = walletToUser.get(wallet);
-
-      // Names and tickers are whatever the launcher minted. They are stored raw
-      // and sanitised where they are rendered, so the record stays faithful and
-      // a change to the sanitiser does not need a re-sync.
-      const row: Record<string, unknown> = {
-        token_mint: listing.mint,
-        creator_wallet: wallet,
-        twitter_username:
-          typeof creator.twitterUsername === "string"
-            ? creator.twitterUsername
-            : null,
-        bags_username:
-          typeof creator.bagsUsername === "string"
-            ? creator.bagsUsername
-            : null,
-        royalty_bps:
-          typeof creator.royaltyBps === "number" ? creator.royaltyBps : 0,
-        token_name: listing.name,
-        token_symbol: listing.symbol,
-        token_image_url: listing.imageUrl,
-        fdv_usd: listing.fdvUsd,
-        volume_24h_usd: listing.volume24hUsd,
-        market_synced_at: new Date().toISOString(),
-        last_verified_at: new Date().toISOString(),
-      };
-
-      // user_id is written ONLY when a proved wallet matches. Omitting the key
-      // leaves an existing claim untouched, so a discovery pass can never
-      // unclaim a launch a builder already verified.
-      if (userId) row.user_id = userId;
-
-      const { error: upsertError } = await sb
-        .from("bags_launches")
-        .upsert(row, { onConflict: "token_mint" });
-
-      if (upsertError) {
-        console.error(
-          `bags-discover: upsert failed for ${listing.mint}:`,
-          upsertError.message,
-        );
-        continue;
-      }
-
-      written += 1;
-      if (userId) claimed += 1;
+    const creators = await fetchTokenCreators(launch.tokenMint);
+    // Null covers both "Bags could not answer" and "Bags rejected the mint",
+    // which are very different runs. Counted apart so a broken pass cannot
+    // report as a healthy one that simply found nothing.
+    if (!creators) {
+      lookupFailed += 1;
+      console.warn(`bags-discover: no creator answer for ${launch.tokenMint}`);
+      continue;
     }
+
+    // A launch Bags cannot name a creator for tells a reader nothing.
+    const creator = creators.find(
+      (c) => c.isCreator === true && typeof c.wallet === "string" && c.wallet,
+    );
+    if (!creator) {
+      unattributable += 1;
+      continue;
+    }
+
+    const wallet = creator.wallet as string;
+    const userId = walletToUser.get(wallet);
+
+    // Only for launches that already passed confirmation, and only up to the
+    // budget. A brand new PRE_GRAD token usually has no pool to price anyway.
+    const withinBudget = enriched < MARKET_ENRICH_LIMIT;
+    const market = withinBudget
+      ? await fetchTokenMarket(launch.tokenMint)
+      : null;
+    if (withinBudget) enriched += 1;
+
+    // Names and tickers are whatever the launcher minted. Stored raw and
+    // sanitised where they are rendered, so the record stays faithful and a
+    // change to the sanitiser needs no re-sync.
+    const row: Record<string, unknown> = {
+      token_mint: launch.tokenMint,
+      creator_wallet: wallet,
+      twitter_username:
+        typeof creator.twitterUsername === "string"
+          ? creator.twitterUsername
+          : null,
+      bags_username:
+        typeof creator.bagsUsername === "string" ? creator.bagsUsername : null,
+      royalty_bps:
+        typeof creator.royaltyBps === "number" ? creator.royaltyBps : 0,
+      token_name: launch.name,
+      token_symbol: launch.symbol,
+      // Artwork from GeckoTerminal, never from the feed: see fetchLaunchFeed.
+      token_image_url: market?.imageUrl ?? null,
+      fdv_usd: market?.fdvUsd ?? null,
+      volume_24h_usd: market?.volume24hUsd ?? null,
+      market_synced_at: new Date().toISOString(),
+      last_verified_at: new Date().toISOString(),
+    };
+
+    // user_id is written ONLY when a proved wallet matches. Omitting the key
+    // leaves an existing claim untouched, so a discovery pass can never unclaim
+    // a launch a builder already verified.
+    if (userId) row.user_id = userId;
+
+    const { error: upsertError } = await sb
+      .from("bags_launches")
+      .upsert(row, { onConflict: "token_mint" });
+
+    if (upsertError) {
+      console.error(
+        `bags-discover: upsert failed for ${launch.tokenMint}:`,
+        upsertError.message,
+      );
+      continue;
+    }
+
+    written += 1;
+    if (userId) claimed += 1;
   }
 
   return NextResponse.json({

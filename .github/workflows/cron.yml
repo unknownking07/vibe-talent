@@ -16,7 +16,9 @@ on:
     - cron: "30 5 * * *" # verify-backfill
     - cron: "0 15 * * 1,2" # weekly-digest (Mon + Tue)
     - cron: "30 7 * * *" # bags-sync — after the 06:00 daily fan-out has settled
-    - cron: "0 8 * * *" # bags-discover — after bags-sync, so claims land first
+    - cron: "0 8/6 * * *" # bags-discover — every 6h: the feed holds only the 100
+      # most recent launches and does not paginate, so a daily run would miss
+      # everything beyond the last 100 whenever Bags is busy.
   workflow_dispatch:
     inputs:
       route:
@@ -43,7 +45,7 @@ jobs:
             "30 5 * * *")   ROUTE=verify-backfill ;;
             "0 15 * * 1,2") ROUTE=weekly-digest ;;
             "30 7 * * *")   ROUTE=bags-sync ;;
-            "0 8 * * *")    ROUTE=bags-discover ;;
+            "0 8/6 * * *")  ROUTE=bags-discover ;;
             *)              ROUTE="${{ github.event.inputs.route }}" ;;
           esac
           echo "route=$ROUTE" >> "$GITHUB_OUTPUT"

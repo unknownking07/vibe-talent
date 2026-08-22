@@ -43,11 +43,17 @@ export function BurnConfirm({
       style={{
         border: "1px solid var(--accent)",
         borderRadius: "var(--radius-card)",
-        backgroundColor: "color-mix(in srgb, var(--accent) 6%, var(--bg-surface))",
+        backgroundColor:
+          "color-mix(in srgb, var(--accent) 6%, var(--bg-surface))",
       }}
     >
       <div className="flex items-center gap-2">
-        <Warning weight="fill" size={18} style={{ color: "var(--accent)" }} aria-hidden="true" />
+        <Warning
+          weight="fill"
+          size={18}
+          style={{ color: "var(--accent)" }}
+          aria-hidden="true"
+        />
         <h3 className="text-sm font-extrabold uppercase tracking-wide text-[var(--foreground)]">
           This burn is permanent
         </h3>
@@ -56,18 +62,28 @@ export function BurnConfirm({
       <p className="mt-3 text-sm leading-relaxed text-[var(--foreground)]">
         You&apos;re about to destroy{" "}
         <strong className="font-mono">
-          {tokenAmount.toLocaleString("en-US", { maximumFractionDigits: 0 })} $VIBE
+          {tokenAmount.toLocaleString("en-US", { maximumFractionDigits: 0 })}{" "}
+          $VIBE
         </strong>{" "}
         (~${usdAmount.toFixed(2)}) forever.
       </p>
 
-      <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-        <strong className="text-[var(--foreground)]">Nobody receives these tokens</strong>
+      <p
+        className="mt-2 text-sm leading-relaxed"
+        style={{ color: "var(--text-secondary)" }}
+      >
+        <strong className="text-[var(--foreground)]">
+          Nobody receives these tokens
+        </strong>
         {" — "}
-        {recipientDisclaimer}. They&apos;re removed from the total supply permanently.
+        {recipientDisclaimer}. They&apos;re removed from the total supply
+        permanently.
       </p>
 
-      <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+      <p
+        className="mt-2 text-sm leading-relaxed"
+        style={{ color: "var(--text-secondary)" }}
+      >
         In return: {outcome}.
       </p>
 
@@ -82,13 +98,21 @@ export function BurnConfirm({
           onChange={(e) => setAcknowledged(e.target.checked)}
           className="mt-0.5 cursor-pointer"
         />
-        <span className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+        <span
+          className="text-xs font-medium"
+          style={{ color: "var(--text-secondary)" }}
+        >
           I understand these tokens will be destroyed and cannot be recovered.
         </span>
       </label>
 
       <div className="mt-4 flex gap-2">
-        <button type="button" onClick={onBack} disabled={busy} className="btn-brutal text-sm cursor-pointer">
+        <button
+          type="button"
+          onClick={onBack}
+          disabled={busy}
+          className="btn-brutal text-sm cursor-pointer"
+        >
           Back
         </button>
         <button
@@ -99,12 +123,18 @@ export function BurnConfirm({
         >
           {busy ? (
             <>
-              <CircleNotch size={16} className="animate-spin" aria-hidden="true" /> Burning...
+              <CircleNotch
+                size={16}
+                className="animate-spin"
+                aria-hidden="true"
+              />{" "}
+              Burning...
             </>
           ) : (
             <>
               {/* Name the destructive act, not "Confirm". */}
-              <Fire weight="fill" size={16} aria-hidden="true" /> Burn {formatTokenCount(tokenAmount)} $VIBE
+              <Fire weight="fill" size={16} aria-hidden="true" /> Burn{" "}
+              {formatTokenCount(tokenAmount)} $VIBE
             </>
           )}
         </button>

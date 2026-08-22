@@ -13,6 +13,12 @@ import { BagsBuilderRow as BoardRow } from "@/components/bags/bags-builder-row";
 import { UnverifiedLaunchRow } from "@/components/bags/unverified-launch-row";
 import { BagsAttribution } from "@/components/bags/bags-attribution";
 import { BagsMark } from "@/components/bags/bags-mark";
+import { BoardViewToggle } from "@/components/bags/board-view-toggle";
+import {
+  HackathonRoster,
+  type RosterEntry,
+} from "@/components/bags/hackathon-roster";
+import { HACKATHON_PROJECTS } from "@/lib/hackathon-projects";
 import { openRunde } from "./fonts";
 import { jsonLdHtml } from "@/lib/json-ld";
 import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
@@ -163,6 +169,48 @@ async function loadBoard() {
   }
 }
 
+/**
+ * The hackathon cohort, with each entry matched to a builder where one exists.
+ *
+ * Matched in memory rather than with an `in` filter: GitHub usernames are
+ * case-insensitive and PostgREST's `in` is not, so a builder stored as
+ * "IAm25th1" would silently miss a submission owned by "iam25th1". The user
+ * table is small and only three columns are read.
+ */
+async function loadHackathonRoster(): Promise<RosterEntry[]> {
+  let builders: {
+    username: string;
+    github_username: string;
+    vibe_score: number | null;
+  }[] = [];
+
+  try {
+    const sb = getPublicClient();
+    const { data } = await sb
+      .from("users")
+      .select("username, github_username, vibe_score")
+      .not("github_username", "is", null)
+      .not("username", "is", null);
+    builders = (data as typeof builders | null) ?? [];
+  } catch {
+    // The roster is still worth showing unmatched.
+  }
+
+  const byOwner = new Map<string, { username: string; vibeScore: number }>();
+  for (const b of builders) {
+    if (!b.github_username?.trim()) continue;
+    byOwner.set(b.github_username.trim().toLowerCase(), {
+      username: b.username,
+      vibeScore: b.vibe_score ?? 0,
+    });
+  }
+
+  return HACKATHON_PROJECTS.map((project) => ({
+    project,
+    builder: byOwner.get(project.githubOwner.toLowerCase()) ?? null,
+  }));
+}
+
 /** Bags' own stat treatment: a small dimmed label over a big value. */
 function StatChip({ label, value }: { label: string; value: number }) {
   return (
@@ -184,7 +232,11 @@ function StatChip({ label, value }: { label: string; value: number }) {
 }
 
 export default async function BagsPage() {
-  const { verified: board, unverified } = await loadBoard();
+  const [{ verified: board, unverified }, roster] = await Promise.all([
+    loadBoard(),
+    loadHackathonRoster(),
+  ]);
+  const matchedHackathon = roster.filter((r) => r.builder).length;
   // Bounded render: the discovery cron adds rows every day, and an unbounded
   // list would grow the page without limit. The full count is still stated.
   const shownUnverified = unverified.slice(0, MAX_UNVERIFIED_SHOWN);
@@ -258,68 +310,102 @@ export default async function BagsPage() {
           />
         </div>
 
-        {board.length > 0 ? (
-          <section aria-labelledby="board-heading">
-            <h2
-              id="board-heading"
-              className="bags-label mb-3 text-[11px] font-semibold text-[var(--bags-text-faint)]"
-            >
-              Verified builders, ranked by vibe score
-            </h2>
-            <ul className="flex flex-col gap-3">
-              {board.map((entry, i) => (
-                <BoardRow key={entry.username} entry={entry} position={i + 1} />
-              ))}
-            </ul>
-          </section>
-        ) : (
-          <section
-            className="rounded-[20px] p-10 text-center"
-            style={{
-              backgroundColor: "var(--bags-surface)",
-              border: "1px solid var(--bags-border)",
-            }}
-          >
-            <h2 className="text-lg font-bold tracking-[-0.02em] text-[var(--bags-text)]">
-              No verified launches yet
-            </h2>
-            <p className="mx-auto mt-2 max-w-md text-sm text-[var(--bags-text-muted)]">
-              A launch only appears here once its wallet has been
-              signature-linked to a builder profile. Nothing is listed on trust.
-            </p>
-          </section>
-        )}
+        <BoardViewToggle
+          launchCount={launchCount + unverified.length}
+          hackathonCount={roster.length}
+          launches={
+            <>
+              {board.length > 0 ? (
+                <section aria-labelledby="board-heading">
+                  <h2
+                    id="board-heading"
+                    className="bags-label mb-3 text-[11px] font-semibold text-[var(--bags-text-faint)]"
+                  >
+                    Verified builders, ranked by vibe score
+                  </h2>
+                  <ul className="flex flex-col gap-3">
+                    {board.map((entry, i) => (
+                      <BoardRow
+                        key={entry.username}
+                        entry={entry}
+                        position={i + 1}
+                      />
+                    ))}
+                  </ul>
+                </section>
+              ) : (
+                <section
+                  className="rounded-[20px] p-10 text-center"
+                  style={{
+                    backgroundColor: "var(--bags-surface)",
+                    border: "1px solid var(--bags-border)",
+                  }}
+                >
+                  <h2 className="text-lg font-bold tracking-[-0.02em] text-[var(--bags-text)]">
+                    No verified launches yet
+                  </h2>
+                  <p className="mx-auto mt-2 max-w-md text-sm text-[var(--bags-text-muted)]">
+                    A launch only appears here once its wallet has been
+                    signature-linked to a builder profile. Nothing is listed on
+                    trust.
+                  </p>
+                </section>
+              )}
 
-        {unverified.length > 0 ? (
-          <section className="mt-10" aria-labelledby="unverified-heading">
-            <h2
-              id="unverified-heading"
-              className="bags-label mb-2 text-[11px] font-semibold text-[var(--bags-text-faint)]"
-            >
-              {unverified.length} tracked{" "}
-              {unverified.length === 1 ? "launch" : "launches"}, not verified
-            </h2>
-            <p className="mb-4 max-w-xl text-[13px] leading-relaxed text-[var(--bags-text-muted)]">
-              Busiest first. Each row is labelled with what we actually know:
-              unclaimed means nobody has proved the wallet behind it, and
-              unverified means a VibeTalent profile owns it but has no
-              GitHub-verified record yet. Either way, no claim is being made
-              about the person. If one of them is yours, link the wallet and it
-              moves up.
-            </p>
-            <ul className="flex flex-col gap-2">
-              {shownUnverified.map((launch) => (
-                <UnverifiedLaunchRow key={launch.mint} launch={launch} />
-              ))}
-            </ul>
-            {unverified.length > shownUnverified.length ? (
-              <p className="mt-3 text-[12px] text-[var(--bags-text-faint)]">
-                Showing the {shownUnverified.length} busiest of{" "}
-                {unverified.length} tracked launches.
+              {unverified.length > 0 ? (
+                <section className="mt-10" aria-labelledby="unverified-heading">
+                  <h2
+                    id="unverified-heading"
+                    className="bags-label mb-2 text-[11px] font-semibold text-[var(--bags-text-faint)]"
+                  >
+                    {unverified.length} tracked{" "}
+                    {unverified.length === 1 ? "launch" : "launches"}, not
+                    verified
+                  </h2>
+                  <p className="mb-4 max-w-xl text-[13px] leading-relaxed text-[var(--bags-text-muted)]">
+                    Busiest first. Each row is labelled with what we actually
+                    know: unclaimed means nobody has proved the wallet behind
+                    it, and unverified means a VibeTalent profile owns it but
+                    has no GitHub-verified record yet. Either way, no claim is
+                    being made about the person. If one of them is yours, link
+                    the wallet and it moves up.
+                  </p>
+                  <ul className="flex flex-col gap-2">
+                    {shownUnverified.map((launch) => (
+                      <UnverifiedLaunchRow key={launch.mint} launch={launch} />
+                    ))}
+                  </ul>
+                  {unverified.length > shownUnverified.length ? (
+                    <p className="mt-3 text-[12px] text-[var(--bags-text-faint)]">
+                      Showing the {shownUnverified.length} busiest of{" "}
+                      {unverified.length} tracked launches.
+                    </p>
+                  ) : null}
+                </section>
+              ) : null}
+            </>
+          }
+          hackathon={
+            <section aria-labelledby="hackathon-heading">
+              <h2
+                id="hackathon-heading"
+                className="bags-label mb-2 text-[11px] font-semibold text-[var(--bags-text-faint)]"
+              >
+                The Bags Hackathon cohort
+              </h2>
+              <p className="mb-4 max-w-xl text-[13px] leading-relaxed text-[var(--bags-text-muted)]">
+                All {roster.length} entries submitted through DoraHacks, matched
+                to a builder wherever a VibeTalent profile is GitHub-verified as
+                the owner of the submitted repository. {matchedHackathon} of
+                them are. Bags runs its own ranking of hackathon apps
+                separately, so this is the submission list rather than every
+                project in the programme. A badge here is not a placement, and
+                says nothing about any token.
               </p>
-            ) : null}
-          </section>
-        ) : null}
+              <HackathonRoster entries={roster} />
+            </section>
+          }
+        />
 
         <section
           className="mt-10 rounded-[20px] p-6 sm:p-8"

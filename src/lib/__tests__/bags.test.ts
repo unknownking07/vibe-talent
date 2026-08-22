@@ -5,6 +5,7 @@ import {
   fetchLaunchesForWallet,
   fetchCreatedLaunches,
   fetchCreatorProfile,
+  fetchLaunchFeed,
 } from "@/lib/bags";
 
 const WALLET = "DYp2cUmgoBEYPxN9xPwiqKZoi5WR4SRAWJnLD1d5QAdT";
@@ -373,5 +374,82 @@ describe("fetchCreatorProfile", () => {
     vi.stubEnv("BAGS_API_KEY", "test-key");
     mockFetch({ success: false }, { ok: false, status: 500 });
     expect(await fetchCreatorProfile(MINT, WALLET)).toBeNull();
+  });
+});
+
+describe("fetchLaunchFeed", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("reads the launches Bags publishes, including pre-graduation ones", () => {
+    vi.stubEnv("BAGS_API_KEY", "test-key");
+    mockFetch({
+      success: true,
+      response: [
+        {
+          tokenMint: MINT,
+          name: "VIBE TALENT",
+          symbol: "VIBE",
+          status: "PRE_GRAD",
+        },
+      ],
+    });
+
+    return expect(fetchLaunchFeed()).resolves.toEqual([
+      {
+        tokenMint: MINT,
+        name: "VIBE TALENT",
+        symbol: "VIBE",
+        status: "PRE_GRAD",
+      },
+    ]);
+  });
+
+  it("drops the creator-supplied image and twitter fields", async () => {
+    // The image host set is unbounded and attacker-chosen, and the twitter
+    // handle is typed at launch. Neither may reach a page from here.
+    vi.stubEnv("BAGS_API_KEY", "test-key");
+    mockFetch({
+      success: true,
+      response: [
+        {
+          tokenMint: MINT,
+          name: "Coin",
+          symbol: "C",
+          status: "PRE_GRAD",
+          image: "https://whatever.example/evil.png",
+          twitter: "someoneelse",
+        },
+      ],
+    });
+
+    const [launch] = (await fetchLaunchFeed())!;
+    expect(launch).not.toHaveProperty("image");
+    expect(launch).not.toHaveProperty("twitter");
+  });
+
+  it("skips entries whose mint is not a plausible address", async () => {
+    vi.stubEnv("BAGS_API_KEY", "test-key");
+    mockFetch({
+      success: true,
+      response: [
+        { tokenMint: "nope!" },
+        { name: "no mint at all" },
+        { tokenMint: MINT },
+      ],
+    });
+
+    const feed = await fetchLaunchFeed();
+    expect(feed).toHaveLength(1);
+    expect(feed![0]!.tokenMint).toBe(MINT);
+  });
+
+  it("returns null when Bags cannot answer, so a bad run is not an empty one", async () => {
+    vi.stubEnv("BAGS_API_KEY", "test-key");
+    mockFetch({ success: false }, { ok: false, status: 500 });
+    expect(await fetchLaunchFeed()).toBeNull();
   });
 });
