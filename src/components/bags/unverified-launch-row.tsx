@@ -3,7 +3,11 @@ import Image from "next/image";
 import { ArrowUpRight } from "@phosphor-icons/react/dist/ssr";
 
 import { shortMint, type UnverifiedLaunch } from "@/lib/bags-board";
-import { sanitizeDisplayText, sanitizeSymbol, sanitizeImageUrl } from "@/lib/safe-text";
+import {
+  sanitizeDisplayText,
+  sanitizeSymbol,
+  sanitizeImageUrl,
+} from "@/lib/safe-text";
 import { formatTokenCount } from "@/lib/token-stats";
 
 /**
@@ -31,7 +35,10 @@ export function UnverifiedLaunchRow({ launch }: { launch: UnverifiedLaunch }) {
   return (
     <li
       className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl p-4"
-      style={{ backgroundColor: "var(--bags-surface)", border: "1px solid var(--bags-border)" }}
+      style={{
+        backgroundColor: "var(--bags-surface)",
+        border: "1px solid var(--bags-border)",
+      }}
     >
       {imageUrl ? (
         <Image
@@ -58,8 +65,14 @@ export function UnverifiedLaunchRow({ launch }: { launch: UnverifiedLaunch }) {
             className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em]"
             style={
               claimed
-                ? { backgroundColor: "rgba(255, 255, 255, 0.08)", color: "var(--bags-text-muted)" }
-                : { backgroundColor: "rgba(255, 200, 0, 0.14)", color: "#ffc800" }
+                ? {
+                    backgroundColor: "rgba(255, 255, 255, 0.08)",
+                    color: "var(--bags-text-muted)",
+                  }
+                : {
+                    backgroundColor: "rgba(255, 200, 0, 0.14)",
+                    color: "#ffc800",
+                  }
             }
           >
             {claimed ? "unverified" : "unclaimed"}
@@ -69,8 +82,12 @@ export function UnverifiedLaunchRow({ launch }: { launch: UnverifiedLaunch }) {
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--bags-text-muted)]">
           {symbol ? <span className="font-mono">${symbol}</span> : null}
           {creatorHandle ? <span>by {creatorHandle}</span> : null}
-          {launch.volume24hUsd ? <span>${formatTokenCount(launch.volume24hUsd)} 24h vol</span> : null}
-          {launch.fdvUsd ? <span>${formatTokenCount(launch.fdvUsd)} fdv</span> : null}
+          {launch.volume24hUsd ? (
+            <span>${formatTokenCount(launch.volume24hUsd)} 24h vol</span>
+          ) : null}
+          {launch.fdvUsd ? (
+            <span>${formatTokenCount(launch.fdvUsd)} fdv</span>
+          ) : null}
         </div>
       </div>
 

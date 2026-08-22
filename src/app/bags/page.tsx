@@ -11,6 +11,8 @@ import {
 } from "@/lib/bags-board";
 import { BagsBuilderRow as BoardRow } from "@/components/bags/bags-builder-row";
 import { UnverifiedLaunchRow } from "@/components/bags/unverified-launch-row";
+import { BagsAttribution } from "@/components/bags/bags-attribution";
+import { openRunde } from "./fonts";
 import { jsonLdHtml } from "@/lib/json-ld";
 import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
 
@@ -205,7 +207,7 @@ export default async function BagsPage() {
   };
 
   return (
-    <div className="bags-theme min-h-screen">
+    <div className={`bags-theme min-h-screen ${openRunde.variable}`}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
@@ -235,6 +237,10 @@ export default async function BagsPage() {
             profile, so each of those rows carries a real shipping record. The
             rest are launches we are tracking but nobody has claimed, listed
             plainly as that.
+          </p>
+          <p className="mt-4 text-[12px] text-[var(--bags-text-faint)]">
+            Launch data from <BagsAttribution />. VibeTalent is not affiliated
+            with Bags.
           </p>
         </header>
 

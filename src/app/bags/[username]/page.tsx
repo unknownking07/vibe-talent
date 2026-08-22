@@ -16,6 +16,8 @@ import { shortMint } from "@/lib/bags-board";
 import { fetchCreatorProfile, type BagsCreatorProfile } from "@/lib/bags";
 import { assessBuilderTrust } from "@/lib/builder-trust";
 import { BuilderTrustCard } from "@/components/bags/builder-trust-card";
+import { BagsAttribution } from "@/components/bags/bags-attribution";
+import { openRunde } from "../fonts";
 import {
   fetchTokenMarket,
   fetchDailyCloses,
@@ -260,7 +262,7 @@ export default async function BagsBuilderPage({
   };
 
   return (
-    <div className="bags-theme min-h-screen">
+    <div className={`bags-theme min-h-screen ${openRunde.variable}`}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
@@ -407,7 +409,8 @@ export default async function BagsBuilderPage({
           Each coin is confirmed against the Bags creator record for the wallet
           that made it. Prices and charts come from GeckoTerminal and are
           indicative only. Nothing here is financial advice or an endorsement of
-          any token.
+          any token. Launch data from <BagsAttribution />, which VibeTalent is
+          not affiliated with.
         </p>
       </div>
     </div>
