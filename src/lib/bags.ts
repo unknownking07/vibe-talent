@@ -245,3 +245,56 @@ export async function fetchCreatorProfile(
     royaltyBps: typeof mine.royaltyBps === "number" ? mine.royaltyBps : 0,
   };
 }
+
+/** One launch from the Bags feed. */
+export type BagsFeedLaunch = {
+  tokenMint: string;
+  /** Creator-chosen. Sanitise before rendering. */
+  name: string | null;
+  symbol: string | null;
+  /** "PRE_GRAD" before the bonding curve completes, "MIGRATED" after. */
+  status: string | null;
+};
+
+/**
+ * The 100 most recent Bags launches.
+ *
+ * This is the enumeration the platform itself publishes, and it is strictly
+ * better than inferring launches from a DEX listing: it includes PRE_GRAD
+ * tokens, so a launch appears here the moment it is created rather than only
+ * once it has traded on the Bags AMM. It takes no parameters and does not
+ * paginate, so it is an incremental source — run it often enough that fewer
+ * than 100 launches happen between runs, and use /solana/bags/pools for a
+ * backfill.
+ *
+ * DELIBERATELY DROPS TWO FIELDS the payload carries:
+ *
+ * `image` is a creator-supplied URL, and across one sample it pointed at
+ * eleven different hosts including ipfs.io, assorted CDNs, a stranger's
+ * Supabase project and one malformed value. That set is unbounded, so it can
+ * never be allowlisted for next/image, and rendering it would hand whoever
+ * minted the token a request from every visitor to the board. Artwork comes
+ * from GeckoTerminal, which re-hosts what it indexes.
+ *
+ * `twitter` is metadata the creator typed at launch. Attributing a launch to a
+ * builder on the strength of it is the one thing this product must never do.
+ */
+export async function fetchLaunchFeed(): Promise<BagsFeedLaunch[] | null> {
+  const response = await bagsGet("/token-launch/feed", {});
+  if (!Array.isArray(response)) return null;
+
+  const launches: BagsFeedLaunch[] = [];
+  for (const entry of response) {
+    if (!isRecord(entry)) continue;
+    const mint = entry.tokenMint;
+    if (typeof mint !== "string" || !SOLANA_ADDRESS_RE.test(mint)) continue;
+
+    launches.push({
+      tokenMint: mint,
+      name: str(entry.name),
+      symbol: str(entry.symbol),
+      status: str(entry.status),
+    });
+  }
+  return launches;
+}
