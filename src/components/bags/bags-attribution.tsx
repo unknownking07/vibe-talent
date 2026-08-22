@@ -25,7 +25,7 @@ export function BagsAttribution({ className = "" }: { className?: string }) {
 }
 
 /** A money bag in Bags' lime, sized to sit on a line of text. */
-function BagsMark({ size = 15 }: { size?: number }) {
+function BagsMark({ size = 16 }: { size?: number }) {
   return (
     <svg
       width={size}
@@ -34,24 +34,31 @@ function BagsMark({ size = 15 }: { size?: number }) {
       fill="none"
       aria-hidden="true"
       focusable="false"
+      className="shrink-0"
     >
-      {/* Neck: the tied-off top of the bag. */}
+      {/*
+        One path, not two. Drawn as separate neck and body shapes the join left
+        a visible seam at this size and the neck read as a second blob sitting
+        on top rather than a tied-off top.
+
+        The neck is narrow and the body flares low and wide, which is what makes
+        the silhouette read as a bag at 16px rather than as a circle.
+      */}
       <path
-        d="M9.1 2.6h5.8a.7.7 0 0 1 .62 1.03l-1.06 2.0H9.54L8.48 3.63A.7.7 0 0 1 9.1 2.6Z"
+        d="M9.35 2.4h5.3a.85.85 0 0 1 .74 1.27l-1.2 2.1c3.66 1.9 6.31 5.28 6.31 8.86 0 4.02-3.8 6.97-8.5 6.97s-8.5-2.95-8.5-6.97c0-3.58 2.65-6.96 6.31-8.86l-1.2-2.1A.85.85 0 0 1 9.35 2.4Z"
         fill="var(--bags-green)"
       />
-      {/* Body: wider at the base, the way a full bag sits. */}
-      <path
-        d="M9.9 6.4h4.2c3.1 1.7 5.6 4.9 5.6 8.4 0 3.9-3.4 6.6-7.7 6.6s-7.7-2.7-7.7-6.6c0-3.5 2.5-6.7 5.6-8.4Z"
-        fill="var(--bags-green)"
-      />
-      {/* Currency mark, knocked out of the bag rather than drawn over it. */}
+      {/*
+        Currency mark knocked out of the bag. Sized and centred against the body
+        rather than the viewBox: the body's optical centre sits below the middle
+        because the neck occupies the top quarter.
+      */}
       <text
         x="12"
-        y="17.4"
+        y="18.4"
         textAnchor="middle"
-        fontSize="9.5"
-        fontWeight="800"
+        fontSize="12.5"
+        fontWeight="700"
         fill="var(--bags-bg)"
         fontFamily="var(--font-bags), system-ui, sans-serif"
       >

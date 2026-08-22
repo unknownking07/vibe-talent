@@ -239,8 +239,8 @@ export default async function BagsPage() {
             plainly as that.
           </p>
           <p className="mt-4 text-[12px] text-[var(--bags-text-faint)]">
-            Launch data from <BagsAttribution />. VibeTalent is not affiliated
-            with Bags.
+            Launch data from <BagsAttribution />. VibeTalent is a Bags Hackathon
+            project building on the Bags ecosystem.
           </p>
         </header>
 
@@ -385,7 +385,7 @@ export default async function BagsPage() {
           <p className="mt-6 text-xs leading-relaxed text-[var(--bags-text-faint)]">
             Self-reported X handles are never used to match a launch to a
             builder. Nothing here is financial advice or an endorsement of any
-            token. VibeTalent is not affiliated with Bags.
+            token.
           </p>
         </section>
       </div>

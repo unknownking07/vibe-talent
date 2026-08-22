@@ -409,8 +409,8 @@ export default async function BagsBuilderPage({
           Each coin is confirmed against the Bags creator record for the wallet
           that made it. Prices and charts come from GeckoTerminal and are
           indicative only. Nothing here is financial advice or an endorsement of
-          any token. Launch data from <BagsAttribution />, which VibeTalent is
-          not affiliated with.
+          any token. Launch data from <BagsAttribution />. VibeTalent is a Bags
+          Hackathon project building on the Bags ecosystem.
         </p>
       </div>
     </div>
