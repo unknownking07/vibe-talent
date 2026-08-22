@@ -7,6 +7,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 
 import { shortMint, type BagsBoardEntry } from "@/lib/bags-board";
+import { hackathonProjectsFor } from "@/lib/hackathon-projects";
 
 /**
  * One builder on the /bags board, in Bags' visual language: a dark rounded
@@ -30,6 +31,11 @@ export function BagsBuilderRow({
   entry: BagsBoardEntry;
   position: number;
 }) {
+  // A builder can be on the launches board and in the hackathon cohort at once;
+  // making people switch views to find that out would hide it from everyone
+  // scanning this one.
+  const hackathon = hackathonProjectsFor(entry.githubUsername);
+
   return (
     <li
       className="rounded-[20px] p-4 transition-colors hover:bg-[var(--bags-surface-hover)] sm:p-5"
@@ -86,6 +92,18 @@ export function BagsBuilderRow({
               <span className="inline-flex items-center gap-1">
                 <Flame size={12} weight="fill" />
                 {entry.streak}-day streak
+              </span>
+            ) : null}
+            {hackathon.length > 0 ? (
+              <span
+                className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                style={{
+                  backgroundColor: "var(--bags-green-soft)",
+                  color: "var(--bags-green)",
+                }}
+                title={hackathon.map((p) => p.name).join(", ")}
+              >
+                Bags Hackathon
               </span>
             ) : null}
             {/* Below sm the launch column is hidden, so the count lives here instead. */}
