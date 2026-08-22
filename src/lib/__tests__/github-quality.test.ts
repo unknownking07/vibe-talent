@@ -3,7 +3,9 @@ import { parseGithubRepoUrl } from "../github-quality";
 
 describe("parseGithubRepoUrl", () => {
   it("parses a canonical repo URL", () => {
-    expect(parseGithubRepoUrl("https://github.com/shuhaib90/creatorchain-job-board")).toEqual({
+    expect(
+      parseGithubRepoUrl("https://github.com/shuhaib90/creatorchain-job-board"),
+    ).toEqual({
       owner: "shuhaib90",
       repo: "creatorchain-job-board",
     });
@@ -17,14 +19,18 @@ describe("parseGithubRepoUrl", () => {
   });
 
   it("strips a .git suffix", () => {
-    expect(parseGithubRepoUrl("https://github.com/vercel/next.js.git")).toEqual({
-      owner: "vercel",
-      repo: "next.js",
-    });
+    expect(parseGithubRepoUrl("https://github.com/vercel/next.js.git")).toEqual(
+      {
+        owner: "vercel",
+        repo: "next.js",
+      },
+    );
   });
 
   it("ignores a /tree/branch subpath", () => {
-    expect(parseGithubRepoUrl("https://github.com/vercel/next.js/tree/canary")).toEqual({
+    expect(
+      parseGithubRepoUrl("https://github.com/vercel/next.js/tree/canary"),
+    ).toEqual({
       owner: "vercel",
       repo: "next.js",
     });
@@ -32,22 +38,28 @@ describe("parseGithubRepoUrl", () => {
 
   it("ignores a /blob/... subpath", () => {
     expect(
-      parseGithubRepoUrl("https://github.com/vercel/next.js/blob/canary/README.md")
+      parseGithubRepoUrl(
+        "https://github.com/vercel/next.js/blob/canary/README.md",
+      ),
     ).toEqual({ owner: "vercel", repo: "next.js" });
   });
 
   it("tolerates query strings and hash fragments", () => {
-    expect(parseGithubRepoUrl("https://github.com/vercel/next.js?tab=readme#top")).toEqual({
+    expect(
+      parseGithubRepoUrl("https://github.com/vercel/next.js?tab=readme#top"),
+    ).toEqual({
       owner: "vercel",
       repo: "next.js",
     });
   });
 
   it("accepts www. prefix", () => {
-    expect(parseGithubRepoUrl("https://www.github.com/vercel/next.js")).toEqual({
-      owner: "vercel",
-      repo: "next.js",
-    });
+    expect(parseGithubRepoUrl("https://www.github.com/vercel/next.js")).toEqual(
+      {
+        owner: "vercel",
+        repo: "next.js",
+      },
+    );
   });
 
   it("accepts http scheme", () => {
@@ -87,7 +99,9 @@ describe("parseGithubRepoUrl", () => {
   });
 
   it("rejects usernames outside GitHub's charset", () => {
-    expect(parseGithubRepoUrl("https://github.com/_underscored/repo")).toBeNull();
+    expect(
+      parseGithubRepoUrl("https://github.com/_underscored/repo"),
+    ).toBeNull();
     expect(parseGithubRepoUrl("https://github.com/has space/repo")).toBeNull();
   });
 
@@ -125,9 +139,11 @@ describe("parseGithubRepoUrl", () => {
   });
 
   it("trims surrounding whitespace before parsing", () => {
-    expect(parseGithubRepoUrl("  https://github.com/vercel/next.js  ")).toEqual({
-      owner: "vercel",
-      repo: "next.js",
-    });
+    expect(parseGithubRepoUrl("  https://github.com/vercel/next.js  ")).toEqual(
+      {
+        owner: "vercel",
+        repo: "next.js",
+      },
+    );
   });
 });

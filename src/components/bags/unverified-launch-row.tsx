@@ -8,7 +8,7 @@ import {
   sanitizeSymbol,
   sanitizeImageUrl,
 } from "@/lib/safe-text";
-import { formatTokenCount } from "@/lib/token-stats";
+import { formatUsdCompact } from "@/lib/token-market";
 
 /**
  * A launch the board lists without vouching for whoever made it.
@@ -82,11 +82,13 @@ export function UnverifiedLaunchRow({ launch }: { launch: UnverifiedLaunch }) {
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-[var(--bags-text-muted)]">
           {symbol ? <span className="font-mono">${symbol}</span> : null}
           {creatorHandle ? <span>by {creatorHandle}</span> : null}
-          {launch.volume24hUsd ? (
-            <span>${formatTokenCount(launch.volume24hUsd)} 24h vol</span>
+          {/* Checked against null, not truthiness: $0 volume is a fact about a
+              launch, and hiding it reads as missing data instead. */}
+          {launch.volume24hUsd !== null ? (
+            <span>{formatUsdCompact(launch.volume24hUsd)} 24h vol</span>
           ) : null}
-          {launch.fdvUsd ? (
-            <span>${formatTokenCount(launch.fdvUsd)} fdv</span>
+          {launch.fdvUsd !== null ? (
+            <span>{formatUsdCompact(launch.fdvUsd)} fdv</span>
           ) : null}
         </div>
       </div>
@@ -102,6 +104,10 @@ export function UnverifiedLaunchRow({ launch }: { launch: UnverifiedLaunch }) {
         ) : (
           <Link
             href="/settings#wallet"
+            // Every row shows the same words, so a screen reader listing the
+            // links would hear "is this you?" over and over with nothing to
+            // tell the launches apart.
+            aria-label={`Claim ${name ?? shortMint(launch.mint)}: link the wallet that launched it`}
             className="text-[11px] font-bold text-[var(--bags-text-muted)] transition-colors hover:text-[var(--bags-green)]"
           >
             is this you?

@@ -58,6 +58,24 @@ export type BagsBoardEntry = {
 };
 
 /**
+ * The bar for appearing on the verified board.
+ *
+ * Two requirements, both load-bearing for what the page claims. A username, or
+ * the row cannot link to the profile that backs it. And a GitHub handle,
+ * because the board states in as many words that every builder on it is
+ * GitHub-verified, and linking a wallet does not require GitHub.
+ *
+ * Defined once because buildBagsBoard and buildUnverifiedLaunches partition the
+ * same launches against it: two copies that drifted would list a launch in both
+ * sections, or in neither.
+ */
+export function clearsVerifiedBar(
+  builder: BagsBuilderRow | undefined | null,
+): boolean {
+  return Boolean(builder?.username && builder.github_username?.trim());
+}
+
+/**
  * Group launches under their builder and rank them.
  *
  * Launches whose builder is missing or has no username are dropped rather than
@@ -71,14 +89,7 @@ export function buildBagsBoard(
 ): BagsBoardEntry[] {
   const byId = new Map<string, BagsBuilderRow>();
   for (const builder of builders) {
-    // Two hard requirements, both load-bearing for what the page claims.
-    // A username, or the row cannot link to the profile that backs it. And a
-    // GitHub handle, because the board states in as many words that every
-    // builder on it is GitHub-verified: linking a wallet does not require
-    // GitHub, so without this an unverified account could sit under that
-    // sentence and make it false.
-    if (builder.username && builder.github_username?.trim())
-      byId.set(builder.id, builder);
+    if (clearsVerifiedBar(builder)) byId.set(builder.id, builder);
   }
 
   const grouped = new Map<string, BagsLaunchRow[]>();
@@ -165,9 +176,8 @@ export function buildUnverifiedLaunches(
   for (const launch of launches) {
     const builder = launch.user_id ? byId.get(launch.user_id) : undefined;
 
-    // Same bar as the verified board. A launch that clears it belongs there,
-    // not here.
-    if (builder?.username && builder.github_username?.trim()) continue;
+    // A launch that clears the bar belongs on the verified board, not here.
+    if (clearsVerifiedBar(builder)) continue;
 
     out.push({
       mint: launch.token_mint,

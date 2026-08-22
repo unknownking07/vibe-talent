@@ -75,22 +75,35 @@ export async function GET(req: NextRequest) {
   let written = 0;
   let claimed = 0;
   let unattributable = 0;
+  let lookupFailed = 0;
+
+  // A mint can back several bags-fm pools, and pages are enumerated
+  // independently, so the same launch shows up more than once. Without this
+  // each repeat costs another Bags call and another upsert, and inflates every
+  // number this route reports.
+  const processed = new Set<string>();
 
   for (let page = 1; page <= PAGES; page++) {
     const listings = await fetchBagsDexPools(page);
     if (listings.length === 0) break;
 
     for (const listing of listings) {
+      if (processed.has(listing.mint)) continue;
+      processed.add(listing.mint);
       seen += 1;
 
       const creators = await fetchTokenCreators(listing.mint);
-      // No creator record means Bags cannot say who made it. A launch we cannot
-      // even name a creator for tells a reader nothing, so it is not listed.
+      // Null covers both "Bags could not answer" and "Bags rejected the mint",
+      // which are very different runs. Counted apart so a broken pass cannot
+      // report as a healthy one that simply found nothing.
       if (!creators) {
-        unattributable += 1;
+        lookupFailed += 1;
+        console.warn(`bags-discover: no creator answer for ${listing.mint}`);
         continue;
       }
 
+      // A launch Bags cannot name a creator for tells a reader nothing, so it
+      // is not listed.
       const creator = creators.find(
         (c) => c.isCreator === true && typeof c.wallet === "string" && c.wallet,
       );
@@ -149,5 +162,11 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ seen, written, claimed, unattributable });
+  return NextResponse.json({
+    seen,
+    written,
+    claimed,
+    unattributable,
+    lookupFailed,
+  });
 }

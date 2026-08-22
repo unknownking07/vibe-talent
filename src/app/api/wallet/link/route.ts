@@ -38,12 +38,28 @@ async function reattributeLaunches(
   sb: any,
   wallet: string,
   userId: string | null,
+  /**
+   * Only rewrite rows currently attributed to this account. Without it a slow
+   * unlink finishing after someone else has proved the same wallet would strip
+   * the new owner's attribution, leaving the board showing an unclaimed launch
+   * while a verified holder exists.
+   */
+  onlyCurrentlyAttributedTo?: string,
 ): Promise<void> {
   try {
-    await sb
+    let q = sb
       .from("bags_launches")
       .update({ user_id: userId })
       .eq("creator_wallet", wallet);
+    if (onlyCurrentlyAttributedTo)
+      q = q.eq("user_id", onlyCurrentlyAttributedTo);
+    const { error } = await q;
+    if (error) {
+      console.error(
+        "Wallet link: failed to re-attribute Bags launches:",
+        error.message,
+      );
+    }
   } catch (e) {
     console.error("Wallet link: failed to re-attribute Bags launches:", e);
   }
@@ -225,11 +241,22 @@ export async function DELETE() {
   // Read the wallet before clearing it: afterwards there is nothing left to say
   // which launches were being claimed on the strength of it.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: current } = await (sb as any)
+  const { data: current, error: readError } = await (sb as any)
     .from("users")
     .select("solana_wallet")
     .eq("id", user.id)
     .maybeSingle();
+
+  // Stop before clearing anything. Unlinking on a failed read would drop the
+  // wallet while leaving its launches attributed to this account, which is the
+  // one combination that leaves a false claim standing on /bags.
+  if (readError) {
+    console.error("Failed to read wallet before unlink:", readError);
+    return NextResponse.json(
+      { error: "Couldn't unlink that wallet." },
+      { status: 500 },
+    );
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (sb as any)
@@ -254,7 +281,7 @@ export async function DELETE() {
   // unclaimed rows, which is exactly what they now are.
   const wallet = (current as { solana_wallet?: string | null } | null)
     ?.solana_wallet;
-  if (wallet) await reattributeLaunches(sb, wallet, null);
+  if (wallet) await reattributeLaunches(sb, wallet, null, user.id);
 
   return NextResponse.json({ ok: true });
 }

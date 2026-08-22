@@ -232,3 +232,19 @@ export async function fetchBagsDexPools(page = 1): Promise<BagsPoolListing[]> {
 
   return listings;
 }
+
+/**
+ * A dollar amount, compact but not lied about.
+ *
+ * formatTokenCount rounds to whole units, which is right for supply and wrong
+ * for money: it renders $12.50 as $13 and $0.40 as $0. Volume and FDV on the
+ * board are frequently small enough for that to matter.
+ */
+export function formatUsdCompact(value: number): string {
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
+  if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
+  if (abs >= 1_000) return `$${(value / 1_000).toFixed(2)}K`;
+  if (value === 0) return "$0";
+  return `$${value.toFixed(2)}`;
+}

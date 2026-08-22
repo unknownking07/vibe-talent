@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 
 import {
+  formatUsdCompact,
   fetchTokenMarket,
   fetchDailyCloses,
   changePct,
@@ -172,6 +173,20 @@ describe("fetchBagsDexPools", () => {
     ],
   };
 
+  it("requests the Bags dex, busiest first, with the token included", async () => {
+    // The dex slug, the sort key and the include are what decide which launches
+    // the discovery cron ever sees. Without this, changing any of them keeps
+    // every other test green.
+    const fetchMock = mockFetch(POOL_BODY);
+    await fetchBagsDexPools(3);
+
+    const url = String(fetchMock.mock.calls[0]![0]);
+    expect(url).toContain("/networks/solana/dexes/bags-fm/pools");
+    expect(url).toContain("page=3");
+    expect(url).toContain("sort=h24_volume_usd_desc");
+    expect(url).toContain("include=base_token");
+  });
+
   it("joins each pool to its included base token", async () => {
     mockFetch(POOL_BODY);
     const [listing] = await fetchBagsDexPools();
@@ -220,5 +235,25 @@ describe("fetchBagsDexPools", () => {
   it("returns an empty list when GeckoTerminal cannot answer", async () => {
     mockFetch({}, { ok: false, status: 500 });
     expect(await fetchBagsDexPools()).toEqual([]);
+  });
+});
+
+describe("formatUsdCompact", () => {
+  it("keeps cents rather than rounding money to whole dollars", () => {
+    // formatTokenCount renders these as "$13" and "$0", which is wrong for a
+    // dollar amount and common at the volumes on this board.
+    expect(formatUsdCompact(12.5)).toBe("$12.50");
+    expect(formatUsdCompact(0.4)).toBe("$0.40");
+  });
+
+  it("abbreviates larger amounts without losing precision to rounding", () => {
+    expect(formatUsdCompact(1234.5)).toBe("$1.23K");
+    expect(formatUsdCompact(27519.51)).toBe("$27.52K");
+    expect(formatUsdCompact(2_500_000)).toBe("$2.50M");
+    expect(formatUsdCompact(3_100_000_000)).toBe("$3.10B");
+  });
+
+  it("renders a real zero as a zero", () => {
+    expect(formatUsdCompact(0)).toBe("$0");
   });
 });

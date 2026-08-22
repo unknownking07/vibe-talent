@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { formatTokenCount, formatTokenPrice, toWholeTokens } from "../token-stats";
+import {
+  formatTokenCount,
+  formatTokenPrice,
+  toWholeTokens,
+} from "../token-stats";
 
 describe("toWholeTokens", () => {
   it("divides by the 9-decimal base", () => {

@@ -10,14 +10,18 @@ describe("normalizeExternalUrl", () => {
   });
 
   it("returns the canonical URL when already https", () => {
-    expect(normalizeExternalUrl("https://example.com")).toBe("https://example.com/");
+    expect(normalizeExternalUrl("https://example.com")).toBe(
+      "https://example.com/",
+    );
     expect(normalizeExternalUrl("https://example.com/path")).toBe(
       "https://example.com/path",
     );
   });
 
   it("preserves http:// when explicitly given", () => {
-    expect(normalizeExternalUrl("http://example.com")).toBe("http://example.com/");
+    expect(normalizeExternalUrl("http://example.com")).toBe(
+      "http://example.com/",
+    );
   });
 
   it("prepends https:// to bare-domain inputs (the SPARK bug)", () => {
@@ -30,12 +34,16 @@ describe("normalizeExternalUrl", () => {
   });
 
   it("handles protocol-relative inputs", () => {
-    expect(normalizeExternalUrl("//example.com/x")).toBe("https://example.com/x");
+    expect(normalizeExternalUrl("//example.com/x")).toBe(
+      "https://example.com/x",
+    );
   });
 
   it("rejects unsafe schemes", () => {
     expect(normalizeExternalUrl("javascript:alert(1)")).toBeNull();
-    expect(normalizeExternalUrl("data:text/html,<script>alert(1)</script>")).toBeNull();
+    expect(
+      normalizeExternalUrl("data:text/html,<script>alert(1)</script>"),
+    ).toBeNull();
     expect(normalizeExternalUrl("file:///etc/passwd")).toBeNull();
   });
 
@@ -60,7 +68,9 @@ describe("normalizeExternalUrl", () => {
   });
 
   it("trims surrounding whitespace", () => {
-    expect(normalizeExternalUrl("  github.com/x/y  ")).toBe("https://github.com/x/y");
+    expect(normalizeExternalUrl("  github.com/x/y  ")).toBe(
+      "https://github.com/x/y",
+    );
   });
 });
 
@@ -90,9 +100,9 @@ describe("normalizeRepoUrl", () => {
   });
 
   it("strips trailing path segments and queries", () => {
-    expect(
-      normalizeRepoUrl("https://github.com/owner/repo/tree/main"),
-    ).toBe("https://github.com/owner/repo");
+    expect(normalizeRepoUrl("https://github.com/owner/repo/tree/main")).toBe(
+      "https://github.com/owner/repo",
+    );
   });
 
   it("rejects non-GitHub URLs", () => {

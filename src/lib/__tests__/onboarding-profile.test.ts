@@ -37,7 +37,7 @@ function makeClient(
   retryUpdateRows?: unknown[] | null,
   // Error for the *retry* UPDATE only. Lets a test fail the retry without
   // failing the initial UPDATE. Defaults to `errors.update`.
-  retryUpdateError?: unknown
+  retryUpdateError?: unknown,
 ) {
   const calls = {
     update: [] as RecordedUpdate[],
@@ -65,7 +65,7 @@ function makeClient(
                       : retryUpdateRows;
                   const error =
                     isFirst || retryUpdateError === undefined
-                      ? errors.update ?? null
+                      ? (errors.update ?? null)
                       : retryUpdateError;
                   return Promise.resolve({ data, error });
                 },
@@ -122,7 +122,10 @@ describe("saveOnboardingProfile", () => {
 
     expect(calls.update).toHaveLength(1);
     expect(calls.insert).toHaveLength(1);
-    expect(calls.insert[0]).toMatchObject({ id: "new-user", username: "rishad" });
+    expect(calls.insert[0]).toMatchObject({
+      id: "new-user",
+      username: "rishad",
+    });
   });
 
   it("treats null update data as no-row-matched and falls back to insert", async () => {
@@ -140,18 +143,21 @@ describe("saveOnboardingProfile", () => {
     });
 
     await expect(
-      saveOnboardingProfile(client, "user-1", FIELDS)
+      saveOnboardingProfile(client, "user-1", FIELDS),
     ).rejects.toMatchObject({ code: "42501" });
     expect(calls.insert).toHaveLength(0);
   });
 
   it("propagates a non-unique INSERT error without retrying", async () => {
     const { client, calls } = makeClient([], {
-      insert: { code: "23502", message: "null value in column violates not-null" },
+      insert: {
+        code: "23502",
+        message: "null value in column violates not-null",
+      },
     });
 
     await expect(
-      saveOnboardingProfile(client, "new-user", FIELDS)
+      saveOnboardingProfile(client, "new-user", FIELDS),
     ).rejects.toMatchObject({ code: "23502" });
     // Only the initial UPDATE — a non-23505 error is not a race, so no retry.
     expect(calls.update).toHaveLength(1);
@@ -162,12 +168,18 @@ describe("saveOnboardingProfile", () => {
     // concurrent request created the row, so it now matches → resolve, no throw.
     const { client, calls } = makeClient(
       [],
-      { insert: { code: "23505", message: 'duplicate key value violates unique constraint "users_pkey"' } },
-      [{ id: "raced-user" }]
+      {
+        insert: {
+          code: "23505",
+          message:
+            'duplicate key value violates unique constraint "users_pkey"',
+        },
+      },
+      [{ id: "raced-user" }],
     );
 
     await expect(
-      saveOnboardingProfile(client, "raced-user", FIELDS)
+      saveOnboardingProfile(client, "raced-user", FIELDS),
     ).resolves.toBeUndefined();
 
     expect(calls.insert).toHaveLength(1);
@@ -184,12 +196,13 @@ describe("saveOnboardingProfile", () => {
     const { client, calls } = makeClient([], {
       insert: {
         code: "23505",
-        message: 'duplicate key value violates unique constraint "users_username_key"',
+        message:
+          'duplicate key value violates unique constraint "users_username_key"',
       },
     });
 
     await expect(
-      saveOnboardingProfile(client, "new-user", FIELDS)
+      saveOnboardingProfile(client, "new-user", FIELDS),
     ).rejects.toMatchObject({ code: "23505" });
     expect(calls.update).toHaveLength(2);
   });
@@ -199,13 +212,19 @@ describe("saveOnboardingProfile", () => {
     // (e.g. an RLS denial or network blip) → surface it, don't swallow.
     const { client, calls } = makeClient(
       [],
-      { insert: { code: "23505", message: 'duplicate key value violates unique constraint "users_pkey"' } },
+      {
+        insert: {
+          code: "23505",
+          message:
+            'duplicate key value violates unique constraint "users_pkey"',
+        },
+      },
       undefined,
-      { code: "42501", message: "permission denied on retry" }
+      { code: "42501", message: "permission denied on retry" },
     );
 
     await expect(
-      saveOnboardingProfile(client, "user-1", FIELDS)
+      saveOnboardingProfile(client, "user-1", FIELDS),
     ).rejects.toMatchObject({ code: "42501" });
     // Initial UPDATE + the retry UPDATE that failed.
     expect(calls.update).toHaveLength(2);

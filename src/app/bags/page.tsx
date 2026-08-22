@@ -53,6 +53,9 @@ const LAUNCH_PAGE_SIZE = 1000;
  */
 const MAX_LAUNCHES = 20_000;
 
+/** How many unverified launches the board renders. The rest are counted, not listed. */
+const MAX_UNVERIFIED_SHOWN = 25;
+
 const BUILDER_FIELDS =
   "id, username, display_name, avatar_url, github_username, vibe_score, streak";
 
@@ -182,6 +185,9 @@ function StatChip({ label, value }: { label: string; value: number }) {
 
 export default async function BagsPage() {
   const { verified: board, unverified } = await loadBoard();
+  // Bounded render: the discovery cron adds rows every day, and an unbounded
+  // list would grow the page without limit. The full count is still stated.
+  const shownUnverified = unverified.slice(0, MAX_UNVERIFIED_SHOWN);
   const launchCount = board.reduce((sum, entry) => sum + entry.launchCount, 0);
 
   const jsonLd = {
@@ -232,8 +238,8 @@ export default async function BagsPage() {
             whether that person ships anything. The builders at the top proved
             their launching wallet by signature against a GitHub-verified
             profile, so each of those rows carries a real shipping record. The
-            rest are launches we are tracking but nobody has claimed, listed
-            plainly as that.
+            rest are launches we are tracking but cannot vouch for, each
+            labelled with exactly how much we know.
           </p>
           <p className="mt-4 text-[12px] text-[var(--bags-text-faint)]">
             Launch data from <BagsAttribution />. VibeTalent is a Bags Hackathon
@@ -285,25 +291,33 @@ export default async function BagsPage() {
         )}
 
         {unverified.length > 0 ? (
-          <section className="mt-10" aria-labelledby="unclaimed-heading">
+          <section className="mt-10" aria-labelledby="unverified-heading">
             <h2
-              id="unclaimed-heading"
+              id="unverified-heading"
               className="bags-label mb-2 text-[11px] font-semibold text-[var(--bags-text-faint)]"
             >
               {unverified.length} tracked{" "}
-              {unverified.length === 1 ? "launch" : "launches"}, nobody vouched
+              {unverified.length === 1 ? "launch" : "launches"}, not verified
             </h2>
             <p className="mb-4 max-w-xl text-[13px] leading-relaxed text-[var(--bags-text-muted)]">
-              Busiest first. Nobody has proved the wallet behind these, so there
-              is no builder record to show and no claim being made about them
-              either way. If one of them is yours, link the wallet and it moves
-              up.
+              Busiest first. Each row is labelled with what we actually know:
+              unclaimed means nobody has proved the wallet behind it, and
+              unverified means a VibeTalent profile owns it but has no
+              GitHub-verified record yet. Either way, no claim is being made
+              about the person. If one of them is yours, link the wallet and it
+              moves up.
             </p>
             <ul className="flex flex-col gap-2">
-              {unverified.map((launch) => (
+              {shownUnverified.map((launch) => (
                 <UnverifiedLaunchRow key={launch.mint} launch={launch} />
               ))}
             </ul>
+            {unverified.length > shownUnverified.length ? (
+              <p className="mt-3 text-[12px] text-[var(--bags-text-faint)]">
+                Showing the {shownUnverified.length} busiest of{" "}
+                {unverified.length} tracked launches.
+              </p>
+            ) : null}
           </section>
         ) : null}
 

@@ -17,7 +17,8 @@ export function BagsAttribution({ className = "" }: { className?: string }) {
       href="https://bags.fm"
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="Launch data from bags.fm (opens in new tab)"
+      // The words "Launch data from" already precede this link in the page copy.
+      aria-label="bags.fm (opens in new tab)"
       className={`inline-flex items-center gap-1.5 text-[12px] font-bold text-[var(--bags-text-muted)] transition-colors hover:text-[var(--bags-text)] ${className}`}
     >
       <BagsMark />

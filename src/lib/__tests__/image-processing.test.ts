@@ -40,7 +40,12 @@ describe("computeContainBox", () => {
   });
 
   it("returns an empty box for zero dimensions", () => {
-    expect(computeContainBox(0, 0)).toEqual({ x: 0, y: 0, width: 0, height: 0 });
+    expect(computeContainBox(0, 0)).toEqual({
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+    });
   });
 });
 

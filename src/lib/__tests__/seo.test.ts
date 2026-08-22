@@ -33,7 +33,11 @@ describe("getSiteUrl", () => {
   });
 
   it("falls back for non-http(s) protocols (ftp, javascript, file)", () => {
-    for (const bad of ["ftp://example.com", "javascript:alert(1)", "file:///etc/passwd"]) {
+    for (const bad of [
+      "ftp://example.com",
+      "javascript:alert(1)",
+      "file:///etc/passwd",
+    ]) {
       process.env.NEXT_PUBLIC_SITE_URL = bad;
       expect(getSiteUrl()).toBe(siteUrl);
     }
@@ -76,7 +80,12 @@ describe("buildBreadcrumbList", () => {
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
-        { "@type": "ListItem", position: 2, name: "Privacy Policy", item: `${siteUrl}/privacy` },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Privacy Policy",
+          item: `${siteUrl}/privacy`,
+        },
       ],
     });
   });
@@ -106,7 +115,9 @@ describe("buildBreadcrumbList", () => {
   });
 
   it("trims surrounding whitespace in path", () => {
-    const result = buildBreadcrumbList([{ name: "Privacy", path: "  /privacy  " }]);
+    const result = buildBreadcrumbList([
+      { name: "Privacy", path: "  /privacy  " },
+    ]);
     expect(result.itemListElement[0].item).toBe(`${siteUrl}/privacy`);
   });
 });

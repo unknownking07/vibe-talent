@@ -31,8 +31,9 @@ describe("isUsernameTakenError", () => {
     expect(
       isUsernameTakenError({
         code: "23505",
-        message: 'duplicate key value violates unique constraint "users_username_key"',
-      })
+        message:
+          'duplicate key value violates unique constraint "users_username_key"',
+      }),
     ).toBe(true);
   });
 
@@ -40,21 +41,29 @@ describe("isUsernameTakenError", () => {
     expect(
       isUsernameTakenError({
         code: "23505",
-        message: 'duplicate key value violates unique constraint "idx_users_github_id_unique"',
-      })
+        message:
+          'duplicate key value violates unique constraint "idx_users_github_id_unique"',
+      }),
     ).toBe(false);
   });
 
   it("is false for non-unique errors and non-error values", () => {
-    expect(isUsernameTakenError({ code: "42501", message: "permission denied" })).toBe(false);
-    expect(isUsernameTakenError({ code: "23502", message: "null value" })).toBe(false);
+    expect(
+      isUsernameTakenError({ code: "42501", message: "permission denied" }),
+    ).toBe(false);
+    expect(isUsernameTakenError({ code: "23502", message: "null value" })).toBe(
+      false,
+    );
     expect(isUsernameTakenError(null)).toBe(false);
     expect(isUsernameTakenError("23505")).toBe(false);
     expect(isUsernameTakenError(undefined)).toBe(false);
   });
 });
 
-function lookupClient(row: { id: string } | null, error: unknown = null): UsernameLookupClient {
+function lookupClient(
+  row: { id: string } | null,
+  error: unknown = null,
+): UsernameLookupClient {
   return {
     from() {
       return {
@@ -81,22 +90,36 @@ describe("checkUsernameAvailable", () => {
   });
 
   it("is taken when a row owned by someone else exists", async () => {
-    const res = await checkUsernameAvailable(lookupClient({ id: "other-user" }), "taken", "me");
+    const res = await checkUsernameAvailable(
+      lookupClient({ id: "other-user" }),
+      "taken",
+      "me",
+    );
     expect(res.available).toBe(false);
   });
 
   it("is available when the existing row is the caller's own (settings, unchanged handle)", async () => {
-    const res = await checkUsernameAvailable(lookupClient({ id: "me" }), "myname", "me");
+    const res = await checkUsernameAvailable(
+      lookupClient({ id: "me" }),
+      "myname",
+      "me",
+    );
     expect(res.available).toBe(true);
   });
 
   it("treats an existing row as taken when no currentUserId is given (onboarding)", async () => {
-    const res = await checkUsernameAvailable(lookupClient({ id: "anyone" }), "taken");
+    const res = await checkUsernameAvailable(
+      lookupClient({ id: "anyone" }),
+      "taken",
+    );
     expect(res.available).toBe(false);
   });
 
   it("surfaces a lookup error as not-available without throwing", async () => {
-    const res = await checkUsernameAvailable(lookupClient(null, { code: "500" }), "x");
+    const res = await checkUsernameAvailable(
+      lookupClient(null, { code: "500" }),
+      "x",
+    );
     expect(res.available).toBe(false);
     expect(res.error).toMatchObject({ code: "500" });
   });
@@ -150,7 +173,10 @@ describe("sanitizeUsernameSeed", () => {
 });
 
 /** Lookup client where `taken` handles resolve to an existing row. */
-function takenClient(taken: string[], error: unknown = null): UsernameLookupClient {
+function takenClient(
+  taken: string[],
+  error: unknown = null,
+): UsernameLookupClient {
   return {
     from() {
       return {
@@ -160,7 +186,10 @@ function takenClient(taken: string[], error: unknown = null): UsernameLookupClie
               return {
                 maybeSingle() {
                   return Promise.resolve({
-                    data: !error && taken.includes(value) ? { id: "someone-else" } : null,
+                    data:
+                      !error && taken.includes(value)
+                        ? { id: "someone-else" }
+                        : null,
                     error,
                   });
                 },
@@ -175,7 +204,10 @@ function takenClient(taken: string[], error: unknown = null): UsernameLookupClie
 
 describe("suggestAvailableUsername", () => {
   it("prefers the first seed when it's free", async () => {
-    const got = await suggestAvailableUsername(takenClient([]), ["ghhandle", "emailpart"]);
+    const got = await suggestAvailableUsername(takenClient([]), [
+      "ghhandle",
+      "emailpart",
+    ]);
     expect(got).toBe("ghhandle");
   });
 
@@ -188,10 +220,10 @@ describe("suggestAvailableUsername", () => {
   });
 
   it("suffixes the preferred seed once every bare candidate is taken", async () => {
-    const got = await suggestAvailableUsername(takenClient(["ghhandle", "emailpart"]), [
-      "ghhandle",
-      "emailpart",
-    ]);
+    const got = await suggestAvailableUsername(
+      takenClient(["ghhandle", "emailpart"]),
+      ["ghhandle", "emailpart"],
+    );
     expect(got).toBe("ghhandle_2");
   });
 
@@ -206,14 +238,21 @@ describe("suggestAvailableUsername", () => {
   });
 
   it("returns null when no seed yields a valid handle", async () => {
-    const got = await suggestAvailableUsername(takenClient([]), [null, "ab", "!!"]);
+    const got = await suggestAvailableUsername(takenClient([]), [
+      null,
+      "ab",
+      "!!",
+    ]);
     expect(got).toBeNull();
   });
 
   it("offers the preferred candidate when the lookup fails", async () => {
     // A handle that might collide still beats a blank required field — the
     // unique constraint gives a clear, recoverable error on submit.
-    const got = await suggestAvailableUsername(takenClient([], { code: "500" }), ["ghhandle"]);
+    const got = await suggestAvailableUsername(
+      takenClient([], { code: "500" }),
+      ["ghhandle"],
+    );
     expect(got).toBe("ghhandle");
   });
 

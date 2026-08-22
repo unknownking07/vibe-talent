@@ -22,7 +22,10 @@ import {
   safeLocalStorage,
   safeSessionStorage,
 } from "../onboarding";
-import { TOUR_CARDS, resolveCtaHref } from "../../components/onboarding/tour-cards";
+import {
+  TOUR_CARDS,
+  resolveCtaHref,
+} from "../../components/onboarding/tour-cards";
 
 beforeEach(() => {
   // Wipe both stores before every test — `markTourSeen` and friends share
@@ -169,11 +172,15 @@ describe("resolveCtaHref", () => {
   });
 
   it("invokes function targets with the username", () => {
-    expect(resolveCtaHref((u) => `/profile/${u}`, "abhi")).toBe("/profile/abhi");
+    expect(resolveCtaHref((u) => `/profile/${u}`, "abhi")).toBe(
+      "/profile/abhi",
+    );
   });
 
   it("falls back to /dashboard when a function target lacks a username", () => {
     expect(resolveCtaHref((u) => `/profile/${u}`, null)).toBe("/dashboard");
-    expect(resolveCtaHref((u) => `/profile/${u}`, undefined)).toBe("/dashboard");
+    expect(resolveCtaHref((u) => `/profile/${u}`, undefined)).toBe(
+      "/dashboard",
+    );
   });
 });

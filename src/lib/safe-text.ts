@@ -22,8 +22,16 @@
  */
 const BIDI_CONTROLS = /[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/g;
 
-/** Zero-width and invisible characters, used to hide or pad text. */
-const INVISIBLE = /[\u00AD\u200B-\u200D\u2060\uFEFF]/g;
+/**
+ * Zero-width and invisible characters, used to hide or pad text.
+ *
+ * Two families beyond the usual suspects: Unicode tag characters
+ * (U+E0000-U+E007F) render as nothing and can carry a hidden payload inside a
+ * name, and the Hangul fillers render as blank width, so they survive
+ * whitespace collapsing while still padding a row.
+ */
+const INVISIBLE =
+  /[\u00AD\u115F\u1160\u200B-\u200D\u2060\u3164\uFEFF\uFFA0]|[\u{E0000}-\u{E007F}]/gu;
 
 /** C0 and C1 control characters, including the newlines that would break a row. */
 const CONTROL_CHARS = /[\u0000-\u001F\u007F-\u009F]/g;

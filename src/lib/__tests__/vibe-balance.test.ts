@@ -11,7 +11,9 @@ describe("isBalanceStale", () => {
   });
 
   it("treats a balance older than the cooldown as stale", () => {
-    expect(isBalanceStale(new Date(Date.now() - 120_000).toISOString())).toBe(true);
+    expect(isBalanceStale(new Date(Date.now() - 120_000).toISOString())).toBe(
+      true,
+    );
   });
 
   it("treats an unparseable timestamp as stale rather than fresh", () => {
@@ -33,7 +35,10 @@ describe("toWholeVibe", () => {
 describe("balanceUsd", () => {
   it("prices a balance at the given rate", () => {
     // 2.078M $VIBE at $0.0000024 ≈ $4.99
-    expect(balanceUsd(BigInt("2078000000000000"), 0.0000024)).toBeCloseTo(4.9872, 4);
+    expect(balanceUsd(BigInt("2078000000000000"), 0.0000024)).toBeCloseTo(
+      4.9872,
+      4,
+    );
   });
 
   it("is zero for an empty wallet", () => {

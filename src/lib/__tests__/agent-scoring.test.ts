@@ -1,9 +1,20 @@
 import { describe, it, expect } from "vitest";
-import { evaluateUser, matchUsers, generateHireMessage } from "../agent-scoring";
+import {
+  evaluateUser,
+  matchUsers,
+  generateHireMessage,
+} from "../agent-scoring";
 import type { UserWithSocials, Project } from "../types/database";
 import type { TaskRequest } from "../types/agent";
 
-const projectDefaults: Pick<Project, "quality_score" | "quality_metrics" | "live_url_ok" | "endorsement_count" | "is_private"> = {
+const projectDefaults: Pick<
+  Project,
+  | "quality_score"
+  | "quality_metrics"
+  | "live_url_ok"
+  | "endorsement_count"
+  | "is_private"
+> = {
   quality_score: 0,
   quality_metrics: null,
   live_url_ok: null,
@@ -16,7 +27,8 @@ function createMockProject(overrides: Partial<Project> = {}): Project {
     id: "p-1",
     user_id: "user-1",
     title: "Test Project",
-    description: "A comprehensive test project with many features and good documentation",
+    description:
+      "A comprehensive test project with many features and good documentation",
     tech_stack: ["React", "TypeScript", "Node.js"],
     live_url: "https://test.dev",
     github_url: "https://github.com/test/project",
@@ -30,7 +42,9 @@ function createMockProject(overrides: Partial<Project> = {}): Project {
   };
 }
 
-function createMockUser(overrides: Partial<UserWithSocials> = {}): UserWithSocials {
+function createMockUser(
+  overrides: Partial<UserWithSocials> = {},
+): UserWithSocials {
   return {
     id: "user-1",
     username: "testuser",
@@ -98,69 +112,104 @@ describe("evaluateUser", () => {
 
   it("gives higher score to more active users", () => {
     const activeUser = createMockUser({ streak: 100, longest_streak: 200 });
-    const inactiveUser = createMockUser({ streak: 0, longest_streak: 5, badge_level: "none" });
+    const inactiveUser = createMockUser({
+      streak: 0,
+      longest_streak: 5,
+      badge_level: "none",
+    });
 
     const activeResult = evaluateUser(activeUser);
     const inactiveResult = evaluateUser(inactiveUser);
 
-    expect(activeResult.overall_score).toBeGreaterThan(inactiveResult.overall_score);
+    expect(activeResult.overall_score).toBeGreaterThan(
+      inactiveResult.overall_score,
+    );
   });
 
   it("gives higher score to users with more projects", () => {
     const manyProjects = createMockUser({
-      projects: Array.from({ length: 5 }, (_, i) => createMockProject({
-        id: `p-${i}`,
-        title: `Project ${i}`,
-        description: "A well-documented project with comprehensive features",
-        tech_stack: ["React", "Node.js"],
-        live_url: `https://project${i}.dev`,
-        github_url: `https://github.com/test/project${i}`,
-        build_time: "1 week",
-        tags: ["web"],
-      })),
+      projects: Array.from({ length: 5 }, (_, i) =>
+        createMockProject({
+          id: `p-${i}`,
+          title: `Project ${i}`,
+          description: "A well-documented project with comprehensive features",
+          tech_stack: ["React", "Node.js"],
+          live_url: `https://project${i}.dev`,
+          github_url: `https://github.com/test/project${i}`,
+          build_time: "1 week",
+          tags: ["web"],
+        }),
+      ),
     });
     const fewProjects = createMockUser({ projects: [] });
 
     const manyResult = evaluateUser(manyProjects);
     const fewResult = evaluateUser(fewProjects);
 
-    expect(manyResult.dimensions.project_quality).toBeGreaterThan(fewResult.dimensions.project_quality);
+    expect(manyResult.dimensions.project_quality).toBeGreaterThan(
+      fewResult.dimensions.project_quality,
+    );
   });
 
   it("flags unverified projects as a risk", () => {
     const user = createMockUser({
       projects: [
         createMockProject({
-          title: "Fake", description: "Unverified project",
-          tech_stack: ["React"], live_url: null, github_url: null,
-          build_time: null, tags: [], verified: false,
+          title: "Fake",
+          description: "Unverified project",
+          tech_stack: ["React"],
+          live_url: null,
+          github_url: null,
+          build_time: null,
+          tags: [],
+          verified: false,
         }),
       ],
     });
     const result = evaluateUser(user);
-    expect(result.risks.some(r => r.includes("unverified") || r.includes("ownership"))).toBe(true);
+    expect(
+      result.risks.some(
+        (r) => r.includes("unverified") || r.includes("ownership"),
+      ),
+    ).toBe(true);
   });
 
   it("gives higher project quality score to verified projects", () => {
     const verifiedUser = createMockUser({
-      projects: Array.from({ length: 3 }, (_, i) => createMockProject({
-        id: `p-${i}`, title: `Proj ${i}`,
-        description: "A well-documented project with comprehensive features",
-        tech_stack: ["React"], live_url: `https://p${i}.dev`, github_url: `https://github.com/t/p${i}`,
-        build_time: null, tags: [], verified: true,
-      })),
+      projects: Array.from({ length: 3 }, (_, i) =>
+        createMockProject({
+          id: `p-${i}`,
+          title: `Proj ${i}`,
+          description: "A well-documented project with comprehensive features",
+          tech_stack: ["React"],
+          live_url: `https://p${i}.dev`,
+          github_url: `https://github.com/t/p${i}`,
+          build_time: null,
+          tags: [],
+          verified: true,
+        }),
+      ),
     });
     const unverifiedUser = createMockUser({
-      projects: Array.from({ length: 3 }, (_, i) => createMockProject({
-        id: `p-${i}`, title: `Proj ${i}`,
-        description: "A well-documented project with comprehensive features",
-        tech_stack: ["React"], live_url: `https://p${i}.dev`, github_url: `https://github.com/t/p${i}`,
-        build_time: null, tags: [], verified: false,
-      })),
+      projects: Array.from({ length: 3 }, (_, i) =>
+        createMockProject({
+          id: `p-${i}`,
+          title: `Proj ${i}`,
+          description: "A well-documented project with comprehensive features",
+          tech_stack: ["React"],
+          live_url: `https://p${i}.dev`,
+          github_url: `https://github.com/t/p${i}`,
+          build_time: null,
+          tags: [],
+          verified: false,
+        }),
+      ),
     });
     const vResult = evaluateUser(verifiedUser);
     const uResult = evaluateUser(unverifiedUser);
-    expect(vResult.dimensions.project_quality).toBeGreaterThan(uResult.dimensions.project_quality);
+    expect(vResult.dimensions.project_quality).toBeGreaterThan(
+      uResult.dimensions.project_quality,
+    );
   });
 
   it("returns max 5 strengths and max 4 risks", () => {
@@ -197,7 +246,8 @@ describe("matchUsers", () => {
             user_id: `user-${i}`,
             title: "Test",
             description: "Test project",
-            tech_stack: i % 2 === 0 ? ["React", "TypeScript"] : ["Python", "Django"],
+            tech_stack:
+              i % 2 === 0 ? ["React", "TypeScript"] : ["Python", "Django"],
             live_url: null,
             github_url: null,
             build_time: null,
@@ -205,14 +255,16 @@ describe("matchUsers", () => {
             verified: false,
           }),
         ],
-      })
+      }),
     );
 
     const results = matchUsers(users, task);
 
     expect(results.length).toBeLessThanOrEqual(5);
     for (let i = 1; i < results.length; i++) {
-      expect(results[i - 1].match_score).toBeGreaterThanOrEqual(results[i].match_score);
+      expect(results[i - 1].match_score).toBeGreaterThanOrEqual(
+        results[i].match_score,
+      );
     }
   });
 
@@ -283,7 +335,10 @@ describe("matchUsers", () => {
 
 describe("generateHireMessage", () => {
   it("generates a message with all components", () => {
-    const msg = generateHireMessage("John", "devuser", "Build a SaaS app", ["React", "Node.js"]);
+    const msg = generateHireMessage("John", "devuser", "Build a SaaS app", [
+      "React",
+      "Node.js",
+    ]);
     expect(msg).toContain("John");
     expect(msg).toContain("@devuser");
     expect(msg).toContain("Build a SaaS app");

@@ -3,12 +3,20 @@ import { fetchEndorsementState } from "../endorsement-batch";
 
 /** Reads the `project_ids` a stubbed fetch call was made with. */
 function idsFrom(call: string) {
-  const query = new URL(call, "http://localhost").searchParams.get("project_ids");
+  const query = new URL(call, "http://localhost").searchParams.get(
+    "project_ids",
+  );
   return (query ?? "").split(",").filter(Boolean);
 }
 
-function jsonResponse(results: Record<string, { count: number; user_endorsed: boolean }>) {
-  return { ok: true, status: 200, json: async () => ({ results }) } as unknown as Response;
+function jsonResponse(
+  results: Record<string, { count: number; user_endorsed: boolean }>,
+) {
+  return {
+    ok: true,
+    status: 200,
+    json: async () => ({ results }),
+  } as unknown as Response;
 }
 
 describe("fetchEndorsementState", () => {
@@ -30,7 +38,9 @@ describe("fetchEndorsementState", () => {
     // Answer only what was asked for, the way the route handler does.
     const fetchMock = vi.fn(async (url: string) =>
       jsonResponse(
-        Object.fromEntries(idsFrom(url).map((id) => [id, states[id as keyof typeof states]])),
+        Object.fromEntries(
+          idsFrom(url).map((id) => [id, states[id as keyof typeof states]]),
+        ),
       ),
     );
     vi.stubGlobal("fetch", fetchMock);
@@ -46,7 +56,11 @@ describe("fetchEndorsementState", () => {
     const results = await pending;
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(idsFrom(fetchMock.mock.calls[0][0] as unknown as string)).toEqual(["a", "b", "c"]);
+    expect(idsFrom(fetchMock.mock.calls[0][0] as unknown as string)).toEqual([
+      "a",
+      "b",
+      "c",
+    ]);
     expect(results).toEqual([
       { count: 3, user_endorsed: true },
       { count: 0, user_endorsed: false },
@@ -57,16 +71,23 @@ describe("fetchEndorsementState", () => {
   it("dedupes a project requested by more than one card but settles both", async () => {
     const fetchMock = vi.fn(async (url: string) =>
       jsonResponse(
-        Object.fromEntries(idsFrom(url).map((id) => [id, { count: 2, user_endorsed: false }])),
+        Object.fromEntries(
+          idsFrom(url).map((id) => [id, { count: 2, user_endorsed: false }]),
+        ),
       ),
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    const pending = Promise.all([fetchEndorsementState("dup"), fetchEndorsementState("dup")]);
+    const pending = Promise.all([
+      fetchEndorsementState("dup"),
+      fetchEndorsementState("dup"),
+    ]);
     await vi.runAllTimersAsync();
     const results = await pending;
 
-    expect(idsFrom(fetchMock.mock.calls[0][0] as unknown as string)).toEqual(["dup"]);
+    expect(idsFrom(fetchMock.mock.calls[0][0] as unknown as string)).toEqual([
+      "dup",
+    ]);
     expect(results).toEqual([
       { count: 2, user_endorsed: false },
       { count: 2, user_endorsed: false },
@@ -77,7 +98,9 @@ describe("fetchEndorsementState", () => {
     const ids = Array.from({ length: 60 }, (_, i) => `p${i}`);
     const fetchMock = vi.fn(async (url: string) =>
       jsonResponse(
-        Object.fromEntries(idsFrom(url).map((id) => [id, { count: 1, user_endorsed: false }])),
+        Object.fromEntries(
+          idsFrom(url).map((id) => [id, { count: 1, user_endorsed: false }]),
+        ),
       ),
     );
     vi.stubGlobal("fetch", fetchMock);
@@ -87,18 +110,31 @@ describe("fetchEndorsementState", () => {
     const results = await pending;
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(idsFrom(fetchMock.mock.calls[0][0] as unknown as string)).toHaveLength(50);
-    expect(idsFrom(fetchMock.mock.calls[1][0] as unknown as string)).toHaveLength(10);
+    expect(
+      idsFrom(fetchMock.mock.calls[0][0] as unknown as string),
+    ).toHaveLength(50);
+    expect(
+      idsFrom(fetchMock.mock.calls[1][0] as unknown as string),
+    ).toHaveLength(10);
     expect(results).toHaveLength(60);
   });
 
   it("rejects every waiter when the request fails, rather than hanging", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 500 }) as Response));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, status: 500 }) as Response),
+    );
 
-    const settled = Promise.allSettled([fetchEndorsementState("x"), fetchEndorsementState("y")]);
+    const settled = Promise.allSettled([
+      fetchEndorsementState("x"),
+      fetchEndorsementState("y"),
+    ]);
     await vi.runAllTimersAsync();
 
-    expect((await settled).map((r) => r.status)).toEqual(["rejected", "rejected"]);
+    expect((await settled).map((r) => r.status)).toEqual([
+      "rejected",
+      "rejected",
+    ]);
   });
 
   it("rejects only the waiter a successful response left out", async () => {
@@ -106,7 +142,9 @@ describe("fetchEndorsementState", () => {
     // and lookup, say. The present one must still resolve.
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => jsonResponse({ present: { count: 4, user_endorsed: false } })),
+      vi.fn(async () =>
+        jsonResponse({ present: { count: 4, user_endorsed: false } }),
+      ),
     );
 
     const settled = Promise.allSettled([
@@ -126,7 +164,9 @@ describe("fetchEndorsementState", () => {
   it("starts a fresh batch after the previous one has flushed", async () => {
     const fetchMock = vi.fn(async (url: string) =>
       jsonResponse(
-        Object.fromEntries(idsFrom(url).map((id) => [id, { count: 0, user_endorsed: false }])),
+        Object.fromEntries(
+          idsFrom(url).map((id) => [id, { count: 0, user_endorsed: false }]),
+        ),
       ),
     );
     vi.stubGlobal("fetch", fetchMock);
@@ -140,6 +180,8 @@ describe("fetchEndorsementState", () => {
     await second;
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(idsFrom(fetchMock.mock.calls[1][0] as unknown as string)).toEqual(["second"]);
+    expect(idsFrom(fetchMock.mock.calls[1][0] as unknown as string)).toEqual([
+      "second",
+    ]);
   });
 });
