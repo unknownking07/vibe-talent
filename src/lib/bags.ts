@@ -45,7 +45,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * for application-level failures alongside a 200, so the flag is checked
  * explicitly rather than trusting the status code.
  */
-async function bagsGet(path: string, params: Record<string, string>): Promise<unknown | null> {
+async function bagsGet(
+  path: string,
+  params: Record<string, string>,
+): Promise<unknown | null> {
   const apiKey = process.env.BAGS_API_KEY?.trim();
   if (!apiKey) return null;
 
@@ -68,7 +71,9 @@ async function bagsGet(path: string, params: Record<string, string>): Promise<un
     // symptom otherwise is "no builder ever has launches", which reads as
     // nobody using Bags rather than as a broken credential.
     if (res.status === 401 || res.status === 403) {
-      console.error(`Bags API rejected the key (HTTP ${res.status}) on ${path}`);
+      console.error(
+        `Bags API rejected the key (HTTP ${res.status}) on ${path}`,
+      );
     }
     return null;
   }
@@ -92,7 +97,9 @@ async function bagsGet(path: string, params: Record<string, string>): Promise<un
  * when the wallet simply has no launches. Callers must distinguish the two:
  * null means "unknown, try later", [] means "asked, genuinely none".
  */
-export async function fetchLaunchesForWallet(wallet: string): Promise<string[] | null> {
+export async function fetchLaunchesForWallet(
+  wallet: string,
+): Promise<string[] | null> {
   if (!SOLANA_ADDRESS_RE.test(wallet)) return null;
 
   const response = await bagsGet("/fee-share/admin/list", { wallet });
@@ -102,7 +109,9 @@ export async function fetchLaunchesForWallet(wallet: string): Promise<string[] |
   if (!Array.isArray(mints)) return null;
 
   // Drop anything that isn't a plausible mint rather than trusting the payload.
-  return mints.filter((m): m is string => typeof m === "string" && SOLANA_ADDRESS_RE.test(m));
+  return mints.filter(
+    (m): m is string => typeof m === "string" && SOLANA_ADDRESS_RE.test(m),
+  );
 }
 
 /** A launch this wallet genuinely created, as confirmed by the creator record. */
@@ -119,6 +128,10 @@ type CreatorEntry = {
   isCreator?: unknown;
   twitterUsername?: unknown;
   royaltyBps?: unknown;
+  /** The creator's handle on Bags itself, distinct from their X handle. */
+  bagsUsername?: unknown;
+  /** Avatar Bags holds for the creator, sourced from their linked social. */
+  pfp?: unknown;
 };
 
 /**
@@ -127,7 +140,9 @@ type CreatorEntry = {
  * An empty array is a real answer: Bags knows the mint but holds no creator
  * record for it.
  */
-export async function fetchTokenCreators(tokenMint: string): Promise<CreatorEntry[] | null> {
+export async function fetchTokenCreators(
+  tokenMint: string,
+): Promise<CreatorEntry[] | null> {
   if (!SOLANA_ADDRESS_RE.test(tokenMint)) return null;
   const response = await bagsGet("/token-launch/creator/v3", { tokenMint });
   return Array.isArray(response) ? (response as CreatorEntry[]) : null;
@@ -148,7 +163,9 @@ export async function fetchTokenCreators(tokenMint: string): Promise<CreatorEntr
  * Verified against production data: wallet 4Evn…WwX9 has three fee-share mints
  * and exactly one real launch ($VIBE); the other two return no creators.
  */
-export async function fetchCreatedLaunches(wallet: string): Promise<BagsLaunch[] | null> {
+export async function fetchCreatedLaunches(
+  wallet: string,
+): Promise<BagsLaunch[] | null> {
   const candidates = await fetchLaunchesForWallet(wallet);
   if (candidates === null) return null;
   if (candidates.length === 0) return [];
@@ -159,7 +176,10 @@ export async function fetchCreatedLaunches(wallet: string): Promise<BagsLaunch[]
     if (!creators) continue; // couldn't confirm — omit rather than guess
 
     const mine = creators.find(
-      (c) => typeof c.wallet === "string" && c.wallet === wallet && c.isCreator === true,
+      (c) =>
+        typeof c.wallet === "string" &&
+        c.wallet === wallet &&
+        c.isCreator === true,
     );
     if (!mine) continue;
 
@@ -173,4 +193,55 @@ export async function fetchCreatedLaunches(wallet: string): Promise<BagsLaunch[]
     });
   }
   return launches;
+}
+
+/** Who Bags says a wallet is, for one launch it created. */
+export type BagsCreatorProfile = {
+  /** Handle on Bags itself. Null when the creator never claimed one. */
+  bagsUsername: string | null;
+  /** X handle Bags holds for them, verified on their side. */
+  twitterUsername: string | null;
+  pfpUrl: string | null;
+  royaltyBps: number;
+};
+
+/** Trim a string field off an untrusted payload, treating blank as absent. */
+function str(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+/**
+ * The Bags-side identity behind a launch: their Bags handle, X handle and
+ * avatar.
+ *
+ * This is the answer to "can we link a Bags account": we never have to ask the
+ * builder to connect one. Because the wallet was already bound to their profile
+ * by signature, whatever Bags reports for that wallet's creator record is
+ * transitively theirs — a stronger link than an OAuth connect, which would only
+ * prove they can log into an account.
+ *
+ * Null when Bags cannot confirm this wallet as the creator of this mint, which
+ * is also the guard against showing one person's identity on another's launch.
+ */
+export async function fetchCreatorProfile(
+  tokenMint: string,
+  wallet: string,
+): Promise<BagsCreatorProfile | null> {
+  const creators = await fetchTokenCreators(tokenMint);
+  if (!creators) return null;
+
+  const mine = creators.find(
+    (c) =>
+      typeof c.wallet === "string" &&
+      c.wallet === wallet &&
+      c.isCreator === true,
+  );
+  if (!mine) return null;
+
+  return {
+    bagsUsername: str(mine.bagsUsername),
+    twitterUsername: str(mine.twitterUsername),
+    pfpUrl: str(mine.pfp),
+    royaltyBps: typeof mine.royaltyBps === "number" ? mine.royaltyBps : 0,
+  };
 }

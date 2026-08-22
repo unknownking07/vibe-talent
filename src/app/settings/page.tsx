@@ -186,6 +186,19 @@ export default function SettingsPage() {
     }
   }, [user, searchParams]);
 
+  // /bags sends launchers here with #wallet. The browser resolves that hash on
+  // first paint, while this page is still showing its loading state and the
+  // anchor does not exist yet, so the jump is silently dropped and the visitor
+  // lands at the top of a long settings page. Redo it once the form is mounted.
+  useEffect(() => {
+    if (!user) return;
+    if (window.location.hash !== "#wallet") return;
+    const timer = setTimeout(() => {
+      document.getElementById("wallet")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [user]);
+
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -614,8 +627,8 @@ export default function SettingsPage() {
         <PrivacyPreferences />
       </div>
 
-      {/* $VIBE wallet */}
-      <div className="mb-8 p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
+      {/* $VIBE wallet. Anchored: /bags links here to convert a Bags launcher. */}
+      <div id="wallet" className="mb-8 p-6 rounded-2xl scroll-mt-24" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
         <h2 className="text-lg font-bold text-[var(--foreground)] mb-1">$VIBE Wallet</h2>
         <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
           Link a Solana wallet to earn extra free streak freezes for holding $VIBE.

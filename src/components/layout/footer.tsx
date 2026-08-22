@@ -32,6 +32,7 @@ export function Footer() {
               <Link href="/dashboard" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Dashboard</Link>
               <Link href="/roadmap" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Roadmap</Link>
               <Link href="/token" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>$VIBE Token</Link>
+              <Link href="/bags" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Bags Builders</Link>
               <a href="https://vibe-talent.gitbook.io/untitled" target="_blank" rel="noopener noreferrer" aria-label="Docs (opens in new tab)" className="text-sm font-semibold hover:text-[var(--accent)] transition-colors" style={{ color: "var(--text-muted)" }}>Docs</a>
             </div>
           </div>

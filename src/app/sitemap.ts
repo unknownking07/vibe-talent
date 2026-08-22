@@ -21,6 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/about`, lastModified: new Date("2026-04-06") },
     { url: `${siteUrl}/roadmap`, lastModified: new Date("2026-04-23") },
     { url: `${siteUrl}/token`, lastModified: new Date("2026-08-11") },
+    { url: `${siteUrl}/bags`, lastModified: new Date("2026-08-22") },
     { url: `${siteUrl}/privacy`, lastModified: new Date("2026-04-06") },
     { url: `${siteUrl}/terms`, lastModified: new Date("2026-04-06") },
     { url: `${siteUrl}/glossary`, lastModified: new Date("2026-05-22") },
@@ -51,13 +52,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // site-wide quality signals and gives Google ~empty pages to crawl.
     // Streak-or-project (not just GitHub linked) catches builders who
     // imported projects manually or whose GitHub connect didn't land.
-    const [usersResult, projectUserIdsResult] = await Promise.all([
-      supabase
-        .from("users")
-        .select("id, username, created_at, longest_streak")
-        .not("username", "is", null),
-      supabase.from("projects").select("user_id"),
-    ]);
+    const [usersResult, projectUserIdsResult, bagsLaunchesResult] =
+      await Promise.all([
+        supabase
+          .from("users")
+          .select("id, username, created_at, longest_streak")
+          .not("username", "is", null),
+        supabase.from("projects").select("user_id"),
+        // Builders with a verified Bags launch each get a /bags page. Their
+        // errors are not fatal here: a missing table or a bad minute upstream
+        // should cost those few URLs, not the whole sitemap.
+        supabase.from("bags_launches").select("user_id, last_verified_at"),
+      ]);
 
     if (usersResult.error) {
       console.error("[sitemap] users query failed:", usersResult.error);
@@ -96,7 +102,39 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(user.created_at),
       }));
 
-    return [...staticPages, ...profilePages];
+    // Supabase returns data: null on a query error, so an unlogged failure here
+    // would look identical to "nobody has launched" and quietly drop every
+    // /bags URL from the sitemap.
+    if (bagsLaunchesResult.error) {
+      console.error(
+        "[sitemap] bags_launches query failed:",
+        bagsLaunchesResult.error,
+      );
+    }
+
+    // Newest verification per builder, so <lastmod> moves when the daily sync
+    // reconfirms a launch rather than sitting at whenever the profile was made.
+    const lastVerifiedByUser = new Map<string, string>();
+    for (const row of (bagsLaunchesResult.data ?? []) as {
+      user_id: string;
+      last_verified_at: string;
+    }[]) {
+      const seen = lastVerifiedByUser.get(row.user_id);
+      if (!seen || row.last_verified_at > seen) {
+        lastVerifiedByUser.set(row.user_id, row.last_verified_at);
+      }
+    }
+
+    const bagsPages: MetadataRoute.Sitemap = (
+      (usersResult.data ?? []) as SitemapUser[]
+    )
+      .filter((u) => lastVerifiedByUser.has(u.id))
+      .map((user) => ({
+        url: `${siteUrl}/bags/${user.username.trim()}`,
+        lastModified: new Date(lastVerifiedByUser.get(user.id)!),
+      }));
+
+    return [...staticPages, ...profilePages, ...bagsPages];
   } catch (error) {
     // Last-resort fallback. The previous `catch {}` swallowed errors with
     // no signal — a column rename or env-var misconfig delisted every

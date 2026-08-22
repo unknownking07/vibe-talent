@@ -67,6 +67,16 @@ This is the existing USDC-based featuring product. The $VIBE-token-based featuri
 - **Creator fee**: The creator receives a fee on $VIBE trades. That fee is reinvested directly into building VibeTalent: shipping new features, covering infrastructure, and growing the platform. Openly disclosed for transparency and not a reason to buy.
 - **Focus**: Utility and shipping, not price action or speculation.
 
+## Bags Builders (verified token launches)
+
+VibeTalent maintains a public trust layer over Bags launches at https://www.vibetalent.work/bags. Bags knows which wallet launched a token; VibeTalent knows which GitHub-verified builder controls that wallet. Joining the two answers a question neither side can answer alone: whether the person behind a launch actually ships software.
+
+- **How a launch is verified**: the builder links their Solana wallet by signing a server-issued nonce (a signature, not a transaction), then every mint that wallet holds fee-share authority over is checked against the Bags creator record. Only mints where Bags confirms the wallet as creator are listed.
+- **What is never used**: self-reported X handles or profile links. A launch is only ever matched to a builder through a cryptographic wallet signature, so nobody can claim another builder's launch.
+- **What each row shows**: the builder's VibeTalent profile, how many tokens they have launched, their vibe score, and their current coding streak. Vibe score is earned from GitHub-verified projects, streaks and endorsements, and is not affected by token activity.
+- **Ranking**: builders are ranked by vibe score, not by number of launches.
+- **Coverage**: opt-in. A builder who has launched on Bags but has not linked their wallet does not appear, so the board is a lower bound on Bags activity by VibeTalent builders, never a complete list.
+
 ## 2026 Roadmap Summary
 
 - **Q2 2026**: $VIBE token utility activates. $1 streak protect (burn $VIBE to save a missed-day streak) and $1 project featuring (promote a shipped project on the homepage/explore feed). Token is already live on Solana at FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS.

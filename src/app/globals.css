@@ -641,3 +641,44 @@ body:has(.chat-page-wrapper) main {
 .ntf-mention:hover {
   text-decoration: underline;
 }
+
+/* Bags takeover theme, scoped to /bags.
+   Bags is a dark, cool-toned product with a pure-lime accent, and VibeTalent is
+   warm greys with orange. Half-adopting either would look like a mistake, so
+   this scope pins Bags' own values and holds them in both site themes: the page
+   is a branded surface, not a themed one. Nothing inside it may read a
+   site palette token, or it would flip colour with the theme toggle and break
+   against this fixed dark canvas. */
+.bags-theme {
+  --bags-bg: #0c1014;
+  --bags-surface: #141a21;
+  --bags-surface-hover: #1b222b;
+  --bags-border: rgba(255, 255, 255, 0.08);
+  --bags-text: #ffffff;
+  --bags-text-muted: rgba(255, 255, 255, 0.56);
+  /* 0.5 is the floor that still clears 4.5:1 on this canvas; Bags runs its own
+     labels dimmer than that, and 10px uppercase text cannot afford it. */
+  --bags-text-faint: rgba(255, 255, 255, 0.5);
+  --bags-green: #00ff00;
+  --bags-green-soft: rgba(0, 255, 0, 0.1);
+
+  background-color: var(--bags-bg);
+  color: var(--bags-text);
+  letter-spacing: -0.011em;
+}
+
+/* Bags sets headings in sentence case; the site uppercases every h1-h3 from an
+   unlayered element rule, which outranks Tailwind's layered `normal-case`
+   utility. Undoing it needs a rule in the same unlayered cascade. */
+.bags-theme h1,
+.bags-theme h2,
+.bags-theme h3 {
+  text-transform: none;
+}
+
+/* Bags' micro-label: the dimmed uppercase caption that sits over a stat or a
+   list. Needs to be a class for the same cascade reason as the rule above. */
+.bags-theme .bags-label {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}

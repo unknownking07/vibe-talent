@@ -1,0 +1,153 @@
+// Market data for a Solana token, from GeckoTerminal's free public API.
+//
+// WHY GECKOTERMINAL: Bags tokens trade on a Bags bonding curve and are not
+// routable on Jupiter, so the usual Solana price sources return nothing for
+// them. GeckoTerminal indexes the curve pools directly, needs no key, and is
+// already the price source this codebase uses for $VIBE.
+//
+// This is enrichment, never a source of truth. The verification claim on a
+// /bags page comes from the database; price, chart and artwork come from here
+// and every call fails soft, so an outage costs a card its numbers rather than
+// taking the page down.
+
+const GECKO_API_BASE = "https://api.geckoterminal.com/api/v2";
+const NETWORK = "solana";
+
+/** GeckoTerminal is not on our critical path; give up quickly. */
+const REQUEST_TIMEOUT_MS = 8_000;
+
+/**
+ * Cache window for market data, in seconds. Matches the /bags ISR window: there
+ * is no point holding a fresher price than the page that renders it.
+ */
+const MARKET_REVALIDATE_S = 300;
+
+export type TokenMarket = {
+  mint: string;
+  name: string | null;
+  symbol: string | null;
+  imageUrl: string | null;
+  priceUsd: number | null;
+  fdvUsd: number | null;
+  volume24hUsd: number | null;
+  /** Bonding-curve progress, 0-100, for tokens that have not graduated. */
+  graduationPct: number | null;
+  graduated: boolean;
+  /** Pool used for the chart; null when the token has no indexed pool. */
+  poolAddress: string | null;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Parse the numeric strings GeckoTerminal returns, rejecting junk and NaN. */
+function toNumber(value: unknown): number | null {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value !== "string" || !value.trim()) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+async function geckoGet(path: string): Promise<unknown | null> {
+  try {
+    const res = await fetch(`${GECKO_API_BASE}${path}`, {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      next: { revalidate: MARKET_REVALIDATE_S },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    // Timeout, network failure, or malformed JSON. All mean the same thing here.
+    return null;
+  }
+}
+
+/**
+ * Name, artwork, price and pool for one mint.
+ *
+ * Returns null when GeckoTerminal has never indexed the token, which is normal
+ * for a launch that has not traded yet.
+ */
+export async function fetchTokenMarket(
+  mint: string,
+): Promise<TokenMarket | null> {
+  const body = await geckoGet(
+    `/networks/${NETWORK}/tokens/${encodeURIComponent(mint)}`,
+  );
+  if (!isRecord(body) || !isRecord(body.data)) return null;
+
+  const attrs = body.data.attributes;
+  if (!isRecord(attrs)) return null;
+
+  const launchpad = isRecord(attrs.launchpad_details)
+    ? attrs.launchpad_details
+    : null;
+
+  // The first related pool is the deepest one, which is the pool worth charting.
+  let poolAddress: string | null = null;
+  const relationships = body.data.relationships;
+  if (isRecord(relationships) && isRecord(relationships.top_pools)) {
+    const pools = relationships.top_pools.data;
+    if (
+      Array.isArray(pools) &&
+      isRecord(pools[0]) &&
+      typeof pools[0].id === "string"
+    ) {
+      // Ids arrive network-prefixed ("solana_<address>").
+      poolAddress = pools[0].id.replace(`${NETWORK}_`, "");
+    }
+  }
+
+  return {
+    mint,
+    name: typeof attrs.name === "string" ? attrs.name : null,
+    symbol: typeof attrs.symbol === "string" ? attrs.symbol : null,
+    imageUrl: typeof attrs.image_url === "string" ? attrs.image_url : null,
+    priceUsd: toNumber(attrs.price_usd),
+    fdvUsd: toNumber(attrs.fdv_usd),
+    volume24hUsd: isRecord(attrs.volume_usd)
+      ? toNumber(attrs.volume_usd.h24)
+      : null,
+    graduationPct: launchpad ? toNumber(launchpad.graduation_percentage) : null,
+    graduated: launchpad?.completed === true,
+    poolAddress,
+  };
+}
+
+/**
+ * Daily closing prices for a pool, oldest first.
+ *
+ * GeckoTerminal returns candles newest-first as [timestamp, o, h, l, c, volume];
+ * a chart reads left to right, so they are reversed here rather than in the view.
+ */
+export async function fetchDailyCloses(
+  pool: string,
+  days = 30,
+): Promise<number[]> {
+  const body = await geckoGet(
+    `/networks/${NETWORK}/pools/${encodeURIComponent(pool)}/ohlcv/day?aggregate=1&limit=${days}`,
+  );
+  if (!isRecord(body) || !isRecord(body.data)) return [];
+
+  const attrs = body.data.attributes;
+  if (!isRecord(attrs) || !Array.isArray(attrs.ohlcv_list)) return [];
+
+  const closes: number[] = [];
+  for (const candle of attrs.ohlcv_list) {
+    if (!Array.isArray(candle)) continue;
+    const close = toNumber(candle[4]);
+    if (close !== null) closes.push(close);
+  }
+  return closes.reverse();
+}
+
+/** Percentage change across a series, or null when there is nothing to compare. */
+export function changePct(closes: number[]): number | null {
+  if (closes.length < 2) return null;
+  const first = closes[0]!;
+  const last = closes[closes.length - 1]!;
+  if (first === 0) return null;
+  return ((last - first) / first) * 100;
+}
