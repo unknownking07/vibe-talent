@@ -1,9 +1,14 @@
 export function GithubSparkline({ values }: { values: number[] }) {
-  // Always render 7 bars. Missing days padded with 0.
-  const data =
-    values.length === 7
-      ? values
-      : [...values, ...Array(7 - values.length).fill(0)];
+  // Always render 7 bars: short input is padded with zeros, long input is
+  // truncated. Truncating matters — Array(7 - values.length) throws RangeError
+  // on a negative length, so an oversized payload used to crash the render
+  // rather than draw a slightly wrong chart.
+  // Taken from the front to match the existing padding convention, which
+  // appends zeros for missing entries. No caller feeds this a real array yet
+  // (both pass null), so whoever wires a producer should confirm the window's
+  // direction against the "last 7 days" label before trusting either end.
+  const recent = values.slice(0, 7);
+  const data = [...recent, ...Array(Math.max(0, 7 - recent.length)).fill(0)];
   const max = Math.max(...data, 1);
   const barWidth = 5;
   const gap = 2;

@@ -125,6 +125,7 @@ export function EmailPreferences() {
               </div>
             </div>
             <button
+              type="button"
               onClick={() => handleToggle(key)}
               disabled={saving}
               className="w-10 h-6 rounded-full relative cursor-pointer transition-colors shrink-0"

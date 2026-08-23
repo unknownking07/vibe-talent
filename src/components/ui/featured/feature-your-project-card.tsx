@@ -674,9 +674,12 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(
             <>
               {/* Idle stage */}
               <div className="flex items-center justify-between mb-2">
-                <label className="text-[10px] font-semibold text-[var(--text-muted)]">
+                <span
+                  id="featured-chain-label"
+                  className="text-[10px] font-semibold text-[var(--text-muted)]"
+                >
                   Pay on
-                </label>
+                </span>
                 <span
                   className="font-mono text-[10px] font-semibold px-2.5 py-0.5 rounded-full"
                   style={{
@@ -688,7 +691,11 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 mb-4">
+              <div
+                role="group"
+                aria-labelledby="featured-chain-label"
+                className="grid grid-cols-2 gap-2 mb-4"
+              >
                 {SUPPORTED_CHAINS.map((key) => {
                   const isActive = selectedChain === key;
                   const chainKey = key as ChainKey;
@@ -763,7 +770,10 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(
               </div>
 
               <div className="mb-3">
-                <label className="block text-[10px] font-semibold text-[var(--text-muted)] mb-1">
+                <label
+                  htmlFor="featured-project"
+                  className="block text-[10px] font-semibold text-[var(--text-muted)] mb-1"
+                >
                   Project
                 </label>
                 {loadingProjects ? (
@@ -790,6 +800,7 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(
                   </div>
                 ) : (
                   <select
+                    id="featured-project"
                     value={selectedProject}
                     onChange={(e) => setSelectedProject(e.target.value)}
                     className="w-full px-3 py-2 text-xs font-medium rounded-xl"
@@ -814,10 +825,17 @@ const FeatureCardBody = forwardRef<HTMLDivElement, Props>(
               {solanaTokenToggle}
 
               <div className="mb-3">
-                <label className="block text-[10px] font-semibold text-[var(--text-muted)] mb-1.5">
+                <span
+                  id="featured-package-label"
+                  className="block text-[10px] font-semibold text-[var(--text-muted)] mb-1.5"
+                >
                   Package
-                </label>
-                <div className="flex flex-col gap-1.5">
+                </span>
+                <div
+                  role="group"
+                  aria-labelledby="featured-package-label"
+                  className="flex flex-col gap-1.5"
+                >
                   {PACKAGES.map((pkg) => {
                     const isActive = selectedPkg === pkg.value;
                     return (

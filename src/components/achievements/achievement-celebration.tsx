@@ -64,7 +64,9 @@ export function AchievementCelebration({
       "#10B981",
       "#0EA5E9",
       "#EC4899",
-      "#FFFFFF",
+      // Warm off-white, not #FFFFFF: pure white is reserved for primary
+      // elements, and confetti is decoration.
+      "#F5F0EC",
     ];
     const cx = W / 2;
     const cy = H * 0.42;

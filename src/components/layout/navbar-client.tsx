@@ -785,6 +785,7 @@ export function NavbarClient({
               {/* Profile Avatar Dropdown */}
               <div className="relative ml-3" ref={dropdownRef}>
                 <button
+                  type="button"
                   ref={avatarTriggerRef}
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                   aria-label="Profile menu"
@@ -943,6 +944,7 @@ export function NavbarClient({
                       style={{ borderTop: "1px solid var(--border-hard)" }}
                     />
                     <button
+                      type="button"
                       role="menuitem"
                       onClick={handleLogout}
                       className="flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors w-full text-left"
