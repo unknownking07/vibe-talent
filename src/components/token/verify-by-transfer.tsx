@@ -29,13 +29,17 @@ export function VerifyByTransfer({
 }) {
   const [open, setOpen] = useState(false);
   const [address, setAddress] = useState("");
-  const [memo, setMemo] = useState<string | null>(null);
+  const [challenge, setChallenge] = useState<{
+    lamports: number;
+    destination: string | null;
+    memo: string;
+  } | null>(null);
   const [watching, setWatching] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [manualSignature, setManualSignature] = useState("");
   const [showManual, setShowManual] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [linked, setLinked] = useState<string | null>(null);
 
@@ -51,7 +55,7 @@ export function VerifyByTransfer({
         setError(data.error ?? "Couldn't start verification.");
         return;
       }
-      setMemo(data.memo);
+      setChallenge(data);
       setWatching(true);
     } catch {
       setError("Couldn't start verification. Please try again.");
@@ -136,14 +140,13 @@ export function VerifyByTransfer({
     };
   }, [watching, address, attempt]);
 
-  async function copyMemo() {
-    if (!memo) return;
+  async function copy(label: string, value: string | number) {
     try {
-      await navigator.clipboard.writeText(memo);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      await navigator.clipboard.writeText(String(value));
+      setCopied(label);
+      setTimeout(() => setCopied(null), 1500);
     } catch {
-      // Clipboard access can be denied; the memo is selectable on screen.
+      // Clipboard access can be denied; every value is selectable on screen.
     }
   }
 
@@ -186,8 +189,9 @@ export function VerifyByTransfer({
         style={{ color: "var(--text-secondary)" }}
       >
         Prove the wallet without ever connecting it. Your wallet never talks to
-        this site and we never ask it for anything — you send one transaction
-        from wherever you normally sign, and we read it off the chain.
+        this site and we never ask it for anything: you send one ordinary
+        transaction from wherever you normally sign, and we read it off the
+        chain. Works in Phantom and anything else that can send SOL.
       </p>
 
       <ol
@@ -200,10 +204,8 @@ export function VerifyByTransfer({
         </li>
         <li>
           <strong className="text-[var(--text-secondary)]">2.</strong> From that
-          wallet, send any amount{" "}
-          <strong className="text-[var(--text-secondary)]">to itself</strong>{" "}
-          with the memo we give you attached. Nothing comes to VibeTalent and no
-          approval is granted.
+          wallet, send the exact amount we give you to the address we show. It
+          is a few thousand lamports, well under a cent.
         </li>
         <li>
           <strong className="text-[var(--text-secondary)]">3.</strong> We watch
@@ -224,7 +226,7 @@ export function VerifyByTransfer({
         onChange={(e) => setAddress(e.target.value)}
         placeholder="4EvnGaySWW6fhmQeTbjb…"
         spellCheck={false}
-        disabled={Boolean(memo)}
+        disabled={Boolean(challenge)}
         className="mt-1 w-full rounded-lg px-3 py-2 font-mono text-[11px] text-[var(--foreground)] disabled:opacity-60"
         style={{
           backgroundColor: "var(--bg-surface)",
@@ -232,7 +234,7 @@ export function VerifyByTransfer({
         }}
       />
 
-      {!memo ? (
+      {!challenge ? (
         <button
           type="button"
           onClick={start}
@@ -244,24 +246,43 @@ export function VerifyByTransfer({
         </button>
       ) : (
         <>
-          <div
-            className="mt-3 flex items-center justify-between gap-2 rounded-lg px-3 py-2"
-            style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "1px solid var(--border-subtle)",
-            }}
-          >
-            <code className="min-w-0 break-all font-mono text-[11px] text-[var(--foreground)]">
-              {memo}
-            </code>
-            <button
-              type="button"
-              onClick={copyMemo}
-              aria-label="Copy the verification memo"
-              className="shrink-0 text-[var(--text-muted)] hover:text-[var(--foreground)]"
-            >
-              {copied ? <Check size={14} weight="bold" /> : <Copy size={14} />}
-            </button>
+          <div className="mt-3 flex flex-col gap-2">
+            <Field
+              label="Send exactly"
+              value={`${challenge.lamports.toLocaleString("en-US")} lamports`}
+              onCopy={() => copy("lamports", challenge.lamports)}
+              copied={copied === "lamports"}
+            />
+            {challenge.destination ? (
+              <Field
+                label="To this address"
+                value={challenge.destination}
+                onCopy={() => copy("destination", challenge.destination!)}
+                copied={copied === "destination"}
+              />
+            ) : null}
+            <details className="mt-1">
+              <summary
+                className="cursor-pointer text-[11px] font-semibold"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Optional: memo, if your wallet supports one
+              </summary>
+              <p
+                className="mt-1.5 text-[11px]"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Most Solana wallets, Phantom included, cannot attach a memo. The
+                amount alone verifies you. If yours can, adding this ties the
+                transaction to your account explicitly.
+              </p>
+              <Field
+                label="Memo"
+                value={challenge.memo}
+                onCopy={() => copy("memo", challenge.memo)}
+                copied={copied === "memo"}
+              />
+            </details>
           </div>
 
           <p
@@ -348,6 +369,49 @@ export function VerifyByTransfer({
           Checked {attempts} {attempts === 1 ? "time" : "times"}.
         </p>
       ) : null}
+    </div>
+  );
+}
+
+/** One copyable line of the challenge. */
+function Field({
+  label,
+  value,
+  onCopy,
+  copied,
+}: {
+  label: string;
+  value: string;
+  onCopy: () => void;
+  copied: boolean;
+}) {
+  return (
+    <div>
+      <span
+        className="text-[10px] font-semibold"
+        style={{ color: "var(--text-muted)" }}
+      >
+        {label}
+      </span>
+      <div
+        className="mt-0.5 flex items-center justify-between gap-2 rounded-lg px-3 py-2"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          border: "1px solid var(--border-subtle)",
+        }}
+      >
+        <code className="min-w-0 break-all font-mono text-[11px] text-[var(--foreground)]">
+          {value}
+        </code>
+        <button
+          type="button"
+          onClick={onCopy}
+          aria-label={`Copy ${label.toLowerCase()}`}
+          className="shrink-0 text-[var(--text-muted)] hover:text-[var(--foreground)]"
+        >
+          {copied ? <Check size={14} weight="bold" /> : <Copy size={14} />}
+        </button>
+      </div>
     </div>
   );
 }

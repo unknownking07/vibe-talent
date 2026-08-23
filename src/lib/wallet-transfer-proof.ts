@@ -5,26 +5,26 @@
 // broadcast one transaction from the wallet carrying a memo we issued, then
 // paste the signature here.
 //
-// WHY IT IS MEMO-BOUND, AND WHY THAT IS THE WHOLE DESIGN: a bare transfer
-// carries no statement of intent that the payer can read, which makes the
-// scheme relayable. An attacker starts a challenge on their own account, gets
-// "send this amount to this address", talks the real deployer into sending it
-// ("pay 0.0001 SOL to claim your fees"), and the system verifies the ATTACKER
-// as the owner. Unique amounts and short expiry narrow that window; they do not
-// close it, because a live phishing page works in real time.
+// AMOUNT FIRST, MEMO IF THE WALLET CAN. The first cut of this was memo-only,
+// because a memo is a sentence the signer reads and an amount is not. It was
+// the safer design and it was unusable: Phantom does not expose a memo field,
+// nor do most Solana wallets, so a builder who tried it simply could not
+// complete the flow. An unusable proof is not a safe proof — it pushes people
+// back to connecting their wallet, which is the thing this route exists to
+// avoid. So the challenge is now a random lamport amount that any wallet can
+// send, and a memo is accepted as well when the sender can attach one.
 //
-// A memo closes it, because the memo is a sentence the signer sees: an attacker
-// now has to talk their victim into attaching text that says, in plain words,
-// that they are linking a wallet to vibetalent.work. This codebase already
-// learned the same lesson for $VIBE burns, where matching the full memo is what
-// stops one user claiming another's broadcast transaction.
+// WHAT THE AMOUNT DOES AND DOES NOT DO. Unpredictable per challenge, it stops
+// one open challenge being satisfied by another's transaction, and it cannot be
+// guessed by someone who was not issued it. It does NOT carry intent: a payer
+// sees a number and an address, so a phisher can still forward "send exactly
+// this to that" and be credited with the victim's wallet. A memo mitigates
+// that where it is available, and nothing here removes it. Short expiry keeps
+// the window narrow. Never describe this route as phishing-proof.
 //
-// WHY IT IS A SELF-PAYMENT, NOT A PAYMENT TO US: the proof is the SIGNATURE on
-// the transaction, not the movement of funds. Nobody can produce a signed
-// transaction without the key, so the destination is irrelevant. Sending to
-// their own wallet costs the builder nothing beyond the network fee, leaves us
-// with no dust to custody, and removes the "send X to this address" instruction
-// that a phishing page would otherwise be imitating.
+// The residual risk is bounded by key control: whoever holds the key can always
+// prove the wallet again, so a stolen attribution is recoverable rather than
+// permanent.
 //
 // This route is deliberately NOT the default. Signing a message cannot move
 // funds; broadcasting a transaction can. The message signature stays the
@@ -34,6 +34,11 @@ import { CHAIN_CONFIGS, isSolanaChain } from "@/lib/chains-config";
 import { solanaRpcUrl } from "@/lib/solana-rpc";
 import { extractMemos } from "@/lib/promotion-pricing";
 import { WALLET_LINK_DOMAIN, SOLANA_ADDRESS_RE } from "@/lib/wallet-link";
+
+/** Narrow an unknown value to a plain object. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 /** Every RPC call in this module is bounded by this. */
 const REQUEST_TIMEOUT_MS = 8_000;
@@ -50,17 +55,30 @@ export function transferNonceKey(userId: string): string {
 }
 
 /**
- * The memo the transaction must carry, verbatim.
+ * Smallest and largest challenge amounts, in lamports.
  *
- * NAMES THE ACCOUNT ON PURPOSE. Without it the memo says only "link a wallet to
- * vibetalent.work", which is exactly what a victim would expect to see while
- * being phished into proving their wallet for someone else's account. With the
- * username in it, the sentence a phisher has to talk them past reads "for
- * @somebody-who-is-not-you", which they can check against their own profile.
+ * Both ends sit under a cent at any plausible SOL price, so the proof costs the
+ * builder effectively nothing beyond the network fee. The range is wide enough
+ * that two open challenges colliding is not a practical concern, and the value
+ * is drawn from a CSPRNG so nobody can guess a challenge they were not issued.
+ */
+export const MIN_CHALLENGE_LAMPORTS = 1_000;
+export const MAX_CHALLENGE_LAMPORTS = 40_000;
+
+/** A fresh, unguessable challenge amount. */
+export function randomChallengeLamports(): number {
+  const span = MAX_CHALLENGE_LAMPORTS - MIN_CHALLENGE_LAMPORTS;
+  const [n] = crypto.getRandomValues(new Uint32Array(1));
+  return MIN_CHALLENGE_LAMPORTS + (n! % span);
+}
+
+/**
+ * The optional memo, for wallets that can attach one.
  *
- * This raises the bar; it does not remove it. A challenge-response scheme with
- * no second channel cannot stop someone who signs anyway, and the same is true
- * of the message-signature route. Never describe either as phishing-proof.
+ * Names the account on purpose: without it the text reads "link a wallet to
+ * vibetalent.work", which is exactly what a victim would expect while being
+ * phished into proving their wallet for someone else. Most wallets cannot
+ * attach this, which is why it can never be the only binding.
  */
 export function transferMemo(nonce: string, username: string): string {
   return `Link wallet to ${WALLET_LINK_DOMAIN} for @${username} | ${nonce}`;
@@ -71,6 +89,16 @@ export const SIGNATURE_RE = /^[1-9A-HJ-NP-Za-km-z]{86,90}$/;
 
 export type TransferProofResult =
   { ok: true; wallet: string } | { ok: false; status: number; error: string };
+
+/**
+ * What a builder has to produce. Either half proves it: the amount is what
+ * every wallet can send, the memo is the stronger binding for the few that can
+ * attach one.
+ */
+export type TransferChallenge = {
+  lamports: number;
+  memo: string;
+};
 
 type ParsedAccountKey = { pubkey?: unknown; signer?: unknown };
 
@@ -99,7 +127,7 @@ type ParsedTx = {
  */
 export async function verifyTransferProof(
   signature: string,
-  expectedMemo: string,
+  challenge: TransferChallenge,
 ): Promise<TransferProofResult> {
   if (!SIGNATURE_RE.test(signature)) {
     return {
@@ -177,15 +205,6 @@ export async function verifyTransferProof(
 
   // The memo must match in full. A partial match would let one challenge's
   // transaction satisfy another's.
-  const memos = extractMemos(tx.transaction?.message?.instructions ?? []);
-  if (!memos.some((m) => m.trim() === expectedMemo)) {
-    return {
-      ok: false,
-      status: 400,
-      error: "That transaction doesn't carry this verification's memo.",
-    };
-  }
-
   const keys = tx.transaction?.message?.accountKeys;
   const feePayer = Array.isArray(keys) ? keys[0] : undefined;
   if (
@@ -200,8 +219,40 @@ export async function verifyTransferProof(
       error: "Couldn't read a signer from that transaction.",
     };
   }
+  const wallet = feePayer.pubkey;
 
-  return { ok: true, wallet: feePayer.pubkey };
+  const instructions = tx.transaction?.message?.instructions ?? [];
+
+  // The memo path, for wallets that can attach one. Matched in full: a partial
+  // match would let one challenge's transaction satisfy another's.
+  const memoMatched = extractMemos(instructions).some(
+    (m) => m.trim() === challenge.memo,
+  );
+
+  // The amount path, which every wallet can do. The transfer has to come FROM
+  // the wallet being proved and land on our receiving address for exactly the
+  // challenge amount, so an unrelated payment of a round number cannot pass.
+  const amountMatched = instructions.some((ix) => {
+    const parsed = (ix as { parsed?: unknown })?.parsed;
+    if (!isRecord(parsed) || parsed.type !== "transfer") return false;
+    const info = parsed.info;
+    if (!isRecord(info)) return false;
+    return (
+      info.source === wallet &&
+      info.destination === solana.receivingWallet &&
+      Number(info.lamports) === challenge.lamports
+    );
+  });
+
+  if (!memoMatched && !amountMatched) {
+    return {
+      ok: false,
+      status: 400,
+      error: "That transaction doesn't match this verification.",
+    };
+  }
+
+  return { ok: true, wallet };
 }
 
 /**
@@ -233,7 +284,7 @@ const SCAN_BUDGET_MS = 12_000;
  */
 export async function findTransferProof(
   address: string,
-  expectedMemo: string,
+  challenge: TransferChallenge,
 ): Promise<TransferProofResult> {
   if (!SOLANA_ADDRESS_RE.test(address)) {
     return {
@@ -299,7 +350,7 @@ export async function findTransferProof(
 
   for (const signature of signatures) {
     if (Date.now() > deadline) break;
-    const result = await verifyTransferProof(signature, expectedMemo);
+    const result = await verifyTransferProof(signature, challenge);
     // Only a match ends the search. Every other outcome means this particular
     // transaction was something else the builder happened to do.
     if (result.ok && result.wallet === address) return result;
