@@ -19,9 +19,13 @@ export function BagsAttribution({ className = "" }: { className?: string }) {
       rel="noopener noreferrer"
       // The words "Launch data from" already precede this link in the page copy.
       aria-label="bags.fm (opens in new tab)"
-      className={`inline-flex items-center gap-1.5 text-[12px] font-bold text-[var(--bags-text-muted)] transition-colors hover:text-[var(--bags-text)] ${className}`}
+      // Plain inline, NOT inline-flex. An inline-flex box aligns the line by its
+      // own flex baseline, so a 16px mark inside 12px text lifted "bags.fm" off
+      // the baseline of the sentence around it. As inline text it sits on the
+      // parent's baseline and only the glyph is nudged.
+      className={`whitespace-nowrap text-[12px] font-bold text-[var(--bags-text-muted)] transition-colors hover:text-[var(--bags-text)] ${className}`}
     >
-      <BagsMark />
+      <BagsMark size={14} className="mr-1 inline-block align-[-0.2em]" />
       bags.fm
     </a>
   );

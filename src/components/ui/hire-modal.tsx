@@ -22,7 +22,12 @@ const BUDGET_OPTIONS = [
 
 import { BLOCKED_DOMAINS, EMAIL_REGEX, NAME_REGEX } from "@/lib/validation";
 
-export function HireModal({ builderId, builderName, isOpen, onClose }: HireModalProps) {
+export function HireModal({
+  builderId,
+  builderName,
+  isOpen,
+  onClose,
+}: HireModalProps) {
   const [form, setForm] = useState({
     sender_name: "",
     sender_email: "",
@@ -33,7 +38,10 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
   const [requestId, setRequestId] = useState<string | null>(null);
-  const [loggedInUser, setLoggedInUser] = useState<{ name: string; email: string } | null>(null);
+  const [loggedInUser, setLoggedInUser] = useState<{
+    name: string;
+    email: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -41,7 +49,9 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
     const checkAuth = async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const supabase = createClient() as any;
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         const email = user.email || "";
         const name =
@@ -55,7 +65,8 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
           .select("display_name, username")
           .eq("id", user.id)
           .single();
-        const displayName = profile?.display_name || name || profile?.username || "";
+        const displayName =
+          profile?.display_name || name || profile?.username || "";
         setLoggedInUser({ name: displayName, email });
         setForm((prev) => ({
           ...prev,
@@ -77,7 +88,9 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
     // Name validation: min 2 chars, letters and spaces only
     const nameClean = form.sender_name.trim();
     if (nameClean.length < 2 || !NAME_REGEX.test(nameClean)) {
-      setError("Please enter a valid name (letters only, at least 2 characters).");
+      setError(
+        "Please enter a valid name (letters only, at least 2 characters).",
+      );
       return;
     }
     // Email validation - strict
@@ -99,7 +112,9 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
     }
     // Message validation: min 20 chars
     if (form.message.trim().length < 20) {
-      setError("Please write a more detailed message (at least 20 characters).");
+      setError(
+        "Please write a more detailed message (at least 20 characters).",
+      );
       return;
     }
     setError("");
@@ -138,7 +153,12 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
   const handleClose = () => {
     setSent(false);
     setRequestId(null);
-    setForm({ sender_name: loggedInUser?.name || "", sender_email: loggedInUser?.email || "", budget: "", message: "" });
+    setForm({
+      sender_name: loggedInUser?.name || "",
+      sender_email: loggedInUser?.email || "",
+      budget: "",
+      message: "",
+    });
     setError("");
     onClose();
   };
@@ -146,10 +166,7 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50"
-        onClick={handleClose}
-      />
+      <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
 
       {/* Modal */}
       <div
@@ -188,11 +205,18 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
                   backgroundColor: "var(--status-success-bg)",
                 }}
               >
-                <CheckCircle weight="duotone" size={32} className="text-[var(--status-success-text)]" />
+                <CheckCircle
+                  weight="duotone"
+                  size={32}
+                  className="text-[var(--status-success-text)]"
+                />
               </div>
-              <h3 className="text-xl font-bold text-[var(--foreground)]">Request Sent!</h3>
+              <h3 className="text-xl font-bold text-[var(--foreground)]">
+                Request Sent!
+              </h3>
               <p className="text-sm text-[var(--text-secondary)] font-medium">
-                Your hire request has been sent to @{builderName}. They will get back to you soon.
+                Your hire request has been sent to @{builderName}. They will get
+                back to you soon.
               </p>
               {requestId && (
                 <div
@@ -202,15 +226,21 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
                     border: "1px solid var(--border-subtle)",
                   }}
                 >
-                  <p className="font-semibold text-[var(--foreground)] mb-1">Continue the conversation:</p>
+                  <p className="font-semibold text-[var(--foreground)] mb-1">
+                    Continue the conversation:
+                  </p>
                   <a
                     href={`/hire/chat/${requestId}`}
                     className="text-[var(--accent)] font-semibold underline underline-offset-2 break-all"
                   >
-                    {typeof window !== "undefined" ? window.location.origin : ""}/hire/chat/{requestId}
+                    {typeof window !== "undefined"
+                      ? window.location.origin
+                      : ""}
+                    /hire/chat/{requestId}
                   </a>
                   <p className="text-xs text-[var(--text-secondary)] mt-1">
-                    Bookmark this link to check for replies and continue chatting.
+                    Bookmark this link to check for replies and continue
+                    chatting.
                   </p>
                 </div>
               )}
@@ -236,31 +266,57 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
 
               <div>
                 <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
-                  Your Name * {loggedInUser && <Lock weight="fill" size={10} className="inline ml-1" />}
+                  Your Name *{" "}
+                  {loggedInUser && (
+                    <Lock weight="fill" size={10} className="inline ml-1" />
+                  )}
                 </label>
                 <input
                   type="text"
                   value={form.sender_name}
-                  onChange={(e) => !loggedInUser && setForm({ ...form, sender_name: e.target.value })}
+                  onChange={(e) =>
+                    !loggedInUser &&
+                    setForm({ ...form, sender_name: e.target.value })
+                  }
                   placeholder="John Doe"
                   className="input-brutal"
                   readOnly={!!loggedInUser}
-                  style={loggedInUser ? { backgroundColor: "var(--bg-surface-light)", cursor: "not-allowed" } : {}}
+                  style={
+                    loggedInUser
+                      ? {
+                          backgroundColor: "var(--bg-surface-light)",
+                          cursor: "not-allowed",
+                        }
+                      : {}
+                  }
                 />
               </div>
 
               <div>
                 <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
-                  Your Email * {loggedInUser && <Lock weight="fill" size={10} className="inline ml-1" />}
+                  Your Email *{" "}
+                  {loggedInUser && (
+                    <Lock weight="fill" size={10} className="inline ml-1" />
+                  )}
                 </label>
                 <input
                   type="email"
                   value={form.sender_email}
-                  onChange={(e) => !loggedInUser && setForm({ ...form, sender_email: e.target.value })}
+                  onChange={(e) =>
+                    !loggedInUser &&
+                    setForm({ ...form, sender_email: e.target.value })
+                  }
                   placeholder="john@example.com"
                   className="input-brutal"
                   readOnly={!!loggedInUser}
-                  style={loggedInUser ? { backgroundColor: "var(--bg-surface-light)", cursor: "not-allowed" } : {}}
+                  style={
+                    loggedInUser
+                      ? {
+                          backgroundColor: "var(--bg-surface-light)",
+                          cursor: "not-allowed",
+                        }
+                      : {}
+                  }
                 />
               </div>
 
@@ -288,7 +344,9 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
                 </label>
                 <textarea
                   value={form.message}
-                  onChange={(e) => setForm({ ...form, message: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, message: e.target.value })
+                  }
                   placeholder="Tell them about your project, timeline, and what you're looking for..."
                   rows={4}
                   className="input-brutal resize-none"
@@ -297,7 +355,12 @@ export function HireModal({ builderId, builderName, isOpen, onClose }: HireModal
 
               <button
                 onClick={handleSubmit}
-                disabled={sending || !form.sender_name || !form.sender_email || !form.message}
+                disabled={
+                  sending ||
+                  !form.sender_name ||
+                  !form.sender_email ||
+                  !form.message
+                }
                 className="btn-brutal btn-brutal-primary w-full justify-center text-sm flex items-center gap-2 disabled:opacity-50"
               >
                 <Send size={16} />

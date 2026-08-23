@@ -8,7 +8,13 @@
  * Colours come from the .bags-theme scope, so this only renders correctly
  * inside it.
  */
-export function BagsMark({ size = 16 }: { size?: number }) {
+export function BagsMark({
+  size = 16,
+  className = "shrink-0",
+}: {
+  size?: number;
+  className?: string;
+}) {
   return (
     <svg
       width={size}
@@ -17,7 +23,7 @@ export function BagsMark({ size = 16 }: { size?: number }) {
       fill="none"
       aria-hidden="true"
       focusable="false"
-      className="shrink-0"
+      className={className}
     >
       {/*
         One path, not two. Drawn as separate neck and body shapes the join left

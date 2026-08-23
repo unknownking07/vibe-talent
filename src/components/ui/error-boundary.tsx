@@ -39,7 +39,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
               boxShadow: "var(--shadow-brutal)",
             }}
           >
-            <Warning weight="fill" size={48} className="mx-auto mb-4 text-[var(--accent)]" />
+            <Warning
+              weight="fill"
+              size={48}
+              className="mx-auto mb-4 text-[var(--accent)]"
+            />
             <h2 className="text-xl font-bold text-[var(--foreground)] mb-2">
               Something went wrong
             </h2>

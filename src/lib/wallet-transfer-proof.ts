@@ -35,6 +35,9 @@ import { solanaRpcUrl } from "@/lib/solana-rpc";
 import { extractMemos } from "@/lib/promotion-pricing";
 import { WALLET_LINK_DOMAIN, SOLANA_ADDRESS_RE } from "@/lib/wallet-link";
 
+/** Every RPC call in this module is bounded by this. */
+const REQUEST_TIMEOUT_MS = 8_000;
+
 /**
  * Longer than the signing nonce: this flow asks someone to construct and
  * broadcast a transaction, possibly in a different wallet app, rather than
@@ -49,12 +52,18 @@ export function transferNonceKey(userId: string): string {
 /**
  * The memo the transaction must carry, verbatim.
  *
- * Written to be legible to someone reading it in a wallet before they sign.
- * It names the site, states what it does, and carries the challenge, so a
- * person asked to attach it by a third party has been told what it is for.
+ * NAMES THE ACCOUNT ON PURPOSE. Without it the memo says only "link a wallet to
+ * vibetalent.work", which is exactly what a victim would expect to see while
+ * being phished into proving their wallet for someone else's account. With the
+ * username in it, the sentence a phisher has to talk them past reads "for
+ * @somebody-who-is-not-you", which they can check against their own profile.
+ *
+ * This raises the bar; it does not remove it. A challenge-response scheme with
+ * no second channel cannot stop someone who signs anyway, and the same is true
+ * of the message-signature route. Never describe either as phishing-proof.
  */
-export function transferMemo(nonce: string): string {
-  return `Link wallet to ${WALLET_LINK_DOMAIN} | ${nonce}`;
+export function transferMemo(nonce: string, username: string): string {
+  return `Link wallet to ${WALLET_LINK_DOMAIN} for @${username} | ${nonce}`;
 }
 
 /** A base58 Solana transaction signature. */
@@ -110,6 +119,10 @@ export async function verifyTransferProof(
     const res = await fetch(solanaRpcUrl(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      // Bounded like every other call here: findTransferProof issues this in a
+      // loop, so an untimed request lets one slow provider hold the route open
+      // while the client keeps polling every five seconds.
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       body: JSON.stringify({
         jsonrpc: "2.0",
         id: 1,
@@ -189,4 +202,112 @@ export async function verifyTransferProof(
   }
 
   return { ok: true, wallet: feePayer.pubkey };
+}
+
+/**
+ * How many recent transactions to scan when watching a wallet.
+ *
+ * The builder has just been told to send one, so the proof is near the top of
+ * their history. Scanning deeper costs an RPC round trip per signature for a
+ * transaction that is not there.
+ */
+const WATCH_DEPTH = 12;
+
+/**
+ * Total time one scan may spend. The client polls every five seconds, so a
+ * scan that outlives its own poll interval only stacks up work.
+ */
+const SCAN_BUDGET_MS = 12_000;
+
+/**
+ * Watch `address` for a transaction carrying `expectedMemo`, without the
+ * builder having to copy a signature back.
+ *
+ * The address is supplied by the caller here, which is safe for one reason
+ * only: naming a wallet proves nothing. The proof is still a signed
+ * transaction carrying a challenge nobody else was issued, so pointing us at
+ * someone else's wallet finds nothing unless they were handed this exact memo.
+ *
+ * 404 means "not seen yet" rather than "wrong": the client polls, and a
+ * transaction can take a few seconds to reach the RPC after the wallet returns.
+ */
+export async function findTransferProof(
+  address: string,
+  expectedMemo: string,
+): Promise<TransferProofResult> {
+  if (!SOLANA_ADDRESS_RE.test(address)) {
+    return {
+      ok: false,
+      status: 400,
+      error: "That doesn't look like a Solana address.",
+    };
+  }
+
+  const solana = CHAIN_CONFIGS.solana;
+  if (!isSolanaChain(solana)) {
+    return { ok: false, status: 500, error: "Solana is not configured." };
+  }
+
+  let signatures: string[];
+  try {
+    const res = await fetch(solanaRpcUrl(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "getSignaturesForAddress",
+        params: [address, { limit: WATCH_DEPTH, commitment: "confirmed" }],
+      }),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      return {
+        ok: false,
+        status: 503,
+        error: "Couldn't reach the Solana network. Please retry.",
+      };
+    }
+    const body = await res.json();
+    const result = body?.result;
+    if (!Array.isArray(result)) {
+      return {
+        ok: false,
+        status: 503,
+        error: "Solana RPC error. Please retry.",
+      };
+    }
+    signatures = result
+      .map((entry: { signature?: unknown; err?: unknown }) =>
+        // Skip failed transactions here rather than fetching them in full.
+        !entry?.err && typeof entry?.signature === "string"
+          ? entry.signature
+          : null,
+      )
+      .filter((sig): sig is string => sig !== null);
+  } catch {
+    return {
+      ok: false,
+      status: 503,
+      error: "Couldn't reach the Solana network. Please retry.",
+    };
+  }
+
+  // Wall-clock budget for the whole scan. Twelve sequential lookups at the
+  // per-call timeout would otherwise be a minute and a half.
+  const deadline = Date.now() + SCAN_BUDGET_MS;
+
+  for (const signature of signatures) {
+    if (Date.now() > deadline) break;
+    const result = await verifyTransferProof(signature, expectedMemo);
+    // Only a match ends the search. Every other outcome means this particular
+    // transaction was something else the builder happened to do.
+    if (result.ok && result.wallet === address) return result;
+  }
+
+  return {
+    ok: false,
+    status: 404,
+    error: "No matching transaction yet. Send it, then this will pick it up.",
+  };
 }

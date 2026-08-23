@@ -19,7 +19,8 @@ function getScoreColor(score: number): string {
 }
 
 export function MatchCard({ match, rank }: MatchCardProps) {
-  const { user, match_score, match_reasons, matched_skills, recommended_for } = match;
+  const { user, match_score, match_reasons, matched_skills, recommended_for } =
+    match;
   const initials = user.username.slice(0, 2).toUpperCase();
 
   return (
@@ -28,7 +29,8 @@ export function MatchCard({ match, rank }: MatchCardProps) {
       style={{
         backgroundColor: "var(--bg-surface)",
         border: "1px solid var(--border-subtle)",
-        boxShadow: rank === 1 ? "var(--shadow-brutal-accent)" : "var(--shadow-brutal)",
+        boxShadow:
+          rank === 1 ? "var(--shadow-brutal-accent)" : "var(--shadow-brutal)",
       }}
     >
       <div className="flex items-start gap-4">
@@ -36,16 +38,28 @@ export function MatchCard({ match, rank }: MatchCardProps) {
         <div className="flex flex-col items-center gap-2">
           <div
             className="text-xs font-bold text-white px-2 py-0.5 rounded-full"
-            style={{ backgroundColor: rank === 1 ? "var(--accent)" : "var(--bg-inverted)" }}
+            style={{
+              backgroundColor:
+                rank === 1 ? "var(--accent)" : "var(--bg-inverted)",
+            }}
           >
             #{rank}
           </div>
           <div
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white overflow-hidden"
-            style={{ backgroundColor: "var(--bg-inverted)", border: "1px solid var(--border-subtle)" }}
+            style={{
+              backgroundColor: "var(--bg-inverted)",
+              border: "1px solid var(--border-subtle)",
+            }}
           >
             {user.avatar_url ? (
-              <Image src={user.avatar_url} alt={user.username} width={48} height={48} className="w-full h-full object-cover" />
+              <Image
+                src={user.avatar_url}
+                alt={user.username}
+                width={48}
+                height={48}
+                className="w-full h-full object-cover"
+              />
             ) : (
               initials
             )}
@@ -56,7 +70,9 @@ export function MatchCard({ match, rank }: MatchCardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-bold text-[var(--foreground)]">@{user.username}</h3>
+              <h3 className="font-bold text-[var(--foreground)]">
+                @{user.username}
+              </h3>
               <BadgeDisplay level={user.badge_level} size="sm" />
             </div>
             <div
@@ -74,8 +90,15 @@ export function MatchCard({ match, rank }: MatchCardProps) {
           {/* Match reasons */}
           <div className="mt-3 space-y-1">
             {match_reasons.map((reason, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm text-[var(--text-secondary)] font-medium">
-                <BotMark weight="fill" size={12} className="text-[var(--accent)] shrink-0" />
+              <div
+                key={i}
+                className="flex items-center gap-2 text-sm text-[var(--text-secondary)] font-medium"
+              >
+                <BotMark
+                  weight="fill"
+                  size={12}
+                  className="text-[var(--accent)] shrink-0"
+                />
                 {reason}
               </div>
             ))}
@@ -84,7 +107,7 @@ export function MatchCard({ match, rank }: MatchCardProps) {
           {/* Matched skills */}
           {matched_skills.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
-              {matched_skills.map(skill => (
+              {matched_skills.map((skill) => (
                 <span
                   key={skill}
                   className="px-2.5 py-0.5 rounded-full text-xs font-semibold"

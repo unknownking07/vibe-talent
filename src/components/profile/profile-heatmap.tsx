@@ -8,16 +8,34 @@ interface ProfileHeatmapProps {
   githubUsername?: string | null;
 }
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
 
 const getLevelColor = (level: number) => {
   switch (level) {
-    case 0: return "var(--hm-0)";
-    case 1: return "var(--hm-1)";
-    case 2: return "var(--hm-2)";
-    case 3: return "var(--hm-3)";
-    default: return "var(--hm-4)";
+    case 0:
+      return "var(--hm-0)";
+    case 1:
+      return "var(--hm-1)";
+    case 2:
+      return "var(--hm-2)";
+    case 3:
+      return "var(--hm-3)";
+    default:
+      return "var(--hm-4)";
   }
 };
 
@@ -97,7 +115,10 @@ export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
   }, [mergedData]);
 
   // Use GitHub's actual total when available; fall back to counting active days
-  const total = ghTotal > 0 ? ghTotal : Object.values(mergedData).reduce((sum, v) => sum + (v > 0 ? v : 0), 0);
+  const total =
+    ghTotal > 0
+      ? ghTotal
+      : Object.values(mergedData).reduce((sum, v) => sum + (v > 0 ? v : 0), 0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasScrolledRef = useRef(false);
@@ -120,7 +141,10 @@ export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
             <div
               key={level}
               className="w-3 h-3 rounded-[2px]"
-              style={{ backgroundColor: getLevelColor(level), border: "1px solid var(--border-subtle)" }}
+              style={{
+                backgroundColor: getLevelColor(level),
+                border: "1px solid var(--border-subtle)",
+              }}
             />
           ))}
           <span>More</span>
@@ -129,7 +153,10 @@ export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
       <div ref={scrollRef} className="overflow-x-auto pb-2">
         <div className="flex" style={{ paddingLeft: 32, marginBottom: 4 }}>
           {monthLabels.map((m, i) => {
-            const nextCol = i < monthLabels.length - 1 ? monthLabels[i + 1].col : weeks.length;
+            const nextCol =
+              i < monthLabels.length - 1
+                ? monthLabels[i + 1].col
+                : weeks.length;
             return (
               <div
                 key={`${m.label}-${m.col}`}
@@ -144,7 +171,10 @@ export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
         <div className="flex">
           <div className="flex flex-col gap-[3px] mr-1" style={{ width: 28 }}>
             {DAY_LABELS.map((label, i) => (
-              <div key={i} className="h-3 flex items-center text-[10px] font-medium text-[var(--text-muted)]">
+              <div
+                key={i}
+                className="h-3 flex items-center text-[10px] font-medium text-[var(--text-muted)]"
+              >
                 {label}
               </div>
             ))}
@@ -158,7 +188,10 @@ export function ProfileHeatmap({ data, githubUsername }: ProfileHeatmapProps) {
                     <div
                       key={day.date}
                       className="w-3 h-3 rounded-[2px]"
-                      style={{ backgroundColor: getLevelColor(countToLevel(day.count)), border: "1px solid var(--border-subtle)" }}
+                      style={{
+                        backgroundColor: getLevelColor(countToLevel(day.count)),
+                        border: "1px solid var(--border-subtle)",
+                      }}
                       title={label}
                       aria-label={label}
                       role="img"

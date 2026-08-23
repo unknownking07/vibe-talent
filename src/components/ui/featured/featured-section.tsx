@@ -18,7 +18,10 @@ import { EmptySlotCard } from "./empty-slot-card";
 // (~60 chunks) stays out of the homepage's critical path. The placeholder
 // matches the real card's dimensions to avoid CLS when it swaps in.
 const FeatureYourProjectCard = dynamic(
-  () => import("./feature-your-project-card").then((m) => ({ default: m.FeatureYourProjectCard })),
+  () =>
+    import("./feature-your-project-card").then((m) => ({
+      default: m.FeatureYourProjectCard,
+    })),
   {
     ssr: false,
     loading: () => (
@@ -31,7 +34,9 @@ const FeatureYourProjectCard = dynamic(
       >
         <h3 className="text-2xl font-bold leading-tight">
           <span className="block text-[var(--foreground)]">Feature</span>
-          <span className="block" style={{ color: "var(--accent)" }}>Your Project</span>
+          <span className="block" style={{ color: "var(--accent)" }}>
+            Your Project
+          </span>
         </h3>
         <div className="mt-6 space-y-3">
           <div
@@ -172,7 +177,11 @@ export function FeaturedSection() {
         {/* Header */}
         <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
           <div className="flex items-center gap-3">
-            <Megaphone weight="fill" size={20} style={{ color: "var(--accent)" }} />
+            <Megaphone
+              weight="fill"
+              size={20}
+              style={{ color: "var(--accent)" }}
+            />
             <h2 className="text-xl font-bold text-[var(--foreground)]">
               Featured Projects
             </h2>
@@ -209,7 +218,10 @@ export function FeaturedSection() {
                 }}
                 aria-label="Next featured projects"
               >
-                <ChevronRight size={16} style={{ color: "var(--foreground)" }} />
+                <ChevronRight
+                  size={16}
+                  style={{ color: "var(--foreground)" }}
+                />
               </button>
             </div>
           )}

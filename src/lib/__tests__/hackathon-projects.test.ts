@@ -7,19 +7,32 @@ import {
 } from "@/lib/hackathon-projects";
 
 describe("HACKATHON_PROJECTS", () => {
-  it("holds the whole closed cohort", () => {
-    // The DoraHacks submission window closed on 2026-05-11 with 45 entries.
-    // If this number moves, the list was edited by hand and should be
-    // re-derived from the source rather than patched.
-    expect(HACKATHON_PROJECTS).toHaveLength(45);
+  it("holds the 45 DoraHacks submissions plus the winners announced elsewhere", () => {
+    const submissions = HACKATHON_PROJECTS.filter((p) => p.githubOwner);
+    const winners = HACKATHON_PROJECTS.filter((p) => p.winner);
+    expect(submissions).toHaveLength(45);
+    expect(winners.length).toBeGreaterThan(0);
   });
 
-  it("gives every entry the GitHub owner that makes it joinable", () => {
+  it("names every entry and gives it a track", () => {
     for (const p of HACKATHON_PROJECTS) {
-      expect(p.githubOwner.trim()).not.toBe("");
       expect(p.name.trim()).not.toBe("");
       expect(p.track.trim()).not.toBe("");
     }
+  });
+
+  it("lists a winner who never went through DoraHacks", () => {
+    // VaultBags won and has no submission, so an entry without a repository
+    // has to be representable or the roster silently omits the prize list.
+    const vault = HACKATHON_PROJECTS.find((p) => p.name === "VaultBags");
+    expect(vault).toMatchObject({ githubOwner: null, winner: true });
+  });
+
+  it("never matches a builder to an entry with no repository", () => {
+    // A null owner must not collapse into a shared map key and hand one
+    // builder every unattributed winner.
+    expect(hackathonProjectsFor(null)).toEqual([]);
+    expect(hackathonProjectsFor("")).toEqual([]);
   });
 });
 

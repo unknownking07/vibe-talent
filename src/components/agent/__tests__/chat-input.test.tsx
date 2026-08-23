@@ -16,10 +16,7 @@ let container: HTMLDivElement | null = null;
 
 beforeAll(() => {
   // jsdom has no matchMedia; the component autofocuses on fine pointers.
-  vi.stubGlobal(
-    "matchMedia",
-    vi.fn().mockReturnValue({ matches: true })
-  );
+  vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: true }));
 });
 
 afterEach(() => {
@@ -41,7 +38,7 @@ async function render(ui: React.ReactElement) {
 async function type(input: HTMLInputElement, text: string) {
   const setter = Object.getOwnPropertyDescriptor(
     window.HTMLInputElement.prototype,
-    "value"
+    "value",
   )!.set!;
   await act(async () => {
     setter.call(input, text);
@@ -52,7 +49,9 @@ async function type(input: HTMLInputElement, text: string) {
 /** Simulate Enter / send: the form's submit event (implicit submission). */
 async function submit(form: HTMLFormElement) {
   await act(async () => {
-    form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    form.dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true }),
+    );
   });
 }
 
@@ -106,7 +105,9 @@ describe("ChatInput", () => {
   it("keeps the send button gated while streaming or empty", async () => {
     await render(<ChatInput onSend={() => {}} disabled={true} />);
     const input = container!.querySelector("input")!;
-    const button = container!.querySelector("button[type=submit]")! as HTMLButtonElement;
+    const button = container!.querySelector(
+      "button[type=submit]",
+    )! as HTMLButtonElement;
 
     expect(button.disabled).toBe(true); // streaming
     await type(input, "hello");

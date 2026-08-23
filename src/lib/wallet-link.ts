@@ -74,8 +74,7 @@ type LocalNonceGlobalThis = typeof globalThis & {
 /** True only in local staging development, where the in-memory store is used. */
 export function isLocalWalletNonceStoreEnabled(): boolean {
   return (
-    process.env.NODE_ENV === "development" &&
-    process.env.VIBE_STAGING === "1"
+    process.env.NODE_ENV === "development" && process.env.VIBE_STAGING === "1"
   );
 }
 
@@ -94,14 +93,36 @@ function getLocalStore(): Map<string, LocalNonceEntry> | null {
  * Store a nonce locally. Returns false when not in local mode (caller must
  * fall back to Redis).
  */
-export function localStoreNonce(key: string, nonce: string): boolean {
+export function localStoreNonce(
+  key: string,
+  nonce: string,
+  ttlSeconds: number = NONCE_TTL_SECONDS,
+): boolean {
   const store = getLocalStore();
   if (!store) return false;
-  store.set(key, {
-    nonce,
-    expiresAt: Date.now() + NONCE_TTL_SECONDS * 1000,
-  });
+  // TTL is a parameter because the transfer-proof flow runs on a longer clock
+  // than the signing one, and staging expiring early would look like a broken
+  // feature rather than a mismatched constant.
+  store.set(key, { nonce, expiresAt: Date.now() + ttlSeconds * 1000 });
   return true;
+}
+
+/**
+ * Look at a nonce without spending it.
+ *
+ * The watched transfer flow polls, so it has to be able to ask "is my challenge
+ * still open" without consuming it on every failed look.
+ */
+export function localPeekNonce(key: string): string | null {
+  const store = getLocalStore();
+  if (!store) return null;
+  const entry = store.get(key);
+  if (!entry) return null;
+  if (Date.now() >= entry.expiresAt) {
+    store.delete(key);
+    return null;
+  }
+  return entry.nonce;
 }
 
 /**

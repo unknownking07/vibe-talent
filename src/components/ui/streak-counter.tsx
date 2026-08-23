@@ -2,7 +2,6 @@
 
 import { Fire } from "@phosphor-icons/react";
 
-
 interface StreakCounterProps {
   streak: number;
   size?: "sm" | "md" | "lg";
@@ -25,7 +24,9 @@ export function StreakCounter({ streak, size = "md" }: StreakCounterProps) {
       }`}
     >
       <Fire size={config.icon} weight={isActive ? "fill" : "regular"} />
-      <span className={`font-extrabold ${config.text} font-mono`}>{streak}</span>
+      <span className={`font-extrabold ${config.text} font-mono`}>
+        {streak}
+      </span>
     </div>
   );
 }

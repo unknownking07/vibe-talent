@@ -21,7 +21,12 @@ export interface BrandIconProps {
   "aria-label"?: string;
 }
 
-function svgProps({ size = 24, className, style, "aria-label": ariaLabel }: BrandIconProps) {
+function svgProps({
+  size = 24,
+  className,
+  style,
+  "aria-label": ariaLabel,
+}: BrandIconProps) {
   return {
     width: size,
     height: size,
@@ -43,16 +48,31 @@ export function BotMark(props: BrandIconProps) {
   const eyeR = "M12.7 13a1.6 1.6 0 1 0 3.2 0 1.6 1.6 0 1 0-3.2 0Z";
   return (
     <svg {...svgProps(props)}>
-      <path d="M12 4.5v2.6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path
+        d="M12 4.5v2.6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
       <circle cx="12" cy="3.4" r="1.5" fill="currentColor" />
       {filled ? (
         // evenodd punches the eyes out of the head, so whatever sits behind
         // the icon (accent tile, card surface) shows through — works on any
         // background without needing a second colour.
-        <path d={`${head} ${eyeL} ${eyeR}`} fill="currentColor" fillRule="evenodd" />
+        <path
+          d={`${head} ${eyeL} ${eyeR}`}
+          fill="currentColor"
+          fillRule="evenodd"
+        />
       ) : (
         <>
-          <path d={head} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+          <path
+            d={head}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinejoin="round"
+          />
           <path d={`${eyeL} ${eyeR}`} fill="currentColor" />
         </>
       )}

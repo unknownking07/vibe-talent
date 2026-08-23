@@ -3,7 +3,15 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Link2 as LinkIcon, Send } from "lucide-react";
-import { Check, Code, GithubLogo, Globe, Robot, SealCheck, ShareNetwork } from "@phosphor-icons/react";
+import {
+  Check,
+  Code,
+  GithubLogo,
+  Globe,
+  Robot,
+  SealCheck,
+  ShareNetwork,
+} from "@phosphor-icons/react";
 import Link from "next/link";
 import type { UserWithSocials, BadgeLevel } from "@/lib/types/database";
 import { HireModal } from "@/components/ui/hire-modal";
@@ -17,41 +25,129 @@ interface ProfileSidebarProps {
 
 function getBadgeLabel(level: BadgeLevel): string | null {
   switch (level) {
-    case "diamond": return "Diamond";
-    case "gold": return "Gold";
-    case "silver": return "Silver";
-    case "bronze": return "Bronze";
-    default: return null;
+    case "diamond":
+      return "Diamond";
+    case "gold":
+      return "Gold";
+    case "silver":
+      return "Silver";
+    case "bronze":
+      return "Bronze";
+    default:
+      return null;
   }
 }
 
 function getBadgeBg(level: BadgeLevel): string {
   switch (level) {
-    case "diamond": return "var(--bg-surface-light)";
-    case "gold": return "var(--status-warning-bg)";
-    case "silver": return "var(--bg-surface-light)";
-    case "bronze": return "var(--status-warning-bg)";
-    default: return "var(--bg-surface-light)";
+    case "diamond":
+      return "var(--bg-surface-light)";
+    case "gold":
+      return "var(--status-warning-bg)";
+    case "silver":
+      return "var(--bg-surface-light)";
+    case "bronze":
+      return "var(--status-warning-bg)";
+    default:
+      return "var(--bg-surface-light)";
   }
 }
 
-const FRONTEND = ["react", "next.js", "nextjs", "vue", "angular", "svelte", "html", "css", "tailwind", "tailwindcss", "sass", "bootstrap"];
-const BACKEND = ["node.js", "nodejs", "express", "django", "flask", "fastapi", "rails", "spring", "laravel", "php", "go", "golang", "rust", "java", "c#", ".net", "graphql", "postgresql", "mongodb", "mysql", "redis", "supabase", "firebase", "prisma", "drizzle", "python"];
-const MOBILE = ["react native", "flutter", "swift", "kotlin", "swiftui", "expo"];
-const AI_ML = ["tensorflow", "pytorch", "openai", "langchain", "machine learning", "ai", "ml", "llm", "gpt", "huggingface", "stable diffusion", "anthropic"];
-const WEB3 = ["solidity", "ethereum", "solana", "web3", "smart contracts", "blockchain", "hardhat", "foundry", "rust"];
+const FRONTEND = [
+  "react",
+  "next.js",
+  "nextjs",
+  "vue",
+  "angular",
+  "svelte",
+  "html",
+  "css",
+  "tailwind",
+  "tailwindcss",
+  "sass",
+  "bootstrap",
+];
+const BACKEND = [
+  "node.js",
+  "nodejs",
+  "express",
+  "django",
+  "flask",
+  "fastapi",
+  "rails",
+  "spring",
+  "laravel",
+  "php",
+  "go",
+  "golang",
+  "rust",
+  "java",
+  "c#",
+  ".net",
+  "graphql",
+  "postgresql",
+  "mongodb",
+  "mysql",
+  "redis",
+  "supabase",
+  "firebase",
+  "prisma",
+  "drizzle",
+  "python",
+];
+const MOBILE = [
+  "react native",
+  "flutter",
+  "swift",
+  "kotlin",
+  "swiftui",
+  "expo",
+];
+const AI_ML = [
+  "tensorflow",
+  "pytorch",
+  "openai",
+  "langchain",
+  "machine learning",
+  "ai",
+  "ml",
+  "llm",
+  "gpt",
+  "huggingface",
+  "stable diffusion",
+  "anthropic",
+];
+const WEB3 = [
+  "solidity",
+  "ethereum",
+  "solana",
+  "web3",
+  "smart contracts",
+  "blockchain",
+  "hardhat",
+  "foundry",
+  "rust",
+];
 
 function deriveRole(projects: { tech_stack: string[] }[]): string {
-  const allTech = (projects ?? []).flatMap(p => (p.tech_stack ?? []).map(t => t.toLowerCase()));
+  const allTech = (projects ?? []).flatMap((p) =>
+    (p.tech_stack ?? []).map((t) => t.toLowerCase()),
+  );
   if (allTech.length === 0) return "Builder";
 
-  const hasFrontend = allTech.some(t => FRONTEND.includes(t));
-  const hasBackend = allTech.some(t => BACKEND.includes(t));
-  const hasMobile = allTech.some(t => MOBILE.includes(t));
-  const hasAI = allTech.some(t => AI_ML.includes(t));
-  const hasWeb3 = allTech.some(t => WEB3.includes(t));
+  const hasFrontend = allTech.some((t) => FRONTEND.includes(t));
+  const hasBackend = allTech.some((t) => BACKEND.includes(t));
+  const hasMobile = allTech.some((t) => MOBILE.includes(t));
+  const hasAI = allTech.some((t) => AI_ML.includes(t));
+  const hasWeb3 = allTech.some((t) => WEB3.includes(t));
 
-  const categories = [hasFrontend, hasBackend, hasMobile, hasAI, hasWeb3].filter(Boolean).length;
+  const categories = [
+    hasFrontend,
+    hasBackend,
+    hasMobile,
+    hasAI,
+    hasWeb3,
+  ].filter(Boolean).length;
   if (categories >= 3) return "Vibe Coder";
   if (hasWeb3 && (hasFrontend || hasBackend)) return "Web3 Developer";
   if (hasWeb3) return "Web3 Developer";
@@ -70,9 +166,10 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
   const [shareCardOpen, setShareCardOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
-  const profileUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/profile/${user.username}`
-    : `https://vibetalent.work/profile/${user.username}`;
+  const profileUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/profile/${user.username}`
+      : `https://vibetalent.work/profile/${user.username}`;
 
   const shareText = `Check out @${user.username} on VibeTalent: ${user.streak}-day streak, ${(user.projects ?? []).length} projects shipped!`;
 
@@ -160,19 +257,29 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
                 title={`GitHub ownership verified: @${user.github_username}`}
                 aria-label={`GitHub verified as @${user.github_username}`}
               >
-                <SealCheck weight="fill" size={20} className="text-[var(--verified)]" />
+                <SealCheck
+                  weight="fill"
+                  size={20}
+                  className="text-[var(--verified)]"
+                />
               </span>
             )}
           </h1>
           {user.display_name && (
-            <p className="text-sm font-medium text-[var(--text-muted)] mt-0.5">@{user.username}</p>
+            <p className="text-sm font-medium text-[var(--text-muted)] mt-0.5">
+              @{user.username}
+            </p>
           )}
-          <p className="text-sm font-medium text-[var(--text-muted)] mt-0.5">{deriveRole(user.projects)}</p>
+          <p className="text-sm font-medium text-[var(--text-muted)] mt-0.5">
+            {deriveRole(user.projects)}
+          </p>
         </div>
 
         {/* Bio */}
         {user.bio && (
-          <p className="text-[0.95rem] text-[var(--text-secondary)] font-medium mt-1">{user.bio}</p>
+          <p className="text-[0.95rem] text-[var(--text-secondary)] font-medium mt-1">
+            {user.bio}
+          </p>
         )}
       </div>
 
@@ -197,7 +304,15 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
             aria-label={`${user.username} on X (Twitter)`}
             className="w-10 h-10 flex items-center justify-center rounded-full text-[var(--text-muted)] transition-colors hover:text-[var(--foreground)] hover:bg-[var(--bg-surface-light)]"
           >
-            <svg aria-hidden="true" width={16} height={16} viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            <svg
+              aria-hidden="true"
+              width={16}
+              height={16}
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
           </a>
         )}
         {telegramHandle && (
@@ -270,25 +385,44 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
           <button
             onClick={() => handleShareTwitter()}
             className="flex items-center justify-center gap-1 text-[10px] font-semibold py-1.5 rounded-lg cursor-pointer transition-colors hover:bg-[var(--bg-surface-light)]"
-            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
+            style={{
+              backgroundColor: "var(--bg-surface)",
+              border: "1px solid var(--border-subtle)",
+            }}
           >
-            <svg width={10} height={10} viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            <svg width={10} height={10} viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
             Post
           </button>
           <button
             onClick={() => handleShareLinkedIn()}
             className="flex items-center justify-center gap-1 text-[10px] font-semibold py-1.5 rounded-lg cursor-pointer transition-colors hover:bg-[var(--bg-surface-light)]"
-            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
+            style={{
+              backgroundColor: "var(--bg-surface)",
+              border: "1px solid var(--border-subtle)",
+            }}
           >
-            <svg width={10} height={10} viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            <svg width={10} height={10} viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+            </svg>
             Share
           </button>
           <button
             onClick={() => handleCopyLink()}
             className="flex items-center justify-center gap-1 text-[10px] font-semibold py-1.5 rounded-lg cursor-pointer transition-colors hover:bg-[var(--bg-surface-light)]"
-            style={{ backgroundColor: linkCopied ? "var(--status-success-bg)" : "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
+            style={{
+              backgroundColor: linkCopied
+                ? "var(--status-success-bg)"
+                : "var(--bg-surface)",
+              border: "1px solid var(--border-subtle)",
+            }}
           >
-            {linkCopied ? <Check weight="bold" size={10} className="text-emerald-600" /> : <LinkIcon size={10} />}
+            {linkCopied ? (
+              <Check weight="bold" size={10} className="text-emerald-600" />
+            ) : (
+              <LinkIcon size={10} />
+            )}
             {linkCopied ? "Copied!" : "Link"}
           </button>
         </div>

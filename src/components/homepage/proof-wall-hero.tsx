@@ -51,11 +51,18 @@ export function ProofWallHero({
   // "Builders tracked" used to carry an `accent: true` flag; don't put it back
   // without changing that rule too.
   const stats = [
-    { label: "GitHub-verified days", value: totalBuilderDays.toLocaleString("en-US") },
+    {
+      label: "GitHub-verified days",
+      value: totalBuilderDays.toLocaleString("en-US"),
+    },
     { label: "Longest streak", value: longestStreak, suffix: "days" },
     { label: "Builders tracked", value: buildersTracked },
     { label: "Projects shipped", value: totalProjects },
-    { label: "Avg. streak", value: avgStreak, suffix: avgStreak === 1 ? "day" : "days" },
+    {
+      label: "Avg. streak",
+      value: avgStreak,
+      suffix: avgStreak === 1 ? "day" : "days",
+    },
   ];
 
   return (
@@ -68,9 +75,9 @@ export function ProofWallHero({
           The proof of work isn&apos;t.
         </h1>
         <p className="text-sm sm:text-base text-[var(--text-secondary)] font-medium leading-relaxed lg:pb-2">
-          Every square below is a day a builder shipped, read straight from GitHub. Hover any square
-          for the builder, the day, and the commits. This is what you build here. It&apos;s also what
-          you hire on.
+          Every square below is a day a builder shipped, read straight from
+          GitHub. Hover any square for the builder, the day, and the commits.
+          This is what you build here. It&apos;s also what you hire on.
         </p>
       </div>
 
@@ -108,8 +115,8 @@ export function ProofWallHero({
           ))}
         </div>
         <p className="sr-only">
-          Activity wall: the last {days.length} days of verified GitHub shipping activity from the{" "}
-          {rows.length} most active builders on VibeTalent.
+          Activity wall: the last {days.length} days of verified GitHub shipping
+          activity from the {rows.length} most active builders on VibeTalent.
         </p>
       </div>
 
@@ -130,7 +137,9 @@ export function ProofWallHero({
               <div className="mt-1 text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--foreground)]">
                 {s.value}
                 {s.suffix && (
-                  <span className="ml-1.5 text-base font-bold text-[var(--text-muted)]">{s.suffix}</span>
+                  <span className="ml-1.5 text-base font-bold text-[var(--text-muted)]">
+                    {s.suffix}
+                  </span>
                 )}
               </div>
             </div>

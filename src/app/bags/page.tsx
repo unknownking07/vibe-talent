@@ -207,7 +207,10 @@ async function loadHackathonRoster(): Promise<RosterEntry[]> {
 
   return HACKATHON_PROJECTS.map((project) => ({
     project,
-    builder: byOwner.get(project.githubOwner.toLowerCase()) ?? null,
+    // Winners announced without a repository cannot be matched to anyone.
+    builder: project.githubOwner
+      ? (byOwner.get(project.githubOwner.toLowerCase()) ?? null)
+      : null,
   }));
 }
 
@@ -299,22 +302,26 @@ export default async function BagsPage() {
           </p>
         </header>
 
-        <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4">
-          <StatChip
-            label={launchCount === 1 ? "verified launch" : "verified launches"}
-            value={launchCount}
-          />
-          <StatChip
-            label={board.length === 1 ? "builder" : "builders"}
-            value={board.length}
-          />
-        </div>
-
         <BoardViewToggle
           launchCount={launchCount + unverified.length}
           hackathonCount={roster.length}
           launches={
             <>
+              {/* Inside the panel, not above the toggle: these count launches,
+                  and displayed page-wide they read as totals for a view the
+                  reader may not be looking at. */}
+              <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4">
+                <StatChip
+                  label={
+                    launchCount === 1 ? "verified launch" : "verified launches"
+                  }
+                  value={launchCount}
+                />
+                <StatChip
+                  label={board.length === 1 ? "builder" : "builders"}
+                  value={board.length}
+                />
+              </div>
               {board.length > 0 ? (
                 <section aria-labelledby="board-heading">
                   <h2
@@ -387,6 +394,10 @@ export default async function BagsPage() {
           }
           hackathon={
             <section aria-labelledby="hackathon-heading">
+              <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4">
+                <StatChip label="projects tracked" value={roster.length} />
+                <StatChip label="on VibeTalent" value={matchedHackathon} />
+              </div>
               <h2
                 id="hackathon-heading"
                 className="bags-label mb-2 text-[11px] font-semibold text-[var(--bags-text-faint)]"
@@ -394,13 +405,13 @@ export default async function BagsPage() {
                 The Bags Hackathon cohort
               </h2>
               <p className="mb-4 max-w-xl text-[13px] leading-relaxed text-[var(--bags-text-muted)]">
-                All {roster.length} entries submitted through DoraHacks, matched
-                to a builder wherever a VibeTalent profile is GitHub-verified as
-                the owner of the submitted repository. {matchedHackathon} of
-                them are. Bags runs its own ranking of hackathon apps
-                separately, so this is the submission list rather than every
-                project in the programme. A badge here is not a placement, and
-                says nothing about any token.
+                {roster.length} projects: the {roster.length - 1} entries
+                submitted through DoraHacks, plus winners announced separately.
+                Each is matched to a builder wherever a VibeTalent profile is
+                GitHub-verified as the owner of the submitted repository, and{" "}
+                {matchedHackathon} are. Bags ranks hackathon apps on its own
+                site, so this is not a complete record of the programme. A badge
+                here is not a placement, and says nothing about any token.
               </p>
               <HackathonRoster entries={roster} />
             </section>
@@ -427,8 +438,11 @@ export default async function BagsPage() {
               </h2>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--bags-text-muted)]">
                 Link the wallet you launched from and your tokens show up here
-                and on your profile. Linking takes a signature in your wallet —
-                no transaction, no fee, and no permission to move anything.
+                and on your profile. Signing costs nothing and approves nothing:
+                a message signature cannot move funds. And if you would rather
+                not connect a deployer wallet to a website at all, you can prove
+                it by sending one transaction to your own wallet with a memo we
+                give you, and pasting the signature.
               </p>
               <Link
                 href="/settings#wallet"

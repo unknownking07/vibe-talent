@@ -65,8 +65,12 @@ export function AgentChatPanel({
           <BotMark weight="fill" size={20} className="text-[var(--accent)]" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-[var(--foreground)]">{title}</h1>
-          <p className="text-xs text-[var(--text-muted)] font-semibold">{subtitle}</p>
+          <h1 className="text-xl font-bold text-[var(--foreground)]">
+            {title}
+          </h1>
+          <p className="text-xs text-[var(--text-muted)] font-semibold">
+            {subtitle}
+          </p>
         </div>
       </div>
 
@@ -85,14 +89,25 @@ export function AgentChatPanel({
           // An empty agent bubble only exists transiently while we wait for the
           // first streamed token — render it as the animated "thinking" state.
           const thinking =
-            msg.role === "agent" && msg.content === "" && !msg.builders && isStreaming;
+            msg.role === "agent" &&
+            msg.content === "" &&
+            !msg.builders &&
+            isStreaming;
           return (
             <div key={msg.id}>
-              <ChatMessage role={msg.role} content={msg.content} isThinking={thinking} />
+              <ChatMessage
+                role={msg.role}
+                content={msg.content}
+                isThinking={thinking}
+              />
               {msg.builders && msg.builders.length > 0 && (
                 <div className="ml-11 mt-3 space-y-3">
                   {msg.builders.map((builder, i) => (
-                    <BuilderCard key={builder.username} builder={builder} rank={i + 1} />
+                    <BuilderCard
+                      key={builder.username}
+                      builder={builder}
+                      rank={i + 1}
+                    />
                   ))}
                 </div>
               )}
@@ -118,7 +133,10 @@ export function AgentChatPanel({
                 key={s}
                 onClick={() => send(s)}
                 className="btn-brutal text-xs py-2 px-4 text-left"
-                style={{ backgroundColor: "var(--bg-surface)", boxShadow: "var(--shadow-brutal-sm)" }}
+                style={{
+                  backgroundColor: "var(--bg-surface)",
+                  boxShadow: "var(--shadow-brutal-sm)",
+                }}
               >
                 {s}
               </button>
@@ -128,8 +146,15 @@ export function AgentChatPanel({
       </div>
 
       {/* Input */}
-      <div className="shrink-0 pt-4" style={{ borderTop: "1px solid var(--border-subtle)" }}>
-        <ChatInput onSend={send} disabled={isStreaming} placeholder={placeholder} />
+      <div
+        className="shrink-0 pt-4"
+        style={{ borderTop: "1px solid var(--border-subtle)" }}
+      >
+        <ChatInput
+          onSend={send}
+          disabled={isStreaming}
+          placeholder={placeholder}
+        />
       </div>
     </div>
   );

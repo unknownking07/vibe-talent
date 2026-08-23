@@ -18,12 +18,12 @@ export type FeedItemType =
   | "create"
   | "issue"
   // In-app activity
-  | "project"      // user shipped a project
-  | "streak"       // user logged a daily activity (milestone treatment >= 30d)
-  | "joined"       // new builder
-  | "endorsement"  // user 👍'd someone else's project
-  | "review"       // builder received a star-rating review
-  | "badge";       // user upgraded to a new tier (bronze → silver → gold → diamond)
+  | "project" // user shipped a project
+  | "streak" // user logged a daily activity (milestone treatment >= 30d)
+  | "joined" // new builder
+  | "endorsement" // user 👍'd someone else's project
+  | "review" // builder received a star-rating review
+  | "badge"; // user upgraded to a new tier (bronze → silver → gold → diamond)
 
 /** Tier identifier used for badge events and avatar accent treatment. */
 export type BadgeTier = "bronze" | "silver" | "gold" | "diamond";
@@ -62,8 +62,8 @@ export type FeedItem = {
   target_avatar_url?: string | null;
 
   // Review-event fields
-  rating?: number;             // 1-5
-  review_comment?: string;     // truncated server-side
+  rating?: number; // 1-5
+  review_comment?: string; // truncated server-side
 
   // Badge-event fields
   badge_tier?: BadgeTier;

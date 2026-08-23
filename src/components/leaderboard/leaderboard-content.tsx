@@ -17,7 +17,10 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
   const [activeTab, _setActiveTab] = useState<Tab>("vibe_score");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const setActiveTab = useCallback((v: Tab) => { _setActiveTab(v); setCurrentPage(1); }, []);
+  const setActiveTab = useCallback((v: Tab) => {
+    _setActiveTab(v);
+    setCurrentPage(1);
+  }, []);
   const goToPage = useCallback((page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -60,7 +63,11 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
   const tabs: {
     id: Tab;
     label: string;
-    icon: React.ComponentType<{ size?: number; weight?: "fill" | "duotone" | "regular" | "bold"; className?: string }>;
+    icon: React.ComponentType<{
+      size?: number;
+      weight?: "fill" | "duotone" | "regular" | "bold";
+      className?: string;
+    }>;
   }[] = [
     { id: "vibe_score", label: "Vibe Score", icon: Lightning },
     { id: "streak", label: "Longest Streak", icon: Fire },
@@ -72,7 +79,7 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
   const activePage = currentPage > totalPages ? 1 : currentPage;
   const paginatedUsers = sortedUsers.slice(
     (activePage - 1) * PAGE_SIZE,
-    activePage * PAGE_SIZE
+    activePage * PAGE_SIZE,
   );
 
   return (
@@ -124,25 +131,42 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                   isFirst ? "h-16 w-16 text-lg" : "h-12 w-12 text-sm"
                 }`}
                 style={{
-                  backgroundColor: isFirst ? "var(--accent)" : "var(--bg-inverted)",
+                  backgroundColor: isFirst
+                    ? "var(--accent)"
+                    : "var(--bg-inverted)",
                   border: "1px solid var(--border-hard)",
                 }}
               >
                 {user.avatar_url ? (
-                  <Image src={user.avatar_url} alt={user.username} width={64} height={64} className="w-full h-full object-cover" />
+                  <Image
+                    src={user.avatar_url}
+                    alt={user.username}
+                    width={64}
+                    height={64}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   initials
                 )}
               </div>
-              <div className="text-xs font-mono font-bold text-[var(--text-muted)] mb-1">#{rank}</div>
+              <div className="text-xs font-mono font-bold text-[var(--text-muted)] mb-1">
+                #{rank}
+              </div>
               <div className="font-bold uppercase text-[var(--foreground)] text-sm flex items-center justify-center gap-1">
                 {user.display_name || `@${user.username}`}
                 {user.github_username && (
-                  <SealCheck weight="fill" size={14} className="text-[var(--verified)] shrink-0" aria-label="GitHub verified" />
+                  <SealCheck
+                    weight="fill"
+                    size={14}
+                    className="text-[var(--verified)] shrink-0"
+                    aria-label="GitHub verified"
+                  />
                 )}
               </div>
               {user.display_name && (
-                <div className="text-xs font-medium text-[var(--text-muted)]">@{user.username}</div>
+                <div className="text-xs font-medium text-[var(--text-muted)]">
+                  @{user.username}
+                </div>
               )}
               <div className="mt-2">
                 <BadgeDisplay level={user.badge_level} size="sm" />
@@ -165,14 +189,24 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
         <table className="w-full">
           <thead>
             <tr style={{ backgroundColor: "var(--bg-inverted)" }}>
-              <th className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-white">Rank</th>
-              <th className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-white">Builder</th>
-              <th className="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-white">Vibe Score</th>
+              <th className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-white">
+                Rank
+              </th>
+              <th className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-white">
+                Builder
+              </th>
+              <th className="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-white">
+                Vibe Score
+              </th>
               <th className="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-white hidden sm:table-cell">
                 {isStreakBoard ? "Longest" : "Streak"}
               </th>
-              <th className="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-white hidden sm:table-cell">Projects</th>
-              <th className="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-white">Badge</th>
+              <th className="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-white hidden sm:table-cell">
+                Projects
+              </th>
+              <th className="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-white">
+                Badge
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -184,15 +218,29 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                   key={user.id}
                   className="bg-[var(--bg-surface)] border-b border-[var(--border-subtle)] last:border-b-0 transition-colors hover:bg-[var(--bg-surface-light)]"
                 >
-                  <td className="px-3 sm:px-4 py-3 text-sm font-bold font-mono text-[var(--text-muted)]">#{rank}</td>
+                  <td className="px-3 sm:px-4 py-3 text-sm font-bold font-mono text-[var(--text-muted)]">
+                    #{rank}
+                  </td>
                   <td className="px-3 sm:px-4 py-3">
-                    <Link href={`/profile/${user.username}`} className="flex items-center gap-3 hover:text-[var(--accent)] transition-colors">
+                    <Link
+                      href={`/profile/${user.username}`}
+                      className="flex items-center gap-3 hover:text-[var(--accent)] transition-colors"
+                    >
                       <div
                         className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white shrink-0 overflow-hidden"
-                        style={{ backgroundColor: "var(--bg-inverted)", border: "1px solid var(--border-hard)" }}
+                        style={{
+                          backgroundColor: "var(--bg-inverted)",
+                          border: "1px solid var(--border-hard)",
+                        }}
                       >
                         {user.avatar_url ? (
-                          <Image src={user.avatar_url} alt={user.username} width={64} height={64} className="w-full h-full object-cover" />
+                          <Image
+                            src={user.avatar_url}
+                            alt={user.username}
+                            width={64}
+                            height={64}
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           initials
                         )}
@@ -201,11 +249,18 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                         <span className="font-bold text-sm flex items-center gap-1 truncate">
                           {user.display_name || `@${user.username}`}
                           {user.github_username && (
-                            <SealCheck weight="fill" size={14} className="text-[var(--verified)] shrink-0" aria-label="GitHub verified" />
+                            <SealCheck
+                              weight="fill"
+                              size={14}
+                              className="text-[var(--verified)] shrink-0"
+                              aria-label="GitHub verified"
+                            />
                           )}
                         </span>
                         {user.display_name && (
-                          <span className="text-xs font-medium text-[var(--text-muted)] truncate">@{user.username}</span>
+                          <span className="text-xs font-medium text-[var(--text-muted)] truncate">
+                            @{user.username}
+                          </span>
                         )}
                       </div>
                     </Link>

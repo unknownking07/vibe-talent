@@ -33,7 +33,11 @@ export function useAgentChat(greeting: string) {
     async (text: string) => {
       if (isStreaming) return;
 
-      const userMsg: AgentChatMessage = { id: `u-${Date.now()}`, role: "user", content: text };
+      const userMsg: AgentChatMessage = {
+        id: `u-${Date.now()}`,
+        role: "user",
+        content: text,
+      };
       const agentId = `a-${Date.now()}`;
 
       // Build the API payload BEFORE mutating state: full history + this turn,
@@ -46,7 +50,11 @@ export function useAgentChat(greeting: string) {
         }));
 
       // Optimistically render the user message + an empty agent bubble to stream into.
-      setMessages((prev) => [...prev, userMsg, { id: agentId, role: "agent", content: "" }]);
+      setMessages((prev) => [
+        ...prev,
+        userMsg,
+        { id: agentId, role: "agent", content: "" },
+      ]);
       setIsStreaming(true);
 
       let content = "";
@@ -62,8 +70,8 @@ export function useAgentChat(greeting: string) {
                   builders: builders.length ? builders : undefined,
                   includeInHistory,
                 }
-              : m
-          )
+              : m,
+          ),
         );
 
       try {
@@ -74,7 +82,9 @@ export function useAgentChat(greeting: string) {
         });
 
         if (!res.ok || !res.body) {
-          const data = (await res.json().catch(() => null)) as { error?: string } | null;
+          const data = (await res.json().catch(() => null)) as {
+            error?: string;
+          } | null;
           content = data?.error || "Something went wrong. Please try again.";
           includeInHistory = false;
           apply();
@@ -87,7 +97,9 @@ export function useAgentChat(greeting: string) {
         for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
-          const decoded = decodeAgentEvents(rest + decoder.decode(value, { stream: true }));
+          const decoded = decodeAgentEvents(
+            rest + decoder.decode(value, { stream: true }),
+          );
           rest = decoded.rest;
           for (const event of decoded.events) {
             if (event.type === "token") {
@@ -105,7 +117,9 @@ export function useAgentChat(greeting: string) {
                 ...builders.filter((b) => !incoming.has(b.username)),
               ];
             } else if (event.type === "error") {
-              content = content ? `${content}\n\n${event.message}` : event.message;
+              content = content
+                ? `${content}\n\n${event.message}`
+                : event.message;
               includeInHistory = false;
             }
           }
@@ -128,7 +142,7 @@ export function useAgentChat(greeting: string) {
         setStatus(null);
       }
     },
-    [messages, isStreaming]
+    [messages, isStreaming],
   );
 
   return { messages, send, isStreaming, status };

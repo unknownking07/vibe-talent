@@ -1,16 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CircleNotch, SealCheck, Copy, Check } from "@phosphor-icons/react";
+
+/** How often to look for the builder's transaction, in ms. */
+const POLL_INTERVAL_MS = 5_000;
+
+/** Stop after this long so a forgotten tab is not polling an RPC forever. */
+const POLL_LIMIT = 120;
 
 /**
  * The fallback ownership proof, for builders who will not connect a deployer
  * wallet to a website.
  *
- * Collapsed by default and worded as the second option throughout: signing a
- * message cannot move funds and broadcasting a transaction can, so the
- * connect-and-sign path above stays the recommendation. Someone who opens this
- * has already decided not to take it.
+ * Placed second on purpose: signing a message cannot move funds and
+ * broadcasting a transaction can, so connect-and-sign stays the recommendation
+ * and someone opening this has already declined it.
+ *
+ * The flow is watched rather than pasted. The builder names the wallet, sends
+ * one transaction to themselves carrying our memo, and this polls until it
+ * appears. Naming the wallet grants nothing — the proof is still a signed
+ * transaction carrying a challenge only this account was issued.
  */
 export function VerifyByTransfer({
   onLinked,
@@ -18,12 +28,18 @@ export function VerifyByTransfer({
   onLinked?: (address: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [address, setAddress] = useState("");
   const [memo, setMemo] = useState<string | null>(null);
-  const [signature, setSignature] = useState("");
+  const [watching, setWatching] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+  const [manualSignature, setManualSignature] = useState("");
+  const [showManual, setShowManual] = useState(false);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [linked, setLinked] = useState<string | null>(null);
+
+  const linkedRef = useRef(false);
 
   async function start() {
     setBusy(true);
@@ -36,6 +52,7 @@ export function VerifyByTransfer({
         return;
       }
       setMemo(data.memo);
+      setWatching(true);
     } catch {
       setError("Couldn't start verification. Please try again.");
     } finally {
@@ -43,28 +60,81 @@ export function VerifyByTransfer({
     }
   }
 
-  async function verify() {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/wallet/verify-transfer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ signature: signature.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
+  /** One look for the proof. Returns true once the wallet is linked. */
+  const attempt = useCallback(
+    async (payload: {
+      address?: string;
+      signature?: string;
+    }): Promise<boolean> => {
+      try {
+        const res = await fetch("/api/wallet/verify-transfer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          linkedRef.current = true;
+          setLinked(data.address);
+          setWatching(false);
+          onLinked?.(data.address);
+          return true;
+        }
+
+        // 404 is "not there yet", which is the normal state while waiting.
+        if (res.status === 404) return false;
+
         setError(data.error ?? "Couldn't verify that transaction.");
+        // Anything else is terminal: an expired challenge, a wallet already
+        // linked elsewhere, a spent verification. Polling on would send
+        // requests that cannot succeed while a spinner claims we are waiting.
+        setWatching(false);
+        return false;
+      } catch {
+        setError(
+          "Couldn't reach VibeTalent. Check your connection and try again.",
+        );
+        return false;
+      }
+    },
+    [onLinked],
+  );
+
+  // Poll while watching. Cleared on unmount so a closed panel stops calling.
+  useEffect(() => {
+    if (!watching || !address.trim()) return;
+
+    let cancelled = false;
+    // Counted outside React state: an updater must stay pure, and React may run
+    // one more than once.
+    let ticks = 0;
+    // A scan can outlast its own interval, and setInterval would start another
+    // on top. In flight means skip this tick, so one session never has two
+    // scans running at once.
+    let inFlight = false;
+
+    const timer = setInterval(async () => {
+      if (cancelled || linkedRef.current || inFlight) return;
+      ticks += 1;
+      setAttempts(ticks);
+      if (ticks >= POLL_LIMIT) {
+        setWatching(false);
         return;
       }
-      setLinked(data.address);
-      onLinked?.(data.address);
-    } catch {
-      setError("Couldn't verify that transaction. Please try again.");
-    } finally {
-      setBusy(false);
-    }
-  }
+      inFlight = true;
+      try {
+        await attempt({ address: address.trim() });
+      } finally {
+        inFlight = false;
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [watching, address, attempt]);
 
   async function copyMemo() {
     if (!memo) return;
@@ -115,17 +185,58 @@ export function VerifyByTransfer({
         className="text-xs leading-relaxed"
         style={{ color: "var(--text-secondary)" }}
       >
-        Prove the wallet without connecting it. You send a transaction{" "}
-        <strong className="text-[var(--foreground)]">to your own wallet</strong>{" "}
-        carrying the memo below, then paste the signature. Nothing is sent to
-        VibeTalent, and no approval is granted.
+        Prove the wallet without ever connecting it. Your wallet never talks to
+        this site and we never ask it for anything — you send one transaction
+        from wherever you normally sign, and we read it off the chain.
       </p>
+
+      <ol
+        className="mt-3 flex flex-col gap-1.5 text-[11px] leading-relaxed"
+        style={{ color: "var(--text-muted)" }}
+      >
+        <li>
+          <strong className="text-[var(--text-secondary)]">1.</strong> Tell us
+          which wallet you want to prove.
+        </li>
+        <li>
+          <strong className="text-[var(--text-secondary)]">2.</strong> From that
+          wallet, send any amount{" "}
+          <strong className="text-[var(--text-secondary)]">to itself</strong>{" "}
+          with the memo we give you attached. Nothing comes to VibeTalent and no
+          approval is granted.
+        </li>
+        <li>
+          <strong className="text-[var(--text-secondary)]">3.</strong> We watch
+          for it and verify you automatically.
+        </li>
+      </ol>
+
+      <label
+        htmlFor="prove-address"
+        className="mt-4 block text-[11px] font-semibold"
+        style={{ color: "var(--text-secondary)" }}
+      >
+        Wallet address
+      </label>
+      <input
+        id="prove-address"
+        value={address}
+        onChange={(e) => setAddress(e.target.value)}
+        placeholder="4EvnGaySWW6fhmQeTbjb…"
+        spellCheck={false}
+        disabled={Boolean(memo)}
+        className="mt-1 w-full rounded-lg px-3 py-2 font-mono text-[11px] text-[var(--foreground)] disabled:opacity-60"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          border: "1px solid var(--border-subtle)",
+        }}
+      />
 
       {!memo ? (
         <button
           type="button"
           onClick={start}
-          disabled={busy}
+          disabled={busy || !address.trim()}
           className="btn-brutal btn-brutal-dark mt-3 inline-flex items-center gap-2 px-4 py-2 text-xs disabled:opacity-50"
         >
           {busy ? <CircleNotch size={13} className="animate-spin" /> : null}
@@ -154,41 +265,69 @@ export function VerifyByTransfer({
           </div>
 
           <p
-            className="mt-2 text-[11px]"
+            role="status"
+            aria-live="polite"
+            className="mt-2 flex items-center gap-2 text-[11px]"
             style={{ color: "var(--text-muted)" }}
           >
-            Valid for 15 minutes. Send from the wallet you want to prove.
+            {watching ? (
+              <>
+                <CircleNotch size={12} className="animate-spin" />
+                Watching for your transaction. Valid for 15 minutes.
+              </>
+            ) : (
+              <>Stopped watching. Paste the signature below, or start again.</>
+            )}
           </p>
 
-          <label
-            htmlFor="transfer-signature"
-            className="mt-3 block text-[11px] font-semibold"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            Transaction signature
-          </label>
-          <input
-            id="transfer-signature"
-            value={signature}
-            onChange={(e) => setSignature(e.target.value)}
-            placeholder="5j7s6NiJS3JAkv…"
-            spellCheck={false}
-            className="mt-1 w-full rounded-lg px-3 py-2 font-mono text-[11px] text-[var(--foreground)]"
-            style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "1px solid var(--border-subtle)",
-            }}
-          />
-
-          <button
-            type="button"
-            onClick={verify}
-            disabled={busy || !signature.trim()}
-            className="btn-brutal btn-brutal-dark mt-3 inline-flex items-center gap-2 px-4 py-2 text-xs disabled:opacity-50"
-          >
-            {busy ? <CircleNotch size={13} className="animate-spin" /> : null}
-            Verify ownership
-          </button>
+          {!showManual ? (
+            <button
+              type="button"
+              onClick={() => setShowManual(true)}
+              className="mt-2 text-[11px] font-semibold underline underline-offset-2"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Already sent it? Paste the signature instead
+            </button>
+          ) : (
+            <>
+              <label
+                htmlFor="transfer-signature"
+                className="mt-3 block text-[11px] font-semibold"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Transaction signature
+              </label>
+              <input
+                id="transfer-signature"
+                value={manualSignature}
+                onChange={(e) => setManualSignature(e.target.value)}
+                placeholder="5j7s6NiJS3JAkv…"
+                spellCheck={false}
+                className="mt-1 w-full rounded-lg px-3 py-2 font-mono text-[11px] text-[var(--foreground)]"
+                style={{
+                  backgroundColor: "var(--bg-surface)",
+                  border: "1px solid var(--border-subtle)",
+                }}
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  setBusy(true);
+                  setError(null);
+                  await attempt({ signature: manualSignature.trim() });
+                  setBusy(false);
+                }}
+                disabled={busy || !manualSignature.trim()}
+                className="btn-brutal btn-brutal-dark mt-3 inline-flex items-center gap-2 px-4 py-2 text-xs disabled:opacity-50"
+              >
+                {busy ? (
+                  <CircleNotch size={13} className="animate-spin" />
+                ) : null}
+                Verify ownership
+              </button>
+            </>
+          )}
         </>
       )}
 
@@ -198,6 +337,15 @@ export function VerifyByTransfer({
           style={{ color: "var(--status-error-text)" }}
         >
           {error}
+        </p>
+      ) : null}
+
+      {attempts > 0 && watching ? (
+        <p
+          className="mt-2 text-[10px]"
+          style={{ color: "var(--text-muted-soft)" }}
+        >
+          Checked {attempts} {attempts === 1 ? "time" : "times"}.
         </p>
       ) : null}
     </div>

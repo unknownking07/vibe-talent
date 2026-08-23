@@ -20,7 +20,9 @@ type WeeklyApiRow = {
 
 export function LeaderboardTabs({ users }: { users: UserWithSocials[] }) {
   const [tab, setTab] = useState<Tab>("week");
-  const [weeklyRows, setWeeklyRows] = useState<ActiveBuilderRowProps[] | null>(null);
+  const [weeklyRows, setWeeklyRows] = useState<ActiveBuilderRowProps[] | null>(
+    null,
+  );
   const [weeklyError, setWeeklyError] = useState<string | null>(null);
 
   // Fetch once on mount and keep the data in parent state, so toggling tabs
@@ -51,12 +53,18 @@ export function LeaderboardTabs({ users }: { users: UserWithSocials[] }) {
         if (!cancelled) setWeeklyError((e as Error).message);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
     <div>
-      <div className="inline-flex rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-1 mb-4" role="tablist" aria-label="Leaderboard range">
+      <div
+        className="inline-flex rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-1 mb-4"
+        role="tablist"
+        aria-label="Leaderboard range"
+      >
         <button
           role="tab"
           aria-selected={tab === "week"}
@@ -75,7 +83,11 @@ export function LeaderboardTabs({ users }: { users: UserWithSocials[] }) {
         </button>
       </div>
 
-      {tab === "week" ? <WeeklyTab rows={weeklyRows} error={weeklyError} /> : <AllTimeTab users={users} />}
+      {tab === "week" ? (
+        <WeeklyTab rows={weeklyRows} error={weeklyError} />
+      ) : (
+        <AllTimeTab users={users} />
+      )}
     </div>
   );
 }

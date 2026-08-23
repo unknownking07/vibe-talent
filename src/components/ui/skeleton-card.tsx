@@ -9,7 +9,10 @@ export function SkeletonCard() {
       }}
     >
       <div className="flex items-start gap-4">
-        <div className="skeleton w-12 h-12 shrink-0" style={{ borderRadius: 999 }} />
+        <div
+          className="skeleton w-12 h-12 shrink-0"
+          style={{ borderRadius: 999 }}
+        />
         <div className="flex-1 space-y-3">
           <div className="skeleton h-5 w-32" />
           <div className="skeleton h-4 w-full" />

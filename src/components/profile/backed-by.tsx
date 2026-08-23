@@ -9,7 +9,9 @@ import { VOUCH } from "@/lib/vibe-config";
 
 // ~60 web3 chunks — only pulled in when the vouch action is actually shown.
 const VouchButton = dynamic(() =>
-  import("@/components/token/vouch-button").then((m) => ({ default: m.VouchButton })),
+  import("@/components/token/vouch-button").then((m) => ({
+    default: m.VouchButton,
+  })),
 );
 
 type VouchRow = {
@@ -79,12 +81,14 @@ export async function BackedBy({
         .in("id", [...byVoucher.keys()]);
 
       const userMap = new Map(
-        ((users ?? []) as Array<{
-          id: string;
-          username: string;
-          display_name: string | null;
-          avatar_url: string | null;
-        }>).map((u) => [u.id, u]),
+        (
+          (users ?? []) as Array<{
+            id: string;
+            username: string;
+            display_name: string | null;
+            avatar_url: string | null;
+          }>
+        ).map((u) => [u.id, u]),
       );
 
       backers = [...byVoucher.entries()]
@@ -130,7 +134,10 @@ export async function BackedBy({
 
       {backers.length > 0 ? (
         <>
-          <p className="mt-2 text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+          <p
+            className="mt-2 text-xs font-medium"
+            style={{ color: "var(--text-secondary)" }}
+          >
             <strong className="font-mono text-[var(--foreground)]">
               {formatTokenCount(totalTokens)} $VIBE
             </strong>{" "}
@@ -154,7 +161,10 @@ export async function BackedBy({
                   <span
                     aria-hidden="true"
                     className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold"
-                    style={{ backgroundColor: "var(--bg-pill)", color: "var(--text-secondary)" }}
+                    style={{
+                      backgroundColor: "var(--bg-pill)",
+                      color: "var(--text-secondary)",
+                    }}
                   >
                     {(b.displayName || b.username).charAt(0).toUpperCase()}
                   </span>
@@ -176,9 +186,13 @@ export async function BackedBy({
           </ul>
         </>
       ) : (
-        <p className="mt-2 text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-          Nobody has backed @{builderUsername} yet. Burn $VIBE to put real conviction behind them —
-          your name and the amount show here permanently. From ${VOUCH.minUsd}.
+        <p
+          className="mt-2 text-xs leading-relaxed"
+          style={{ color: "var(--text-secondary)" }}
+        >
+          Nobody has backed @{builderUsername} yet. Burn $VIBE to put real
+          conviction behind them — your name and the amount show here
+          permanently. From ${VOUCH.minUsd}.
         </p>
       )}
 

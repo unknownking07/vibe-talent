@@ -55,9 +55,7 @@ function AchievementsGridImpl({
                   key={a.id}
                   achievement={a}
                   username={username}
-                  onCelebrate={
-                    a.earned ? () => onCelebrate(a) : undefined
-                  }
+                  onCelebrate={a.earned ? () => onCelebrate(a) : undefined}
                 />
               ))}
             </div>

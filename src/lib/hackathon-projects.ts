@@ -13,16 +13,36 @@
 // only ever tied to a project whose repository they are already verified
 // against.
 //
-// A badge from this list says "this builder entered the Bags Hackathon". It
-// says nothing about how they placed, and nothing about any token.
+// WHAT THIS LIST IS NOT: the complete programme. There is no single source for
+// that. DoraHacks holds the 45 submissions and is the only one carrying
+// repository links, so it is the only one that can be joined to a builder.
+// Winners were announced individually on X with no repository, and Bags runs
+// its own "Top 100" app ranking that is client-rendered with no API. Anything
+// claiming to be the full cohort would be guessing, so this is a curated list
+// that names its sources and says what it is missing.
 //
-// Source: https://dorahacks.io/hackathon/the-bags-hackathon/buidl
+// A badge from this list says "this project was in the Bags Hackathon". It says
+// nothing about any token, and only entries marked `winner` placed.
+//
+// Sources:
+//   https://dorahacks.io/hackathon/the-bags-hackathon/buidl  (45 submissions)
+//   https://x.com/BagsHackathon                              (winners)
 
 export type HackathonProject = {
   name: string;
-  /** GitHub owner from the submitted repository URL. The join key. */
-  githubOwner: string;
+  /**
+   * GitHub owner from the submitted repository URL, and the only join key that
+   * ties a project to a builder here.
+   *
+   * Null for entries that did not come through DoraHacks. Winners were
+   * announced on X without a repository link, so they can be listed but not
+   * matched, and a null here means exactly that: present in the programme,
+   * not attributable to a VibeTalent profile.
+   */
+  githubOwner: string | null;
   track: string;
+  /** Announced as a winner by @BagsHackathon. */
+  winner?: true;
 };
 
 export const HACKATHON_PROJECTS: readonly HackathonProject[] = [
@@ -95,6 +115,14 @@ export const HACKATHON_PROJECTS: readonly HackathonProject[] = [
   { name: "BagsBlitz", githubOwner: "Artem1981777", track: "AI Agents" },
   { name: "BagsShield", githubOwner: "kaminovaglobal", track: "Privacy" },
   { name: "BagsFuel", githubOwner: "minalkharat-cmd", track: "Claude Skills" },
+
+  // ── Winners announced by @BagsHackathon, not present in the DoraHacks list ──
+  //
+  // The submission list and the prize list are different things: winners were
+  // announced individually on X, and at least one never appeared on DoraHacks
+  // at all. Listing them here keeps the roster honest about the programme;
+  // they carry no githubOwner, so they are shown and never matched.
+  { name: "VaultBags", githubOwner: null, track: "Fee Sharing", winner: true },
 ] as const;
 
 /**
@@ -105,6 +133,7 @@ export const HACKATHON_PROJECTS: readonly HackathonProject[] = [
  */
 const BY_OWNER = new Map<string, HackathonProject[]>();
 for (const project of HACKATHON_PROJECTS) {
+  if (!project.githubOwner) continue;
   const key = project.githubOwner.toLowerCase();
   const existing = BY_OWNER.get(key);
   if (existing) existing.push(project);

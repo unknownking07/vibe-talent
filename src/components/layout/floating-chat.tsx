@@ -94,15 +94,29 @@ export function FloatingChat() {
         {open && (
           <div className="vt-fab-menu" role="menu" aria-label="Chat options">
             <div className="vt-fab-head">How can we help?</div>
-            <Link href="/support" className="vt-fab-item" role="menuitem" onClick={() => setOpen(false)}>
-              <span className="vt-fab-ico"><Lifebuoy weight="fill" size={18} /></span>
+            <Link
+              href="/support"
+              className="vt-fab-item"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+            >
+              <span className="vt-fab-ico">
+                <Lifebuoy weight="fill" size={18} />
+              </span>
               <span>
                 <span className="vt-fab-title">Get help</span>
                 <span className="vt-fab-sub">Questions &amp; support</span>
               </span>
             </Link>
-            <Link href="/agent/chat" className="vt-fab-item" role="menuitem" onClick={() => setOpen(false)}>
-              <span className="vt-fab-ico"><Search size={18} /></span>
+            <Link
+              href="/agent/chat"
+              className="vt-fab-item"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+            >
+              <span className="vt-fab-ico">
+                <Search size={18} />
+              </span>
               <span>
                 <span className="vt-fab-title">Find talent</span>
                 <span className="vt-fab-sub">AI-matched builders</span>

@@ -6,6 +6,9 @@ import { HeroCTAClient } from "./hero-cta-client";
 // every visit then pays the full origin round-trip. The brief CTA label swap
 // for logged-in users on hard refresh is an acceptable cost for letting the
 // page render from edge cache.
-export function HeroCTA(props: { className?: string; style?: React.CSSProperties }) {
+export function HeroCTA(props: {
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   return <HeroCTAClient {...props} initialIsLoggedIn={false} />;
 }

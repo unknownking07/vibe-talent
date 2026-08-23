@@ -1,6 +1,10 @@
 import { unstable_cache } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
-import { fetchPromotions, enrichPromotions, type EnrichedPromotion } from "@/lib/featured-promotions";
+import {
+  fetchPromotions,
+  enrichPromotions,
+  type EnrichedPromotion,
+} from "@/lib/featured-promotions";
 import { PromoBillboardClient } from "./promo-billboard-client";
 
 // Server wrapper: resolves the active on-chain promotions during SSR so the

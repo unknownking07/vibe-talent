@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { checkRateLimit, walletLinkLimiter } from "@/lib/rate-limit";
+import {
+  checkRateLimit,
+  walletLinkLimiter,
+  walletWatchLimiter,
+} from "@/lib/rate-limit";
 import {
   localConsumeNonce,
+  localPeekNonce,
   localStoreNonce,
   isLocalWalletNonceStoreEnabled,
 } from "@/lib/wallet-link";
@@ -12,6 +17,7 @@ import {
   transferNonceKey,
   transferMemo,
   verifyTransferProof,
+  findTransferProof,
   TRANSFER_NONCE_TTL_SECONDS,
 } from "@/lib/wallet-transfer-proof";
 
@@ -22,13 +28,20 @@ import {
 // for why this is memo-bound and self-directed, and why signing a message
 // remains the recommended route.
 
-/** Read the challenge for this user, consuming it when `consume` is set. */
+/**
+ * Read the stored challenge, consuming it when `consume` is set.
+ *
+ * The watched flow polls, so it must be able to look without spending. Only the
+ * final step consumes, and the caller MUST check what consumption returned:
+ * GETDEL is the lock, and a null there means another request already spent this
+ * challenge.
+ */
 async function readNonce(
   key: string,
   consume: boolean,
 ): Promise<string | null> {
   if (isLocalWalletNonceStoreEnabled()) {
-    return consume ? localConsumeNonce(key) : null;
+    return consume ? localConsumeNonce(key) : localPeekNonce(key);
   }
 
   const url = process.env.UPSTASH_REDIS_REST_URL;
@@ -36,8 +49,6 @@ async function readNonce(
   if (!url || !token) return null;
 
   const redis = new Redis({ url, token });
-  // GETDEL keeps consumption atomic, so two concurrent submissions cannot both
-  // satisfy one challenge.
   return consume
     ? await redis.getdel<string>(key)
     : await redis.get<string>(key);
@@ -66,11 +77,26 @@ export async function GET() {
     );
   }
 
-  const nonce = crypto.randomUUID();
+  // The memo names the account, so it is built where the account is known and
+  // stored whole. Falling back to the id keeps the challenge issuable for an
+  // account that has not picked a username yet.
+  // Read through the session client, not the admin one: RLS is the gate, and
+  // an admin read filtered by user.id would be an app-layer check standing in
+  // for it.
+  const { data: profile } = await authClient
+    .from("users")
+    .select("username")
+    .eq("id", user.id)
+    .maybeSingle();
+  const handle = (
+    profile as { username?: string | null } | null
+  )?.username?.trim();
+
+  const memo = transferMemo(crypto.randomUUID(), handle || user.id.slice(0, 8));
   const key = transferNonceKey(user.id);
 
   if (isLocalWalletNonceStoreEnabled()) {
-    localStoreNonce(key, nonce);
+    localStoreNonce(key, memo, TRANSFER_NONCE_TTL_SECONDS);
   } else {
     const url = process.env.UPSTASH_REDIS_REST_URL;
     const token = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -84,7 +110,7 @@ export async function GET() {
     }
     try {
       const redis = new Redis({ url, token });
-      await redis.set(key, nonce, { ex: TRANSFER_NONCE_TTL_SECONDS });
+      await redis.set(key, memo, { ex: TRANSFER_NONCE_TTL_SECONDS });
     } catch {
       console.error("Wallet transfer nonce: Redis write failed");
       return NextResponse.json(
@@ -96,14 +122,14 @@ export async function GET() {
 
   return NextResponse.json(
     {
-      memo: transferMemo(nonce),
+      memo,
       expiresInSeconds: TRANSFER_NONCE_TTL_SECONDS,
       // Stated by the server so the UI cannot quietly describe a different
       // action from the one being verified.
       instructions:
         "Send any amount to your own wallet from the wallet you want to prove, " +
-        "with this exact memo attached. Then paste the transaction signature here. " +
-        "Nothing is sent to VibeTalent and no approval is granted.",
+        "with this exact memo attached. We watch for it and verify you " +
+        "automatically. Nothing is sent to VibeTalent and no approval is granted.",
     },
     { headers: { "Cache-Control": "no-store" } },
   );
@@ -122,8 +148,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Polling and submitting are different shapes of traffic, so they draw on
+    // different budgets: a watched flow asks repeatedly by design.
+    const { signature, address } = (await req.json()) ?? {};
+    const hasSignature =
+      typeof signature === "string" && Boolean(signature.trim());
+    const hasAddress = typeof address === "string" && Boolean(address.trim());
+
+    // Keyed off the branch that actually runs below. Picking on `hasAddress`
+    // let a signature submission carry any non-empty address along and draw on
+    // the far larger polling budget.
     const { success } = await checkRateLimit(
-      walletLinkLimiter,
+      hasSignature ? walletLinkLimiter : walletWatchLimiter,
       `transfer-verify:${user.id}`,
     );
     if (!success) {
@@ -133,10 +169,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { signature } = (await req.json()) ?? {};
-    if (typeof signature !== "string" || !signature.trim()) {
+    // `address` is the watched flow: the builder names the wallet and we look
+    // for the proof. `signature` is the manual fallback for anyone whose
+    // transaction the RPC will not surface.
+    //
+    // Naming an address grants nothing. The proof is still a signed transaction
+    // carrying a challenge only this account was issued.
+    if (!hasSignature && !hasAddress) {
       return NextResponse.json(
-        { error: "Missing transaction signature." },
+        {
+          error:
+            "Send either your wallet address or the transaction signature.",
+        },
         { status: 400 },
       );
     }
@@ -154,10 +198,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = await verifyTransferProof(
-      signature.trim(),
-      transferMemo(pending),
-    );
+    // `pending` is the memo itself, stored at issue time.
+    const expectedMemo = pending;
+    const result = hasSignature
+      ? await verifyTransferProof(signature.trim(), expectedMemo)
+      : await findTransferProof(address.trim(), expectedMemo);
     if (!result.ok) {
       return NextResponse.json(
         { error: result.error },
@@ -165,9 +210,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Proof accepted, so the challenge is spent. Consumed before the write, so
-    // a failure below cannot leave a reusable challenge behind.
-    await readNonce(key, true);
+    // Proof accepted, so the challenge is spent. This is also the lock: GETDEL
+    // returns the value only to the first caller, so two concurrent requests
+    // that both verified the same transaction cannot both go on to link. Only
+    // reached on success — a 404 above returns with the challenge intact, which
+    // is what lets the client poll.
+    const consumed = await readNonce(key, true);
+    if (!consumed) {
+      return NextResponse.json(
+        { error: "That verification was already used. Please start again." },
+        { status: 409 },
+      );
+    }
 
     const wallet = result.wallet;
     const sb = createAdminClient();

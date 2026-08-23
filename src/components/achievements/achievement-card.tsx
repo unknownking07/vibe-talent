@@ -11,8 +11,13 @@ interface AchievementCardProps {
   onCelebrate?: () => void;
 }
 
-export function AchievementCard({ achievement, username, onCelebrate }: AchievementCardProps) {
-  const { id, title, description, threshold, current, earned, percent, unit } = achievement;
+export function AchievementCard({
+  achievement,
+  username,
+  onCelebrate,
+}: AchievementCardProps) {
+  const { id, title, description, threshold, current, earned, percent, unit } =
+    achievement;
   const showProgressNumbers = threshold > 1;
   const art = getBadgeArt(id);
   // Defensive clamp — `percent` is already clamped at compute time, but
@@ -141,7 +146,11 @@ export function AchievementCard({ achievement, username, onCelebrate }: Achievem
             <span style={{ color: "var(--text-secondary)" }}>
               {current.toLocaleString()} / {threshold.toLocaleString()} {unit}
             </span>
-            <span style={{ color: earned ? "var(--foreground)" : "var(--text-muted)" }}>
+            <span
+              style={{
+                color: earned ? "var(--foreground)" : "var(--text-muted)",
+              }}
+            >
               {safePercent}%
             </span>
           </div>

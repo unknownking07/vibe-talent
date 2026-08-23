@@ -34,13 +34,17 @@ export function PrivacyPreferences() {
         .select("share_private_activity")
         .eq("id", user.id)
         .single()
-        .then(({ data }: { data: { share_private_activity?: boolean } | null }) => {
-          if (cancelled) return;
-          setEnabled(Boolean(data?.share_private_activity));
-          setLoading(false);
-        });
+        .then(
+          ({ data }: { data: { share_private_activity?: boolean } | null }) => {
+            if (cancelled) return;
+            setEnabled(Boolean(data?.share_private_activity));
+            setLoading(false);
+          },
+        );
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleToggle = async () => {
@@ -54,7 +58,9 @@ export function PrivacyPreferences() {
     setError(false);
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("not signed in");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: updateError } = await (supabase as any)
@@ -106,11 +112,11 @@ export function PrivacyPreferences() {
           </div>
           <div className="text-xs text-[var(--text-muted)] mt-1 leading-relaxed">
             When ON, your private-repo activity shows up in the public feed as
-            generic events (e.g. &ldquo;pushed to a private repo&rdquo;). Repo names,
-            URLs, commit messages, and file paths are <strong>never</strong> shared.
-            When OFF (default), private repos stay completely hidden from the
-            feed. Either way, your quality score still counts toward the
-            leaderboard.
+            generic events (e.g. &ldquo;pushed to a private repo&rdquo;). Repo
+            names, URLs, commit messages, and file paths are{" "}
+            <strong>never</strong> shared. When OFF (default), private repos
+            stay completely hidden from the feed. Either way, your quality score
+            still counts toward the leaderboard.
           </div>
         </div>
         <button

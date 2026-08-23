@@ -32,7 +32,8 @@ export function BuilderCard({ builder, rank }: BuilderCardProps) {
       style={{
         backgroundColor: "var(--bg-surface)",
         border: "1px solid var(--border-subtle)",
-        boxShadow: rank === 1 ? "var(--shadow-brutal-accent)" : "var(--shadow-brutal)",
+        boxShadow:
+          rank === 1 ? "var(--shadow-brutal-accent)" : "var(--shadow-brutal)",
       }}
     >
       <div className="flex items-start gap-4">
@@ -40,13 +41,19 @@ export function BuilderCard({ builder, rank }: BuilderCardProps) {
         <div className="flex flex-col items-center gap-2">
           <div
             className="text-xs font-bold text-white px-2 py-0.5 rounded-full"
-            style={{ backgroundColor: rank === 1 ? "var(--accent)" : "var(--bg-inverted)" }}
+            style={{
+              backgroundColor:
+                rank === 1 ? "var(--accent)" : "var(--bg-inverted)",
+            }}
           >
             #{rank}
           </div>
           <div
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white overflow-hidden"
-            style={{ backgroundColor: "var(--bg-inverted)", border: "1px solid var(--border-subtle)" }}
+            style={{
+              backgroundColor: "var(--bg-inverted)",
+              border: "1px solid var(--border-subtle)",
+            }}
           >
             {builder.avatar_url ? (
               <Image
@@ -86,7 +93,11 @@ export function BuilderCard({ builder, rank }: BuilderCardProps) {
             <span>Vibe {builder.vibe_score}</span>
             {builder.streak > 0 && (
               <span className="flex items-center gap-1">
-                <Fire weight="fill" size={11} className="text-[var(--accent)]" />
+                <Fire
+                  weight="fill"
+                  size={11}
+                  className="text-[var(--accent)]"
+                />
                 {builder.streak}d streak
               </span>
             )}
@@ -106,7 +117,11 @@ export function BuilderCard({ builder, rank }: BuilderCardProps) {
                   key={i}
                   className="flex items-center gap-2 text-sm text-[var(--text-secondary)] font-medium"
                 >
-                  <BotMark weight="fill" size={12} className="text-[var(--accent)] shrink-0" />
+                  <BotMark
+                    weight="fill"
+                    size={12}
+                    className="text-[var(--accent)] shrink-0"
+                  />
                   {reason}
                 </div>
               ))}

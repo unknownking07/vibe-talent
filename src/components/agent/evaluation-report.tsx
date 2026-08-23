@@ -44,7 +44,9 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
         >
           {report.overall_score}
         </div>
-        <div className="text-xs font-medium text-[var(--text-muted)] mt-1">/ 100</div>
+        <div className="text-xs font-medium text-[var(--text-muted)] mt-1">
+          / 100
+        </div>
       </div>
 
       {/* Dimension Scores */}
@@ -66,7 +68,10 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
                 <span className="font-semibold text-[var(--foreground)]">
                   {dimensionLabels[key] || key}
                 </span>
-                <span className="font-bold font-mono" style={{ color: getScoreColor(value) }}>
+                <span
+                  className="font-bold font-mono"
+                  style={{ color: getScoreColor(value) }}
+                >
                   {value}
                 </span>
               </div>
@@ -120,8 +125,14 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
           </h4>
           <ul className="space-y-2">
             {report.strengths.map((s, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm font-medium text-[var(--status-success-text)]">
-                <span className="mt-1 w-2 h-2 shrink-0 rounded-full" style={{ backgroundColor: "#16A34A" }} />
+              <li
+                key={i}
+                className="flex items-start gap-2 text-sm font-medium text-[var(--status-success-text)]"
+              >
+                <span
+                  className="mt-1 w-2 h-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: "#16A34A" }}
+                />
                 {s}
               </li>
             ))}
@@ -142,8 +153,14 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
           </h4>
           <ul className="space-y-2">
             {report.risks.map((r, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm font-medium text-[var(--status-error-text)]">
-                <span className="mt-1 w-2 h-2 shrink-0 rounded-full" style={{ backgroundColor: "#DC2626" }} />
+              <li
+                key={i}
+                className="flex items-start gap-2 text-sm font-medium text-[var(--status-error-text)]"
+              >
+                <span
+                  className="mt-1 w-2 h-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: "#DC2626" }}
+                />
                 {r}
               </li>
             ))}

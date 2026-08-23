@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
-import { ActiveBuilderRow, type ActiveBuilderRowProps } from "./active-builder-row";
+import {
+  ActiveBuilderRow,
+  type ActiveBuilderRowProps,
+} from "./active-builder-row";
 
 interface Props {
   rows: ActiveBuilderRowProps[] | null;
@@ -12,7 +15,13 @@ interface Props {
  * weekly fetch resolves. The "ACTIVE BUILDERS / LAST 7 DAYS" header is static
  * chrome, so it renders immediately rather than shimmering.
  */
-function WeeklyShell({ children, loading }: { children: ReactNode; loading?: boolean }) {
+function WeeklyShell({
+  children,
+  loading,
+}: {
+  children: ReactNode;
+  loading?: boolean;
+}) {
   return (
     <div
       className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-2xl overflow-hidden shadow-[var(--shadow-brutal-sm)]"
@@ -21,7 +30,9 @@ function WeeklyShell({ children, loading }: { children: ReactNode; loading?: boo
     >
       <header className="bg-[var(--bg-inverted)] text-[var(--text-on-inverted)] px-5 py-4 flex justify-between items-center">
         <h3 className="text-[15px] font-bold">ACTIVE BUILDERS</h3>
-        <span className="bg-[var(--accent)] text-white px-3 py-1 text-[12px] font-semibold rounded-full">LAST 7 DAYS</span>
+        <span className="bg-[var(--accent)] text-white px-3 py-1 text-[12px] font-semibold rounded-full">
+          LAST 7 DAYS
+        </span>
       </header>
       <div>{children}</div>
     </div>
@@ -53,7 +64,10 @@ function SkeletonRow() {
         {/* Stats — three columns, right-aligned on sm+ to match the real numbers */}
         <div className="flex justify-between items-start gap-2 pt-2 pl-[52px] sm:pl-0 border-t border-[var(--border-subtle)] sm:border-t-0 sm:pt-0 sm:contents">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex flex-col items-start sm:items-end sm:min-w-[70px]">
+            <div
+              key={i}
+              className="flex flex-col items-start sm:items-end sm:min-w-[70px]"
+            >
               <div className="skeleton h-5 sm:h-6 w-9" />
               <div className="skeleton h-3 w-14 mt-1.5" />
             </div>
@@ -82,12 +96,18 @@ export function WeeklyTab({ rows, error }: Props) {
     );
   }
   if (rows.length === 0) {
-    return <div className="text-[13px] text-[var(--text-muted)] p-4">No active builders in the last 7 days yet.</div>;
+    return (
+      <div className="text-[13px] text-[var(--text-muted)] p-4">
+        No active builders in the last 7 days yet.
+      </div>
+    );
   }
 
   return (
     <WeeklyShell>
-      {rows.map((r) => <ActiveBuilderRow key={r.username} {...r} />)}
+      {rows.map((r) => (
+        <ActiveBuilderRow key={r.username} {...r} />
+      ))}
     </WeeklyShell>
   );
 }

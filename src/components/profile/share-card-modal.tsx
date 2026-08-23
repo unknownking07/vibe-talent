@@ -10,7 +10,11 @@ interface ShareCardModalProps {
   onClose: () => void;
 }
 
-export function ShareCardModal({ username, isOpen, onClose }: ShareCardModalProps) {
+export function ShareCardModal({
+  username,
+  isOpen,
+  onClose,
+}: ShareCardModalProps) {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -80,7 +84,9 @@ export function ShareCardModal({ username, isOpen, onClose }: ShareCardModalProp
       console.error("Copy failed:", err);
       // Fallback: copy the URL instead
       try {
-        await navigator.clipboard.writeText(`${window.location.origin}${cardUrl}`);
+        await navigator.clipboard.writeText(
+          `${window.location.origin}${cardUrl}`,
+        );
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } catch {
@@ -134,7 +140,10 @@ export function ShareCardModal({ username, isOpen, onClose }: ShareCardModalProp
           >
             {loading && (
               <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-inverted)]">
-                <Loader2 size={32} className="text-[var(--accent)] animate-spin" />
+                <Loader2
+                  size={32}
+                  className="text-[var(--accent)] animate-spin"
+                />
               </div>
             )}
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -149,9 +158,7 @@ export function ShareCardModal({ username, isOpen, onClose }: ShareCardModalProp
         </div>
 
         {/* Actions */}
-        <div
-          className="flex gap-3 px-6 pb-6"
-        >
+        <div className="flex gap-3 px-6 pb-6">
           <button
             onClick={handleDownload}
             disabled={downloading || loading}
@@ -169,11 +176,17 @@ export function ShareCardModal({ username, isOpen, onClose }: ShareCardModalProp
             disabled={loading}
             className="btn-brutal flex-1 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
             style={{
-              backgroundColor: copied ? "var(--status-success-bg)" : "var(--bg-surface)",
+              backgroundColor: copied
+                ? "var(--status-success-bg)"
+                : "var(--bg-surface)",
               color: "var(--foreground)",
             }}
           >
-            {copied ? <Check weight="bold" size={16} className="text-emerald-600" /> : <Copy size={16} />}
+            {copied ? (
+              <Check weight="bold" size={16} className="text-emerald-600" />
+            ) : (
+              <Copy size={16} />
+            )}
             {copied ? "Copied!" : "Copy to Clipboard"}
           </button>
         </div>
