@@ -57,6 +57,58 @@ async function readNonce(
     : await redis.get<string>(key);
 }
 
+/** Amounts currently spoken for, when running without Redis. */
+const localReservedAmounts = new Map<number, number>();
+
+/** How many draws before giving up on finding a free amount. */
+const RESERVE_ATTEMPTS = 12;
+
+/**
+ * Claim a challenge amount nobody else is waiting on.
+ *
+ * The reservation, not the size of the range, is what makes an amount identify
+ * one challenge. It expires with the challenge, so an abandoned attempt frees
+ * its number instead of burning it forever.
+ */
+async function reserveAmount(): Promise<number | null> {
+  const ttlMs = TRANSFER_NONCE_TTL_SECONDS * 1000;
+
+  if (isLocalWalletNonceStoreEnabled()) {
+    const now = Date.now();
+    for (const [amount, expiresAt] of localReservedAmounts) {
+      if (expiresAt <= now) localReservedAmounts.delete(amount);
+    }
+    for (let i = 0; i < RESERVE_ATTEMPTS; i++) {
+      const candidate = randomChallengeLamports();
+      if (!localReservedAmounts.has(candidate)) {
+        localReservedAmounts.set(candidate, now + ttlMs);
+        return candidate;
+      }
+    }
+    return null;
+  }
+
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
+
+  const redis = new Redis({ url, token });
+  for (let i = 0; i < RESERVE_ATTEMPTS; i++) {
+    const candidate = randomChallengeLamports();
+    try {
+      // NX makes the claim atomic: only one caller can take a number.
+      const claimed = await redis.set(`wallet-amount:${candidate}`, "1", {
+        nx: true,
+        ex: TRANSFER_NONCE_TTL_SECONDS,
+      });
+      if (claimed) return candidate;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 export async function GET() {
   const authClient = await createServerSupabaseClient();
   const {
@@ -92,9 +144,24 @@ export async function GET() {
     profile as { username?: string | null } | null
   )?.username?.trim();
 
+  // Reserve an amount no other open challenge holds. Two live challenges
+  // sharing a number would let whichever account polls first take the other's
+  // transfer, so uniqueness has to be claimed, not merely likely.
+  const lamports = await reserveAmount();
+  if (lamports === null) {
+    return NextResponse.json(
+      {
+        error:
+          "Wallet verification is busy right now. Please try again shortly.",
+      },
+      { status: 503 },
+    );
+  }
+
   const challenge: TransferChallenge = {
-    lamports: randomChallengeLamports(),
+    lamports,
     memo: transferMemo(crypto.randomUUID(), handle || user.id.slice(0, 8)),
+    issuedAt: Math.floor(Date.now() / 1000),
   };
   const stored = JSON.stringify(challenge);
   const key = transferNonceKey(user.id);

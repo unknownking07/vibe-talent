@@ -30,14 +30,22 @@ function mockTx(result: unknown, init: { ok?: boolean } = {}) {
 // "somewhere else" needs a genuinely third one.
 const RECEIVER = "DYp2cUmgoBEYPxN9xPwiqKZoi5WR4SRAWJnLD1d5QAdT";
 const ELSEWHERE = "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM";
+const ISSUED_AT = 1_760_000_000;
 const CHALLENGE = {
   lamports: 12_345,
   memo: transferMemo("nonce-1", "abhinav"),
+  issuedAt: ISSUED_AT,
 };
 
 /** A confirmed transaction paying `lamports` to the receiving wallet. */
-function paymentTx(lamports: number, signer = WALLET, destination = RECEIVER) {
+function paymentTx(
+  lamports: number,
+  signer = WALLET,
+  destination = RECEIVER,
+  blockTime = ISSUED_AT + 30,
+) {
   return {
+    blockTime,
     meta: { err: null },
     transaction: {
       message: {
@@ -60,8 +68,9 @@ function paymentTx(lamports: number, signer = WALLET, destination = RECEIVER) {
 }
 
 /** A confirmed transaction carrying `memo`, signed by `signer`. */
-function tx(memo: string, signer = WALLET) {
+function tx(memo: string, signer = WALLET, blockTime = ISSUED_AT + 30) {
   return {
+    blockTime,
     meta: { err: null },
     transaction: {
       message: {
@@ -160,6 +169,7 @@ describe("verifyTransferProof", () => {
 
   it("rejects a transaction with no memo at all", async () => {
     mockTx({
+      blockTime: ISSUED_AT + 30,
       meta: { err: null },
       transaction: {
         message: {
@@ -190,6 +200,7 @@ describe("verifyTransferProof", () => {
 
   it("rejects a fee payer that is not a signer", async () => {
     mockTx({
+      blockTime: ISSUED_AT + 30,
       meta: { err: null },
       transaction: {
         message: {
@@ -408,6 +419,42 @@ describe("verifyTransferProof: the amount path", () => {
     await expect(verifyTransferProof(SIG, CHALLENGE)).resolves.toEqual({
       ok: true,
       wallet: OTHER_WALLET,
+    });
+  });
+});
+
+describe("verifyTransferProof: the replay boundary", () => {
+  it("refuses a transaction that predates the challenge", async () => {
+    // The attack this closes: read the receiving wallet's history, find a past
+    // transfer, draw challenges until the amount matches, then claim that
+    // sender's wallet without them doing anything at all.
+    mockTx(paymentTx(CHALLENGE.lamports, WALLET, RECEIVER, ISSUED_AT - 1));
+    await expect(verifyTransferProof(SIG, CHALLENGE)).resolves.toMatchObject({
+      ok: false,
+      status: 400,
+    });
+  });
+
+  it("accepts one settled at the moment the challenge was issued", async () => {
+    mockTx(paymentTx(CHALLENGE.lamports, WALLET, RECEIVER, ISSUED_AT));
+    await expect(verifyTransferProof(SIG, CHALLENGE)).resolves.toMatchObject({
+      ok: true,
+    });
+  });
+
+  it("refuses a transaction with no block time rather than assuming it is recent", async () => {
+    mockTx({ ...paymentTx(CHALLENGE.lamports), blockTime: null });
+    await expect(verifyTransferProof(SIG, CHALLENGE)).resolves.toMatchObject({
+      ok: false,
+      status: 400,
+    });
+  });
+
+  it("applies the same boundary to a memo proof", async () => {
+    mockTx(tx(CHALLENGE.memo, WALLET, ISSUED_AT - 1));
+    await expect(verifyTransferProof(SIG, CHALLENGE)).resolves.toMatchObject({
+      ok: false,
+      status: 400,
     });
   });
 });

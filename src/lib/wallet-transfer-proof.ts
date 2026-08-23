@@ -98,11 +98,21 @@ export type TransferProofResult =
 export type TransferChallenge = {
   lamports: number;
   memo: string;
+  /**
+   * Unix seconds when this challenge was issued.
+   *
+   * Load-bearing. Without it a transaction that predates the challenge
+   * satisfies it, so anyone could read our receiving wallet's history, find a
+   * past transfer, draw challenges until the amount matched, and be credited
+   * with a stranger's wallet without that stranger doing anything at all.
+   */
+  issuedAt: number;
 };
 
 type ParsedAccountKey = { pubkey?: unknown; signer?: unknown };
 
 type ParsedTx = {
+  blockTime?: unknown;
   meta?: { err?: unknown } | null;
   transaction?: {
     message?: {
@@ -200,6 +210,20 @@ export async function verifyTransferProof(
       ok: false,
       status: 400,
       error: "That transaction failed on-chain.",
+    };
+  }
+
+  // Must postdate the challenge. An amount alone does not tie a transfer to a
+  // particular challenge, so without this boundary an old transaction — the
+  // sender's own earlier verification, say — could be replayed to claim their
+  // wallet for somebody else. A missing blockTime is treated as unusable
+  // rather than assumed recent.
+  const blockTime = typeof tx.blockTime === "number" ? tx.blockTime : null;
+  if (blockTime === null || blockTime < challenge.issuedAt) {
+    return {
+      ok: false,
+      status: 400,
+      error: "That transaction predates this verification. Send a new one.",
     };
   }
 
