@@ -16,7 +16,16 @@ function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((star) => (
-        <Star weight="fill" key={star} size={size} className={ star <= rating ? "fill-amber-500 text-amber-500" : "text-[var(--border-subtle)]" } />
+        <Star
+          weight="fill"
+          key={star}
+          size={size}
+          className={
+            star <= rating
+              ? "fill-amber-500 text-amber-500"
+              : "text-[var(--border-subtle)]"
+          }
+        />
       ))}
     </div>
   );
@@ -44,7 +53,15 @@ function ClickableStars({
           onMouseLeave={() => setHovered(0)}
           className="transition-transform hover:scale-110"
         >
-          <Star weight="fill" size={size} className={ star <= (hovered || rating) ? "fill-amber-500 text-amber-500" : "text-[var(--border-subtle)] hover:text-amber-300" } />
+          <Star
+            weight="fill"
+            size={size}
+            className={
+              star <= (hovered || rating)
+                ? "fill-amber-500 text-amber-500"
+                : "text-[var(--border-subtle)] hover:text-amber-300"
+            }
+          />
         </button>
       ))}
       {rating > 0 && (
@@ -69,7 +86,10 @@ function timeAgo(dateStr: string): string {
   return `${months}mo ago`;
 }
 
-export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSectionProps) {
+export default function ReviewsSection({
+  builderId,
+  isOwner = false,
+}: ReviewsSectionProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -93,7 +113,9 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
   useEffect(() => {
     async function loadUser() {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         setIsLoggedIn(true);
         setCurrentUserId(user.id);
@@ -134,7 +156,11 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
 
   const handleSubmitReview = async () => {
     if (!formName.trim() || !formEmail.trim() || formRating === 0) {
-      setSubmitError(isLoggedIn ? "Please select a rating." : "Please fill in your name, email, and select a rating.");
+      setSubmitError(
+        isLoggedIn
+          ? "Please select a rating."
+          : "Please fill in your name, email, and select a rating.",
+      );
       return;
     }
 
@@ -220,8 +246,14 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
     return (
       <div className="card-brutal p-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-6 rounded w-32" style={{ backgroundColor: "var(--bg-surface-light)" }}></div>
-          <div className="h-20 rounded" style={{ backgroundColor: "var(--bg-surface-light)" }}></div>
+          <div
+            className="h-6 rounded w-32"
+            style={{ backgroundColor: "var(--bg-surface-light)" }}
+          ></div>
+          <div
+            className="h-20 rounded"
+            style={{ backgroundColor: "var(--bg-surface-light)" }}
+          ></div>
         </div>
       </div>
     );
@@ -234,7 +266,9 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
           <ChatText weight="fill" size={20} />
           Reviews
         </h3>
-        <p className="text-[var(--text-muted)] text-sm">Failed to load reviews.</p>
+        <p className="text-[var(--text-muted)] text-sm">
+          Failed to load reviews.
+        </p>
       </div>
     );
   }
@@ -256,15 +290,23 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
               ({reviews.length})
             </span>
           )}
-          {!isOwner && !showForm && !(currentUserId !== null && reviews.some((r) => r.reviewer_user_id === currentUserId)) && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="btn-brutal text-xs py-1.5 px-3"
-              style={{ backgroundColor: "var(--accent)", color: "var(--text-on-inverted)" }}
-            >
-              Write a Review
-            </button>
-          )}
+          {!isOwner &&
+            !showForm &&
+            !(
+              currentUserId !== null &&
+              reviews.some((r) => r.reviewer_user_id === currentUserId)
+            ) && (
+              <button
+                onClick={() => setShowForm(true)}
+                className="btn-brutal text-xs py-1.5 px-3"
+                style={{
+                  backgroundColor: "var(--accent)",
+                  color: "var(--text-on-inverted)",
+                }}
+              >
+                Write a Review
+              </button>
+            )}
         </div>
       </div>
 
@@ -272,7 +314,11 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
       {submitSuccess && (
         <div
           className="p-3 mb-4 text-sm font-semibold rounded-xl"
-          style={{ backgroundColor: "var(--status-success-bg)", color: "var(--status-success-text)", border: "1px solid var(--border-subtle)" }}
+          style={{
+            backgroundColor: "var(--status-success-bg)",
+            color: "var(--status-success-text)",
+            border: "1px solid var(--border-subtle)",
+          }}
         >
           Thanks for your review!
         </div>
@@ -289,7 +335,10 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
               Write a Review
             </h4>
             <button
-              onClick={() => { setShowForm(false); setSubmitError(""); }}
+              onClick={() => {
+                setShowForm(false);
+                setSubmitError("");
+              }}
               className="text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--foreground)]"
             >
               Cancel
@@ -310,7 +359,13 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
               <label className="text-xs font-semibold text-[var(--text-muted)] mb-1.5 block">
                 Reviewing as
               </label>
-              <div className="input-brutal w-full cursor-default" style={{ backgroundColor: "var(--bg-surface-light)", color: "var(--text-secondary)" }}>
+              <div
+                className="input-brutal w-full cursor-default"
+                style={{
+                  backgroundColor: "var(--bg-surface-light)",
+                  color: "var(--text-secondary)",
+                }}
+              >
                 {formName}
               </div>
             </div>
@@ -362,7 +417,10 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
           {submitError && (
             <div
               className="p-3 text-sm font-semibold text-[var(--status-error-text)] rounded-xl"
-              style={{ backgroundColor: "var(--status-error-bg)", border: "1px solid var(--border-subtle)" }}
+              style={{
+                backgroundColor: "var(--status-error-bg)",
+                border: "1px solid var(--border-subtle)",
+              }}
             >
               {submitError}
             </div>
@@ -382,7 +440,9 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
 
       {/* Reviews list */}
       {reviews.length === 0 ? (
-        <p className="text-[var(--text-muted)] text-sm">No reviews yet.{!isOwner && " Be the first to leave one!"}</p>
+        <p className="text-[var(--text-muted)] text-sm">
+          No reviews yet.{!isOwner && " Be the first to leave one!"}
+        </p>
       ) : (
         <div className="space-y-4">
           {reviews.map((review) => (
@@ -405,15 +465,19 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
                   <span className="text-[var(--text-muted-soft)] text-xs font-mono">
                     {timeAgo(review.created_at)}
                   </span>
-                  {currentUserId !== null && currentUserId === review.reviewer_user_id && (
-                    <button
-                      onClick={() => { setDeleteId(review.id); setDeleteError(""); }}
-                      className="text-[var(--text-muted-soft)] hover:text-red-500 transition-colors"
-                      title="Delete your review"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  )}
+                  {currentUserId !== null &&
+                    currentUserId === review.reviewer_user_id && (
+                      <button
+                        onClick={() => {
+                          setDeleteId(review.id);
+                          setDeleteError("");
+                        }}
+                        className="text-[var(--text-muted-soft)] hover:text-red-500 transition-colors"
+                        title="Delete your review"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                 </div>
               </div>
               {review.comment && (
@@ -424,13 +488,18 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
               {deleteId === review.id && (
                 <div
                   className="mt-3 p-3 space-y-2 rounded-lg"
-                  style={{ backgroundColor: "var(--status-error-bg)", border: "1px solid var(--border-subtle)" }}
+                  style={{
+                    backgroundColor: "var(--status-error-bg)",
+                    border: "1px solid var(--border-subtle)",
+                  }}
                 >
                   <p className="text-xs font-semibold text-[var(--foreground)]">
                     Delete this review? This can&apos;t be undone.
                   </p>
                   {deleteError && (
-                    <p className="text-xs font-semibold text-red-600">{deleteError}</p>
+                    <p className="text-xs font-semibold text-red-600">
+                      {deleteError}
+                    </p>
                   )}
                   <div className="flex gap-2">
                     <button
@@ -441,7 +510,10 @@ export default function ReviewsSection({ builderId, isOwner = false }: ReviewsSe
                       {deleting ? "Deleting..." : "Confirm Delete"}
                     </button>
                     <button
-                      onClick={() => { setDeleteId(null); setDeleteError(""); }}
+                      onClick={() => {
+                        setDeleteId(null);
+                        setDeleteError("");
+                      }}
                       className="btn-brutal text-xs py-1.5 px-3"
                     >
                       Cancel

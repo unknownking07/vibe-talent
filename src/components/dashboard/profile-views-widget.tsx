@@ -47,14 +47,30 @@ export function ProfileViewsWidget() {
 
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div className="text-center">
-          <TrendUp weight="bold" size={16} className="mx-auto text-[var(--accent)] mb-1" />
-          <div className="text-xl font-extrabold text-[var(--foreground)] font-mono">{data.views_today}</div>
-          <div className="text-[10px] font-medium text-[var(--text-muted)]">Today</div>
+          <TrendUp
+            weight="bold"
+            size={16}
+            className="mx-auto text-[var(--accent)] mb-1"
+          />
+          <div className="text-xl font-extrabold text-[var(--foreground)] font-mono">
+            {data.views_today}
+          </div>
+          <div className="text-[10px] font-medium text-[var(--text-muted)]">
+            Today
+          </div>
         </div>
         <div className="text-center">
-          <UsersThree weight="fill" size={16} className="mx-auto text-[var(--accent)] mb-1" />
-          <div className="text-xl font-extrabold text-[var(--foreground)] font-mono">{data.views_this_week}</div>
-          <div className="text-[10px] font-medium text-[var(--text-muted)]">This Week</div>
+          <UsersThree
+            weight="fill"
+            size={16}
+            className="mx-auto text-[var(--accent)] mb-1"
+          />
+          <div className="text-xl font-extrabold text-[var(--foreground)] font-mono">
+            {data.views_this_week}
+          </div>
+          <div className="text-[10px] font-medium text-[var(--text-muted)]">
+            This Week
+          </div>
         </div>
       </div>
 
@@ -84,7 +100,9 @@ export function ProfileViewsWidget() {
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <span className="text-sm font-bold text-[var(--foreground)]">@{viewer.username}</span>
+                <span className="text-sm font-bold text-[var(--foreground)]">
+                  @{viewer.username}
+                </span>
               </div>
               <span className="text-[10px] font-medium text-[var(--text-muted-soft)]">
                 {new Date(viewer.viewed_at).toLocaleDateString()}
@@ -94,9 +112,17 @@ export function ProfileViewsWidget() {
         </div>
       ) : (
         <div className="text-center py-4">
-          <Eye weight="fill" size={24} className="mx-auto mb-2 text-[var(--text-muted-soft)]" />
-          <p className="text-sm font-medium text-[var(--text-muted-soft)]">No profile views yet this week</p>
-          <p className="text-xs text-[var(--text-muted-soft)] mt-1">Share your profile to get noticed!</p>
+          <Eye
+            weight="fill"
+            size={24}
+            className="mx-auto mb-2 text-[var(--text-muted-soft)]"
+          />
+          <p className="text-sm font-medium text-[var(--text-muted-soft)]">
+            No profile views yet this week
+          </p>
+          <p className="text-xs text-[var(--text-muted-soft)] mt-1">
+            Share your profile to get noticed!
+          </p>
         </div>
       )}
     </div>

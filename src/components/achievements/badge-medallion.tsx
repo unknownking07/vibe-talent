@@ -137,7 +137,13 @@ export function BadgeMedallion({
         viewBox="0 0 100 100"
         width={size}
         height={size}
-        style={{ position: "absolute", top: 0, left: 0, display: "flex", overflow: "visible" }}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          display: "flex",
+          overflow: "visible",
+        }}
       >
         <defs>
           <linearGradient id={glossId} x1="0" y1="0" x2="0" y2="1">
@@ -155,7 +161,14 @@ export function BadgeMedallion({
           strokeLinejoin="round"
         />
         {/* Coloured inner disc + gloss sheen */}
-        <circle cx="50" cy="50" r="37" fill={palette.inner} stroke="#0F0F0F" strokeWidth="2" />
+        <circle
+          cx="50"
+          cy="50"
+          r="37"
+          fill={palette.inner}
+          stroke="#0F0F0F"
+          strokeWidth="2"
+        />
         <circle cx="50" cy="50" r="37" fill={`url(#${glossId})`} />
         {/* Sparkles (earned only). Grouped in a <g> — not a React fragment —
             because Satori (next/og) serializes SVG children to a string and a

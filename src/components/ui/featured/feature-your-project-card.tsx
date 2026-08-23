@@ -22,7 +22,10 @@ import {
   type EVMChainConfig,
   type SolanaChainConfig,
 } from "@/lib/chains-config";
-import { buildSolanaTokenTransfer, signatureToString } from "@/lib/solana-payment";
+import {
+  buildSolanaTokenTransfer,
+  signatureToString,
+} from "@/lib/solana-payment";
 import { ChainDot, type ChainKey } from "./chain-dot";
 
 const BASE_CONFIG = CHAIN_CONFIGS.base;
@@ -37,7 +40,8 @@ const PRIVY_CONFIGURED = !!PRIVY_APP_ID;
 // pages. Lazily initialized so the setup cost only runs when PRIVY_CONFIGURED
 // branch actually renders; cached at module scope so it's constructed exactly
 // once per chunk load (Privy expects a stable reference across re-renders).
-let solanaConnectorsCache: ReturnType<typeof toSolanaWalletConnectors> | null = null;
+let solanaConnectorsCache: ReturnType<typeof toSolanaWalletConnectors> | null =
+  null;
 function getSolanaConnectors() {
   if (solanaConnectorsCache === null) {
     solanaConnectorsCache = toSolanaWalletConnectors();
@@ -62,11 +66,11 @@ const PACKAGES = [
 // Contract enforces monotonically-increasing prices in setPrices(), so the
 // hidden 3-day slot has to fit the curve even though we don't surface it.
 const FALLBACK_PRICES: bigint[] = [
-  BigInt(2_000_000),    // 0: Day        = $2.00
-  BigInt(5_000_000),    // 1: 3-day      = $5.00 (hidden in UI; sits between Day and Week)
-  BigInt(10_000_000),   // 2: Week       = $10.00  (29% off /day)
-  BigInt(29_000_000),   // 3: Month      = $29.00  (52% off /day: best value)
-  BigInt(199_000_000),  // 4: Annual     = $199.00 (73% off /day; contract = Lifetime)
+  BigInt(2_000_000), // 0: Day        = $2.00
+  BigInt(5_000_000), // 1: 3-day      = $5.00 (hidden in UI; sits between Day and Week)
+  BigInt(10_000_000), // 2: Week       = $10.00  (29% off /day)
+  BigInt(29_000_000), // 3: Month      = $29.00  (52% off /day: best value)
+  BigInt(199_000_000), // 4: Annual     = $199.00 (73% off /day; contract = Lifetime)
 ];
 
 const PROMOTE_ABI = parseAbi([
@@ -100,7 +104,9 @@ async function fetchPrices(): Promise<bigint[]> {
     });
     const json = await res.json();
     if (!json.result || typeof json.result !== "string") return FALLBACK_PRICES;
-    const data = json.result.startsWith("0x") ? json.result.slice(2) : json.result;
+    const data = json.result.startsWith("0x")
+      ? json.result.slice(2)
+      : json.result;
     // Need 5 × 32-byte slots (320 hex chars) — anything shorter means the RPC
     // returned a truncated/error payload, not a valid getPrices() result.
     if (data.length < 5 * 64) return FALLBACK_PRICES;
@@ -114,7 +120,11 @@ async function fetchPrices(): Promise<bigint[]> {
   }
 }
 
-async function waitForTx(txHash: string, rpcUrl: string = BASE_RPC, timeout = 60000): Promise<void> {
+async function waitForTx(
+  txHash: string,
+  rpcUrl: string = BASE_RPC,
+  timeout = 60000,
+): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < timeout) {
     const res = await fetch(rpcUrl, {
@@ -139,13 +149,508 @@ async function waitForTx(txHash: string, rpcUrl: string = BASE_RPC, timeout = 60
 
 type UserProject = { id: string; title: string };
 
-type Props = { onSuccess: () => void; isLoggedIn: boolean; preselectedProjectId?: string };
+type Props = {
+  onSuccess: () => void;
+  isLoggedIn: boolean;
+  preselectedProjectId?: string;
+};
 
-export const FeatureYourProjectCard = forwardRef<HTMLDivElement, Props>(function FeatureYourProjectCard(
-  { onSuccess, isLoggedIn, preselectedProjectId },
-  ref,
-) {
-  if (!PRIVY_CONFIGURED) {
+export const FeatureYourProjectCard = forwardRef<HTMLDivElement, Props>(
+  function FeatureYourProjectCard(
+    { onSuccess, isLoggedIn, preselectedProjectId },
+    ref,
+  ) {
+    if (!PRIVY_CONFIGURED) {
+      return (
+        <div
+          ref={ref}
+          tabIndex={-1}
+          className="card-brutal relative p-6 flex flex-col md:min-h-[420px] overflow-hidden focus:outline-none"
+          style={{ backgroundColor: "var(--bg-surface)" }}
+        >
+          <h3 className="text-2xl font-bold leading-tight">
+            <span className="block text-[var(--foreground)]">Feature</span>
+            <span className="block" style={{ color: "var(--accent)" }}>
+              Your Project
+            </span>
+          </h3>
+          {process.env.NODE_ENV !== "production" ? (
+            <div
+              className="mt-6 p-4 text-xs font-medium rounded-xl"
+              style={{
+                border: "2px dashed var(--border-hard)",
+                color: "var(--text-secondary)",
+                backgroundColor: "var(--bg-surface-light)",
+              }}
+            >
+              <strong className="text-[var(--foreground)]">
+                Promote form disabled.
+              </strong>
+              <span className="block mt-1">
+                Set <code>NEXT_PUBLIC_PRIVY_APP_ID</code> in{" "}
+                <code>.env.local</code> to enable wallet-based promotions.
+              </span>
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+
+    // PrivyProvider lives inside this component (not the root layout) so the
+    // entire web3 stack — @privy-io/*, @walletconnect/*, @coinbase/wallet-sdk,
+    // @solana/*, viem chains — only loads when the card itself mounts. Combined
+    // with the dynamic import in featured-section, that defers ~60 JS chunks
+    // and the auth.privy.io / mainnet.base.org RPC calls off the critical path.
+    return (
+      <PrivyProvider
+        appId={PRIVY_APP_ID!}
+        config={{
+          loginMethods: ["wallet", "email"],
+          defaultChain: base,
+          supportedChains: [base, mainnet, arbitrum],
+          appearance: {
+            walletList: [
+              "rabby_wallet",
+              "metamask",
+              "coinbase_wallet",
+              "rainbow",
+              "wallet_connect",
+              "detected_ethereum_wallets",
+              "phantom",
+              "backpack",
+              "solflare",
+              "jupiter",
+              "detected_solana_wallets",
+            ],
+            walletChainType: "ethereum-and-solana",
+          },
+          externalWallets: {
+            solana: { connectors: getSolanaConnectors() },
+          },
+          embeddedWallets: {
+            ethereum: {
+              createOnLogin: "users-without-wallets",
+            },
+          },
+        }}
+      >
+        <FeatureCardBody
+          ref={ref}
+          onSuccess={onSuccess}
+          isLoggedIn={isLoggedIn}
+          preselectedProjectId={preselectedProjectId}
+        />
+      </PrivyProvider>
+    );
+  },
+);
+
+const FeatureCardBody = forwardRef<HTMLDivElement, Props>(
+  function FeatureCardBody(
+    { onSuccess, isLoggedIn, preselectedProjectId },
+    ref,
+  ) {
+    const {
+      login: privyLogin,
+      logout: privyLogout,
+      connectWallet,
+      authenticated: privyAuthenticated,
+      ready: privyReady,
+    } = usePrivy();
+    const { wallets } = useWallets();
+    const connectedWallet = wallets[0];
+    const { wallets: solanaWallets } = useSolanaWallets();
+    const { signAndSendTransaction: privySignAndSend } =
+      useSignAndSendTransaction();
+    const connectedSolanaWallet = solanaWallets[0] ?? null;
+
+    const [prices, setPrices] = useState<bigint[]>(FALLBACK_PRICES);
+    const [selectedPkg, setSelectedPkg] = useState(2);
+    const [projects, setProjects] = useState<UserProject[]>([]);
+    const [selectedProject, setSelectedProject] = useState<string>("");
+    const [loadingProjects, setLoadingProjects] = useState(true);
+    const [status, setStatus] = useState<{
+      msg: string;
+      type: "info" | "error" | "success";
+    } | null>(null);
+    const [busy, setBusy] = useState(false);
+    const [selectedChain, setSelectedChain] = useState<ChainKey>(
+      DEFAULT_CHAIN as ChainKey,
+    );
+    const [selectedToken, setSelectedToken] = useState<"usdc" | "vibe">("usdc");
+
+    useEffect(() => {
+      fetchPrices().then(setPrices);
+    }, []);
+
+    useEffect(() => {
+      const supabase = createClient();
+
+      const loadProjects = (userId: string) => {
+        supabase
+          .from("projects")
+          .select("id, title")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .then(({ data }) => {
+            const loaded: UserProject[] = data || [];
+            setProjects(loaded);
+            // Default the dropdown to the preselected project (deep link from
+            // /pricing's ?project= param) when it belongs to this user; otherwise
+            // leave the placeholder selected.
+            if (
+              preselectedProjectId &&
+              loaded.some((p) => p.id === preselectedProjectId)
+            ) {
+              setSelectedProject(preselectedProjectId);
+            }
+            setLoadingProjects(false);
+          });
+      };
+
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (!user) {
+          setLoadingProjects(false);
+          return;
+        }
+        loadProjects(user.id);
+      });
+
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === "SIGNED_OUT" || !session?.user) {
+          setProjects([]);
+          setSelectedProject("");
+          setLoadingProjects(false);
+        } else if (event === "SIGNED_IN" && session?.user) {
+          loadProjects(session.user.id);
+        }
+      });
+
+      return () => subscription.unsubscribe();
+    }, [preselectedProjectId]);
+
+    async function handleConnectWallet() {
+      if (!isLoggedIn) {
+        window.location.href = "/auth/login?redirect=/&reason=promote";
+        return;
+      }
+      const wantsSolana = isSolanaChain(getChainConfig(selectedChain));
+      const walletChainType = wantsSolana ? "solana-only" : "ethereum-only";
+      if (privyAuthenticated) {
+        connectWallet({ walletChainType });
+      } else {
+        privyLogin({ walletChainType });
+      }
+    }
+
+    async function handleDisconnectWallet() {
+      await privyLogout();
+    }
+
+    async function handlePromoteEVM(
+      project: UserProject,
+      price: bigint,
+      chainConfig: EVMChainConfig,
+    ): Promise<string> {
+      if (!connectedWallet) throw new Error("No EVM wallet connected");
+      const provider =
+        (await connectedWallet.getEthereumProvider()) as EthereumProvider;
+      const walletAddr = connectedWallet.address.toLowerCase();
+
+      // Make sure the wallet is on the chain we're targeting — without this, the
+      // approve/promote tx would hit whatever contract sits at the same address
+      // on whatever chain the wallet happens to be on. Try a switch first; if the
+      // user rejects or the chain isn't in their wallet, surface a clear error.
+      const targetChainHex = "0x" + chainConfig.chainId.toString(16);
+      const currentChainHex = (await provider.request({
+        method: "eth_chainId",
+      })) as string;
+      if (currentChainHex.toLowerCase() !== targetChainHex.toLowerCase()) {
+        setStatus({
+          msg: `Switching wallet to ${chainConfig.name}...`,
+          type: "info",
+        });
+        await provider.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: targetChainHex }],
+        });
+      }
+
+      setStatus({ msg: "Checking USDC allowance...", type: "info" });
+      const allowanceData = encodeFunctionData({
+        abi: ERC20_ABI,
+        functionName: "allowance",
+        args: [
+          walletAddr as `0x${string}`,
+          chainConfig.contractAddr as `0x${string}`,
+        ],
+      });
+      const allowanceRes = await fetch(chainConfig.rpc, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "eth_call",
+          params: [{ to: chainConfig.usdcAddr, data: allowanceData }, "latest"],
+        }),
+      });
+      const allowanceJson = await allowanceRes.json();
+      const currentAllowance = BigInt(allowanceJson.result || "0x0");
+
+      if (currentAllowance < price) {
+        setStatus({
+          msg: `Approving $${(Number(price) / 1e6).toFixed(2)} USDC on ${chainConfig.name}...`,
+          type: "info",
+        });
+        const approveData = encodeFunctionData({
+          abi: ERC20_ABI,
+          functionName: "approve",
+          args: [chainConfig.contractAddr as `0x${string}`, price],
+        });
+        const approveTxHash = await provider.request({
+          method: "eth_sendTransaction",
+          params: [
+            { from: walletAddr, to: chainConfig.usdcAddr, data: approveData },
+          ],
+        });
+        setStatus({ msg: "Waiting for approval...", type: "info" });
+        await waitForTx(approveTxHash as string, chainConfig.rpc);
+      }
+
+      setStatus({
+        msg: `Promoting "${project.title}" on ${chainConfig.name}...`,
+        type: "info",
+      });
+      const promoteData = encodeFunctionData({
+        abi: PROMOTE_ABI,
+        functionName: "promote",
+        args: [project.id, project.title, selectedPkg, price],
+      });
+      const txHash = await provider.request({
+        method: "eth_sendTransaction",
+        params: [
+          { from: walletAddr, to: chainConfig.contractAddr, data: promoteData },
+        ],
+      });
+      setStatus({ msg: "Waiting for confirmation...", type: "info" });
+      await waitForTx(txHash as string, chainConfig.rpc);
+      return txHash as string;
+    }
+
+    async function handlePromoteSolana(
+      project: UserProject,
+      chainConfig: SolanaChainConfig,
+    ) {
+      if (!connectedSolanaWallet) throw new Error("No Solana wallet connected");
+      const token = selectedToken;
+      const label = token === "vibe" ? "$VIBE" : "USDC";
+
+      // Ask the server for the exact amount to send — same price source the
+      // verifier uses, so the payment clears verification.
+      const quoteRes = await fetch(
+        `/api/solana/quote?package_id=${selectedPkg}&token=${token}`,
+      );
+      if (!quoteRes.ok) {
+        const e = await quoteRes.json().catch(() => ({}));
+        throw new Error(e.error || "Couldn't get a Solana quote. Try again.");
+      }
+      const quote = await quoteRes.json();
+      const amount = BigInt(quote.amount as string);
+      const mint =
+        token === "vibe" ? chainConfig.vibeMint : chainConfig.usdcMint;
+
+      setStatus({
+        msg: `Building ${label} transfer on Solana...`,
+        type: "info",
+      });
+      const serializedTx = await buildSolanaTokenTransfer({
+        senderAddress: connectedSolanaWallet.address,
+        rpcUrl: chainConfig.rpc,
+        mint,
+        receivingWallet: chainConfig.receivingWallet,
+        amount,
+        memo: project.id, // binds the payment to this project for server verification
+      });
+
+      setStatus({ msg: `Sending ${label} on Solana...`, type: "info" });
+      const { signature } = await privySignAndSend({
+        transaction: serializedTx,
+        wallet: connectedSolanaWallet,
+        chain: "solana:mainnet",
+      });
+      const sig = signatureToString(signature);
+
+      // Verify + record server-side. Retry on 404 while the tx propagates.
+      setStatus({ msg: "Verifying payment...", type: "info" });
+      let verified = false;
+      for (let attempt = 0; attempt < 6; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 2500));
+        const res = await fetch("/api/solana/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            project_id: project.id,
+            signature: sig,
+            package_id: selectedPkg,
+            token,
+          }),
+        });
+        if (res.ok) {
+          verified = true;
+          break;
+        }
+        // Retry transient states: 404 (tx not visible yet) and 503 (RPC hiccup).
+        if (res.status !== 404 && res.status !== 503) {
+          const e = await res.json().catch(() => ({}));
+          throw new Error(e.error || "Payment verification failed.");
+        }
+      }
+      if (!verified) {
+        throw new Error(
+          "Payment sent but not confirmed yet — it'll appear once the network finalizes it.",
+        );
+      }
+    }
+
+    // Record the owner->wallet authorization so the featured grid will render this
+    // promotion (audit #8). Best-effort with one retry; the server gate (owner-only)
+    // is what secures it. If it ultimately fails, the promotion is briefly hidden
+    // until re-recorded.
+    async function recordPromotionAuthorization(
+      projectId: string,
+      walletAddress: string,
+      txHash: string,
+    ) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const res = await fetch("/api/promotions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              project_id: projectId,
+              wallet_address: walletAddress,
+              tx_ref: txHash,
+              chain: "base",
+            }),
+          });
+          if (res.ok) return;
+        } catch {
+          // retry
+        }
+      }
+      console.error(
+        "Failed to record promotion authorization for project",
+        projectId,
+      );
+    }
+
+    async function handlePromote() {
+      const project = projects.find((p) => p.id === selectedProject);
+      if (!project) {
+        setStatus({ msg: "Select a project first", type: "error" });
+        return;
+      }
+      const chainConfig = getChainConfig(selectedChain);
+      const isEVM = isEVMChain(chainConfig);
+      const isSol = isSolanaChain(chainConfig);
+
+      if (isEVM && !connectedWallet) {
+        setStatus({ msg: "Connect an EVM wallet first", type: "error" });
+        return;
+      }
+      if (isSol && !connectedSolanaWallet) {
+        setStatus({ msg: "Connect a Solana wallet first", type: "error" });
+        return;
+      }
+
+      const price = prices[selectedPkg];
+      setBusy(true);
+      try {
+        if (isEVM) {
+          const txHash = await handlePromoteEVM(project, price, chainConfig);
+          if (connectedWallet) {
+            await recordPromotionAuthorization(
+              project.id,
+              connectedWallet.address,
+              txHash,
+            );
+          }
+        } else if (isSol) {
+          await handlePromoteSolana(project, chainConfig);
+        }
+
+        setStatus({
+          msg: `"${project.title}" is now featured!`,
+          type: "success",
+        });
+        setSelectedProject("");
+        onSuccess();
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "Transaction failed";
+        setStatus({ msg, type: "error" });
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    const currentPrice = prices[selectedPkg];
+    const priceStr = `$${(Number(currentPrice) / 1e6).toFixed(2)}`;
+    const hasProject = selectedProject !== "";
+    const chainConfig = getChainConfig(selectedChain);
+    const isSol = isSolanaChain(chainConfig);
+    const hasWallet = isSol ? !!connectedSolanaWallet : !!connectedWallet;
+    const walletDisplay = isSol
+      ? connectedSolanaWallet
+        ? shortAddr(connectedSolanaWallet.address)
+        : ""
+      : connectedWallet
+        ? shortAddr(connectedWallet.address)
+        : "";
+
+    const isExpanded =
+      privyReady && isLoggedIn && privyAuthenticated && hasWallet;
+    // `prices[0]` is the per-day floor — used as the "From $X/day" label.
+    // If admin reorders packages someday, this assumption breaks.
+    const fromPerDay = `$${(Number(prices[0]) / 1e6).toFixed(2)}`;
+
+    // Solana token (USDC / $VIBE) picker. Rendered in BOTH the idle and the
+    // expanded payment stages so the choice is always visible when paying.
+    // Only relevant to the Solana lane.
+    const solanaTokenToggle = isSol ? (
+      <div className="mb-4">
+        <label className="block text-[10px] font-semibold text-[var(--text-muted)] mb-1.5">
+          Token
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          {(["usdc", "vibe"] as const).map((t) => {
+            const active = selectedToken === t;
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setSelectedToken(t)}
+                className="px-3 py-2 text-xs font-semibold rounded-xl transition-all"
+                style={{
+                  border: `1px solid ${active ? "var(--accent)" : "var(--border-subtle)"}`,
+                  backgroundColor: active
+                    ? "color-mix(in srgb, var(--accent) 14%, var(--bg-surface))"
+                    : "var(--bg-surface)",
+                  color: "var(--foreground)",
+                  boxShadow: active ? "var(--shadow-brutal-xs)" : "none",
+                }}
+                aria-pressed={active}
+              >
+                {t === "usdc" ? "USDC" : "$VIBE"}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    ) : null;
+
     return (
       <div
         ref={ref}
@@ -155,633 +660,246 @@ export const FeatureYourProjectCard = forwardRef<HTMLDivElement, Props>(function
       >
         <h3 className="text-2xl font-bold leading-tight">
           <span className="block text-[var(--foreground)]">Feature</span>
-          <span className="block" style={{ color: "var(--accent)" }}>Your Project</span>
+          <span className="block" style={{ color: "var(--accent)" }}>
+            Your Project
+          </span>
         </h3>
-        {process.env.NODE_ENV !== "production" ? (
-          <div
-            className="mt-6 p-4 text-xs font-medium rounded-xl"
-            style={{
-              border: "2px dashed var(--border-hard)",
-              color: "var(--text-secondary)",
-              backgroundColor: "var(--bg-surface-light)",
-            }}
-          >
-            <strong className="text-[var(--foreground)]">Promote form disabled.</strong>
-            <span className="block mt-1">
-              Set <code>NEXT_PUBLIC_PRIVY_APP_ID</code> in <code>.env.local</code> to enable wallet-based promotions.
-            </span>
-          </div>
-        ) : null}
-      </div>
-    );
-  }
+        <p className="mt-3 text-xs text-[var(--text-secondary)] leading-relaxed">
+          Founders are scouting VibeTalent for talented devs. Featured projects
+          land top of the marketplace — exactly where they&apos;re looking.
+        </p>
 
-  // PrivyProvider lives inside this component (not the root layout) so the
-  // entire web3 stack — @privy-io/*, @walletconnect/*, @coinbase/wallet-sdk,
-  // @solana/*, viem chains — only loads when the card itself mounts. Combined
-  // with the dynamic import in featured-section, that defers ~60 JS chunks
-  // and the auth.privy.io / mainnet.base.org RPC calls off the critical path.
-  return (
-    <PrivyProvider
-      appId={PRIVY_APP_ID!}
-      config={{
-        loginMethods: ["wallet", "email"],
-        defaultChain: base,
-        supportedChains: [base, mainnet, arbitrum],
-        appearance: {
-          walletList: [
-            "rabby_wallet",
-            "metamask",
-            "coinbase_wallet",
-            "rainbow",
-            "wallet_connect",
-            "detected_ethereum_wallets",
-            "phantom",
-            "backpack",
-            "solflare",
-            "jupiter",
-            "detected_solana_wallets",
-          ],
-          walletChainType: "ethereum-and-solana",
-        },
-        externalWallets: {
-          solana: { connectors: getSolanaConnectors() },
-        },
-        embeddedWallets: {
-          ethereum: {
-            createOnLogin: "users-without-wallets",
-          },
-        },
-      }}
-    >
-      <FeatureCardBody
-        ref={ref}
-        onSuccess={onSuccess}
-        isLoggedIn={isLoggedIn}
-        preselectedProjectId={preselectedProjectId}
-      />
-    </PrivyProvider>
-  );
-});
-
-const FeatureCardBody = forwardRef<HTMLDivElement, Props>(function FeatureCardBody(
-  { onSuccess, isLoggedIn, preselectedProjectId },
-  ref,
-) {
-  const {
-    login: privyLogin,
-    logout: privyLogout,
-    connectWallet,
-    authenticated: privyAuthenticated,
-    ready: privyReady,
-  } = usePrivy();
-  const { wallets } = useWallets();
-  const connectedWallet = wallets[0];
-  const { wallets: solanaWallets } = useSolanaWallets();
-  const { signAndSendTransaction: privySignAndSend } = useSignAndSendTransaction();
-  const connectedSolanaWallet = solanaWallets[0] ?? null;
-
-  const [prices, setPrices] = useState<bigint[]>(FALLBACK_PRICES);
-  const [selectedPkg, setSelectedPkg] = useState(2);
-  const [projects, setProjects] = useState<UserProject[]>([]);
-  const [selectedProject, setSelectedProject] = useState<string>("");
-  const [loadingProjects, setLoadingProjects] = useState(true);
-  const [status, setStatus] = useState<{ msg: string; type: "info" | "error" | "success" } | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [selectedChain, setSelectedChain] = useState<ChainKey>(DEFAULT_CHAIN as ChainKey);
-  const [selectedToken, setSelectedToken] = useState<"usdc" | "vibe">("usdc");
-
-  useEffect(() => {
-    fetchPrices().then(setPrices);
-  }, []);
-
-  useEffect(() => {
-    const supabase = createClient();
-
-    const loadProjects = (userId: string) => {
-      supabase
-        .from("projects")
-        .select("id, title")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .then(({ data }) => {
-          const loaded: UserProject[] = data || [];
-          setProjects(loaded);
-          // Default the dropdown to the preselected project (deep link from
-          // /pricing's ?project= param) when it belongs to this user; otherwise
-          // leave the placeholder selected.
-          if (preselectedProjectId && loaded.some((p) => p.id === preselectedProjectId)) {
-            setSelectedProject(preselectedProjectId);
-          }
-          setLoadingProjects(false);
-        });
-    };
-
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
-        setLoadingProjects(false);
-        return;
-      }
-      loadProjects(user.id);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_OUT" || !session?.user) {
-        setProjects([]);
-        setSelectedProject("");
-        setLoadingProjects(false);
-      } else if (event === "SIGNED_IN" && session?.user) {
-        loadProjects(session.user.id);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [preselectedProjectId]);
-
-  async function handleConnectWallet() {
-    if (!isLoggedIn) {
-      window.location.href = "/auth/login?redirect=/&reason=promote";
-      return;
-    }
-    const wantsSolana = isSolanaChain(getChainConfig(selectedChain));
-    const walletChainType = wantsSolana ? "solana-only" : "ethereum-only";
-    if (privyAuthenticated) {
-      connectWallet({ walletChainType });
-    } else {
-      privyLogin({ walletChainType });
-    }
-  }
-
-  async function handleDisconnectWallet() {
-    await privyLogout();
-  }
-
-  async function handlePromoteEVM(project: UserProject, price: bigint, chainConfig: EVMChainConfig): Promise<string> {
-    if (!connectedWallet) throw new Error("No EVM wallet connected");
-    const provider = (await connectedWallet.getEthereumProvider()) as EthereumProvider;
-    const walletAddr = connectedWallet.address.toLowerCase();
-
-    // Make sure the wallet is on the chain we're targeting — without this, the
-    // approve/promote tx would hit whatever contract sits at the same address
-    // on whatever chain the wallet happens to be on. Try a switch first; if the
-    // user rejects or the chain isn't in their wallet, surface a clear error.
-    const targetChainHex = "0x" + chainConfig.chainId.toString(16);
-    const currentChainHex = (await provider.request({ method: "eth_chainId" })) as string;
-    if (currentChainHex.toLowerCase() !== targetChainHex.toLowerCase()) {
-      setStatus({ msg: `Switching wallet to ${chainConfig.name}...`, type: "info" });
-      await provider.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: targetChainHex }],
-      });
-    }
-
-    setStatus({ msg: "Checking USDC allowance...", type: "info" });
-    const allowanceData = encodeFunctionData({
-      abi: ERC20_ABI,
-      functionName: "allowance",
-      args: [walletAddr as `0x${string}`, chainConfig.contractAddr as `0x${string}`],
-    });
-    const allowanceRes = await fetch(chainConfig.rpc, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "eth_call",
-        params: [{ to: chainConfig.usdcAddr, data: allowanceData }, "latest"],
-      }),
-    });
-    const allowanceJson = await allowanceRes.json();
-    const currentAllowance = BigInt(allowanceJson.result || "0x0");
-
-    if (currentAllowance < price) {
-      setStatus({ msg: `Approving $${(Number(price) / 1e6).toFixed(2)} USDC on ${chainConfig.name}...`, type: "info" });
-      const approveData = encodeFunctionData({
-        abi: ERC20_ABI,
-        functionName: "approve",
-        args: [chainConfig.contractAddr as `0x${string}`, price],
-      });
-      const approveTxHash = await provider.request({
-        method: "eth_sendTransaction",
-        params: [{ from: walletAddr, to: chainConfig.usdcAddr, data: approveData }],
-      });
-      setStatus({ msg: "Waiting for approval...", type: "info" });
-      await waitForTx(approveTxHash as string, chainConfig.rpc);
-    }
-
-    setStatus({ msg: `Promoting "${project.title}" on ${chainConfig.name}...`, type: "info" });
-    const promoteData = encodeFunctionData({
-      abi: PROMOTE_ABI,
-      functionName: "promote",
-      args: [project.id, project.title, selectedPkg, price],
-    });
-    const txHash = await provider.request({
-      method: "eth_sendTransaction",
-      params: [{ from: walletAddr, to: chainConfig.contractAddr, data: promoteData }],
-    });
-    setStatus({ msg: "Waiting for confirmation...", type: "info" });
-    await waitForTx(txHash as string, chainConfig.rpc);
-    return txHash as string;
-  }
-
-  async function handlePromoteSolana(project: UserProject, chainConfig: SolanaChainConfig) {
-    if (!connectedSolanaWallet) throw new Error("No Solana wallet connected");
-    const token = selectedToken;
-    const label = token === "vibe" ? "$VIBE" : "USDC";
-
-    // Ask the server for the exact amount to send — same price source the
-    // verifier uses, so the payment clears verification.
-    const quoteRes = await fetch(`/api/solana/quote?package_id=${selectedPkg}&token=${token}`);
-    if (!quoteRes.ok) {
-      const e = await quoteRes.json().catch(() => ({}));
-      throw new Error(e.error || "Couldn't get a Solana quote. Try again.");
-    }
-    const quote = await quoteRes.json();
-    const amount = BigInt(quote.amount as string);
-    const mint = token === "vibe" ? chainConfig.vibeMint : chainConfig.usdcMint;
-
-    setStatus({ msg: `Building ${label} transfer on Solana...`, type: "info" });
-    const serializedTx = await buildSolanaTokenTransfer({
-      senderAddress: connectedSolanaWallet.address,
-      rpcUrl: chainConfig.rpc,
-      mint,
-      receivingWallet: chainConfig.receivingWallet,
-      amount,
-      memo: project.id, // binds the payment to this project for server verification
-    });
-
-    setStatus({ msg: `Sending ${label} on Solana...`, type: "info" });
-    const { signature } = await privySignAndSend({
-      transaction: serializedTx,
-      wallet: connectedSolanaWallet,
-      chain: "solana:mainnet",
-    });
-    const sig = signatureToString(signature);
-
-    // Verify + record server-side. Retry on 404 while the tx propagates.
-    setStatus({ msg: "Verifying payment...", type: "info" });
-    let verified = false;
-    for (let attempt = 0; attempt < 6; attempt++) {
-      if (attempt > 0) await new Promise((r) => setTimeout(r, 2500));
-      const res = await fetch("/api/solana/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          project_id: project.id,
-          signature: sig,
-          package_id: selectedPkg,
-          token,
-        }),
-      });
-      if (res.ok) {
-        verified = true;
-        break;
-      }
-      // Retry transient states: 404 (tx not visible yet) and 503 (RPC hiccup).
-      if (res.status !== 404 && res.status !== 503) {
-        const e = await res.json().catch(() => ({}));
-        throw new Error(e.error || "Payment verification failed.");
-      }
-    }
-    if (!verified) {
-      throw new Error("Payment sent but not confirmed yet — it'll appear once the network finalizes it.");
-    }
-  }
-
-  // Record the owner->wallet authorization so the featured grid will render this
-  // promotion (audit #8). Best-effort with one retry; the server gate (owner-only)
-  // is what secures it. If it ultimately fails, the promotion is briefly hidden
-  // until re-recorded.
-  async function recordPromotionAuthorization(projectId: string, walletAddress: string, txHash: string) {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const res = await fetch("/api/promotions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ project_id: projectId, wallet_address: walletAddress, tx_ref: txHash, chain: "base" }),
-        });
-        if (res.ok) return;
-      } catch {
-        // retry
-      }
-    }
-    console.error("Failed to record promotion authorization for project", projectId);
-  }
-
-  async function handlePromote() {
-    const project = projects.find((p) => p.id === selectedProject);
-    if (!project) {
-      setStatus({ msg: "Select a project first", type: "error" });
-      return;
-    }
-    const chainConfig = getChainConfig(selectedChain);
-    const isEVM = isEVMChain(chainConfig);
-    const isSol = isSolanaChain(chainConfig);
-
-    if (isEVM && !connectedWallet) {
-      setStatus({ msg: "Connect an EVM wallet first", type: "error" });
-      return;
-    }
-    if (isSol && !connectedSolanaWallet) {
-      setStatus({ msg: "Connect a Solana wallet first", type: "error" });
-      return;
-    }
-
-    const price = prices[selectedPkg];
-    setBusy(true);
-    try {
-      if (isEVM) {
-        const txHash = await handlePromoteEVM(project, price, chainConfig);
-        if (connectedWallet) {
-          await recordPromotionAuthorization(project.id, connectedWallet.address, txHash);
-        }
-      } else if (isSol) {
-        await handlePromoteSolana(project, chainConfig);
-      }
-
-      setStatus({ msg: `"${project.title}" is now featured!`, type: "success" });
-      setSelectedProject("");
-      onSuccess();
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Transaction failed";
-      setStatus({ msg, type: "error" });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const currentPrice = prices[selectedPkg];
-  const priceStr = `$${(Number(currentPrice) / 1e6).toFixed(2)}`;
-  const hasProject = selectedProject !== "";
-  const chainConfig = getChainConfig(selectedChain);
-  const isSol = isSolanaChain(chainConfig);
-  const hasWallet = isSol ? !!connectedSolanaWallet : !!connectedWallet;
-  const walletDisplay = isSol
-    ? connectedSolanaWallet ? shortAddr(connectedSolanaWallet.address) : ""
-    : connectedWallet ? shortAddr(connectedWallet.address) : "";
-
-  const isExpanded = privyReady && isLoggedIn && privyAuthenticated && hasWallet;
-  // `prices[0]` is the per-day floor — used as the "From $X/day" label.
-  // If admin reorders packages someday, this assumption breaks.
-  const fromPerDay = `$${(Number(prices[0]) / 1e6).toFixed(2)}`;
-
-  // Solana token (USDC / $VIBE) picker. Rendered in BOTH the idle and the
-  // expanded payment stages so the choice is always visible when paying.
-  // Only relevant to the Solana lane.
-  const solanaTokenToggle = isSol ? (
-    <div className="mb-4">
-      <label className="block text-[10px] font-semibold text-[var(--text-muted)] mb-1.5">
-        Token
-      </label>
-      <div className="grid grid-cols-2 gap-2">
-        {(["usdc", "vibe"] as const).map((t) => {
-          const active = selectedToken === t;
-          return (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setSelectedToken(t)}
-              className="px-3 py-2 text-xs font-semibold rounded-xl transition-all"
-              style={{
-                border: `1px solid ${active ? "var(--accent)" : "var(--border-subtle)"}`,
-                backgroundColor: active
-                  ? "color-mix(in srgb, var(--accent) 14%, var(--bg-surface))"
-                  : "var(--bg-surface)",
-                color: "var(--foreground)",
-                boxShadow: active ? "var(--shadow-brutal-xs)" : "none",
-              }}
-              aria-pressed={active}
-            >
-              {t === "usdc" ? "USDC" : "$VIBE"}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  ) : null;
-
-  return (
-    <div
-      ref={ref}
-      tabIndex={-1}
-      className="card-brutal relative p-6 flex flex-col md:min-h-[420px] overflow-hidden focus:outline-none"
-      style={{ backgroundColor: "var(--bg-surface)" }}
-    >
-      <h3 className="text-2xl font-bold leading-tight">
-        <span className="block text-[var(--foreground)]">Feature</span>
-        <span className="block" style={{ color: "var(--accent)" }}>Your Project</span>
-      </h3>
-      <p className="mt-3 text-xs text-[var(--text-secondary)] leading-relaxed">
-        Founders are scouting VibeTalent for talented devs. Featured projects land top of the marketplace — exactly where they&apos;re looking.
-      </p>
-
-      <div className="mt-5 flex-1 flex flex-col">
-        {!isExpanded ? (
-          <>
-            {/* Idle stage */}
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-[10px] font-semibold text-[var(--text-muted)]">
-                Pay on
-              </label>
-              <span
-                className="font-mono text-[10px] font-semibold px-2.5 py-0.5 rounded-full"
-                style={{ border: "1px solid var(--accent)", color: "var(--accent)" }}
-              >
-                From {fromPerDay}/day
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              {SUPPORTED_CHAINS.map((key) => {
-                const isActive = selectedChain === key;
-                const chainKey = key as ChainKey;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setSelectedChain(chainKey)}
-                    className="flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-semibold rounded-xl transition-all"
-                    style={{
-                      border: `1px solid ${isActive ? "var(--accent)" : "var(--border-subtle)"}`,
-                      backgroundColor: isActive
-                        ? "color-mix(in srgb, var(--accent) 14%, var(--bg-surface))"
-                        : "var(--bg-surface)",
-                      color: "var(--foreground)",
-                      boxShadow: isActive ? "var(--shadow-brutal-xs)" : "none",
-                    }}
-                    aria-pressed={isActive}
-                  >
-                    <ChainDot chain={chainKey} />
-                    <span>{chainKey === "base" ? "Base" : "Solana"}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {solanaTokenToggle}
-
-            <div className="flex-1" />
-
-            {!privyReady ? (
-              <p className="text-xs font-medium text-[var(--text-muted)] animate-pulse text-center py-2">
-                Loading wallet...
-              </p>
-            ) : (
-              <button
-                type="button"
-                onClick={handleConnectWallet}
-                className="btn-brutal btn-brutal-primary w-full text-sm flex items-center justify-center gap-2"
-              >
-                <Wallet weight="fill" size={16} /> Connect {isSol ? "Solana" : "EVM"} Wallet
-              </button>
-            )}
-
-            <a
-              href="/pricing"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 text-center text-[10px] font-semibold underline underline-offset-4 hover:opacity-80 transition-opacity"
-              style={{ color: "var(--accent)" }}
-            >
-              View Pricing &amp; Guidelines
-            </a>
-          </>
-        ) : (
-          <>
-            {/* Expanded stage */}
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] font-semibold text-[var(--text-muted)] font-mono truncate">
-                {walletDisplay}
-              </span>
-              <button
-                type="button"
-                onClick={handleDisconnectWallet}
-                className="text-[10px] font-semibold text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors"
-              >
-                Disconnect
-              </button>
-            </div>
-
-            <div className="mb-3">
-              <label className="block text-[10px] font-semibold text-[var(--text-muted)] mb-1">
-                Project
-              </label>
-              {loadingProjects ? (
-                <p className="text-xs text-[var(--text-muted)] animate-pulse">Loading projects...</p>
-              ) : projects.length === 0 ? (
-                <div
-                  className="p-3 text-center rounded-xl"
-                  style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--background)" }}
-                >
-                  <p className="text-xs font-semibold text-[var(--text-muted)] mb-2">No projects yet</p>
-                  <a href="/dashboard" className="btn-brutal btn-brutal-primary text-[10px] inline-flex items-center gap-1">
-                    Add a Project
-                  </a>
-                </div>
-              ) : (
-                <select
-                  value={selectedProject}
-                  onChange={(e) => setSelectedProject(e.target.value)}
-                  className="w-full px-3 py-2 text-xs font-medium rounded-xl"
+        <div className="mt-5 flex-1 flex flex-col">
+          {!isExpanded ? (
+            <>
+              {/* Idle stage */}
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[10px] font-semibold text-[var(--text-muted)]">
+                  Pay on
+                </label>
+                <span
+                  className="font-mono text-[10px] font-semibold px-2.5 py-0.5 rounded-full"
                   style={{
-                    backgroundColor: "var(--background)",
-                    border: "1px solid var(--border-hard)",
-                    color: "var(--foreground)",
-                    outline: "none",
-                    cursor: "pointer",
+                    border: "1px solid var(--accent)",
+                    color: "var(--accent)",
                   }}
                 >
-                  <option value="">Choose a project...</option>
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id}>{p.title}</option>
-                  ))}
-                </select>
-              )}
-            </div>
+                  From {fromPerDay}/day
+                </span>
+              </div>
 
-            {solanaTokenToggle}
-
-            <div className="mb-3">
-              <label className="block text-[10px] font-semibold text-[var(--text-muted)] mb-1.5">
-                Package
-              </label>
-              <div className="flex flex-col gap-1.5">
-                {PACKAGES.map((pkg) => {
-                  const isActive = selectedPkg === pkg.value;
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {SUPPORTED_CHAINS.map((key) => {
+                  const isActive = selectedChain === key;
+                  const chainKey = key as ChainKey;
                   return (
                     <button
-                      key={pkg.value}
+                      key={key}
                       type="button"
-                      onClick={() => setSelectedPkg(pkg.value)}
-                      className="flex items-center justify-between px-3 py-2 rounded-xl transition-colors"
+                      onClick={() => setSelectedChain(chainKey)}
+                      className="flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-semibold rounded-xl transition-all"
                       style={{
                         border: `1px solid ${isActive ? "var(--accent)" : "var(--border-subtle)"}`,
                         backgroundColor: isActive
                           ? "color-mix(in srgb, var(--accent) 14%, var(--bg-surface))"
                           : "var(--bg-surface)",
+                        color: "var(--foreground)",
+                        boxShadow: isActive
+                          ? "var(--shadow-brutal-xs)"
+                          : "none",
                       }}
                       aria-pressed={isActive}
                     >
-                      <span className="text-xs font-semibold text-[var(--foreground)]">{pkg.label}</span>
-                      <span className="font-mono text-[11px] font-semibold text-[var(--foreground)]">
-                        ${(Number(prices[pkg.value]) / 1e6).toFixed(2)}
-                      </span>
+                      <ChainDot chain={chainKey} />
+                      <span>{chainKey === "base" ? "Base" : "Solana"}</span>
                     </button>
                   );
                 })}
               </div>
-            </div>
 
-            {status && (
-              <div
-                role={status.type === "error" ? "alert" : "status"}
-                aria-live={status.type === "error" ? "assertive" : "polite"}
-                aria-atomic="true"
-                className="mb-3 px-3 py-2 text-[11px] font-semibold rounded-xl"
-                style={{
-                  border: "1px solid var(--border-subtle)",
-                  backgroundColor:
-                    status.type === "error" ? "var(--status-error-bg)" :
-                    status.type === "success" ? "var(--status-success-bg)" :
-                    "var(--bg-surface)",
-                  color:
-                    status.type === "error" ? "var(--status-error-text)" :
-                    status.type === "success" ? "var(--status-success-text)" :
-                    "var(--foreground)",
-                }}
-              >
-                {status.msg}
-              </div>
-            )}
+              {solanaTokenToggle}
 
-            <button
-              type="button"
-              onClick={handlePromote}
-              disabled={busy || !hasProject}
-              className="btn-brutal btn-brutal-primary w-full text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {busy ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" /> Processing...
-                </>
+              <div className="flex-1" />
+
+              {!privyReady ? (
+                <p className="text-xs font-medium text-[var(--text-muted)] animate-pulse text-center py-2">
+                  Loading wallet...
+                </p>
               ) : (
-                <>
-                  <Check weight="bold" size={16} /> Approve {priceStr} &amp; Promote
-                </>
+                <button
+                  type="button"
+                  onClick={handleConnectWallet}
+                  className="btn-brutal btn-brutal-primary w-full text-sm flex items-center justify-center gap-2"
+                >
+                  <Wallet weight="fill" size={16} /> Connect{" "}
+                  {isSol ? "Solana" : "EVM"} Wallet
+                </button>
               )}
-            </button>
-          </>
-        )}
-      </div>
 
-      {/* Decorative progress bar */}
-      <div
-        className="absolute bottom-0 left-0 h-1"
-        style={{ width: "60%", backgroundColor: "var(--accent)" }}
-        aria-hidden="true"
-      />
-    </div>
-  );
-});
+              <a
+                href="/pricing"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 text-center text-[10px] font-semibold underline underline-offset-4 hover:opacity-80 transition-opacity"
+                style={{ color: "var(--accent)" }}
+              >
+                View Pricing &amp; Guidelines
+              </a>
+            </>
+          ) : (
+            <>
+              {/* Expanded stage */}
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[10px] font-semibold text-[var(--text-muted)] font-mono truncate">
+                  {walletDisplay}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleDisconnectWallet}
+                  className="text-[10px] font-semibold text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors"
+                >
+                  Disconnect
+                </button>
+              </div>
+
+              <div className="mb-3">
+                <label className="block text-[10px] font-semibold text-[var(--text-muted)] mb-1">
+                  Project
+                </label>
+                {loadingProjects ? (
+                  <p className="text-xs text-[var(--text-muted)] animate-pulse">
+                    Loading projects...
+                  </p>
+                ) : projects.length === 0 ? (
+                  <div
+                    className="p-3 text-center rounded-xl"
+                    style={{
+                      border: "1px solid var(--border-subtle)",
+                      backgroundColor: "var(--background)",
+                    }}
+                  >
+                    <p className="text-xs font-semibold text-[var(--text-muted)] mb-2">
+                      No projects yet
+                    </p>
+                    <a
+                      href="/dashboard"
+                      className="btn-brutal btn-brutal-primary text-[10px] inline-flex items-center gap-1"
+                    >
+                      Add a Project
+                    </a>
+                  </div>
+                ) : (
+                  <select
+                    value={selectedProject}
+                    onChange={(e) => setSelectedProject(e.target.value)}
+                    className="w-full px-3 py-2 text-xs font-medium rounded-xl"
+                    style={{
+                      backgroundColor: "var(--background)",
+                      border: "1px solid var(--border-hard)",
+                      color: "var(--foreground)",
+                      outline: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <option value="">Choose a project...</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.title}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {solanaTokenToggle}
+
+              <div className="mb-3">
+                <label className="block text-[10px] font-semibold text-[var(--text-muted)] mb-1.5">
+                  Package
+                </label>
+                <div className="flex flex-col gap-1.5">
+                  {PACKAGES.map((pkg) => {
+                    const isActive = selectedPkg === pkg.value;
+                    return (
+                      <button
+                        key={pkg.value}
+                        type="button"
+                        onClick={() => setSelectedPkg(pkg.value)}
+                        className="flex items-center justify-between px-3 py-2 rounded-xl transition-colors"
+                        style={{
+                          border: `1px solid ${isActive ? "var(--accent)" : "var(--border-subtle)"}`,
+                          backgroundColor: isActive
+                            ? "color-mix(in srgb, var(--accent) 14%, var(--bg-surface))"
+                            : "var(--bg-surface)",
+                        }}
+                        aria-pressed={isActive}
+                      >
+                        <span className="text-xs font-semibold text-[var(--foreground)]">
+                          {pkg.label}
+                        </span>
+                        <span className="font-mono text-[11px] font-semibold text-[var(--foreground)]">
+                          ${(Number(prices[pkg.value]) / 1e6).toFixed(2)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {status && (
+                <div
+                  role={status.type === "error" ? "alert" : "status"}
+                  aria-live={status.type === "error" ? "assertive" : "polite"}
+                  aria-atomic="true"
+                  className="mb-3 px-3 py-2 text-[11px] font-semibold rounded-xl"
+                  style={{
+                    border: "1px solid var(--border-subtle)",
+                    backgroundColor:
+                      status.type === "error"
+                        ? "var(--status-error-bg)"
+                        : status.type === "success"
+                          ? "var(--status-success-bg)"
+                          : "var(--bg-surface)",
+                    color:
+                      status.type === "error"
+                        ? "var(--status-error-text)"
+                        : status.type === "success"
+                          ? "var(--status-success-text)"
+                          : "var(--foreground)",
+                  }}
+                >
+                  {status.msg}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handlePromote}
+                disabled={busy || !hasProject}
+                className="btn-brutal btn-brutal-primary w-full text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {busy ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> Processing...
+                  </>
+                ) : (
+                  <>
+                    <Check weight="bold" size={16} /> Approve {priceStr} &amp;
+                    Promote
+                  </>
+                )}
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Decorative progress bar */}
+        <div
+          className="absolute bottom-0 left-0 h-1"
+          style={{ width: "60%", backgroundColor: "var(--accent)" }}
+          aria-hidden="true"
+        />
+      </div>
+    );
+  },
+);

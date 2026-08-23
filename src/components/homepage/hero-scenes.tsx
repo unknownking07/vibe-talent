@@ -53,18 +53,36 @@ export function HeroSceneStyles() {
 }
 
 /** A "window" frame shared by both scenes so the two cards feel like a set. */
-function SceneFrame({ label, right, children }: { label: string; right: React.ReactNode; children: React.ReactNode }) {
+function SceneFrame({
+  label,
+  right,
+  children,
+}: {
+  label: string;
+  right: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div
       className="relative w-full overflow-hidden select-none rounded-xl"
-      style={{ height: 150, border: "1px solid var(--border-hard)", backgroundColor: "var(--bg-surface-light)" }}
+      style={{
+        height: 150,
+        border: "1px solid var(--border-hard)",
+        backgroundColor: "var(--bg-surface-light)",
+      }}
       aria-hidden="true"
     >
       <div
         className="flex items-center justify-between px-3 py-1.5"
-        style={{ borderBottom: "1px solid var(--border-hard)", backgroundColor: "var(--bg-inverted)" }}
+        style={{
+          borderBottom: "1px solid var(--border-hard)",
+          backgroundColor: "var(--bg-inverted)",
+        }}
       >
-        <span className="font-mono text-[10px] font-semibold" style={{ color: "var(--text-on-inverted)" }}>
+        <span
+          className="font-mono text-[10px] font-semibold"
+          style={{ color: "var(--text-on-inverted)" }}
+        >
           {label}
         </span>
         {right}
@@ -77,20 +95,57 @@ function SceneFrame({ label, right, children }: { label: string; right: React.Re
 /** Builder: a vibe coder shipping — hooded avatar, typing code, streak flame, contribution graph. */
 export function BuilderScene() {
   return (
-    <SceneFrame label="~/vibe · shipping" right={<Fire weight="fill" size={14} className="prvFlame" style={{ color: "var(--accent)" }} />}>
+    <SceneFrame
+      label="~/vibe · shipping"
+      right={
+        <Fire
+          weight="fill"
+          size={14}
+          className="prvFlame"
+          style={{ color: "var(--accent)" }}
+        />
+      }
+    >
       <div className="flex items-start gap-3">
         {/* hooded coder avatar */}
-        <svg width="26" height="26" viewBox="0 0 24 24" className="prvHood shrink-0" style={{ marginTop: 1 }}>
-          <path d="M3 14 C3 6.5 7 3 12 3 C17 3 21 6.5 21 14 Z" fill="var(--accent)" stroke="var(--border-hard)" strokeWidth="1.5" />
+        <svg
+          width="26"
+          height="26"
+          viewBox="0 0 24 24"
+          className="prvHood shrink-0"
+          style={{ marginTop: 1 }}
+        >
+          <path
+            d="M3 14 C3 6.5 7 3 12 3 C17 3 21 6.5 21 14 Z"
+            fill="var(--accent)"
+            stroke="var(--border-hard)"
+            strokeWidth="1.5"
+          />
           <circle cx="12" cy="11.5" r="3.2" fill="var(--bg-inverted)" />
         </svg>
         {/* "typing" code lines */}
         <div className="flex-1 space-y-2 pt-0.5">
-          <div className="h-2 rounded-sm" style={{ width: "72%", backgroundColor: "var(--border-subtle)" }} />
-          <div className="h-2 rounded-sm" style={{ width: "48%", backgroundColor: "var(--accent)", opacity: 0.65 }} />
+          <div
+            className="h-2 rounded-sm"
+            style={{ width: "72%", backgroundColor: "var(--border-subtle)" }}
+          />
+          <div
+            className="h-2 rounded-sm"
+            style={{
+              width: "48%",
+              backgroundColor: "var(--accent)",
+              opacity: 0.65,
+            }}
+          />
           <div className="flex items-center gap-1">
-            <div className="h-2 rounded-sm" style={{ width: "56%", backgroundColor: "var(--border-subtle)" }} />
-            <span className="prvCursor inline-block" style={{ width: 6, height: 12, backgroundColor: "var(--accent)" }} />
+            <div
+              className="h-2 rounded-sm"
+              style={{ width: "56%", backgroundColor: "var(--border-subtle)" }}
+            />
+            <span
+              className="prvCursor inline-block"
+              style={{ width: 6, height: 12, backgroundColor: "var(--accent)" }}
+            />
           </div>
         </div>
       </div>
@@ -101,11 +156,21 @@ export function BuilderScene() {
           <div
             key={i}
             className="prvSquare"
-            style={{ width: 11, height: 11, borderRadius: 2, animationDelay: `${i * 105}ms`, backgroundColor: "var(--border-subtle)", border: "1px solid var(--border-hard)" }}
+            style={{
+              width: 11,
+              height: 11,
+              borderRadius: 2,
+              animationDelay: `${i * 105}ms`,
+              backgroundColor: "var(--border-subtle)",
+              border: "1px solid var(--border-hard)",
+            }}
           />
         ))}
       </div>
-      <div className="mt-2 font-mono text-[9px] font-semibold" style={{ color: "var(--text-muted)" }}>
+      <div
+        className="mt-2 font-mono text-[9px] font-semibold"
+        style={{ color: "var(--text-muted)" }}
+      >
         commit · ship · repeat
       </div>
     </SceneFrame>
@@ -120,31 +185,63 @@ export function HirerScene() {
     { w: "50%", match: false },
   ];
   return (
-    <SceneFrame label="scanning talent" right={<Search size={13} style={{ color: "var(--accent)" }} />}>
+    <SceneFrame
+      label="scanning talent"
+      right={<Search size={13} style={{ color: "var(--accent)" }} />}
+    >
       <div className="relative space-y-2">
         {/* sweep line */}
         <div
           className="prvScanLine absolute left-0 right-0 z-10"
-          style={{ top: 0, height: 2, backgroundColor: "var(--accent)", boxShadow: "0 0 8px var(--accent)" }}
+          style={{
+            top: 0,
+            height: 2,
+            backgroundColor: "var(--accent)",
+            boxShadow: "0 0 8px var(--accent)",
+          }}
         />
         {rows.map((r, i) => (
           <div
             key={i}
             className={`flex items-center gap-2 px-2 py-1.5 rounded-lg ${r.match ? "prvMatchRow" : ""}`}
-            style={{ border: "1px solid var(--border-subtle)", backgroundColor: "var(--bg-surface)" }}
+            style={{
+              border: "1px solid var(--border-subtle)",
+              backgroundColor: "var(--bg-surface)",
+            }}
           >
             <div
               className="rounded-full shrink-0"
-              style={{ width: 16, height: 16, backgroundColor: r.match ? "var(--accent)" : "var(--border-subtle)", border: "1px solid var(--border-hard)" }}
+              style={{
+                width: 16,
+                height: 16,
+                backgroundColor: r.match
+                  ? "var(--accent)"
+                  : "var(--border-subtle)",
+                border: "1px solid var(--border-hard)",
+              }}
             />
             <div className="flex-1 space-y-1">
-              <div className="h-1.5 rounded-sm" style={{ width: r.w, backgroundColor: "var(--border-subtle)" }} />
-              <div className="h-1.5 rounded-sm" style={{ width: "32%", backgroundColor: "var(--accent)", opacity: 0.55 }} />
+              <div
+                className="h-1.5 rounded-sm"
+                style={{ width: r.w, backgroundColor: "var(--border-subtle)" }}
+              />
+              <div
+                className="h-1.5 rounded-sm"
+                style={{
+                  width: "32%",
+                  backgroundColor: "var(--accent)",
+                  opacity: 0.55,
+                }}
+              />
             </div>
             {r.match && (
               <span
                 className="prvCheck inline-flex items-center justify-center shrink-0 rounded-full"
-                style={{ width: 16, height: 16, backgroundColor: "var(--accent)" }}
+                style={{
+                  width: 16,
+                  height: 16,
+                  backgroundColor: "var(--accent)",
+                }}
               >
                 <Check weight="bold" size={11} color="#fff" />
               </span>
@@ -152,7 +249,10 @@ export function HirerScene() {
           </div>
         ))}
       </div>
-      <div className="mt-2 font-mono text-[9px] font-semibold" style={{ color: "var(--text-muted)" }}>
+      <div
+        className="mt-2 font-mono text-[9px] font-semibold"
+        style={{ color: "var(--text-muted)" }}
+      >
         ranked by proof
       </div>
     </SceneFrame>

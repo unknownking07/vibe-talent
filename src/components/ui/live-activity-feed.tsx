@@ -5,7 +5,6 @@ import type { ReactNode, CSSProperties } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
-
 type FeedItem = {
   id: string;
   type: "push" | "pr" | "create" | "issue" | "project" | "streak";
@@ -39,13 +38,24 @@ const GROUP_WINDOW = 4 * 60 * 60 * 1000;
 function groupFeedItems(items: FeedItem[]): GroupedItem[] {
   const grouped: GroupedItem[] = [];
   for (const item of items) {
-    if (item.type === "project") { grouped.push({ ...item, count: 1 }); continue; }
-    const existing = grouped.find(g =>
-      g.type === item.type && g.username === item.username && g.repo_name === item.repo_name &&
-      g.type !== "project" && Math.abs(new Date(g.date).getTime() - new Date(item.date).getTime()) < GROUP_WINDOW
+    if (item.type === "project") {
+      grouped.push({ ...item, count: 1 });
+      continue;
+    }
+    const existing = grouped.find(
+      (g) =>
+        g.type === item.type &&
+        g.username === item.username &&
+        g.repo_name === item.repo_name &&
+        g.type !== "project" &&
+        Math.abs(new Date(g.date).getTime() - new Date(item.date).getTime()) <
+          GROUP_WINDOW,
     );
-    if (existing) { existing.count++; }
-    else { grouped.push({ ...item, count: 1 }); }
+    if (existing) {
+      existing.count++;
+    } else {
+      grouped.push({ ...item, count: 1 });
+    }
   }
   return grouped;
 }
@@ -60,7 +70,6 @@ function relativeTime(dateStr: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-
 function actionText(item: GroupedItem): string {
   if (item.type === "project") return "shipped";
   if (item.type === "pr") return item.count > 1 ? `${item.count} PRs` : "PR";
@@ -69,7 +78,14 @@ function actionText(item: GroupedItem): string {
   return item.count > 1 ? `${item.count} commits` : "pushed";
 }
 
-const AVATAR_COLORS = ["#ff4400", "#4a4a4a", "var(--bg-surface-light)", "#ff4400", "#4a4a4a", "var(--bg-surface-light)"];
+const AVATAR_COLORS = [
+  "#ff4400",
+  "#4a4a4a",
+  "var(--bg-surface-light)",
+  "#ff4400",
+  "#4a4a4a",
+  "var(--bg-surface-light)",
+];
 
 const FRAME_STYLE: CSSProperties = {
   width: "100%",
@@ -94,37 +110,57 @@ function FeedShell({ children }: { children: ReactNode }) {
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
       <article style={FRAME_STYLE}>
-        <header style={{
-          backgroundColor: "var(--accent, #ff4400)",
-          color: "var(--text-on-inverted, #0F0F0F)",
-          padding: "1rem 1.25rem",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: "1px solid var(--border-subtle, #2a2a2a)",
-        }}>
-          <div style={{
-            fontSize: "1rem",
-            fontWeight: 700,
-            letterSpacing: "-0.5px",
+        <header
+          style={{
+            backgroundColor: "var(--accent, #ff4400)",
+            color: "var(--text-on-inverted, #0F0F0F)",
+            padding: "1rem 1.25rem",
             display: "flex",
+            justifyContent: "space-between",
             alignItems: "center",
-            gap: 8,
-            fontFamily: "var(--font-geist, ui-sans-serif, system-ui, sans-serif)",
-          }}>
+            borderBottom: "1px solid var(--border-subtle, #2a2a2a)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "1rem",
+              fontWeight: 700,
+              letterSpacing: "-0.5px",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              fontFamily:
+                "var(--font-geist, ui-sans-serif, system-ui, sans-serif)",
+            }}
+          >
             <span aria-hidden="true" className="live-dot" />
             Live Activity
           </div>
-          <Link href="/feed" style={{
-            backgroundColor: "#fff", color: "#000", textDecoration: "none",
-            fontSize: "0.75rem", fontWeight: 600, padding: "6px 12px", borderRadius: 999,
-            whiteSpace: "nowrap",
-          }}>
+          <Link
+            href="/feed"
+            style={{
+              backgroundColor: "#fff",
+              color: "#000",
+              textDecoration: "none",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              padding: "6px 12px",
+              borderRadius: 999,
+              whiteSpace: "nowrap",
+            }}
+          >
             View Full Feed
           </Link>
         </header>
 
-        <div style={{ display: "flex", flexDirection: "column", maxHeight: 500, overflowY: "auto" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            maxHeight: 500,
+            overflowY: "auto",
+          }}
+        >
           {children}
         </div>
       </article>
@@ -135,17 +171,29 @@ function FeedShell({ children }: { children: ReactNode }) {
 /** One placeholder row mirroring a real feed row (avatar + two text lines). */
 function ActivitySkeletonRow({ last }: { last: boolean }) {
   return (
-    <div style={{
-      padding: "1rem 1.25rem",
-      display: "grid",
-      gridTemplateColumns: "auto 1fr",
-      gap: "1rem",
-      alignItems: "center",
-      borderBottom: last ? "none" : "1px solid var(--border-subtle, #2a2a2a)",
-    }}>
-      <div className="skeleton" style={{ width: 40, height: 40, borderRadius: 999 }} />
+    <div
+      style={{
+        padding: "1rem 1.25rem",
+        display: "grid",
+        gridTemplateColumns: "auto 1fr",
+        gap: "1rem",
+        alignItems: "center",
+        borderBottom: last ? "none" : "1px solid var(--border-subtle, #2a2a2a)",
+      }}
+    >
+      <div
+        className="skeleton"
+        style={{ width: 40, height: 40, borderRadius: 999 }}
+      />
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
           <div className="skeleton" style={{ height: 12, width: 120 }} />
           <div className="skeleton" style={{ height: 10, width: 44 }} />
         </div>
@@ -170,8 +218,8 @@ export function LiveActivityFeed() {
         .then((d) => {
           if (cancelled) return;
           // Drop any event types this snippet can't render correctly.
-          const items: FeedItem[] = (d.feed || []).filter(
-            (i: FeedItem) => SUPPORTED_LEGACY_TYPES.has(i.type),
+          const items: FeedItem[] = (d.feed || []).filter((i: FeedItem) =>
+            SUPPORTED_LEGACY_TYPES.has(i.type),
           );
           setFeed(items);
           setLoaded(true);
@@ -225,23 +273,32 @@ export function LiveActivityFeed() {
 
   // Skeleton placeholder rows inside the real frame — no layout shift when the
   // feed arrives.
-  if (!loaded) return (
-    <FeedShell>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <ActivitySkeletonRow key={i} last={i === 4} />
-      ))}
-    </FeedShell>
-  );
+  if (!loaded)
+    return (
+      <FeedShell>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <ActivitySkeletonRow key={i} last={i === 4} />
+        ))}
+      </FeedShell>
+    );
   // Failed fetch with nothing cached to show — give explicit feedback rather
   // than silently rendering an empty section. (Stale items survive a transient
   // refetch error: the rows path below still wins when `grouped` is non-empty.)
-  if (error && grouped.length === 0) return (
-    <FeedShell>
-      <div style={{ padding: "1.5rem 1.25rem", textAlign: "center", color: "var(--text-muted, #8a8a8a)", fontSize: "0.85rem" }}>
-        Couldn&apos;t load live activity.
-      </div>
-    </FeedShell>
-  );
+  if (error && grouped.length === 0)
+    return (
+      <FeedShell>
+        <div
+          style={{
+            padding: "1.5rem 1.25rem",
+            textAlign: "center",
+            color: "var(--text-muted, #8a8a8a)",
+            fontSize: "0.85rem",
+          }}
+        >
+          Couldn&apos;t load live activity.
+        </div>
+      </FeedShell>
+    );
   if (grouped.length === 0) return null;
 
   // v2: white text + green blinking dot
@@ -250,8 +307,14 @@ export function LiveActivityFeed() {
       {grouped.map((item, idx) => {
         const initials = item.username.slice(0, 2).toUpperCase();
         const bgColor = AVATAR_COLORS[idx % AVATAR_COLORS.length];
-        const textColor = bgColor === "#ffffff" ? "#000" : bgColor === "#4a4a4a" ? "#fff" : "#000";
-        const name = item.type === "project" ? item.project_title : item.repo_name;
+        const textColor =
+          bgColor === "#ffffff"
+            ? "#000"
+            : bgColor === "#4a4a4a"
+              ? "#fff"
+              : "#000";
+        const name =
+          item.type === "project" ? item.project_title : item.repo_name;
 
         return (
           <Link
@@ -262,42 +325,99 @@ export function LiveActivityFeed() {
               display: "grid",
               gridTemplateColumns: "auto 1fr",
               gap: "1rem",
-              borderBottom: idx < grouped.length - 1 ? "1px solid var(--border-subtle, #2a2a2a)" : "none",
+              borderBottom:
+                idx < grouped.length - 1
+                  ? "1px solid var(--border-subtle, #2a2a2a)"
+                  : "none",
               transition: "background-color 0.15s ease",
               textDecoration: "none",
               color: "inherit",
             }}
           >
-            <div style={{
-              width: 40, height: 40, backgroundColor: bgColor,
-              border: "1px solid var(--border-subtle, #2a2a2a)",
-              borderRadius: 999,
-              display: "flex", justifyContent: "center", alignItems: "center",
-              fontWeight: 700, color: textColor, fontSize: "1rem",
-              overflow: "hidden",
-              fontFamily: "var(--font-geist, ui-sans-serif, system-ui, sans-serif)",
-            }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                backgroundColor: bgColor,
+                border: "1px solid var(--border-subtle, #2a2a2a)",
+                borderRadius: 999,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                fontWeight: 700,
+                color: textColor,
+                fontSize: "1rem",
+                overflow: "hidden",
+                fontFamily:
+                  "var(--font-geist, ui-sans-serif, system-ui, sans-serif)",
+              }}
+            >
               {item.avatar_url ? (
-                <Image src={item.avatar_url} alt={item.username} width={40} height={40} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              ) : initials}
+                <Image
+                  src={item.avatar_url}
+                  alt={item.username}
+                  width={40}
+                  height={40}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
+                initials
+              )}
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                gap: 4,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                  gap: 8,
+                }}
+              >
                 <div style={{ fontSize: "0.875rem", lineHeight: 1.2 }}>
-                  <span style={{ fontWeight: 700, color: "var(--foreground, #fff)" }}>@{item.username}</span>{" "}
-                  <span style={{ color: "var(--text-muted, #8a8a8a)" }}>{actionText(item)}</span>
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      color: "var(--foreground, #fff)",
+                    }}
+                  >
+                    @{item.username}
+                  </span>{" "}
+                  <span style={{ color: "var(--text-muted, #8a8a8a)" }}>
+                    {actionText(item)}
+                  </span>
                 </div>
-                <span style={{ fontSize: "0.75rem", color: "var(--text-muted, #8a8a8a)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--text-muted, #8a8a8a)",
+                    fontVariantNumeric: "tabular-nums",
+                    flexShrink: 0,
+                  }}
+                >
                   {relativeTime(item.date)}
                 </span>
               </div>
               {name && (
-                <div style={{
-                  fontSize: "1rem", fontWeight: 700, fontStyle: "italic",
-                  color: "var(--accent, #ff4400)", letterSpacing: "-0.5px", lineHeight: 1.1,
-                  fontFamily: "var(--font-geist, ui-sans-serif, system-ui, sans-serif)",
-                }}>
+                <div
+                  style={{
+                    fontSize: "1rem",
+                    fontWeight: 700,
+                    fontStyle: "italic",
+                    color: "var(--accent, #ff4400)",
+                    letterSpacing: "-0.5px",
+                    lineHeight: 1.1,
+                    fontFamily:
+                      "var(--font-geist, ui-sans-serif, system-ui, sans-serif)",
+                  }}
+                >
                   {name}
                 </div>
               )}

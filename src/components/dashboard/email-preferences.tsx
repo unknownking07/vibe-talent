@@ -12,13 +12,42 @@ interface Preferences {
   re_engagement: boolean;
 }
 
-const PREF_LABELS: { key: keyof Preferences; label: string; description: string }[] = [
-  { key: "profile_view_digest", label: "Profile View Digest", description: "Daily summary of who viewed your profile" },
-  { key: "streak_reminders", label: "Streak Reminders", description: "Warnings when your streak is about to end" },
-  { key: "milestone_alerts", label: "Milestone Alerts", description: "Notifications for badge and vibe score milestones" },
-  { key: "weekly_digest", label: "Weekly Digest", description: "Weekly recap of your stats and activity" },
-  { key: "hire_notifications", label: "Hire Notifications", description: "Emails when someone wants to hire you" },
-  { key: "re_engagement", label: "Feedback Requests", description: "Occasional emails asking for your feedback if you've been away" },
+const PREF_LABELS: {
+  key: keyof Preferences;
+  label: string;
+  description: string;
+}[] = [
+  {
+    key: "profile_view_digest",
+    label: "Profile View Digest",
+    description: "Daily summary of who viewed your profile",
+  },
+  {
+    key: "streak_reminders",
+    label: "Streak Reminders",
+    description: "Warnings when your streak is about to end",
+  },
+  {
+    key: "milestone_alerts",
+    label: "Milestone Alerts",
+    description: "Notifications for badge and vibe score milestones",
+  },
+  {
+    key: "weekly_digest",
+    label: "Weekly Digest",
+    description: "Weekly recap of your stats and activity",
+  },
+  {
+    key: "hire_notifications",
+    label: "Hire Notifications",
+    description: "Emails when someone wants to hire you",
+  },
+  {
+    key: "re_engagement",
+    label: "Feedback Requests",
+    description:
+      "Occasional emails asking for your feedback if you've been away",
+  },
 ];
 
 export function EmailPreferences() {
@@ -86,20 +115,23 @@ export function EmailPreferences() {
 
       <div className="divide-y divide-[var(--border-subtle)]">
         {PREF_LABELS.map(({ key, label, description }) => (
-          <div
-            key={key}
-            className="flex items-center justify-between py-3"
-          >
+          <div key={key} className="flex items-center justify-between py-3">
             <div className="min-w-0 flex-1 mr-3">
-              <div className="text-sm font-bold text-[var(--foreground)]">{label}</div>
-              <div className="text-xs text-[var(--text-muted)] mt-0.5">{description}</div>
+              <div className="text-sm font-bold text-[var(--foreground)]">
+                {label}
+              </div>
+              <div className="text-xs text-[var(--text-muted)] mt-0.5">
+                {description}
+              </div>
             </div>
             <button
               onClick={() => handleToggle(key)}
               disabled={saving}
               className="w-10 h-6 rounded-full relative cursor-pointer transition-colors shrink-0"
               style={{
-                backgroundColor: prefs[key] ? "var(--accent)" : "var(--border-subtle)",
+                backgroundColor: prefs[key]
+                  ? "var(--accent)"
+                  : "var(--border-subtle)",
                 border: "1px solid var(--border-hard)",
               }}
               aria-label={`Toggle ${label}`}

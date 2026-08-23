@@ -9,12 +9,19 @@ interface ShareButtonProps {
   imageUrl?: string;
 }
 
-type Status = "idle" | "copying" | "copied-link" | "copied-image" | "image-error";
+type Status =
+  "idle" | "copying" | "copied-link" | "copied-image" | "image-error";
 
 export function ShareButton({ url, text, imageUrl }: ShareButtonProps) {
   const [status, setStatus] = useState<Status>("idle");
-  const absUrl = typeof window !== "undefined" ? new URL(url, window.location.origin).toString() : url;
-  const absImageUrl = imageUrl && typeof window !== "undefined" ? new URL(imageUrl, window.location.origin).toString() : imageUrl;
+  const absUrl =
+    typeof window !== "undefined"
+      ? new URL(url, window.location.origin).toString()
+      : url;
+  const absImageUrl =
+    imageUrl && typeof window !== "undefined"
+      ? new URL(imageUrl, window.location.origin).toString()
+      : imageUrl;
 
   // Hold the (in-flight) image blob so a hover/focus can start generating it
   // before the click — the copy then resolves an already-warm promise instead
@@ -53,7 +60,8 @@ export function ShareButton({ url, text, imageUrl }: ShareButtonProps) {
     // Reuse the prewarmed blob if present; otherwise start now. The
     // ClipboardItem is built synchronously with the promise so Safari keeps it
     // tied to the click gesture. next/og emits image/png.
-    const blobPromise = blobRef.current ?? (blobRef.current = fetchBlob(absImageUrl));
+    const blobPromise =
+      blobRef.current ?? (blobRef.current = fetchBlob(absImageUrl));
     try {
       await navigator.clipboard.write([
         new ClipboardItem({ "image/png": blobPromise }),
@@ -89,10 +97,13 @@ export function ShareButton({ url, text, imageUrl }: ShareButtonProps) {
           className="bg-[var(--accent)] text-white px-4 py-2 text-[13px] font-semibold rounded-xl hover:opacity-90 disabled:opacity-60"
           aria-label="Copy receipt image to clipboard"
         >
-          {status === "copying" ? "Copying…"
-            : status === "copied-image" ? "Image copied ✓"
-            : status === "image-error" ? "Couldn’t copy"
-            : "Copy image"}
+          {status === "copying"
+            ? "Copying…"
+            : status === "copied-image"
+              ? "Image copied ✓"
+              : status === "image-error"
+                ? "Couldn’t copy"
+                : "Copy image"}
         </button>
       )}
 

@@ -36,7 +36,8 @@ function groupFeedItems(items: FeedItem[]): GroupedFeedItem[] {
       last.type === item.type &&
       last.username === item.username &&
       last.repo_name === item.repo_name &&
-      Math.abs(new Date(last.date).getTime() - new Date(item.date).getTime()) < GROUP_WINDOW;
+      Math.abs(new Date(last.date).getTime() - new Date(item.date).getTime()) <
+        GROUP_WINDOW;
     if (canMerge) {
       last.count++;
       if (
@@ -303,7 +304,15 @@ export function NetworkFeed({
   const topContributor = useMemo(() => {
     if (!isFull) return null;
     const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const userCounts: Record<string, { count: number; username: string; avatar_url: string | null; streak: number }> = {};
+    const userCounts: Record<
+      string,
+      {
+        count: number;
+        username: string;
+        avatar_url: string | null;
+        streak: number;
+      }
+    > = {};
     for (const item of feed) {
       if (new Date(item.date).getTime() < cutoff) continue;
       if (!userCounts[item.username]) {
@@ -328,7 +337,9 @@ export function NetworkFeed({
     return (
       <>
         <style>{FEED_STYLES}</style>
-        <div style={{ display: "flex", flexDirection: "column", paddingTop: 8 }}>
+        <div
+          style={{ display: "flex", flexDirection: "column", paddingTop: 8 }}
+        >
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
@@ -341,10 +352,19 @@ export function NetworkFeed({
                 borderBottom: "1px solid var(--border-subtle, #2a2a2a)",
               }}
             >
-              <div className="skeleton" style={{ width: 48, height: 48, borderRadius: "50%" }} />
+              <div
+                className="skeleton"
+                style={{ width: 48, height: 48, borderRadius: "50%" }}
+              />
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div className="skeleton" style={{ height: 12, width: "42%" }} />
-                <div className="skeleton" style={{ height: 14, width: "68%" }} />
+                <div
+                  className="skeleton"
+                  style={{ height: 12, width: "42%" }}
+                />
+                <div
+                  className="skeleton"
+                  style={{ height: 14, width: "68%" }}
+                />
               </div>
             </div>
           ))}
@@ -356,14 +376,36 @@ export function NetworkFeed({
   // ── Compact variant (homepage) ─────────────────────────────────────────
   if (!isFull) {
     return (
-      <section style={{ display: "flex", flexDirection: "column", gap: 20, paddingTop: 8 }}>
+      <section
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 20,
+          paddingTop: 8,
+        }}
+      >
         <style>{FEED_STYLES}</style>
 
-        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h2 style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.03em", color: "var(--foreground)" }}>
+        <header
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: 22,
+              fontWeight: 600,
+              letterSpacing: "-0.03em",
+              color: "var(--foreground)",
+            }}
+          >
             Live Network Feed
           </h2>
-          <span className="fl-tag fl-tag-dark"><span style={{ color: "#4ade80" }}>●</span> Live</span>
+          <span className="fl-tag fl-tag-dark">
+            <span style={{ color: "#4ade80" }}>●</span> Live
+          </span>
         </header>
 
         <div className="fl-chip-row" role="group" aria-label="Feed filters">
@@ -384,7 +426,14 @@ export function NetworkFeed({
         </div>
 
         {visibleRows.length === 0 && (
-          <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted, #8A8B94)", fontSize: "0.9rem" }}>
+          <div
+            style={{
+              textAlign: "center",
+              padding: 40,
+              color: "var(--text-muted, #8A8B94)",
+              fontSize: "0.9rem",
+            }}
+          >
             No activity yet for this filter: check back soon.
           </div>
         )}
@@ -395,7 +444,9 @@ export function NetworkFeed({
           ))}
         </div>
 
-        <div style={{ display: "flex", justifyContent: "center", paddingTop: 8 }}>
+        <div
+          style={{ display: "flex", justifyContent: "center", paddingTop: 8 }}
+        >
           <Link
             href="/feed"
             style={{
@@ -451,15 +502,39 @@ export function NetworkFeed({
 
         {/* Center feed */}
         <main style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 24, borderBottom: "1px solid var(--border-subtle)" }}>
-            <h1 style={{ fontSize: 24, fontWeight: 600, letterSpacing: "-0.03em", color: "var(--foreground)" }}>
+          <header
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingBottom: 24,
+              borderBottom: "1px solid var(--border-subtle)",
+            }}
+          >
+            <h1
+              style={{
+                fontSize: 24,
+                fontWeight: 600,
+                letterSpacing: "-0.03em",
+                color: "var(--foreground)",
+              }}
+            >
               Live Network Feed
             </h1>
-            <span className="fl-tag fl-tag-dark"><span style={{ color: "#4ade80" }}>●</span> Live</span>
+            <span className="fl-tag fl-tag-dark">
+              <span style={{ color: "#4ade80" }}>●</span> Live
+            </span>
           </header>
 
           {visibleRows.length === 0 && (
-            <div style={{ textAlign: "center", padding: 60, color: "var(--text-muted, #8A8B94)", fontSize: "0.9rem" }}>
+            <div
+              style={{
+                textAlign: "center",
+                padding: 60,
+                color: "var(--text-muted, #8A8B94)",
+                fontSize: "0.9rem",
+              }}
+            >
               No activity yet for this filter.
             </div>
           )}
@@ -481,30 +556,96 @@ export function NetworkFeed({
 
             {topContributor && (
               <div className="fl-card-pale">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.02em", maxWidth: "70%" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <h3
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      maxWidth: "70%",
+                    }}
+                  >
                     Top contributor this week
                   </h3>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", border: "1px solid rgba(0,0,0,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      border: "1px solid rgba(0,0,0,0.1)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                     </svg>
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                  <Link href={`/profile/${topContributor.username}`} style={{ textDecoration: "none" }}>
-                    <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#15151A", border: "1px solid #2A2A33", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                  <Link
+                    href={`/profile/${topContributor.username}`}
+                    style={{ textDecoration: "none" }}
+                  >
+                    <div
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: "50%",
+                        background: "#15151A",
+                        border: "1px solid #2A2A33",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        overflow: "hidden",
+                      }}
+                    >
                       {topContributor.avatar_url ? (
-                        <Image src={topContributor.avatar_url} alt={topContributor.username} width={48} height={48} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <Image
+                          src={topContributor.avatar_url}
+                          alt={topContributor.username}
+                          width={48}
+                          height={48}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
                       ) : (
-                        <span style={{ fontWeight: 600, color: "#8A8B94" }}>{topContributor.username.slice(0, 2).toUpperCase()}</span>
+                        <span style={{ fontWeight: 600, color: "#8A8B94" }}>
+                          {topContributor.username.slice(0, 2).toUpperCase()}
+                        </span>
                       )}
                     </div>
                   </Link>
                   <div>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: "#0A0A0E" }}>{topContributor.username}</div>
+                    <div
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 600,
+                        color: "#0A0A0E",
+                      }}
+                    >
+                      {topContributor.username}
+                    </div>
                     <div style={{ fontSize: 13, color: "rgba(0,0,0,0.6)" }}>
-                      {topContributor.count} events · {topContributor.streak}d streak
+                      {topContributor.count} events · {topContributor.streak}d
+                      streak
                     </div>
                   </div>
                 </div>
@@ -514,23 +655,91 @@ export function NetworkFeed({
 
           {stats && (
             <div className="fl-card-dark">
-              <div style={{ fontSize: 14, fontWeight: 500, color: "var(--foreground, #fff)" }}>Network Velocity</div>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: "var(--foreground, #fff)",
+                }}
+              >
+                Network Velocity
+              </div>
               <div className="fl-stat-grid">
                 <div>
-                  <div style={{ fontSize: 20, fontWeight: 500, color: "var(--foreground, #fff)" }}>{stats.builders}</div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted, #8A8B94)" }}>Builders</div>
+                  <div
+                    style={{
+                      fontSize: 20,
+                      fontWeight: 500,
+                      color: "var(--foreground, #fff)",
+                    }}
+                  >
+                    {stats.builders}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "var(--text-muted, #8A8B94)",
+                    }}
+                  >
+                    Builders
+                  </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 20, fontWeight: 500, color: "var(--accent, #FF4A2A)" }}>{stats.activeStreaks}</div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted, #8A8B94)" }}>Active streaks</div>
+                  <div
+                    style={{
+                      fontSize: 20,
+                      fontWeight: 500,
+                      color: "var(--accent, #FF4A2A)",
+                    }}
+                  >
+                    {stats.activeStreaks}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "var(--text-muted, #8A8B94)",
+                    }}
+                  >
+                    Active streaks
+                  </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 20, fontWeight: 500, color: "var(--foreground, #fff)" }}>{stats.projects}</div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted, #8A8B94)" }}>Projects shipped</div>
+                  <div
+                    style={{
+                      fontSize: 20,
+                      fontWeight: 500,
+                      color: "var(--foreground, #fff)",
+                    }}
+                  >
+                    {stats.projects}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "var(--text-muted, #8A8B94)",
+                    }}
+                  >
+                    Projects shipped
+                  </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 20, fontWeight: 500, color: "var(--foreground, #fff)" }}>{stats.endorsements}</div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted, #8A8B94)" }}>Endorsements</div>
+                  <div
+                    style={{
+                      fontSize: 20,
+                      fontWeight: 500,
+                      color: "var(--foreground, #fff)",
+                    }}
+                  >
+                    {stats.endorsements}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "var(--text-muted, #8A8B94)",
+                    }}
+                  >
+                    Endorsements
+                  </div>
                 </div>
               </div>
             </div>

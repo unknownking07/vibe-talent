@@ -19,11 +19,11 @@ export function EndGameLadderCTA() {
       if (!cancelled) setIsLoggedIn(!!user);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!cancelled) setIsLoggedIn(!!session?.user);
-      },
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!cancelled) setIsLoggedIn(!!session?.user);
+    });
 
     return () => {
       cancelled = true;

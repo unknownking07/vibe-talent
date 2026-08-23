@@ -35,7 +35,11 @@ interface OnboardingTourProps {
  * `@/lib/onboarding` so other entry points (the navbar replay button) can
  * coordinate without re-implementing the contract.
  */
-export function OnboardingTour({ onClose, forceOpen = false, username }: OnboardingTourProps) {
+export function OnboardingTour({
+  onClose,
+  forceOpen = false,
+  username,
+}: OnboardingTourProps) {
   const router = useRouter();
   const [cardIndex, setCardIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(true);
@@ -177,7 +181,10 @@ export function OnboardingTour({ onClose, forceOpen = false, username }: Onboard
         {/* Body. The `key={cardIndex}` re-mounts the inner div on every
             transition so animate-fade-in-up retriggers — pure CSS, no JS
             timing required. */}
-        <div key={cardIndex} className="animate-fade-in-up tour-card-content p-6 sm:p-8">
+        <div
+          key={cardIndex}
+          className="animate-fade-in-up tour-card-content p-6 sm:p-8"
+        >
           {/* Hero icon */}
           <div
             className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 mb-4 rounded-xl"
@@ -281,7 +288,9 @@ export function OnboardingTour({ onClose, forceOpen = false, username }: Onboard
                   style={{
                     width: active ? 18 : 6,
                     height: 6,
-                    backgroundColor: active ? "var(--accent)" : "var(--border-hard)",
+                    backgroundColor: active
+                      ? "var(--accent)"
+                      : "var(--border-hard)",
                     opacity: active ? 1 : 0.4,
                   }}
                 />

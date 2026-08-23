@@ -21,7 +21,12 @@
 
 import { Fragment } from "react";
 import { ArrowRight } from "lucide-react";
-import { Envelope, Fire, GithubLogo, Trophy } from "@phosphor-icons/react/dist/ssr";
+import {
+  Envelope,
+  Fire,
+  GithubLogo,
+  Trophy,
+} from "@phosphor-icons/react/dist/ssr";
 import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
 import { EndGameLadderCTA } from "./end-game-ladder-cta";
 
@@ -83,8 +88,8 @@ export function EndGameLadder() {
           <span className="text-accent-brutal"> getting hired.</span>
         </h2>
         <p className="mt-3 text-sm sm:text-base text-[var(--text-secondary)] font-medium max-w-xl mx-auto">
-          No applications. No interviews until you&apos;re ready. Just consistent
-          shipping that founders can verify on their own.
+          No applications. No interviews until you&apos;re ready. Just
+          consistent shipping that founders can verify on their own.
         </p>
       </div>
 
@@ -137,9 +142,7 @@ function StepCard({ step }: { step: Step }) {
       }}
     >
       <div className="flex items-start justify-between gap-3">
-        <span
-          className="text-xs font-semibold tabular-nums opacity-70"
-        >
+        <span className="text-xs font-semibold tabular-nums opacity-70">
           {step.number}
         </span>
         <Icon weight="fill" size={20} className="flex-shrink-0" />

@@ -68,7 +68,9 @@ export function ActiveBuilderRow(p: ActiveBuilderRowProps) {
           )}
 
           <div className="min-w-0 flex-1 sm:flex-none">
-            <div className="font-bold text-[15px] sm:text-[16px] text-[var(--foreground)] leading-tight truncate">@{p.username}</div>
+            <div className="font-bold text-[15px] sm:text-[16px] text-[var(--foreground)] leading-tight truncate">
+              @{p.username}
+            </div>
             <div className="text-[12px] sm:text-[13px] font-mono text-[var(--text-tertiary)] mt-0.5 sm:mt-1 truncate">
               rank #{p.currentRank} · {p.activeDays7d}/7 active
             </div>

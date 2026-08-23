@@ -48,14 +48,25 @@ afterEach(() => {
 });
 
 describe("transferMemo", () => {
-  it("names the site in words the signer can read before approving", () => {
-    // A bare transfer says nothing. This is the sentence that makes the
-    // scheme non-relayable, so it has to be legible in a wallet.
-    expect(transferMemo("abc")).toBe("Link wallet to vibetalent.work | abc");
+  it("names the site and the account the wallet would be linked to", () => {
+    // The account is the load-bearing part. Without it the memo reads exactly
+    // like what a victim would expect while being phished into proving their
+    // wallet for someone else, because it would say only "link a wallet".
+    expect(transferMemo("abc", "abhinav")).toBe(
+      "Link wallet to vibetalent.work for @abhinav | abc",
+    );
+  });
+
+  it("changes with the account, so one account's challenge is not another's", () => {
+    expect(transferMemo("abc", "abhinav")).not.toBe(
+      transferMemo("abc", "someoneelse"),
+    );
   });
 
   it("changes with the challenge, so one transaction cannot satisfy two", () => {
-    expect(transferMemo("one")).not.toBe(transferMemo("two"));
+    expect(transferMemo("one", "abhinav")).not.toBe(
+      transferMemo("two", "abhinav"),
+    );
   });
 });
 
@@ -84,7 +95,7 @@ describe("SIGNATURE_RE", () => {
 });
 
 describe("verifyTransferProof", () => {
-  const memo = transferMemo("nonce-1");
+  const memo = transferMemo("nonce-1", "abhinav");
 
   it("returns the wallet that signed, read off the transaction", async () => {
     mockTx(tx(memo));
@@ -106,7 +117,7 @@ describe("verifyTransferProof", () => {
   it("rejects a transaction carrying a different challenge's memo", async () => {
     // The relay attack in one line: an attacker's challenge cannot be satisfied
     // by a transaction the victim broadcast for something else.
-    mockTx(tx(transferMemo("someone-elses-nonce")));
+    mockTx(tx(transferMemo("someone-elses-nonce", "abhinav")));
     const result = await verifyTransferProof(SIG, memo);
     expect(result).toMatchObject({ ok: false, status: 400 });
   });
@@ -208,7 +219,7 @@ describe("findTransferProof", () => {
     return fn;
   }
 
-  const memo = transferMemo("nonce-1");
+  const memo = transferMemo("nonce-1", "abhinav");
 
   it("finds the proof without the builder pasting anything", async () => {
     mockChain([{ signature: SIG }], { [SIG]: tx(memo) });
@@ -257,6 +268,42 @@ describe("findTransferProof", () => {
       (c) => JSON.parse((c[1] as { body: string }).body).method,
     );
     expect(methods).toEqual(["getSignaturesForAddress"]);
+  });
+
+  it("asks the client to retry when the RPC refuses the signature list", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 500 }),
+    );
+    await expect(findTransferProof(WALLET, memo)).resolves.toMatchObject({
+      ok: false,
+      status: 503,
+    });
+  });
+
+  it("treats a non-list result as an RPC failure, not as 'nothing found'", async () => {
+    // 404 would tell the client to keep waiting for a transaction that may
+    // already exist; 503 tells it the lookup itself failed.
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue({ ok: true, json: async () => ({ error: "boom" }) }),
+    );
+    await expect(findTransferProof(WALLET, memo)).resolves.toMatchObject({
+      ok: false,
+      status: 503,
+    });
+  });
+
+  it("bounds how deep it scans", async () => {
+    const fetchMock = mockChain([], {});
+    await findTransferProof(WALLET, memo);
+    const params = JSON.parse(
+      (fetchMock.mock.calls[0]![1] as { body: string }).body,
+    ).params;
+    expect(params[0]).toBe(WALLET);
+    expect(params[1]).toMatchObject({ limit: 12, commitment: "confirmed" });
   });
 
   it("rejects a malformed address without calling the network", async () => {

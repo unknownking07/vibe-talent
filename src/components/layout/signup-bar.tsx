@@ -60,7 +60,10 @@ export function SignupBar() {
         const dismissedAt = localStorage.getItem(DISMISSED_KEY);
         if (!dismissedAt) return false;
         const ts = Number(dismissedAt);
-        if (Number.isFinite(ts) && Date.now() - ts < DISMISSED_TTL_DAYS * DAY_MS) {
+        if (
+          Number.isFinite(ts) &&
+          Date.now() - ts < DISMISSED_TTL_DAYS * DAY_MS
+        ) {
           return true;
         }
         // stale dismissal — clear so we don't re-check every page nav
@@ -93,8 +96,10 @@ export function SignupBar() {
 
     // Subscribe to auth changes so signing in/out updates the bar live.
     // Mirrors the pattern used in navbar.tsx and dashboard/page.tsx.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => reconcile(Boolean(session?.user)),
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) =>
+      reconcile(Boolean(session?.user)),
     );
 
     return () => {
@@ -159,10 +164,18 @@ export function SignupBar() {
           .signup-bar__sub { display: inline; }
         }
       `}</style>
-      <div className="signup-bar" role="region" aria-label="Sign up call to action">
+      <div
+        className="signup-bar"
+        role="region"
+        aria-label="Sign up call to action"
+      >
         <div className="signup-bar__copy">
-          <strong className="signup-bar__heading">Build your streak. Get discovered.</strong>
-          <span className="signup-bar__sub">Free profile · GitHub-verified · proof of work over resumes.</span>
+          <strong className="signup-bar__heading">
+            Build your streak. Get discovered.
+          </strong>
+          <span className="signup-bar__sub">
+            Free profile · GitHub-verified · proof of work over resumes.
+          </span>
         </div>
         <div className="signup-bar__actions">
           <Link href="/auth/login" className="signup-bar__signin">

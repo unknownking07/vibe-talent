@@ -13,11 +13,19 @@ function isSafeHttpUrl(url: string): boolean {
   }
 }
 
-function destinationFor(promo: EnrichedPromotion): { href: string; external: boolean } {
+function destinationFor(promo: EnrichedPromotion): {
+  href: string;
+  external: boolean;
+} {
   const liveUrl = promo.project?.live_url;
-  if (liveUrl && isSafeHttpUrl(liveUrl)) return { href: liveUrl, external: true };
-  if (promo.author?.username) return { href: `/profile/${promo.author.username}`, external: false };
-  return { href: `/explore?q=${encodeURIComponent(promo.projectName)}`, external: false };
+  if (liveUrl && isSafeHttpUrl(liveUrl))
+    return { href: liveUrl, external: true };
+  if (promo.author?.username)
+    return { href: `/profile/${promo.author.username}`, external: false };
+  return {
+    href: `/explore?q=${encodeURIComponent(promo.projectName)}`,
+    external: false,
+  };
 }
 
 // How many tech-stack pills to surface inline before collapsing to "+N".

@@ -76,7 +76,11 @@ export function StreakMilestone({ streak }: StreakMilestoneProps) {
       {nextMilestone && (
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <Target weight="fill" size={16} className="text-[var(--text-muted)]" />
+            <Target
+              weight="fill"
+              size={16}
+              className="text-[var(--text-muted)]"
+            />
             <span className="text-xs font-semibold text-[var(--foreground)]">
               Next Milestone
             </span>

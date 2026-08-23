@@ -4,7 +4,9 @@ import { useSyncExternalStore } from "react";
 import { Sun, Moon } from "lucide-react";
 
 function getThemeSnapshot(): "light" | "dark" {
-  return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+  return document.documentElement.getAttribute("data-theme") === "dark"
+    ? "dark"
+    : "light";
 }
 
 function getServerSnapshot(): "light" | "dark" {
@@ -13,12 +15,18 @@ function getServerSnapshot(): "light" | "dark" {
 
 function subscribeToTheme(callback: () => void) {
   const observer = new MutationObserver(callback);
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"],
+  });
   return () => observer.disconnect();
 }
 
 function toggle() {
-  const current = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+  const current =
+    document.documentElement.getAttribute("data-theme") === "dark"
+      ? "dark"
+      : "light";
   const next = current === "light" ? "dark" : "light";
   localStorage.setItem("theme", next);
   if (next === "dark") {
@@ -29,7 +37,11 @@ function toggle() {
 }
 
 export function ThemeToggle() {
-  const theme = useSyncExternalStore(subscribeToTheme, getThemeSnapshot, getServerSnapshot);
+  const theme = useSyncExternalStore(
+    subscribeToTheme,
+    getThemeSnapshot,
+    getServerSnapshot,
+  );
 
   return (
     <button

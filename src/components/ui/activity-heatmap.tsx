@@ -14,7 +14,20 @@ interface ActivityHeatmapProps {
   protectedDates?: Record<string, "freeze" | "restore">;
 }
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
 
 function dayLabel(
@@ -25,13 +38,19 @@ function dayLabel(
   // Say so explicitly: a protected day looks like a worked day on the grid, and
   // the whole point of tracking provenance is not to imply work that never
   // happened.
-  if (protection === "freeze") return `Streak freeze used on ${date} (no activity)`;
-  if (protection === "restore") return `Streak restored with $VIBE on ${date} (no activity)`;
+  if (protection === "freeze")
+    return `Streak freeze used on ${date} (no activity)`;
+  if (protection === "restore")
+    return `Streak restored with $VIBE on ${date} (no activity)`;
   if (count <= 0) return `No contributions on ${date}`;
   return `${count} ${count === 1 ? "contribution" : "contributions"} on ${date}`;
 }
 
-export function ActivityHeatmap({ data, totalOverride, protectedDates }: ActivityHeatmapProps) {
+export function ActivityHeatmap({
+  data,
+  totalOverride,
+  protectedDates,
+}: ActivityHeatmapProps) {
   const { weeks, monthLabels } = useMemo(() => {
     const result: { date: string; count: number; dayOfWeek: number }[][] = [];
     const today = new Date();
@@ -80,15 +99,22 @@ export function ActivityHeatmap({ data, totalOverride, protectedDates }: Activit
 
   const getLevelColor = (level: number) => {
     switch (level) {
-      case 0: return "var(--hm-0)";
-      case 1: return "var(--hm-1)";
-      case 2: return "var(--hm-2)";
-      case 3: return "var(--hm-3)";
-      default: return "var(--hm-4)";
+      case 0:
+        return "var(--hm-0)";
+      case 1:
+        return "var(--hm-1)";
+      case 2:
+        return "var(--hm-2)";
+      case 3:
+        return "var(--hm-3)";
+      default:
+        return "var(--hm-4)";
     }
   };
 
-  const totalContributions = totalOverride ?? Object.values(data).reduce((sum, v) => sum + (v > 0 ? v : 0), 0);
+  const totalContributions =
+    totalOverride ??
+    Object.values(data).reduce((sum, v) => sum + (v > 0 ? v : 0), 0);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasScrolledRef = useRef(false);
@@ -125,7 +151,10 @@ export function ActivityHeatmap({ data, totalOverride, protectedDates }: Activit
         {/* Month labels */}
         <div className="flex" style={{ paddingLeft: 32, marginBottom: 4 }}>
           {monthLabels.map((m, i) => {
-            const nextCol = i < monthLabels.length - 1 ? monthLabels[i + 1].col : weeks.length;
+            const nextCol =
+              i < monthLabels.length - 1
+                ? monthLabels[i + 1].col
+                : weeks.length;
             const span = nextCol - m.col;
             return (
               <div

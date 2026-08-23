@@ -40,19 +40,25 @@ export async function BagsLaunches({ builderId }: { builderId: string }) {
   if (launches.length === 0) return null;
 
   return (
-    <section className="card-brutal p-5" aria-labelledby="bags-launches-heading">
+    <section
+      className="card-brutal p-5"
+      aria-labelledby="bags-launches-heading"
+    >
       <div className="flex items-center gap-2">
         <Rocket weight="fill" size={18} style={{ color: "var(--accent)" }} />
         <h2
           id="bags-launches-heading"
           className="text-sm font-extrabold uppercase tracking-wide text-[var(--foreground)]"
         >
-          {launches.length === 1 ? "Launched on Bags" : `${launches.length} launches on Bags`}
+          {launches.length === 1
+            ? "Launched on Bags"
+            : `${launches.length} launches on Bags`}
         </h2>
       </div>
 
       <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>
-        Verified against the Bags creator record for this builder&apos;s linked wallet.
+        Verified against the Bags creator record for this builder&apos;s linked
+        wallet.
       </p>
 
       <ul className="mt-4 flex flex-col gap-2">
@@ -70,12 +76,18 @@ export async function BagsLaunches({ builderId }: { builderId: string }) {
                   {launch.token_mint.slice(0, 6)}…{launch.token_mint.slice(-4)}
                 </span>
                 {launch.royalty_bps ? (
-                  <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                  <span
+                    className="text-[11px]"
+                    style={{ color: "var(--text-muted)" }}
+                  >
                     {launch.royalty_bps / 100}% creator fee share
                   </span>
                 ) : null}
               </span>
-              <ArrowSquareOut size={14} className="shrink-0 text-[var(--text-muted)]" />
+              <ArrowSquareOut
+                size={14}
+                className="shrink-0 text-[var(--text-muted)]"
+              />
             </a>
           </li>
         ))}

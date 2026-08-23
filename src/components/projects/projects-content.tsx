@@ -10,10 +10,19 @@ const PAGE_SIZE = 12;
 type SortOption = "newest" | "endorsements" | "quality";
 
 interface ProjectWithAuthor extends Project {
-  users?: { username: string; display_name: string | null; avatar_url: string | null; badge_level: string };
+  users?: {
+    username: string;
+    display_name: string | null;
+    avatar_url: string | null;
+    badge_level: string;
+  };
 }
 
-export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] }) {
+export function ProjectsContent({
+  projects,
+}: {
+  projects: ProjectWithAuthor[];
+}) {
   const [search, _setSearch] = useState("");
   const [sortBy, _setSortBy] = useState<SortOption>("newest");
   const [showFilters, setShowFilters] = useState(false);
@@ -22,11 +31,29 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
   const [hasLiveUrl, _setHasLiveUrl] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const setSearch = useCallback((v: string) => { _setSearch(v); setCurrentPage(1); }, []);
-  const setSortBy = useCallback((v: SortOption) => { _setSortBy(v); setCurrentPage(1); }, []);
-  const setSelectedTech = useCallback((v: string[] | ((prev: string[]) => string[])) => { _setSelectedTech(v); setCurrentPage(1); }, []);
-  const setVerifiedOnly = useCallback((v: boolean) => { _setVerifiedOnly(v); setCurrentPage(1); }, []);
-  const setHasLiveUrl = useCallback((v: boolean) => { _setHasLiveUrl(v); setCurrentPage(1); }, []);
+  const setSearch = useCallback((v: string) => {
+    _setSearch(v);
+    setCurrentPage(1);
+  }, []);
+  const setSortBy = useCallback((v: SortOption) => {
+    _setSortBy(v);
+    setCurrentPage(1);
+  }, []);
+  const setSelectedTech = useCallback(
+    (v: string[] | ((prev: string[]) => string[])) => {
+      _setSelectedTech(v);
+      setCurrentPage(1);
+    },
+    [],
+  );
+  const setVerifiedOnly = useCallback((v: boolean) => {
+    _setVerifiedOnly(v);
+    setCurrentPage(1);
+  }, []);
+  const setHasLiveUrl = useCallback((v: boolean) => {
+    _setHasLiveUrl(v);
+    setCurrentPage(1);
+  }, []);
 
   const goToPage = useCallback((page: number) => {
     setCurrentPage(page);
@@ -35,7 +62,7 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
 
   const allTechStacks = useMemo(() => {
     const techs = new Set<string>();
-    projects.forEach(p => (p.tech_stack ?? []).forEach(t => techs.add(t)));
+    projects.forEach((p) => (p.tech_stack ?? []).forEach((t) => techs.add(t)));
     return [...techs].sort();
   }, [projects]);
 
@@ -44,32 +71,44 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
 
     if (search) {
       const q = search.toLowerCase();
-      filtered = filtered.filter(p =>
-        p.title.toLowerCase().includes(q) ||
-        (p.description?.toLowerCase().includes(q)) ||
-        (p.tech_stack ?? []).some(t => t.toLowerCase().includes(q)) ||
-        (p.tags ?? []).some(t => t.toLowerCase().includes(q))
+      filtered = filtered.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.description?.toLowerCase().includes(q) ||
+          (p.tech_stack ?? []).some((t) => t.toLowerCase().includes(q)) ||
+          (p.tags ?? []).some((t) => t.toLowerCase().includes(q)),
       );
     }
 
-    if (verifiedOnly) filtered = filtered.filter(p => p.verified);
-    if (hasLiveUrl) filtered = filtered.filter(p => p.live_url);
+    if (verifiedOnly) filtered = filtered.filter((p) => p.verified);
+    if (hasLiveUrl) filtered = filtered.filter((p) => p.live_url);
     if (selectedTech.length > 0) {
-      filtered = filtered.filter(p =>
-        selectedTech.some(t => (p.tech_stack ?? []).map(s => s.toLowerCase()).includes(t.toLowerCase()))
+      filtered = filtered.filter((p) =>
+        selectedTech.some((t) =>
+          (p.tech_stack ?? [])
+            .map((s) => s.toLowerCase())
+            .includes(t.toLowerCase()),
+        ),
       );
     }
 
     switch (sortBy) {
       case "endorsements":
-        filtered.sort((a, b) => (b.endorsement_count || 0) - (a.endorsement_count || 0));
+        filtered.sort(
+          (a, b) => (b.endorsement_count || 0) - (a.endorsement_count || 0),
+        );
         break;
       case "quality":
-        filtered.sort((a, b) => (b.quality_score || 0) - (a.quality_score || 0));
+        filtered.sort(
+          (a, b) => (b.quality_score || 0) - (a.quality_score || 0),
+        );
         break;
       case "newest":
       default:
-        filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        filtered.sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
     }
 
     return filtered;
@@ -81,22 +120,29 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
   const activePage = currentPage > totalPages ? 1 : currentPage;
   const paginatedProjects = filteredProjects.slice(
     (activePage - 1) * PAGE_SIZE,
-    activePage * PAGE_SIZE
+    activePage * PAGE_SIZE,
   );
 
-  const activeFilterCount = [verifiedOnly, hasLiveUrl, selectedTech.length > 0].filter(Boolean).length;
+  const activeFilterCount = [
+    verifiedOnly,
+    hasLiveUrl,
+    selectedTech.length > 0,
+  ].filter(Boolean).length;
 
   return (
     <>
       {/* Search + Sort + Filter toggle */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
+          <Search
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]"
+          />
           <input
             type="text"
             placeholder="Search projects by name, tech, or tag..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[var(--border-hard)] bg-[var(--bg-surface)] text-[var(--foreground)] font-medium text-sm focus:outline-none focus:border-[var(--accent)] transition-colors"
           />
         </div>
@@ -104,7 +150,7 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
           <div className="relative">
             <select
               value={sortBy}
-              onChange={e => setSortBy(e.target.value as SortOption)}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
               className="appearance-none pl-4 pr-10 py-2.5 rounded-xl border border-[var(--border-hard)] bg-[var(--bg-surface)] text-[var(--foreground)] font-semibold text-sm cursor-pointer focus:outline-none focus:border-[var(--accent)]"
             >
               <option value="newest">Newest</option>
@@ -138,7 +184,7 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
               <input
                 type="checkbox"
                 checked={verifiedOnly}
-                onChange={e => setVerifiedOnly(e.target.checked)}
+                onChange={(e) => setVerifiedOnly(e.target.checked)}
                 className="accent-[var(--accent)]"
               />
               Verified only
@@ -147,7 +193,7 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
               <input
                 type="checkbox"
                 checked={hasLiveUrl}
-                onChange={e => setHasLiveUrl(e.target.checked)}
+                onChange={(e) => setHasLiveUrl(e.target.checked)}
                 className="accent-[var(--accent)]"
               />
               Has live URL
@@ -156,14 +202,18 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
 
           {allTechStacks.length > 0 && (
             <div className="mt-4">
-              <p className="text-xs font-medium text-[var(--text-muted)] mb-2">Tech Stack</p>
+              <p className="text-xs font-medium text-[var(--text-muted)] mb-2">
+                Tech Stack
+              </p>
               <div className="flex flex-wrap gap-2">
-                {allTechStacks.slice(0, 20).map(tech => (
+                {allTechStacks.slice(0, 20).map((tech) => (
                   <button
                     key={tech}
                     onClick={() =>
-                      setSelectedTech(prev =>
-                        prev.includes(tech) ? prev.filter(t => t !== tech) : [...prev, tech]
+                      setSelectedTech((prev) =>
+                        prev.includes(tech)
+                          ? prev.filter((t) => t !== tech)
+                          : [...prev, tech],
                       )
                     }
                     className={`px-3 py-1 text-xs font-semibold rounded-full border transition-colors ${
@@ -181,7 +231,11 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
 
           {activeFilterCount > 0 && (
             <button
-              onClick={() => { setVerifiedOnly(false); setHasLiveUrl(false); setSelectedTech([]); }}
+              onClick={() => {
+                setVerifiedOnly(false);
+                setHasLiveUrl(false);
+                setSelectedTech([]);
+              }}
               className="mt-4 text-xs font-semibold text-[var(--accent)] hover:underline"
             >
               Clear all filters
@@ -194,7 +248,8 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
       {filteredProjects.length > 0 && filteredProjects.length <= PAGE_SIZE && (
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-[var(--text-secondary)] font-medium">
-            Showing {filteredProjects.length} project{filteredProjects.length !== 1 ? "s" : ""}
+            Showing {filteredProjects.length} project
+            {filteredProjects.length !== 1 ? "s" : ""}
           </p>
         </div>
       )}
@@ -208,7 +263,7 @@ export function ProjectsContent({ projects }: { projects: ProjectWithAuthor[] })
 
       {/* Project grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
-        {paginatedProjects.map(project => (
+        {paginatedProjects.map((project) => (
           <ProjectCard
             key={project.id}
             project={project}

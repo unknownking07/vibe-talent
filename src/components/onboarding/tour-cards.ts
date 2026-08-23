@@ -139,7 +139,10 @@ export const TOUR_CARDS: readonly TourCard[] = [
  * to `/dashboard` when no username is available (e.g., the user reloaded the
  * tour before the profile finished loading) so the link is never broken.
  */
-export function resolveCtaHref(target: CtaTarget, username: string | null | undefined): string | null {
+export function resolveCtaHref(
+  target: CtaTarget,
+  username: string | null | undefined,
+): string | null {
   if (target === null) return null;
   if (typeof target === "function") {
     return username ? target(username) : "/dashboard";

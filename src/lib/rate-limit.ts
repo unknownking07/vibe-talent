@@ -78,6 +78,14 @@ export const buildersLimiter = createRateLimiter("builders", 30, "1 m");
 // Wallet-ownership proof. Generous enough for a user retrying a wallet prompt,
 // tight enough that a session cannot spin the nonce store or the verifier.
 export const walletLinkLimiter = createRateLimiter("wallet-link", 20, "10 m");
+// Watching for a transfer proof is a poll, not an attempt: the client asks
+// every few seconds for as long as the challenge lives. Budgeted for that
+// cadence rather than for submissions, and still per-account.
+export const walletWatchLimiter = createRateLimiter(
+  "wallet-watch",
+  200,
+  "15 m",
+);
 export const hireApiLimiter = createRateLimiter("hire-api", 5, "1 h");
 export const feedbackLimiter = createRateLimiter("feedback", 10, "1 h");
 // Burn endpoints: each call verifies a real on-chain transaction, so the cost

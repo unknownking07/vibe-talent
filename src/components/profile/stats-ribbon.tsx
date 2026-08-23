@@ -10,8 +10,16 @@ interface StatsRibbonProps {
   completedHires?: number;
 }
 
-export function StatsRibbon({ streak, vibeScore, projectCount, avgRating, completedHires }: StatsRibbonProps) {
-  const hasOutcomes = (avgRating !== undefined && avgRating > 0) || (completedHires !== undefined && completedHires > 0);
+export function StatsRibbon({
+  streak,
+  vibeScore,
+  projectCount,
+  avgRating,
+  completedHires,
+}: StatsRibbonProps) {
+  const hasOutcomes =
+    (avgRating !== undefined && avgRating > 0) ||
+    (completedHires !== undefined && completedHires > 0);
 
   return (
     <div
@@ -37,7 +45,9 @@ export function StatsRibbon({ streak, vibeScore, projectCount, avgRating, comple
           >
             {streak}
           </span>
-          <span className="text-xs font-medium text-[var(--text-muted)]">Day Streak</span>
+          <span className="text-xs font-medium text-[var(--text-muted)]">
+            Day Streak
+          </span>
         </div>
       </div>
 
@@ -56,7 +66,9 @@ export function StatsRibbon({ streak, vibeScore, projectCount, avgRating, comple
           >
             {vibeScore.toLocaleString()}
           </span>
-          <span className="text-xs font-medium text-[var(--text-muted)]">Vibe Score</span>
+          <span className="text-xs font-medium text-[var(--text-muted)]">
+            Vibe Score
+          </span>
         </div>
       </div>
 
@@ -64,7 +76,9 @@ export function StatsRibbon({ streak, vibeScore, projectCount, avgRating, comple
       <div
         className="flex items-center gap-3 px-5 py-4"
         style={{
-          borderRight: hasOutcomes ? "1px solid var(--border-subtle)" : undefined,
+          borderRight: hasOutcomes
+            ? "1px solid var(--border-subtle)"
+            : undefined,
         }}
       >
         <Code weight="fill" size={20} className="text-[var(--foreground)]" />
@@ -72,7 +86,9 @@ export function StatsRibbon({ streak, vibeScore, projectCount, avgRating, comple
           <span className="font-mono font-extrabold text-[1.2rem] leading-tight text-[var(--foreground)]">
             {projectCount}
           </span>
-          <span className="text-xs font-medium text-[var(--text-muted)]">Projects</span>
+          <span className="text-xs font-medium text-[var(--text-muted)]">
+            Projects
+          </span>
         </div>
       </div>
 
@@ -89,7 +105,9 @@ export function StatsRibbon({ streak, vibeScore, projectCount, avgRating, comple
             <span className="font-mono font-extrabold text-[1.2rem] leading-tight text-amber-600">
               {avgRating}
             </span>
-            <span className="text-xs font-medium text-[var(--text-muted)]">Avg Rating</span>
+            <span className="text-xs font-medium text-[var(--text-muted)]">
+              Avg Rating
+            </span>
           </div>
         </div>
       )}
@@ -102,7 +120,9 @@ export function StatsRibbon({ streak, vibeScore, projectCount, avgRating, comple
             <span className="font-mono font-extrabold text-[1.2rem] leading-tight text-emerald-600">
               {completedHires}
             </span>
-            <span className="text-xs font-medium text-[var(--text-muted)]">Hires Done</span>
+            <span className="text-xs font-medium text-[var(--text-muted)]">
+              Hires Done
+            </span>
           </div>
         </div>
       )}

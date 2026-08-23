@@ -118,7 +118,9 @@ export function BuilderTrustCard({
               </span>
               {" · "}
               {focus.concentration}% of {focus.pushes} recent pushes in{" "}
-              <span className="font-mono text-[12px]">{focus.topRepo}</span>
+              <span className="break-all font-mono text-[12px]">
+                {focus.topRepo}
+              </span>
               {focus.repoCount > 1 ? `, across ${focus.repoCount} repos` : null}
             </p>
           ) : null}

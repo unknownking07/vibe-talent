@@ -21,8 +21,8 @@ export function AgentThinking({ steps, onComplete }: AgentThinkingProps) {
     }
 
     const timer = setTimeout(() => {
-      setCompletedSteps(prev => [...prev, currentStep]);
-      setCurrentStep(prev => prev + 1);
+      setCompletedSteps((prev) => [...prev, currentStep]);
+      setCurrentStep((prev) => prev + 1);
     }, steps[currentStep].duration);
 
     return () => clearTimeout(timer);
@@ -61,9 +61,16 @@ export function AgentThinking({ steps, onComplete }: AgentThinkingProps) {
               }`}
             >
               {isCompleted ? (
-                <Check weight="bold" size={16} className="text-green-400 shrink-0" />
+                <Check
+                  weight="bold"
+                  size={16}
+                  className="text-green-400 shrink-0"
+                />
               ) : isActive ? (
-                <Loader2 size={16} className="text-[var(--accent)] animate-spin shrink-0" />
+                <Loader2
+                  size={16}
+                  className="text-[var(--accent)] animate-spin shrink-0"
+                />
               ) : (
                 <div className="w-4 h-4 shrink-0" />
               )}
@@ -72,8 +79,8 @@ export function AgentThinking({ steps, onComplete }: AgentThinkingProps) {
                   isActive
                     ? "text-[var(--accent)]"
                     : isCompleted
-                    ? "text-green-400"
-                    : "text-zinc-600"
+                      ? "text-green-400"
+                      : "text-zinc-600"
                 }`}
               >
                 {step.label}

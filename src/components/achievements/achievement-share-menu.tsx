@@ -21,7 +21,11 @@ type Status =
   | "link-copied"
   | "error";
 
-export function AchievementShareMenu({ username, achievementId, title }: AchievementShareMenuProps) {
+export function AchievementShareMenu({
+  username,
+  achievementId,
+  title,
+}: AchievementShareMenuProps) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -31,7 +35,9 @@ export function AchievementShareMenu({ username, achievementId, title }: Achieve
   // the cache when username/achievementId change — the same card instance is
   // reused across client-side profile navigations (cards are keyed by
   // achievement id), so without this Copy could serve the previous user's image.
-  const imageBlobRef = useRef<{ path: string; blob: Promise<Blob> } | null>(null);
+  const imageBlobRef = useRef<{ path: string; blob: Promise<Blob> } | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -176,7 +182,7 @@ export function AchievementShareMenu({ username, achievementId, title }: Achieve
           <button
             type="button"
             onClick={copyImage}
-disabled={status === "copying-image"}
+            disabled={status === "copying-image"}
             className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-semibold"
             style={{ color: "var(--foreground)" }}
           >
@@ -194,7 +200,7 @@ disabled={status === "copying-image"}
           <button
             type="button"
             onClick={downloadImage}
-disabled={status === "downloading"}
+            disabled={status === "downloading"}
             className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-semibold"
             style={{ color: "var(--foreground)" }}
           >
@@ -212,7 +218,7 @@ disabled={status === "downloading"}
           <button
             type="button"
             onClick={copyLink}
-disabled={status === "copying-link"}
+            disabled={status === "copying-link"}
             className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-semibold"
             style={{ color: "var(--foreground)" }}
           >
@@ -226,10 +232,12 @@ disabled={status === "copying-link"}
           <button
             type="button"
             onClick={shareOnX}
-className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-semibold"
+            className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-semibold"
             style={{ color: "var(--foreground)" }}
           >
-            <span aria-hidden="true" className="text-[15px] leading-none">𝕏</span>
+            <span aria-hidden="true" className="text-[15px] leading-none">
+              𝕏
+            </span>
             Share on X
           </button>
           {status === "image-error" ? (

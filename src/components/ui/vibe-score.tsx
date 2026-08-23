@@ -2,7 +2,6 @@
 
 import { Lightning } from "@phosphor-icons/react";
 
-
 interface VibeScoreProps {
   score: number;
   size?: "sm" | "md" | "lg";

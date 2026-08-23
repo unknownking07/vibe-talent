@@ -58,7 +58,14 @@ export function AchievementCelebration({
     const ctx = cv.getContext("2d");
     if (!ctx) return;
 
-    const colors = [accent, "#F0B400", "#10B981", "#0EA5E9", "#EC4899", "#FFFFFF"];
+    const colors = [
+      accent,
+      "#F0B400",
+      "#10B981",
+      "#0EA5E9",
+      "#EC4899",
+      "#FFFFFF",
+    ];
     const cx = W / 2;
     const cy = H * 0.42;
     const parts = Array.from({ length: 170 }, () => {
@@ -213,15 +220,44 @@ export function AchievementCelebration({
             pointerEvents: "none",
           }}
         />
-        <Splat color="#F0B400" rot="-16deg" size={120} top={30} left={60} blur={2} delay={0.05} anim={anim} />
-        <Splat color="#10B981" rot="20deg" size={110} top={50} right={54} blur={2} delay={0.12} anim={anim} />
-        <Splat color="#0EA5E9" rot="8deg" size={70} top={120} left={90} blur={1} delay={0.2} anim={anim} />
+        <Splat
+          color="#F0B400"
+          rot="-16deg"
+          size={120}
+          top={30}
+          left={60}
+          blur={2}
+          delay={0.05}
+          anim={anim}
+        />
+        <Splat
+          color="#10B981"
+          rot="20deg"
+          size={110}
+          top={50}
+          right={54}
+          blur={2}
+          delay={0.12}
+          anim={anim}
+        />
+        <Splat
+          color="#0EA5E9"
+          rot="8deg"
+          size={70}
+          top={120}
+          left={90}
+          blur={1}
+          delay={0.2}
+          anim={anim}
+        />
 
         <div
           style={{
             position: "relative",
             zIndex: 1,
-            animation: anim("cel-pop-in 0.75s cubic-bezier(0.2,1.35,0.4,1) both"),
+            animation: anim(
+              "cel-pop-in 0.75s cubic-bezier(0.2,1.35,0.4,1) both",
+            ),
           }}
         >
           <BadgeMedallion
@@ -257,7 +293,7 @@ export function AchievementCelebration({
             fontSize: 42,
             fontWeight: 700,
             lineHeight: 1,
-                         color: "#fff",
+            color: "#fff",
             animation: anim("cel-up-fade 0.5s 0.25s both"),
           }}
         >

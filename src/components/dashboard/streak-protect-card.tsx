@@ -4,7 +4,10 @@ import { useState, useEffect } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { Shield, CircleNotch, ArrowSquareOut } from "@phosphor-icons/react";
 import { STREAK_PROTECT } from "@/lib/vibe-config";
-import { BurnProvider, PRIVY_CONFIGURED } from "@/components/token/burn-provider";
+import {
+  BurnProvider,
+  PRIVY_CONFIGURED,
+} from "@/components/token/burn-provider";
 import { BurnConfirm } from "@/components/token/burn-confirm";
 import { useBurnFlow, type BurnQuote } from "@/components/token/use-burn-flow";
 
@@ -52,7 +55,8 @@ function Body({ userId, lostStreak, brokenAt, onRestored }: Props) {
   // the countdown at hydration. Re-ticks each minute so it stays honest.
   const [hoursLeft, setHoursLeft] = useState<number | null>(null);
   useEffect(() => {
-    const deadline = new Date(brokenAt).getTime() + STREAK_PROTECT.graceHours * 3_600_000;
+    const deadline =
+      new Date(brokenAt).getTime() + STREAK_PROTECT.graceHours * 3_600_000;
     const tick = () =>
       setHoursLeft(Math.max(0, Math.ceil((deadline - Date.now()) / 3_600_000)));
     tick();
@@ -61,7 +65,9 @@ function Body({ userId, lostStreak, brokenAt, onRestored }: Props) {
   }, [brokenAt]);
 
   useEffect(() => {
-    quote(STREAK_PROTECT.usdPrice).then(setQ).catch(() => setQ(null));
+    quote(STREAK_PROTECT.usdPrice)
+      .then(setQ)
+      .catch(() => setQ(null));
   }, [quote]);
 
   async function start() {
@@ -90,7 +96,10 @@ function Body({ userId, lostStreak, brokenAt, onRestored }: Props) {
       setStatus({ msg: `Your ${streak}-day streak is back.`, type: "success" });
       onRestored?.(streak);
     } catch (e) {
-      setStatus({ msg: e instanceof Error ? e.message : "That burn failed.", type: "error" });
+      setStatus({
+        msg: e instanceof Error ? e.message : "That burn failed.",
+        type: "error",
+      });
       setStep("idle");
     }
   }
@@ -99,7 +108,12 @@ function Body({ userId, lostStreak, brokenAt, onRestored }: Props) {
     return (
       <div className="card-brutal p-4">
         <div className="flex items-center gap-2">
-          <Shield weight="fill" size={18} style={{ color: "var(--accent)" }} aria-hidden="true" />
+          <Shield
+            weight="fill"
+            size={18}
+            style={{ color: "var(--accent)" }}
+            aria-hidden="true"
+          />
           <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)]">
             {restored}-day streak restored
           </h3>
@@ -112,7 +126,8 @@ function Body({ userId, lostStreak, brokenAt, onRestored }: Props) {
             className="mt-2 inline-flex items-center gap-1 text-xs font-bold hover:underline"
             style={{ color: "var(--accent)" }}
           >
-            View the burn on Solscan <ArrowSquareOut size={12} aria-hidden="true" />
+            View the burn on Solscan{" "}
+            <ArrowSquareOut size={12} aria-hidden="true" />
           </a>
         )}
       </div>
@@ -122,7 +137,12 @@ function Body({ userId, lostStreak, brokenAt, onRestored }: Props) {
   return (
     <div className="card-brutal p-4">
       <div className="flex items-center gap-2">
-        <Shield weight="fill" size={18} style={{ color: "var(--accent)" }} aria-hidden="true" />
+        <Shield
+          weight="fill"
+          size={18}
+          style={{ color: "var(--accent)" }}
+          aria-hidden="true"
+        />
         <h3 className="text-sm font-extrabold uppercase text-[var(--foreground)]">
           Bring back your {lostStreak}-day streak
         </h3>
@@ -130,14 +150,20 @@ function Body({ userId, lostStreak, brokenAt, onRestored }: Props) {
 
       {step === "idle" && (
         <>
-          <p className="mt-2 text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          <p
+            className="mt-2 text-xs leading-relaxed"
+            style={{ color: "var(--text-secondary)" }}
+          >
             Burn about ${STREAK_PROTECT.usdPrice} of $VIBE to restore it.
             {q ? (
               <>
                 {" "}
                 That&apos;s{" "}
                 <strong className="font-mono text-[var(--foreground)]">
-                  {q.wholeTokens.toLocaleString("en-US", { maximumFractionDigits: 0 })} $VIBE
+                  {q.wholeTokens.toLocaleString("en-US", {
+                    maximumFractionDigits: 0,
+                  })}{" "}
+                  $VIBE
                 </strong>{" "}
                 right now.
               </>
@@ -145,14 +171,21 @@ function Body({ userId, lostStreak, brokenAt, onRestored }: Props) {
             {hoursLeft != null ? (
               <>
                 {" "}
-                <strong className="text-[var(--foreground)]">{hoursLeft}h left</strong> to decide.
+                <strong className="text-[var(--foreground)]">
+                  {hoursLeft}h left
+                </strong>{" "}
+                to decide.
               </>
             ) : null}{" "}
             Restored days stay marked on your heatmap.
           </p>
 
           {status?.type === "error" && (
-            <p role="alert" className="mt-2 text-xs font-bold" style={{ color: "var(--status-error-text)" }}>
+            <p
+              role="alert"
+              className="mt-2 text-xs font-bold"
+              style={{ color: "var(--status-error-text)" }}
+            >
               {status.msg}
             </p>
           )}
@@ -165,7 +198,12 @@ function Body({ userId, lostStreak, brokenAt, onRestored }: Props) {
           >
             {busy ? (
               <>
-                <CircleNotch size={16} className="animate-spin" aria-hidden="true" /> Working...
+                <CircleNotch
+                  size={16}
+                  className="animate-spin"
+                  aria-hidden="true"
+                />{" "}
+                Working...
               </>
             ) : !wallet ? (
               "Connect wallet to restore"
@@ -194,7 +232,9 @@ function Body({ userId, lostStreak, brokenAt, onRestored }: Props) {
               className="mt-2 text-xs font-bold"
               style={{
                 color:
-                  status.type === "error" ? "var(--status-error-text)" : "var(--text-secondary)",
+                  status.type === "error"
+                    ? "var(--status-error-text)"
+                    : "var(--text-secondary)",
               }}
             >
               {status.msg}

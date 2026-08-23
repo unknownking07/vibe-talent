@@ -18,7 +18,10 @@ const ACCENT = "#FF3A00";
  * badges where tapping an earned one replays its unlock celebration, and a
  * "simulate" preview. The server passes already-computed, serializable state.
  */
-export function AchievementsView({ achievements, username }: AchievementsViewProps) {
+export function AchievementsView({
+  achievements,
+  username,
+}: AchievementsViewProps) {
   const totalCount = achievements.length;
   const earnedCount = useMemo(
     () => achievements.filter((a) => a.earned).length,
@@ -91,7 +94,10 @@ export function AchievementsView({ achievements, username }: AchievementsViewPro
                 style={{ color: "var(--foreground)" }}
               >
                 <CountUp target={earnedCount} />
-                <span style={{ color: "var(--text-muted)" }}> / {totalCount}</span>
+                <span style={{ color: "var(--text-muted)" }}>
+                  {" "}
+                  / {totalCount}
+                </span>
               </div>
               <div
                 className="text-[11px] font-medium"

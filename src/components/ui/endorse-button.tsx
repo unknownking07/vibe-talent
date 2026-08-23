@@ -11,7 +11,11 @@ interface EndorseButtonProps {
   isOwner?: boolean;
 }
 
-export function EndorseButton({ projectId, initialCount, isOwner = false }: EndorseButtonProps) {
+export function EndorseButton({
+  projectId,
+  initialCount,
+  isOwner = false,
+}: EndorseButtonProps) {
   const [count, setCount] = useState(initialCount);
   const [endorsed, setEndorsed] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,8 +39,12 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
           setCount(data.count);
         }
       })
-.catch(() => { /* silent: the card keeps its server-rendered count */ });
-    return () => { cancelled = true; };
+      .catch(() => {
+        /* silent: the card keeps its server-rendered count */
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [projectId, isOwner]);
 
   async function handleToggle() {
@@ -73,7 +81,11 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
         // Roll back the optimistic update and surface the reason.
         setEndorsed(wasEndorsed);
         setCount(prevCount);
-        setError(res.status === 401 ? "Sign in to endorse" : (data.error || "Couldn't endorse"));
+        setError(
+          res.status === 401
+            ? "Sign in to endorse"
+            : data.error || "Couldn't endorse",
+        );
       }
     } catch {
       setEndorsed(wasEndorsed);
@@ -98,7 +110,10 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
     <div className="inline-flex flex-col items-start">
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); handleToggle(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleToggle();
+        }}
         aria-pressed={endorsed}
         className={`inline-flex items-center gap-1 text-xs font-semibold transition-all ${
           endorsed
@@ -107,12 +122,20 @@ export function EndorseButton({ projectId, initialCount, isOwner = false }: Endo
         }`}
         title={endorsed ? "Remove endorsement" : "Endorse this project"}
       >
-        <ThumbsUp weight="fill" size={12} className={endorsed ? "fill-current" : ""} />
+        <ThumbsUp
+          weight="fill"
+          size={12}
+          className={endorsed ? "fill-current" : ""}
+        />
         {count > 0 && <span>{count}</span>}
-        {count === 0 && !endorsed && <span className="text-[10px]">Endorse</span>}
+        {count === 0 && !endorsed && (
+          <span className="text-[10px]">Endorse</span>
+        )}
       </button>
       {error && (
-        <span className="text-[9px] font-semibold text-red-500 mt-0.5">{error}</span>
+        <span className="text-[9px] font-semibold text-red-500 mt-0.5">
+          {error}
+        </span>
       )}
     </div>
   );

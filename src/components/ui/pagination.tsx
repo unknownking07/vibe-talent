@@ -1,7 +1,12 @@
 "use client";
 
 import { useId, useState } from "react";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from "lucide-react";
 
 type PaginationBaseProps = {
   currentPage: number;
@@ -91,7 +96,10 @@ export function Pagination({
     itemNoun !== undefined;
 
   return (
-    <nav aria-label="Pagination" className="flex flex-col items-center gap-6 mt-4">
+    <nav
+      aria-label="Pagination"
+      className="flex flex-col items-center gap-6 mt-4"
+    >
       {showHeader && (
         <div className="flex flex-col items-center gap-2">
           <span className="text-xs font-medium text-[var(--text-muted)]">
@@ -101,7 +109,7 @@ export function Pagination({
             Showing{" "}
             <span className="font-bold text-[var(--foreground)]">
               {(currentPage - 1) * pageSize + 1}
-{Math.min(currentPage * pageSize, totalItems)}
+              {Math.min(currentPage * pageSize, totalItems)}
             </span>
             {" of "}
             <span className="font-bold text-[var(--foreground)]">
@@ -152,9 +160,7 @@ export function Pagination({
               key={page}
               onClick={() => onPageChange(page)}
               className={`${btnBase} text-sm ${
-                currentPage === page
-                  ? ""
-                  : "hover:bg-[var(--bg-surface-light)]"
+                currentPage === page ? "" : "hover:bg-[var(--bg-surface-light)]"
               }`}
               style={{
                 backgroundColor:
@@ -171,7 +177,7 @@ export function Pagination({
             >
               {page}
             </button>
-          )
+          ),
         )}
 
         <button

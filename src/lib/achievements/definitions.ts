@@ -66,7 +66,9 @@ export function toAchievementView(s: AchievementState): AchievementView {
   };
 }
 
-const FOUNDING_CUTOFF = "2026-01-01";
+// VibeTalent launched 2026-03-17 — the founding cohort is everyone who
+// joined in the first week, i.e. before this exclusive cutoff.
+const FOUNDING_CUTOFF = "2026-03-24";
 
 export const ACHIEVEMENTS: AchievementDefinition[] = [
   // CONSISTENCY — streak tiers
@@ -254,7 +256,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   {
     id: "founding_member",
     title: "Founding Member",
-    description: "Joined VibeTalent before 2026: a true early adopter.",
+    description: "Joined VibeTalent in its first week, March 2026: a true early adopter.",
     category: "identity",
     threshold: 1,
     unit: "joined",

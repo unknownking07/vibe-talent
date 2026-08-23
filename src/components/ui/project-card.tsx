@@ -2,7 +2,15 @@
 
 import { useState, useRef, useEffect } from "react";
 import { ExternalLink, Pencil, Flag, Undo2 } from "lucide-react";
-import { CheckCircle, Clock, GithubLogo, SealCheck, ShieldCheck, Tag, User } from "@phosphor-icons/react";
+import {
+  CheckCircle,
+  Clock,
+  GithubLogo,
+  SealCheck,
+  ShieldCheck,
+  Tag,
+  User,
+} from "@phosphor-icons/react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Project } from "@/lib/types/database";
@@ -23,7 +31,10 @@ function ProjectImageBanner({ url, alt }: { url: string; alt: string }) {
         fill
         sizes="(max-width: 768px) 100vw, 360px"
         className="object-cover"
-        style={{ objectPosition: crop.objectPosition, transform: `scale(${crop.scale})` }}
+        style={{
+          objectPosition: crop.objectPosition,
+          transform: `scale(${crop.scale})`,
+        }}
       />
     </div>
   );
@@ -36,16 +47,23 @@ const REPORT_REASONS = [
   "Other",
 ];
 
-function getReportData(projectId: string): { report_id: string; reporter_token: string } | null {
+function getReportData(
+  projectId: string,
+): { report_id: string; reporter_token: string } | null {
   try {
     const raw = localStorage.getItem(`report_${projectId}`);
     if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return null;
 }
 
 function saveReportData(projectId: string, reportId: string, token: string) {
-  localStorage.setItem(`report_${projectId}`, JSON.stringify({ report_id: reportId, reporter_token: token }));
+  localStorage.setItem(
+    `report_${projectId}`,
+    JSON.stringify({ report_id: reportId, reporter_token: token }),
+  );
 }
 
 function clearReportData(projectId: string) {
@@ -73,7 +91,14 @@ interface ProjectCardProps {
   onVerify?: (projectId: string) => void;
 }
 
-export function ProjectCard({ project, authorUsername, onEdit, showReport = true, verified = false, onVerify }: ProjectCardProps) {
+export function ProjectCard({
+  project,
+  authorUsername,
+  onEdit,
+  showReport = true,
+  verified = false,
+  onVerify,
+}: ProjectCardProps) {
   const [reportOpen, setReportOpen] = useState(false);
   const [reported, setReported] = useState(() => !!getReportData(project.id));
   const [reporting, setReporting] = useState(false);
@@ -85,7 +110,10 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setReportOpen(false);
       }
     }
@@ -100,7 +128,9 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
     setReporting(true);
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         setReportError("Please sign in to report a project.");
         setReporting(false);
@@ -147,226 +177,257 @@ export function ProjectCard({ project, authorUsername, onEdit, showReport = true
   };
 
   return (
-    <div
-      className="card-brutal h-full flex flex-col transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-brutal-hover)]"
-    >
+    <div className="card-brutal h-full flex flex-col transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-brutal-hover)]">
       {project.image_url ? (
         <ProjectImageBanner url={project.image_url} alt={project.title} />
       ) : (
         <div className="w-full h-28 rounded-t-[calc(var(--radius-card)-1px)] border-b border-[var(--border-subtle)] bg-[var(--bg-surface-light)] flex items-center justify-center">
-          <span className="text-3xl font-bold text-[var(--text-muted-soft)] select-none">{project.title?.charAt(0) ?? "P"}</span>
+          <span className="text-3xl font-bold text-[var(--text-muted-soft)] select-none">
+            {project.title?.charAt(0) ?? "P"}
+          </span>
         </div>
       )}
       <div className="px-4 py-3 flex-1 flex flex-col">
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-bold text-[var(--foreground)] line-clamp-2 flex-1 min-w-0 leading-tight">{project.title}</h3>
-        <div className="flex shrink-0 gap-2">
-          {onEdit && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onEdit(project); }}
-              className="text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
-              title="Edit project"
-            >
-              <Pencil size={16} />
-            </button>
-          )}
-          {showReport && !onEdit && (
-            <div className="relative" ref={dropdownRef}>
-              {reported ? (
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleUndo(); }}
-                  disabled={undoing}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
-                  title="Undo report"
-                >
-                  <Undo2 size={12} />
-                  {undoing ? "Undoing..." : "Undo Report"}
-                </button>
-              ) : (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setReportOpen(!reportOpen);
-                  }}
-                  className="text-[var(--text-muted-soft)] hover:text-red-500 transition-colors"
-                  aria-label="Report project"
-                  aria-expanded={reportOpen}
-                  aria-haspopup="true"
-                >
-                  <Flag size={14} />
-                </button>
-              )}
-              {reportOpen && (
-                <div className="absolute right-0 bottom-6 z-50 w-44 rounded-xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-[var(--shadow-brutal)]">
-                  {REPORT_REASONS.map((reason) => (
-                    <button
-                      key={reason}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleReport(reason);
-                      }}
-                      disabled={reporting}
-                      className="block w-full px-3 py-2 text-left text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--bg-surface-light)] transition-colors disabled:opacity-50"
-                    >
-                      {reason}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-          {(() => {
-            const liveHref = normalizeExternalUrl(project.live_url);
-            return liveHref ? (
-              <a
-                href={liveHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Open live site"
-                title="Open live site"
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="text-sm font-bold text-[var(--foreground)] line-clamp-2 flex-1 min-w-0 leading-tight">
+            {project.title}
+          </h3>
+          <div className="flex shrink-0 gap-2">
+            {onEdit && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(project);
+                }}
                 className="text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
-                onClick={(e) => e.stopPropagation()}
+                title="Edit project"
               >
-                <ExternalLink size={16} />
-              </a>
-            ) : null;
-          })()}
-          {(() => {
-            const repoHref = normalizeRepoUrl(project.github_url);
-            return repoHref ? (
-              <a
-                href={repoHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Open GitHub repository"
-                title="Open GitHub repository"
-                className="text-[var(--text-secondary)] hover:text-[var(--foreground)] transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <GithubLogo weight="fill" size={16} />
-              </a>
-            ) : null;
-          })()}
+                <Pencil size={16} />
+              </button>
+            )}
+            {showReport && !onEdit && (
+              <div className="relative" ref={dropdownRef}>
+                {reported ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleUndo();
+                    }}
+                    disabled={undoing}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
+                    title="Undo report"
+                  >
+                    <Undo2 size={12} />
+                    {undoing ? "Undoing..." : "Undo Report"}
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setReportOpen(!reportOpen);
+                    }}
+                    className="text-[var(--text-muted-soft)] hover:text-red-500 transition-colors"
+                    aria-label="Report project"
+                    aria-expanded={reportOpen}
+                    aria-haspopup="true"
+                  >
+                    <Flag size={14} />
+                  </button>
+                )}
+                {reportOpen && (
+                  <div className="absolute right-0 bottom-6 z-50 w-44 rounded-xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-[var(--shadow-brutal)]">
+                    {REPORT_REASONS.map((reason) => (
+                      <button
+                        key={reason}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleReport(reason);
+                        }}
+                        disabled={reporting}
+                        className="block w-full px-3 py-2 text-left text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--bg-surface-light)] transition-colors disabled:opacity-50"
+                      >
+                        {reason}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {(() => {
+              const liveHref = normalizeExternalUrl(project.live_url);
+              return liveHref ? (
+                <a
+                  href={liveHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open live site"
+                  title="Open live site"
+                  className="text-[var(--text-secondary)] hover:text-[var(--accent)] transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ExternalLink size={16} />
+                </a>
+              ) : null;
+            })()}
+            {(() => {
+              const repoHref = normalizeRepoUrl(project.github_url);
+              return repoHref ? (
+                <a
+                  href={repoHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open GitHub repository"
+                  title="Open GitHub repository"
+                  className="text-[var(--text-secondary)] hover:text-[var(--foreground)] transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <GithubLogo weight="fill" size={16} />
+                </a>
+              ) : null;
+            })()}
+          </div>
         </div>
-      </div>
 
-      {(verified || project.quality_score > 0 || project.quality_metrics?.has_vibetalent_badge) && (
-        <div className="mt-1 flex items-center gap-2 flex-wrap">
-          {verified && (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-600" title="Verified owner">
-              <CheckCircle weight="fill" size={14} />
-              Verified
-            </span>
-          )}
-          {/* Social proof only — carries no score (a README link is trivially
-              fakeable, so it deliberately stays out of the quality formula). */}
-          {project.quality_metrics?.has_vibetalent_badge && (
-            <span
-              className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--accent)]"
-              title="This repo's README links back to the builder's VibeTalent profile"
-            >
-              <SealCheck weight="fill" size={14} />
-              Badge Holder
-            </span>
-          )}
-          <QualityScoreBadge project={project} />
-        </div>
-      )}
-
-      <p className="mt-1.5 flex-1 text-xs text-[var(--text-secondary)] font-medium line-clamp-2">
-        {project.description}
-      </p>
-
-      {authorUsername && (
-        <Link
-          href={`/profile/${authorUsername}`}
-          onClick={(e) => e.stopPropagation()}
-          className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
-        >
-          <User weight="fill" size={12} />
-          @{authorUsername}
-        </Link>
-      )}
-
-      {(() => {
-        const tech = project.tech_stack ?? [];
-        if (tech.length === 0) return null;
-        const shown = tech.slice(0, MAX_TECH);
-        const overflow = tech.length - shown.length;
-        return (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {shown.map((t, i) => (
+        {(verified ||
+          project.quality_score > 0 ||
+          project.quality_metrics?.has_vibetalent_badge) && (
+          <div className="mt-1 flex items-center gap-2 flex-wrap">
+            {verified && (
               <span
-                key={`${t}-${i}`}
-                className="px-1.5 py-0.5 text-[10px] font-semibold text-[var(--text-tertiary)]"
-                style={PILL_STYLE}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-green-600"
+                title="Verified owner"
               >
-                {t}
-              </span>
-            ))}
-            {overflow > 0 && (
-              <span
-                className="px-1.5 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]"
-                style={PILL_STYLE}
-                title={tech.slice(MAX_TECH).join(", ")}
-              >
-                <span aria-hidden="true">+{overflow}</span>
-                <span className="sr-only">{overflow} more technologies: {tech.slice(MAX_TECH).join(", ")}</span>
+                <CheckCircle weight="fill" size={14} />
+                Verified
               </span>
             )}
+            {/* Social proof only — carries no score (a README link is trivially
+              fakeable, so it deliberately stays out of the quality formula). */}
+            {project.quality_metrics?.has_vibetalent_badge && (
+              <span
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--accent)]"
+                title="This repo's README links back to the builder's VibeTalent profile"
+              >
+                <SealCheck weight="fill" size={14} />
+                Badge Holder
+              </span>
+            )}
+            <QualityScoreBadge project={project} />
           </div>
-        );
-      })()}
-
-      <GithubSignal
-        commits7d={null}
-        values7d={null}
-        lastCommitAgo={null}
-        githubUrl={project.github_url ?? null}
-      />
-
-      <div className="mt-2 flex items-center gap-3 text-[10px] font-semibold text-[var(--text-muted)]">
-        <EndorseButton projectId={project.id} initialCount={project.endorsement_count} />
-        {project.build_time && (
-          <span className="flex items-center gap-1">
-            <Clock weight="fill" size={10} />
-            {project.build_time}
-          </span>
         )}
+
+        <p className="mt-1.5 flex-1 text-xs text-[var(--text-secondary)] font-medium line-clamp-2">
+          {project.description}
+        </p>
+
+        {authorUsername && (
+          <Link
+            href={`/profile/${authorUsername}`}
+            onClick={(e) => e.stopPropagation()}
+            className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+          >
+            <User weight="fill" size={12} />@{authorUsername}
+          </Link>
+        )}
+
         {(() => {
-          const tags = project.tags ?? [];
-          if (tags.length === 0) return null;
-          const shown = tags.slice(0, MAX_TAGS);
-          const overflow = tags.length - shown.length;
+          const tech = project.tech_stack ?? [];
+          if (tech.length === 0) return null;
+          const shown = tech.slice(0, MAX_TECH);
+          const overflow = tech.length - shown.length;
           return (
-            <span className="flex items-center gap-1 min-w-0" title={tags.join(", ")}>
-              <Tag weight="fill" size={10} className="shrink-0" />
-              <span className="truncate">{shown.join(", ")}</span>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {shown.map((t, i) => (
+                <span
+                  key={`${t}-${i}`}
+                  className="px-1.5 py-0.5 text-[10px] font-semibold text-[var(--text-tertiary)]"
+                  style={PILL_STYLE}
+                >
+                  {t}
+                </span>
+              ))}
               {overflow > 0 && (
-                <span className="shrink-0">
+                <span
+                  className="px-1.5 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]"
+                  style={PILL_STYLE}
+                  title={tech.slice(MAX_TECH).join(", ")}
+                >
                   <span aria-hidden="true">+{overflow}</span>
-                  <span className="sr-only">{overflow} more tags: {tags.slice(MAX_TAGS).join(", ")}</span>
+                  <span className="sr-only">
+                    {overflow} more technologies:{" "}
+                    {tech.slice(MAX_TECH).join(", ")}
+                  </span>
                 </span>
               )}
-            </span>
+            </div>
           );
         })()}
-      </div>
 
-      {reportError && (
-        <p className="text-[10px] font-semibold text-red-600 mt-1" role="alert">{reportError}</p>
-      )}
+        <GithubSignal
+          commits7d={null}
+          values7d={null}
+          lastCommitAgo={null}
+          githubUrl={project.github_url ?? null}
+        />
 
-      {!verified && onVerify && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onVerify(project.id); }}
-          className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold text-[var(--foreground)] border border-[var(--border-hard)] bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-light)] transition-colors"
-          title="Verify GitHub ownership"
-        >
-          <ShieldCheck weight="fill" size={12} />
-          Verify
-        </button>
-      )}
+        <div className="mt-2 flex items-center gap-3 text-[10px] font-semibold text-[var(--text-muted)]">
+          <EndorseButton
+            projectId={project.id}
+            initialCount={project.endorsement_count}
+          />
+          {project.build_time && (
+            <span className="flex items-center gap-1">
+              <Clock weight="fill" size={10} />
+              {project.build_time}
+            </span>
+          )}
+          {(() => {
+            const tags = project.tags ?? [];
+            if (tags.length === 0) return null;
+            const shown = tags.slice(0, MAX_TAGS);
+            const overflow = tags.length - shown.length;
+            return (
+              <span
+                className="flex items-center gap-1 min-w-0"
+                title={tags.join(", ")}
+              >
+                <Tag weight="fill" size={10} className="shrink-0" />
+                <span className="truncate">{shown.join(", ")}</span>
+                {overflow > 0 && (
+                  <span className="shrink-0">
+                    <span aria-hidden="true">+{overflow}</span>
+                    <span className="sr-only">
+                      {overflow} more tags: {tags.slice(MAX_TAGS).join(", ")}
+                    </span>
+                  </span>
+                )}
+              </span>
+            );
+          })()}
+        </div>
+
+        {reportError && (
+          <p
+            className="text-[10px] font-semibold text-red-600 mt-1"
+            role="alert"
+          >
+            {reportError}
+          </p>
+        )}
+
+        {!verified && onVerify && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onVerify(project.id);
+            }}
+            className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold text-[var(--foreground)] border border-[var(--border-hard)] bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-light)] transition-colors"
+            title="Verify GitHub ownership"
+          >
+            <ShieldCheck weight="fill" size={12} />
+            Verify
+          </button>
+        )}
       </div>
     </div>
   );

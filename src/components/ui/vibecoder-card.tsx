@@ -14,7 +14,9 @@ interface VibecoderCardProps {
   rank?: number;
 }
 
-function getActivityLabel(lastActivityDate?: string | null): { text: string; color: string } | null {
+function getActivityLabel(
+  lastActivityDate?: string | null,
+): { text: string; color: string } | null {
   if (!lastActivityDate) return null;
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -22,12 +24,15 @@ function getActivityLabel(lastActivityDate?: string | null): { text: string; col
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
 
-  if (lastActivityDate === today) return { text: "Active today", color: "text-emerald-600" };
-  if (lastActivityDate === yesterdayStr) return { text: "Active yesterday", color: "text-emerald-500" };
+  if (lastActivityDate === today)
+    return { text: "Active today", color: "text-emerald-600" };
+  if (lastActivityDate === yesterdayStr)
+    return { text: "Active yesterday", color: "text-emerald-500" };
 
   const diffMs = now.getTime() - new Date(lastActivityDate).getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays <= 7) return { text: `Active ${diffDays}d ago`, color: "text-amber-600" };
+  if (diffDays <= 7)
+    return { text: `Active ${diffDays}d ago`, color: "text-amber-600" };
 
   return null;
 }
@@ -38,9 +43,7 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
 
   return (
     <Link href={`/profile/${user.username}`}>
-      <div
-        className="group relative p-5 transition-all card-brutal hover:-translate-y-0.5 hover:shadow-[var(--shadow-brutal-hover)] h-full flex flex-col"
-      >
+      <div className="group relative p-5 transition-all card-brutal hover:-translate-y-0.5 hover:shadow-[var(--shadow-brutal-hover)] h-full flex flex-col">
         {rank && (
           <div
             className="absolute -top-3 -left-3 flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white shadow-[var(--shadow-brutal-xs)]"
@@ -61,7 +64,13 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
             }}
           >
             {user.avatar_url ? (
-              <Image src={user.avatar_url} alt={user.username} width={48} height={48} className="w-full h-full object-cover" />
+              <Image
+                src={user.avatar_url}
+                alt={user.username}
+                width={48}
+                height={48}
+                className="w-full h-full object-cover"
+              />
             ) : (
               initials
             )}
@@ -82,14 +91,18 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
                   )}
                 </h3>
                 {user.display_name && (
-                  <p className="text-xs font-medium text-[var(--text-muted)] truncate">@{user.username}</p>
+                  <p className="text-xs font-medium text-[var(--text-muted)] truncate">
+                    @{user.username}
+                  </p>
                 )}
               </div>
               <BadgeDisplay level={user.badge_level} size="sm" />
             </div>
 
             {activity && (
-              <span className={`inline-flex items-center gap-1 text-xs font-semibold ${activity.color} mt-0.5`}>
+              <span
+                className={`inline-flex items-center gap-1 text-xs font-semibold ${activity.color} mt-0.5`}
+              >
                 <Pulse size={11} weight="bold" />
                 {activity.text}
               </span>

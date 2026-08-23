@@ -3,7 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { Notification } from "@/lib/types/database";
-import { NOTIFICATION_ICONS, notificationTimeAgo, extractNotificationAvatar } from "@/lib/notification-display";
+import {
+  NOTIFICATION_ICONS,
+  notificationTimeAgo,
+  extractNotificationAvatar,
+} from "@/lib/notification-display";
 import { Bell } from "@phosphor-icons/react";
 
 // JetBrains Mono is loaded as a CSS var by the root layout; fall back gracefully.
@@ -13,13 +17,17 @@ const MONO = "var(--font-jetbrains-mono), 'JetBrains Mono', monospace";
  *  badge when present, otherwise a bordered type icon. Read items mute. */
 function BellChip({ n }: { n: Notification }) {
   const Icon = NOTIFICATION_ICONS[n.type] || Bell;
-  const avatar = extractNotificationAvatar(n.metadata as Record<string, unknown> | null);
+  const avatar = extractNotificationAvatar(
+    n.metadata as Record<string, unknown> | null,
+  );
   const read = n.read;
   const ring = read ? "var(--border-subtle)" : "var(--border-hard)";
 
   if (avatar) {
     return (
-      <div style={{ position: "relative", width: 34, height: 34, flexShrink: 0 }}>
+      <div
+        style={{ position: "relative", width: 34, height: 34, flexShrink: 0 }}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element -- free-form metadata URL; plain img avoids next/image remote-host config */}
         <img
           src={avatar}
@@ -177,7 +185,7 @@ export function NotificationBell() {
     // this flag the continuation would schedule a retry *after* unmount, past
     // the clearTimeout in the cleanup, leaving a stray fetch and a setState on
     // a dead component.
-     
+
     let disposed = false;
     void fetchUnreadCount().then((ok) => {
       if (!ok && !disposed) {
@@ -200,7 +208,6 @@ export function NotificationBell() {
     };
   }, [fetchNotifications, fetchUnreadCount]);
   /* eslint-enable react-hooks/set-state-in-effect */
-   
 
   // Click outside to close
   useEffect(() => {
@@ -222,7 +229,7 @@ export function NotificationBell() {
         body: JSON.stringify({ mark_all: true }),
       });
       if (res.ok) {
-        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
         setUnreadCount(0);
       }
     } catch {
@@ -238,10 +245,10 @@ export function NotificationBell() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: notification.id }),
       }).catch(() => {});
-      setNotifications(prev =>
-        prev.map(n => (n.id === notification.id ? { ...n, read: true } : n))
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n)),
       );
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     }
     setOpen(false);
     // Always send users to the dedicated notifications page so they can read
@@ -310,7 +317,11 @@ export function NotificationBell() {
 
           {notifications.length === 0 ? (
             <div className="px-4 py-8 text-center">
-              <Bell weight="fill" size={24} className="mx-auto mb-2 text-[var(--text-muted-soft)]" />
+              <Bell
+                weight="fill"
+                size={24}
+                className="mx-auto mb-2 text-[var(--text-muted-soft)]"
+              />
               <p className="text-sm font-medium text-[var(--text-muted-soft)]">
                 {listLoaded ? "No notifications yet" : "Loading notifications…"}
               </p>
@@ -326,11 +337,30 @@ export function NotificationBell() {
                 >
                   <BellChip n={n} />
                   <div className="min-w-0 flex-1">
-                    <p className={`text-sm leading-tight ${n.read ? "font-semibold text-[var(--text-muted)]" : "font-bold text-[var(--foreground)]"}`}>
+                    <p
+                      className={`text-sm leading-tight ${n.read ? "font-semibold text-[var(--text-muted)]" : "font-bold text-[var(--foreground)]"}`}
+                    >
                       {n.title}
                     </p>
-                    <p className="text-xs mt-0.5 truncate" style={{ color: n.read ? "var(--text-muted-soft)" : "var(--text-secondary)" }}>{n.message}</p>
-                    <p className="text-[10px] mt-1.5 font-semibold" style={{ fontFamily: MONO, color: "var(--text-muted-soft)" }}>{notificationTimeAgo(n.created_at)}</p>
+                    <p
+                      className="text-xs mt-0.5 truncate"
+                      style={{
+                        color: n.read
+                          ? "var(--text-muted-soft)"
+                          : "var(--text-secondary)",
+                      }}
+                    >
+                      {n.message}
+                    </p>
+                    <p
+                      className="text-[10px] mt-1.5 font-semibold"
+                      style={{
+                        fontFamily: MONO,
+                        color: "var(--text-muted-soft)",
+                      }}
+                    >
+                      {notificationTimeAgo(n.created_at)}
+                    </p>
                   </div>
                   {!n.read && (
                     <span

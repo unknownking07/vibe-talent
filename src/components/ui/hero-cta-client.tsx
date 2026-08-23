@@ -11,7 +11,11 @@ interface HeroCTAClientProps {
   initialIsLoggedIn: boolean;
 }
 
-export function HeroCTAClient({ className = "", style, initialIsLoggedIn }: HeroCTAClientProps) {
+export function HeroCTAClient({
+  className = "",
+  style,
+  initialIsLoggedIn,
+}: HeroCTAClientProps) {
   const [isLoggedIn, setIsLoggedIn] = useState(initialIsLoggedIn);
 
   useEffect(() => {
@@ -25,11 +29,11 @@ export function HeroCTAClient({ className = "", style, initialIsLoggedIn }: Hero
 
     // Stay in sync with later auth changes (sign-in/out in another tab) so the
     // CTA label doesn't drift from the navbar.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!cancelled) setIsLoggedIn(!!session?.user);
-      },
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!cancelled) setIsLoggedIn(!!session?.user);
+    });
 
     return () => {
       cancelled = true;

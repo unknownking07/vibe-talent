@@ -190,7 +190,7 @@ function BadgeShelf({ achievements, username }: BadgeShelfProps) {
               title={
                 a.earned
                   ? a.title
-: `${a.title}: ${a.current}/${a.threshold} ${a.unit}`
+                  : `${a.title}: ${a.current}/${a.threshold} ${a.unit}`
               }
             >
               <BadgeMedallion
@@ -267,8 +267,8 @@ function NextUpBanner({ achievement }: NextUpBannerProps) {
         </div>
         <div className="flex items-center justify-between text-[10px] font-medium">
           <span style={{ color: "var(--text-secondary)" }}>
-            {achievement.current.toLocaleString()} / {achievement.threshold.toLocaleString()}{" "}
-            {achievement.unit}
+            {achievement.current.toLocaleString()} /{" "}
+            {achievement.threshold.toLocaleString()} {achievement.unit}
           </span>
           <span style={{ color: "var(--foreground)" }}>
             {remaining.toLocaleString()} to go
@@ -283,9 +283,7 @@ function NextUpBanner({ achievement }: NextUpBannerProps) {
 
 function EmptyState() {
   return (
-    <div
-      className="flex flex-col items-center justify-center gap-2 px-6 py-10 text-center"
-    >
+    <div className="flex flex-col items-center justify-center gap-2 px-6 py-10 text-center">
       <Trophy weight="fill" size={28} style={{ color: "var(--text-muted)" }} />
       <p
         className="text-xs font-semibold"

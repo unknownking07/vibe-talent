@@ -10,13 +10,20 @@ interface BadgeDisplayProps {
 }
 
 const badgeColors: Record<string, { bg: string; text: string }> = {
-  bronze: { bg: "var(--status-warning-bg)", text: "var(--status-warning-text)" },
+  bronze: {
+    bg: "var(--status-warning-bg)",
+    text: "var(--status-warning-text)",
+  },
   silver: { bg: "var(--bg-surface-light)", text: "var(--text-tertiary)" },
   gold: { bg: "var(--status-warning-bg)", text: "var(--badge-gold)" },
   diamond: { bg: "var(--bg-surface-light)", text: "var(--badge-diamond)" },
 };
 
-export function BadgeDisplay({ level, size = "md", showLabel = true }: BadgeDisplayProps) {
+export function BadgeDisplay({
+  level,
+  size = "md",
+  showLabel = true,
+}: BadgeDisplayProps) {
   const info = getBadgeInfo(level);
 
   if (level === "none") return null;
@@ -27,7 +34,10 @@ export function BadgeDisplay({ level, size = "md", showLabel = true }: BadgeDisp
     lg: "text-base px-4 py-1.5",
   };
 
-  const colors = badgeColors[level] || { bg: "#F4F4F5", text: "var(--text-tertiary)" };
+  const colors = badgeColors[level] || {
+    bg: "#F4F4F5",
+    text: "var(--text-tertiary)",
+  };
 
   return (
     <span

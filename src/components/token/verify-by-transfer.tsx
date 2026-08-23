@@ -83,10 +83,18 @@ export function VerifyByTransfer({
         }
 
         // 404 is "not there yet", which is the normal state while waiting.
-        if (res.status !== 404)
-          setError(data.error ?? "Couldn't verify that transaction.");
+        if (res.status === 404) return false;
+
+        setError(data.error ?? "Couldn't verify that transaction.");
+        // Anything else is terminal: an expired challenge, a wallet already
+        // linked elsewhere, a spent verification. Polling on would send
+        // requests that cannot succeed while a spinner claims we are waiting.
+        setWatching(false);
         return false;
       } catch {
+        setError(
+          "Couldn't reach VibeTalent. Check your connection and try again.",
+        );
         return false;
       }
     },
@@ -98,12 +106,17 @@ export function VerifyByTransfer({
     if (!watching || !address.trim()) return;
 
     let cancelled = false;
+    // Counted outside React state: an updater must stay pure, and React may run
+    // one more than once.
+    let ticks = 0;
     const timer = setInterval(async () => {
       if (cancelled || linkedRef.current) return;
-      setAttempts((n) => {
-        if (n + 1 >= POLL_LIMIT) setWatching(false);
-        return n + 1;
-      });
+      ticks += 1;
+      setAttempts(ticks);
+      if (ticks >= POLL_LIMIT) {
+        setWatching(false);
+        return;
+      }
       await attempt({ address: address.trim() });
     }, POLL_INTERVAL_MS);
 
@@ -242,6 +255,8 @@ export function VerifyByTransfer({
           </div>
 
           <p
+            role="status"
+            aria-live="polite"
             className="mt-2 flex items-center gap-2 text-[11px]"
             style={{ color: "var(--text-muted)" }}
           >

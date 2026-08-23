@@ -18,7 +18,10 @@ export function CopySkillUrlButton() {
     <button
       onClick={handleCopy}
       className="btn-brutal text-sm flex items-center gap-2 transition-all"
-      style={{ backgroundColor: copied ? "#16A34A" : "var(--bg-inverted)", color: "var(--text-on-inverted)" }}
+      style={{
+        backgroundColor: copied ? "#16A34A" : "var(--bg-inverted)",
+        color: "var(--text-on-inverted)",
+      }}
     >
       {copied ? <Check weight="bold" size={14} /> : <Copy size={14} />}
       {copied ? "Copied!" : "Copy Skill URL"}

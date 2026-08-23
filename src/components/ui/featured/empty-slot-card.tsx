@@ -10,7 +10,8 @@ export function EmptySlotCard({ onClaim }: { onClaim: () => void }) {
                  focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[var(--accent)]"
       style={{
         border: "2px dashed var(--accent)",
-        backgroundColor: "color-mix(in srgb, var(--accent) 3%, var(--bg-surface))",
+        backgroundColor:
+          "color-mix(in srgb, var(--accent) 3%, var(--bg-surface))",
       }}
       aria-label="Claim this featured project slot"
     >

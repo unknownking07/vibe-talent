@@ -74,8 +74,7 @@ type LocalNonceGlobalThis = typeof globalThis & {
 /** True only in local staging development, where the in-memory store is used. */
 export function isLocalWalletNonceStoreEnabled(): boolean {
   return (
-    process.env.NODE_ENV === "development" &&
-    process.env.VIBE_STAGING === "1"
+    process.env.NODE_ENV === "development" && process.env.VIBE_STAGING === "1"
   );
 }
 
@@ -102,6 +101,24 @@ export function localStoreNonce(key: string, nonce: string): boolean {
     expiresAt: Date.now() + NONCE_TTL_SECONDS * 1000,
   });
   return true;
+}
+
+/**
+ * Look at a nonce without spending it.
+ *
+ * The watched transfer flow polls, so it has to be able to ask "is my challenge
+ * still open" without consuming it on every failed look.
+ */
+export function localPeekNonce(key: string): string | null {
+  const store = getLocalStore();
+  if (!store) return null;
+  const entry = store.get(key);
+  if (!entry) return null;
+  if (Date.now() >= entry.expiresAt) {
+    store.delete(key);
+    return null;
+  }
+  return entry.nonce;
 }
 
 /**

@@ -49,8 +49,12 @@ interface PromoBillboardClientProps {
   initialPromos: EnrichedPromotion[];
 }
 
-export function PromoBillboardClient({ initialPromos }: PromoBillboardClientProps) {
-  const [promos, setPromos] = useState<EnrichedPromotion[]>(() => sortPromos(initialPromos));
+export function PromoBillboardClient({
+  initialPromos,
+}: PromoBillboardClientProps) {
+  const [promos, setPromos] = useState<EnrichedPromotion[]>(() =>
+    sortPromos(initialPromos),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -150,7 +154,13 @@ export function PromoBillboardClient({ initialPromos }: PromoBillboardClientProp
   );
 }
 
-function PromoLap({ items, ariaHidden = false }: { items: EnrichedPromotion[]; ariaHidden?: boolean }) {
+function PromoLap({
+  items,
+  ariaHidden = false,
+}: {
+  items: EnrichedPromotion[];
+  ariaHidden?: boolean;
+}) {
   return (
     <ul
       aria-hidden={ariaHidden}
@@ -194,8 +204,11 @@ function safeExternalHref(raw: string | null | undefined): string | null {
 function PromoItem({ promo }: { promo: EnrichedPromotion }) {
   const title = promo.project?.title || promo.projectName;
   const externalHref = safeExternalHref(promo.project?.live_url);
-  const href = externalHref
-    ?? (promo.author ? `/profile/${promo.author.username}` : `/explore?q=${encodeURIComponent(promo.projectName)}`);
+  const href =
+    externalHref ??
+    (promo.author
+      ? `/profile/${promo.author.username}`
+      : `/explore?q=${encodeURIComponent(promo.projectName)}`);
   const isExternal = !!externalHref;
 
   const byline = promo.author ? `by @${promo.author.username}` : "sponsored";
@@ -232,12 +245,19 @@ function PromoItem({ promo }: { promo: EnrichedPromotion }) {
   return (
     <li style={{ display: "inline-flex", alignItems: "center" }}>
       {isExternal ? (
-        <a href={href} target="_blank" rel="noopener noreferrer" style={linkStyle}>
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={linkStyle}
+        >
           {inner}
         </a>
       ) : (
         // Internal route — use next/link to avoid a hard navigation.
-        <Link href={href} style={linkStyle}>{inner}</Link>
+        <Link href={href} style={linkStyle}>
+          {inner}
+        </Link>
       )}
     </li>
   );

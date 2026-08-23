@@ -13,7 +13,8 @@ const PAGE_SIZE = 15;
 type SortOption = "vibe_score" | "streak" | "projects" | "newest";
 
 // Filter-panel visual language (presentation only)
-const FILTER_LABEL = "block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2";
+const FILTER_LABEL =
+  "block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2";
 
 /** One shared "selected" treatment: accent-tinted fill + accent border. */
 const chipStyle = (active: boolean) => ({
@@ -47,15 +48,45 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Wrap filter setters to auto-reset pagination
-  const setSearch = useCallback((v: string) => { _setSearch(v); setCurrentPage(1); }, []);
-  const setSortBy = useCallback((v: SortOption) => { _setSortBy(v); setCurrentPage(1); }, []);
-  const setBadgeFilter = useCallback((v: BadgeLevel | "all") => { _setBadgeFilter(v); setCurrentPage(1); }, []);
-  const setSelectedTech = useCallback((v: string[] | ((prev: string[]) => string[])) => { _setSelectedTech(v); setCurrentPage(1); }, []);
-  const setMinStreak = useCallback((v: number) => { _setMinStreak(v); setCurrentPage(1); }, []);
-  const setMaxStreak = useCallback((v: number) => { _setMaxStreak(v); setCurrentPage(1); }, []);
-  const setAvailableOnly = useCallback((v: boolean) => { _setAvailableOnly(v); setCurrentPage(1); }, []);
-  const setHasProjects = useCallback((v: boolean) => { _setHasProjects(v); setCurrentPage(1); }, []);
-  const setVerifiedOnly = useCallback((v: boolean) => { _setVerifiedOnly(v); setCurrentPage(1); }, []);
+  const setSearch = useCallback((v: string) => {
+    _setSearch(v);
+    setCurrentPage(1);
+  }, []);
+  const setSortBy = useCallback((v: SortOption) => {
+    _setSortBy(v);
+    setCurrentPage(1);
+  }, []);
+  const setBadgeFilter = useCallback((v: BadgeLevel | "all") => {
+    _setBadgeFilter(v);
+    setCurrentPage(1);
+  }, []);
+  const setSelectedTech = useCallback(
+    (v: string[] | ((prev: string[]) => string[])) => {
+      _setSelectedTech(v);
+      setCurrentPage(1);
+    },
+    [],
+  );
+  const setMinStreak = useCallback((v: number) => {
+    _setMinStreak(v);
+    setCurrentPage(1);
+  }, []);
+  const setMaxStreak = useCallback((v: number) => {
+    _setMaxStreak(v);
+    setCurrentPage(1);
+  }, []);
+  const setAvailableOnly = useCallback((v: boolean) => {
+    _setAvailableOnly(v);
+    setCurrentPage(1);
+  }, []);
+  const setHasProjects = useCallback((v: boolean) => {
+    _setHasProjects(v);
+    setCurrentPage(1);
+  }, []);
+  const setVerifiedOnly = useCallback((v: boolean) => {
+    _setVerifiedOnly(v);
+    setCurrentPage(1);
+  }, []);
 
   const goToPage = useCallback((page: number) => {
     setCurrentPage(page);
@@ -64,7 +95,11 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
 
   const allTechStacks = useMemo(() => {
     const techs = new Set<string>();
-    users.forEach(u => (u.projects ?? []).forEach(p => (p.tech_stack ?? []).forEach(t => techs.add(t))));
+    users.forEach((u) =>
+      (u.projects ?? []).forEach((p) =>
+        (p.tech_stack ?? []).forEach((t) => techs.add(t)),
+      ),
+    );
     return [...techs].sort();
   }, [users]);
 
@@ -77,12 +112,13 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
         (u) =>
           u.username.toLowerCase().includes(q) ||
           u.bio?.toLowerCase().includes(q) ||
-          (u.projects ?? []).some((p) =>
-            p.title?.toLowerCase().includes(q) ||
-            p.description?.toLowerCase().includes(q) ||
-            (p.tech_stack ?? []).some((t) => t.toLowerCase().includes(q)) ||
-            (p.tags ?? []).some((t) => t.toLowerCase().includes(q))
-          )
+          (u.projects ?? []).some(
+            (p) =>
+              p.title?.toLowerCase().includes(q) ||
+              p.description?.toLowerCase().includes(q) ||
+              (p.tech_stack ?? []).some((t) => t.toLowerCase().includes(q)) ||
+              (p.tags ?? []).some((t) => t.toLowerCase().includes(q)),
+          ),
       );
     }
 
@@ -91,40 +127,51 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
     }
 
     if (selectedTech.length > 0) {
-      filtered = filtered.filter(u =>
-        (u.projects ?? []).some(p => (p.tech_stack ?? []).some(t => selectedTech.includes(t)))
+      filtered = filtered.filter((u) =>
+        (u.projects ?? []).some((p) =>
+          (p.tech_stack ?? []).some((t) => selectedTech.includes(t)),
+        ),
       );
     }
     if (minStreak > 0) {
-      filtered = filtered.filter(u => u.streak >= minStreak);
+      filtered = filtered.filter((u) => u.streak >= minStreak);
     }
     if (maxStreak < 365) {
-      filtered = filtered.filter(u => u.streak <= maxStreak);
+      filtered = filtered.filter((u) => u.streak <= maxStreak);
     }
     if (availableOnly) {
-      filtered = filtered.filter(u => u.streak > 0);
+      filtered = filtered.filter((u) => u.streak > 0);
     }
     if (hasProjects) {
-      filtered = filtered.filter(u => (u.projects ?? []).length > 0);
+      filtered = filtered.filter((u) => (u.projects ?? []).length > 0);
     }
     if (verifiedOnly) {
-      filtered = filtered.filter(u => (u.projects ?? []).some(p => p.verified));
+      filtered = filtered.filter((u) =>
+        (u.projects ?? []).some((p) => p.verified),
+      );
     }
 
     // Quality ranking: normalized 0-1 scores, profiles with projects always above those without
-    const qualityScore = (u: typeof filtered[0]) => {
+    const qualityScore = (u: (typeof filtered)[0]) => {
       const projects = u.projects ?? [];
 
       // No projects = always last, regardless of streak/score
       if (projects.length === 0) return -1;
 
       const projectCount = Math.min(projects.length, 5);
-      const verifiedCount = Math.min(projects.filter(p => p.verified).length, 5);
-      const withLiveUrl = Math.min(projects.filter(p => p.live_url).length, 5);
+      const verifiedCount = Math.min(
+        projects.filter((p) => p.verified).length,
+        5,
+      );
+      const withLiveUrl = Math.min(
+        projects.filter((p) => p.live_url).length,
+        5,
+      );
 
       // All axes normalized to 0-1
       // Max project raw = (5*8)+(5*10)+(5*5) = 115
-      const projectNorm = ((projectCount * 8) + (verifiedCount * 10) + (withLiveUrl * 5)) / 115;
+      const projectNorm =
+        (projectCount * 8 + verifiedCount * 10 + withLiveUrl * 5) / 115;
       const streakNorm = Math.min(u.streak, 100) / 100;
       const vibeNorm = Math.min(u.vibe_score, 500) / 500;
 
@@ -132,31 +179,62 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
     };
 
     // Has-projects first, then sort by selected field, quality score as tiebreaker
-    const hasProj = (u: typeof filtered[0]) => (u.projects ?? []).length > 0 ? 1 : 0;
+    const hasProj = (u: (typeof filtered)[0]) =>
+      (u.projects ?? []).length > 0 ? 1 : 0;
 
     switch (sortBy) {
       case "vibe_score":
-        filtered.sort((a, b) => hasProj(b) - hasProj(a) || b.vibe_score - a.vibe_score || qualityScore(b) - qualityScore(a));
+        filtered.sort(
+          (a, b) =>
+            hasProj(b) - hasProj(a) ||
+            b.vibe_score - a.vibe_score ||
+            qualityScore(b) - qualityScore(a),
+        );
         break;
       case "streak":
-        filtered.sort((a, b) => hasProj(b) - hasProj(a) || b.streak - a.streak || qualityScore(b) - qualityScore(a));
+        filtered.sort(
+          (a, b) =>
+            hasProj(b) - hasProj(a) ||
+            b.streak - a.streak ||
+            qualityScore(b) - qualityScore(a),
+        );
         break;
       case "projects":
-        filtered.sort((a, b) => hasProj(b) - hasProj(a) || (b.projects ?? []).length - (a.projects ?? []).length || qualityScore(b) - qualityScore(a));
+        filtered.sort(
+          (a, b) =>
+            hasProj(b) - hasProj(a) ||
+            (b.projects ?? []).length - (a.projects ?? []).length ||
+            qualityScore(b) - qualityScore(a),
+        );
         break;
       case "newest":
-        filtered.sort((a, b) => hasProj(b) - hasProj(a) || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        filtered.sort(
+          (a, b) =>
+            hasProj(b) - hasProj(a) ||
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
         break;
     }
 
     return filtered;
-  }, [users, search, sortBy, badgeFilter, selectedTech, minStreak, maxStreak, availableOnly, hasProjects, verifiedOnly]);
+  }, [
+    users,
+    search,
+    sortBy,
+    badgeFilter,
+    selectedTech,
+    minStreak,
+    maxStreak,
+    availableOnly,
+    hasProjects,
+    verifiedOnly,
+  ]);
 
   const totalPages = Math.ceil(filteredUsers.length / PAGE_SIZE);
   const activePage = currentPage > totalPages ? 1 : currentPage;
   const paginatedUsers = filteredUsers.slice(
     (activePage - 1) * PAGE_SIZE,
-    activePage * PAGE_SIZE
+    activePage * PAGE_SIZE,
   );
 
   return (
@@ -177,7 +255,8 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
             Let VibeFinder Robot Match You
           </div>
           <div className="text-xs font-medium text-zinc-400">
-            Describe your project and our bot reads platform data to find the best vibe coders for you
+            Describe your project and our bot reads platform data to find the
+            best vibe coders for you
           </div>
         </div>
       </Link>
@@ -186,13 +265,17 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
       <div className="mb-8 space-y-4">
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+            <Search
+              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+            />
             <input
               type="text"
               placeholder="Search by name, bio, projects, tech stack..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="input-brutal" style={{ paddingLeft: "2.5rem" }}
+              className="input-brutal"
+              style={{ paddingLeft: "2.5rem" }}
             />
           </div>
           <button
@@ -218,7 +301,9 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
             {/* Sorting */}
             <div className="flex flex-wrap gap-4">
               <div className="w-full sm:w-auto">
-                <label htmlFor="explore-sort-by" className={FILTER_LABEL}>Sort By</label>
+                <label htmlFor="explore-sort-by" className={FILTER_LABEL}>
+                  Sort By
+                </label>
                 <select
                   id="explore-sort-by"
                   value={sortBy}
@@ -232,11 +317,15 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
                 </select>
               </div>
               <div className="w-full sm:w-auto">
-                <label htmlFor="explore-badge-level" className={FILTER_LABEL}>Badge Level</label>
+                <label htmlFor="explore-badge-level" className={FILTER_LABEL}>
+                  Badge Level
+                </label>
                 <select
                   id="explore-badge-level"
                   value={badgeFilter}
-                  onChange={(e) => setBadgeFilter(e.target.value as BadgeLevel | "all")}
+                  onChange={(e) =>
+                    setBadgeFilter(e.target.value as BadgeLevel | "all")
+                  }
                   className="input-brutal py-2 sm:w-auto"
                 >
                   <option value="all">All Badges</option>
@@ -256,7 +345,13 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
                 {allTechStacks.slice(0, 20).map((tech) => (
                   <button
                     key={tech}
-                    onClick={() => setSelectedTech(prev => prev.includes(tech) ? prev.filter(t => t !== tech) : [...prev, tech])}
+                    onClick={() =>
+                      setSelectedTech((prev) =>
+                        prev.includes(tech)
+                          ? prev.filter((t) => t !== tech)
+                          : [...prev, tech],
+                      )
+                    }
                     aria-pressed={selectedTech.includes(tech)}
                     className="px-3 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer"
                     style={chipStyle(selectedTech.includes(tech))}
@@ -272,38 +367,77 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
               <div>
                 <span className={FILTER_LABEL}>Streak Range</span>
                 <div className="flex items-center gap-2">
-                  <input type="number" min={0} max={365} value={minStreak} onChange={(e) => setMinStreak(Number(e.target.value))}
+                  <input
+                    type="number"
+                    min={0}
+                    max={365}
+                    value={minStreak}
+                    onChange={(e) => setMinStreak(Number(e.target.value))}
                     aria-label="Minimum streak days"
-                    className="input-brutal w-20 text-center text-sm py-1.5" placeholder="Min" />
-                  <span className="text-sm font-medium text-[var(--text-muted)]">to</span>
-                  <input type="number" min={0} max={365} value={maxStreak} onChange={(e) => setMaxStreak(Number(e.target.value))}
+                    className="input-brutal w-20 text-center text-sm py-1.5"
+                    placeholder="Min"
+                  />
+                  <span className="text-sm font-medium text-[var(--text-muted)]">
+                    to
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={365}
+                    value={maxStreak}
+                    onChange={(e) => setMaxStreak(Number(e.target.value))}
                     aria-label="Maximum streak days"
-                    className="input-brutal w-20 text-center text-sm py-1.5" placeholder="Max" />
-                  <span className="text-xs font-medium text-[var(--text-muted)]">days</span>
+                    className="input-brutal w-20 text-center text-sm py-1.5"
+                    placeholder="Max"
+                  />
+                  <span className="text-xs font-medium text-[var(--text-muted)]">
+                    days
+                  </span>
                 </div>
               </div>
               <div>
                 <span className={FILTER_LABEL}>Show Only</span>
                 <div className="flex flex-wrap gap-2">
-                  <button onClick={() => setAvailableOnly(!availableOnly)}
+                  <button
+                    onClick={() => setAvailableOnly(!availableOnly)}
                     aria-pressed={availableOnly}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer"
-                    style={chipStyle(availableOnly)}>
-                    <Lightning size={13} weight="fill" aria-hidden="true" color={availableOnly ? "var(--accent)" : "currentColor"} />
+                    style={chipStyle(availableOnly)}
+                  >
+                    <Lightning
+                      size={13}
+                      weight="fill"
+                      aria-hidden="true"
+                      color={availableOnly ? "var(--accent)" : "currentColor"}
+                    />
                     Active Only
                   </button>
-                  <button onClick={() => setHasProjects(!hasProjects)}
+                  <button
+                    onClick={() => setHasProjects(!hasProjects)}
                     aria-pressed={hasProjects}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer"
-                    style={chipStyle(hasProjects)}>
-                    <Package size={13} weight="fill" aria-hidden="true" color={hasProjects ? "var(--accent)" : "currentColor"} />
+                    style={chipStyle(hasProjects)}
+                  >
+                    <Package
+                      size={13}
+                      weight="fill"
+                      aria-hidden="true"
+                      color={hasProjects ? "var(--accent)" : "currentColor"}
+                    />
                     Has Projects
                   </button>
-                  <button onClick={() => setVerifiedOnly(!verifiedOnly)}
+                  <button
+                    onClick={() => setVerifiedOnly(!verifiedOnly)}
                     aria-pressed={verifiedOnly}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer"
-                    style={chipStyle(verifiedOnly)}>
-                    <SealCheck size={13} weight="fill" aria-hidden="true" color={verifiedOnly ? "var(--accent)" : "currentColor"} />
+                    style={chipStyle(verifiedOnly)}
+                  >
+                    <SealCheck
+                      size={13}
+                      weight="fill"
+                      aria-hidden="true"
+                      color={verifiedOnly ? "var(--accent)" : "currentColor"}
+                    />
                     Verified Projects
                   </button>
                 </div>
@@ -314,59 +448,117 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
       </div>
 
       {/* Active Filter Pills */}
-      {(selectedTech.length > 0 || minStreak > 0 || maxStreak < 365 || availableOnly || hasProjects || verifiedOnly) && (
+      {(selectedTech.length > 0 ||
+        minStreak > 0 ||
+        maxStreak < 365 ||
+        availableOnly ||
+        hasProjects ||
+        verifiedOnly) && (
         <div className="flex flex-wrap items-center gap-2 mb-4">
-          {selectedTech.map(tech => (
-            <span key={tech} className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full" style={ACTIVE_PILL_STYLE}>
+          {selectedTech.map((tech) => (
+            <span
+              key={tech}
+              className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full"
+              style={ACTIVE_PILL_STYLE}
+            >
               {tech}
-              <button onClick={() => setSelectedTech(prev => prev.filter(t => t !== tech))}
-                aria-label={`Remove ${tech} filter`} className={PILL_REMOVE_BTN}>
+              <button
+                onClick={() =>
+                  setSelectedTech((prev) => prev.filter((t) => t !== tech))
+                }
+                aria-label={`Remove ${tech} filter`}
+                className={PILL_REMOVE_BTN}
+              >
                 <X size={12} weight="bold" />
               </button>
             </span>
           ))}
           {minStreak > 0 && (
-            <span className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full" style={ACTIVE_PILL_STYLE}>
+            <span
+              className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full"
+              style={ACTIVE_PILL_STYLE}
+            >
               Min: {minStreak}d
-              <button onClick={() => setMinStreak(0)} aria-label="Remove minimum streak filter" className={PILL_REMOVE_BTN}>
+              <button
+                onClick={() => setMinStreak(0)}
+                aria-label="Remove minimum streak filter"
+                className={PILL_REMOVE_BTN}
+              >
                 <X size={12} weight="bold" />
               </button>
             </span>
           )}
           {maxStreak < 365 && (
-            <span className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full" style={ACTIVE_PILL_STYLE}>
+            <span
+              className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full"
+              style={ACTIVE_PILL_STYLE}
+            >
               Max: {maxStreak}d
-              <button onClick={() => setMaxStreak(365)} aria-label="Remove maximum streak filter" className={PILL_REMOVE_BTN}>
+              <button
+                onClick={() => setMaxStreak(365)}
+                aria-label="Remove maximum streak filter"
+                className={PILL_REMOVE_BTN}
+              >
                 <X size={12} weight="bold" />
               </button>
             </span>
           )}
           {availableOnly && (
-            <span className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full" style={ACTIVE_PILL_STYLE}>
+            <span
+              className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full"
+              style={ACTIVE_PILL_STYLE}
+            >
               Active Only
-              <button onClick={() => setAvailableOnly(false)} aria-label="Remove active only filter" className={PILL_REMOVE_BTN}>
+              <button
+                onClick={() => setAvailableOnly(false)}
+                aria-label="Remove active only filter"
+                className={PILL_REMOVE_BTN}
+              >
                 <X size={12} weight="bold" />
               </button>
             </span>
           )}
           {hasProjects && (
-            <span className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full" style={ACTIVE_PILL_STYLE}>
+            <span
+              className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full"
+              style={ACTIVE_PILL_STYLE}
+            >
               Has Projects
-              <button onClick={() => setHasProjects(false)} aria-label="Remove has projects filter" className={PILL_REMOVE_BTN}>
+              <button
+                onClick={() => setHasProjects(false)}
+                aria-label="Remove has projects filter"
+                className={PILL_REMOVE_BTN}
+              >
                 <X size={12} weight="bold" />
               </button>
             </span>
           )}
           {verifiedOnly && (
-            <span className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full" style={ACTIVE_PILL_STYLE}>
+            <span
+              className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 text-xs font-semibold rounded-full"
+              style={ACTIVE_PILL_STYLE}
+            >
               Verified
-              <button onClick={() => setVerifiedOnly(false)} aria-label="Remove verified projects filter" className={PILL_REMOVE_BTN}>
+              <button
+                onClick={() => setVerifiedOnly(false)}
+                aria-label="Remove verified projects filter"
+                className={PILL_REMOVE_BTN}
+              >
                 <X size={12} weight="bold" />
               </button>
             </span>
           )}
-          <button onClick={() => { setSelectedTech([]); setMinStreak(0); setMaxStreak(365); setAvailableOnly(false); setHasProjects(false); setVerifiedOnly(false); }}
-            className="px-2 py-1 text-xs font-semibold cursor-pointer text-[var(--accent)] hover:underline">
+          <button
+            onClick={() => {
+              setSelectedTech([]);
+              setMinStreak(0);
+              setMaxStreak(365);
+              setAvailableOnly(false);
+              setHasProjects(false);
+              setVerifiedOnly(false);
+            }}
+            className="px-2 py-1 text-xs font-semibold cursor-pointer text-[var(--accent)] hover:underline"
+          >
             Clear all
           </button>
         </div>
@@ -375,7 +567,8 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
       {/* Results count — only shown when no pagination is needed; paginated case puts the count inside <Pagination /> */}
       {filteredUsers.length > 0 && filteredUsers.length <= PAGE_SIZE && (
         <p className="mb-4 text-sm font-medium text-[var(--text-muted)]">
-          {filteredUsers.length} builder{filteredUsers.length !== 1 ? "s" : ""} found
+          {filteredUsers.length} builder{filteredUsers.length !== 1 ? "s" : ""}{" "}
+          found
         </p>
       )}
 
@@ -403,9 +596,20 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
         </>
       ) : (
         <div className="card-brutal p-12 text-center">
-          <p className="text-[var(--text-secondary)] font-semibold">No builders match your search.</p>
+          <p className="text-[var(--text-secondary)] font-semibold">
+            No builders match your search.
+          </p>
           <button
-            onClick={() => { setSearch(""); setBadgeFilter("all"); setSelectedTech([]); setMinStreak(0); setMaxStreak(365); setAvailableOnly(false); setHasProjects(false); setVerifiedOnly(false); }}
+            onClick={() => {
+              setSearch("");
+              setBadgeFilter("all");
+              setSelectedTech([]);
+              setMinStreak(0);
+              setMaxStreak(365);
+              setAvailableOnly(false);
+              setHasProjects(false);
+              setVerifiedOnly(false);
+            }}
             className="mt-3 text-sm font-semibold text-[var(--accent)] hover:underline"
           >
             Clear filters

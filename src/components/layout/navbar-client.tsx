@@ -4,7 +4,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, X, LogOut, Settings, ChevronDown } from "lucide-react";
-import { SealCheck, Sparkle, Trophy, User, UsersThree } from "@phosphor-icons/react";
+import {
+  SealCheck,
+  Sparkle,
+  Trophy,
+  User,
+  UsersThree,
+} from "@phosphor-icons/react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { NotificationBell } from "@/components/ui/notification-bell";
@@ -57,9 +63,14 @@ function readCachedNavProfile(): NavbarProfile | null {
     if (!parsed || typeof parsed.username !== "string") return null;
     return {
       username: parsed.username,
-      avatar_url: typeof parsed.avatar_url === "string" ? parsed.avatar_url : null,
-      github_username: typeof parsed.github_username === "string" ? parsed.github_username : null,
-      display_name: typeof parsed.display_name === "string" ? parsed.display_name : null,
+      avatar_url:
+        typeof parsed.avatar_url === "string" ? parsed.avatar_url : null,
+      github_username:
+        typeof parsed.github_username === "string"
+          ? parsed.github_username
+          : null,
+      display_name:
+        typeof parsed.display_name === "string" ? parsed.display_name : null,
     };
   } catch {
     return null;
@@ -72,7 +83,10 @@ function writeCachedNavProfile(profile: NavbarProfile | null): void {
     if (profile === null) {
       window.localStorage.removeItem(NAV_PROFILE_CACHE_KEY);
     } else {
-      window.localStorage.setItem(NAV_PROFILE_CACHE_KEY, JSON.stringify(profile));
+      window.localStorage.setItem(
+        NAV_PROFILE_CACHE_KEY,
+        JSON.stringify(profile),
+      );
     }
   } catch {
     // Private mode / quota / disabled storage — best-effort cache.
@@ -105,7 +119,10 @@ function ProfileAvatar({
   );
 }
 
-export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClientProps) {
+export function NavbarClient({
+  initialIsLoggedIn,
+  initialProfile,
+}: NavbarClientProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -184,7 +201,8 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
       try {
         const now = new Date();
         const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-        const fetchToday = () => fetch(`/api/streak/today-logged?date=${today}`);
+        const fetchToday = () =>
+          fetch(`/api/streak/today-logged?date=${today}`);
         let res = await fetchToday();
         if (stale()) return;
         if (res.status === 401 && isLoggedInRef.current) {
@@ -303,7 +321,12 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
           // Fallback: use email prefix as display name. Intentionally NOT
           // cached — these are users mid-onboarding with no `users` row yet,
           // and we want the real username to show as soon as it exists.
-          setUserProfile({ username: email.split("@")[0], avatar_url: null, github_username: null, display_name: null });
+          setUserProfile({
+            username: email.split("@")[0],
+            avatar_url: null,
+            github_username: null,
+            display_name: null,
+          });
         }
       } catch (err) {
         if (cancelled) return;
@@ -311,7 +334,15 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
         // Don't blank a known profile on a transient throw — only fall back to
         // the email stub if we have nothing to show yet.
         if (email) {
-          setUserProfile((prev) => prev ?? { username: email.split("@")[0], avatar_url: null, github_username: null, display_name: null });
+          setUserProfile(
+            (prev) =>
+              prev ?? {
+                username: email.split("@")[0],
+                avatar_url: null,
+                github_username: null,
+                display_name: null,
+              },
+          );
         }
       }
     }
@@ -355,7 +386,9 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
       // Not on TOKEN_REFRESHED: the identity is unchanged there, and bumping
       // would needlessly discard a perfectly valid in-flight check every hour.
@@ -380,7 +413,9 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
     // settings page saves a display name). Without this, the onboarding dot
     // would only clear on a full reload.
     const handleProfileUpdated = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (cancelled) return;
       if (user) fetchProfile(user.id, user.email, true);
     };
@@ -440,7 +475,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
   // instead of falling off the menu.
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setProfileDropdownOpen(false);
       }
     }
@@ -464,7 +502,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
   useEffect(() => {
     if (!exploreOpen) return;
     function handleClickOutside(e: MouseEvent) {
-      if (exploreRef.current && !exploreRef.current.contains(e.target as Node)) {
+      if (
+        exploreRef.current &&
+        !exploreRef.current.contains(e.target as Node)
+      ) {
         setExploreOpen(false);
       }
     }
@@ -544,8 +585,17 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
             }
           }}
         >
-          <Image src="/logo.png" alt="VibeTalent" width={36} height={36} className="object-contain" />
-          <span className="text-lg font-extrabold uppercase tracking-tight whitespace-nowrap hidden max-md:inline lg:inline" style={{ color: "var(--foreground)" }}>
+          <Image
+            src="/logo.png"
+            alt="VibeTalent"
+            width={36}
+            height={36}
+            className="object-contain"
+          />
+          <span
+            className="text-lg font-extrabold uppercase tracking-tight whitespace-nowrap hidden max-md:inline lg:inline"
+            style={{ color: "var(--foreground)" }}
+          >
             Vibe Talent
           </span>
         </Link>
@@ -570,8 +620,14 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               aria-expanded={exploreOpen}
               className="flex items-center gap-1 px-4 py-2 text-sm font-semibold transition-colors"
               style={{
-                color: pathname === "/explore" || pathname === "/projects" ? "var(--accent)" : "var(--foreground)",
-                borderBottom: pathname === "/explore" || pathname === "/projects" ? "2px solid var(--accent)" : "2px solid transparent",
+                color:
+                  pathname === "/explore" || pathname === "/projects"
+                    ? "var(--accent)"
+                    : "var(--foreground)",
+                borderBottom:
+                  pathname === "/explore" || pathname === "/projects"
+                    ? "2px solid var(--accent)"
+                    : "2px solid transparent",
               }}
             >
               Explore <ChevronDown size={12} />
@@ -601,7 +657,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   onClick={() => setExploreOpen(false)}
                   className="px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-[var(--accent)]/10"
                   style={{
-                    color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
+                    color:
+                      pathname === link.href
+                        ? "var(--accent)"
+                        : "var(--foreground)",
                   }}
                 >
                   {link.label}
@@ -615,8 +674,14 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               href={link.href}
               className="relative px-4 py-2 text-sm font-semibold transition-colors"
               style={{
-                color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
-                borderBottom: pathname === link.href ? "2px solid var(--accent)" : "2px solid transparent",
+                color:
+                  pathname === link.href
+                    ? "var(--accent)"
+                    : "var(--foreground)",
+                borderBottom:
+                  pathname === link.href
+                    ? "2px solid var(--accent)"
+                    : "2px solid transparent",
               }}
             >
               {link.label}
@@ -648,8 +713,12 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               aria-expanded={moreOpen}
               className="flex items-center gap-1 px-4 py-2 text-sm font-semibold transition-colors"
               style={{
-                color: pathname === "/agent" ? "var(--accent)" : "var(--foreground)",
-                borderBottom: pathname === "/agent" ? "2px solid var(--accent)" : "2px solid transparent",
+                color:
+                  pathname === "/agent" ? "var(--accent)" : "var(--foreground)",
+                borderBottom:
+                  pathname === "/agent"
+                    ? "2px solid var(--accent)"
+                    : "2px solid transparent",
               }}
             >
               More <ChevronDown size={12} />
@@ -673,7 +742,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                   onClick={() => setMoreOpen(false)}
                   className="px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-[var(--accent)]/10"
                   style={{
-                    color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
+                    color:
+                      pathname === link.href
+                        ? "var(--accent)"
+                        : "var(--foreground)",
                   }}
                 >
                   {link.label}
@@ -707,170 +779,181 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
             />
           ) : isLoggedIn ? (
             <>
-            <div className="ml-3">
-              <NotificationBell />
-            </div>
-            {/* Profile Avatar Dropdown */}
-            <div className="relative ml-3" ref={dropdownRef}>
-              <button
-                ref={avatarTriggerRef}
-                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                aria-label="Profile menu"
-                aria-expanded={profileDropdownOpen}
-                aria-haspopup="true"
-                className="flex items-center justify-center overflow-hidden"
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: "50%",
-                  border: "1px solid var(--border-hard)",
-                  backgroundColor: "var(--bg-inverted)",
-                  cursor: "pointer",
-                }}
-              >
-                <ProfileAvatar
-                  avatarUrl={userProfile?.avatar_url}
-                  username={userProfile?.username}
-                  initials={initials}
-                  size={48}
-                />
-              </button>
-              {userProfile?.github_username && (
-                <SealCheck size={18} weight="fill" className="text-[var(--verified)] absolute -bottom-0.5 -right-0.5 pointer-events-none"
-                  style={{ filter: "drop-shadow(0 0 2px var(--bg-base))" }}
-                  aria-label="GitHub verified"
-                />
-              )}
-              {userProfile && !userProfile.display_name && (
-                <span
-                  className="absolute -top-0.5 -right-0.5 pointer-events-none"
+              <div className="ml-3">
+                <NotificationBell />
+              </div>
+              {/* Profile Avatar Dropdown */}
+              <div className="relative ml-3" ref={dropdownRef}>
+                <button
+                  ref={avatarTriggerRef}
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  aria-label="Profile menu"
+                  aria-expanded={profileDropdownOpen}
+                  aria-haspopup="true"
+                  className="flex items-center justify-center overflow-hidden"
                   style={{
-                    width: 12,
-                    height: 12,
+                    width: 48,
+                    height: 48,
                     borderRadius: "50%",
-                    backgroundColor: "var(--accent)",
-                    border: "2px solid var(--bg-base)",
-                  }}
-                  aria-label="Profile needs completion"
-                  title="Complete your profile"
-                />
-              )}
-              {profileDropdownOpen && (
-                <div
-                  role="menu"
-                  className="absolute right-0 top-12 z-50 w-48"
-                  style={{
-                    backgroundColor: "var(--bg-surface)",
-                    border: "1px solid var(--border-subtle)",
-                    borderRadius: "var(--radius-control)",
-                    overflow: "hidden",
-                    boxShadow: "var(--shadow-brutal)",
+                    border: "1px solid var(--border-hard)",
+                    backgroundColor: "var(--bg-inverted)",
+                    cursor: "pointer",
                   }}
                 >
-                  <Link
-                    href={`/profile/${userProfile?.username || ""}`}
-                    role="menuitem"
-                    // Profile dropdown, same reasoning as the Explore menu: the
-                    // whole panel unhides at once, so prefetch turns one hover
-                    // into four Worker invocations.
-                    prefetch={false}
-                    onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors"
-                    style={{ color: "var(--foreground)" }}
+                  <ProfileAvatar
+                    avatarUrl={userProfile?.avatar_url}
+                    username={userProfile?.username}
+                    initials={initials}
+                    size={48}
+                  />
+                </button>
+                {userProfile?.github_username && (
+                  <SealCheck
+                    size={18}
+                    weight="fill"
+                    className="text-[var(--verified)] absolute -bottom-0.5 -right-0.5 pointer-events-none"
+                    style={{ filter: "drop-shadow(0 0 2px var(--bg-base))" }}
+                    aria-label="GitHub verified"
+                  />
+                )}
+                {userProfile && !userProfile.display_name && (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 pointer-events-none"
+                    style={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: "50%",
+                      backgroundColor: "var(--accent)",
+                      border: "2px solid var(--bg-base)",
+                    }}
+                    aria-label="Profile needs completion"
+                    title="Complete your profile"
+                  />
+                )}
+                {profileDropdownOpen && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 top-12 z-50 w-48"
+                    style={{
+                      backgroundColor: "var(--bg-surface)",
+                      border: "1px solid var(--border-subtle)",
+                      borderRadius: "var(--radius-control)",
+                      overflow: "hidden",
+                      boxShadow: "var(--shadow-brutal)",
+                    }}
                   >
-                    <User weight="fill" size={16} />
-                    My Profile
-                  </Link>
-                  <Link
-                    href={`/profile/${userProfile?.username || ""}/achievements`}
-                    role="menuitem"
-                    prefetch={false}
-                    onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors"
-                    style={{ color: "var(--foreground)" }}
-                  >
-                    <Trophy weight="fill" size={16} />
-                    Achievements
-                  </Link>
-                  <Link
-                    href={userProfile && !userProfile.display_name ? "/settings?complete=name" : "/settings"}
-                    role="menuitem"
-                    prefetch={false}
-                    onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors"
-                    style={{ color: "var(--foreground)" }}
-                  >
-                    <Settings size={16} />
-                    <span>Settings</span>
-                    {userProfile && !userProfile.display_name && (
-                      <span
-                        className="ml-auto flex items-center gap-1 text-[10px] font-bold"
-                        style={{ color: "var(--accent)" }}
-                      >
-                        <span
-                          style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: "50%",
-                            backgroundColor: "var(--accent)",
-                            display: "inline-block",
-                          }}
-                        />
-                        1 to do
-                      </span>
-                    )}
-                  </Link>
-                  <Link
-                    href="/settings#referral"
-                    role="menuitem"
-                    prefetch={false}
-                    onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors"
-                    style={{ color: "var(--foreground)" }}
-                  >
-                    <UsersThree weight="fill" size={16} />
-                    Referral
-                  </Link>
-                  {TOUR_FLAG_ENABLED && (
-                    <button
-                      type="button"
+                    <Link
+                      href={`/profile/${userProfile?.username || ""}`}
                       role="menuitem"
-                      onClick={() => {
-                        // Reset the seen flag and arm the trigger.
-                        resetTourForReplay();
-                        setProfileDropdownOpen(false);
-                        // If we're already on /dashboard, router.push is a
-                        // no-op (Next.js doesn't remount on same-route nav)
-                        // so the dashboard's mount-only effect never re-runs.
-                        // Dispatch a custom event the dashboard listens for
-                        // and it consumes the armed key in-place. From any
-                        // other route, the normal push triggers a full mount.
-                        if (pathname === "/dashboard") {
-                          window.dispatchEvent(new Event("vibetalent-tour-replay"));
-                        } else {
-                          router.push("/dashboard");
-                        }
-                      }}
+                      // Profile dropdown, same reasoning as the Explore menu: the
+                      // whole panel unhides at once, so prefetch turns one hover
+                      // into four Worker invocations.
+                      prefetch={false}
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors"
+                      style={{ color: "var(--foreground)" }}
+                    >
+                      <User weight="fill" size={16} />
+                      My Profile
+                    </Link>
+                    <Link
+                      href={`/profile/${userProfile?.username || ""}/achievements`}
+                      role="menuitem"
+                      prefetch={false}
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors"
+                      style={{ color: "var(--foreground)" }}
+                    >
+                      <Trophy weight="fill" size={16} />
+                      Achievements
+                    </Link>
+                    <Link
+                      href={
+                        userProfile && !userProfile.display_name
+                          ? "/settings?complete=name"
+                          : "/settings"
+                      }
+                      role="menuitem"
+                      prefetch={false}
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors"
+                      style={{ color: "var(--foreground)" }}
+                    >
+                      <Settings size={16} />
+                      <span>Settings</span>
+                      {userProfile && !userProfile.display_name && (
+                        <span
+                          className="ml-auto flex items-center gap-1 text-[10px] font-bold"
+                          style={{ color: "var(--accent)" }}
+                        >
+                          <span
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              backgroundColor: "var(--accent)",
+                              display: "inline-block",
+                            }}
+                          />
+                          1 to do
+                        </span>
+                      )}
+                    </Link>
+                    <Link
+                      href="/settings#referral"
+                      role="menuitem"
+                      prefetch={false}
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors"
+                      style={{ color: "var(--foreground)" }}
+                    >
+                      <UsersThree weight="fill" size={16} />
+                      Referral
+                    </Link>
+                    {TOUR_FLAG_ENABLED && (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          // Reset the seen flag and arm the trigger.
+                          resetTourForReplay();
+                          setProfileDropdownOpen(false);
+                          // If we're already on /dashboard, router.push is a
+                          // no-op (Next.js doesn't remount on same-route nav)
+                          // so the dashboard's mount-only effect never re-runs.
+                          // Dispatch a custom event the dashboard listens for
+                          // and it consumes the armed key in-place. From any
+                          // other route, the normal push triggers a full mount.
+                          if (pathname === "/dashboard") {
+                            window.dispatchEvent(
+                              new Event("vibetalent-tour-replay"),
+                            );
+                          } else {
+                            router.push("/dashboard");
+                          }
+                        }}
+                        className="flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors w-full text-left"
+                        style={{ color: "var(--foreground)" }}
+                      >
+                        <Sparkle weight="fill" size={16} />
+                        Replay tour
+                      </button>
+                    )}
+                    <div
+                      style={{ borderTop: "1px solid var(--border-hard)" }}
+                    />
+                    <button
+                      role="menuitem"
+                      onClick={handleLogout}
                       className="flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors w-full text-left"
                       style={{ color: "var(--foreground)" }}
                     >
-                      <Sparkle weight="fill" size={16} />
-                      Replay tour
+                      <LogOut size={16} />
+                      Log out
                     </button>
-                  )}
-                  <div style={{ borderTop: "1px solid var(--border-hard)" }} />
-                  <button
-                    role="menuitem"
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors w-full text-left"
-                    style={{ color: "var(--foreground)" }}
-                  >
-                    <LogOut size={16} />
-                    Log out
-                  </button>
-                </div>
-              )}
-            </div>
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <Link
@@ -929,7 +1012,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
         >
           {/* Mobile: Show avatar + username at top if logged in */}
           {isLoggedIn && userProfile && (
-            <div className="flex items-center gap-3 py-3 mb-1" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+            <div
+              className="flex items-center gap-3 py-3 mb-1"
+              style={{ borderBottom: "1px solid var(--border-subtle)" }}
+            >
               <div
                 className="flex items-center justify-center overflow-hidden"
                 style={{
@@ -950,7 +1036,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               <span className="text-sm font-extrabold text-[var(--foreground)] flex items-center gap-1">
                 {userProfile.username}
                 {userProfile.github_username && (
-                  <SealCheck size={14} weight="fill" className="text-[var(--verified)] shrink-0"
+                  <SealCheck
+                    size={14}
+                    weight="fill"
+                    className="text-[var(--verified)] shrink-0"
                     aria-label="GitHub verified"
                   />
                 )}
@@ -970,7 +1059,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               onClick={() => setMobileOpen(false)}
               className="relative inline-block px-4 py-3 text-sm font-semibold"
               style={{
-                color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
+                color:
+                  pathname === link.href
+                    ? "var(--accent)"
+                    : "var(--foreground)",
               }}
             >
               {link.label === "Talent" ? "Explore Talent" : "Explore Projects"}
@@ -984,7 +1076,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
               onClick={() => setMobileOpen(false)}
               className="relative inline-block px-4 py-3 text-sm font-semibold"
               style={{
-                color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
+                color:
+                  pathname === link.href
+                    ? "var(--accent)"
+                    : "var(--foreground)",
               }}
             >
               {link.label}
@@ -1001,7 +1096,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
           ))}
           {/* Secondary routes grouped under a "More" label so the primary
               mobile set (Explore, Feed, Leaderboard, Dashboard) stays clean. */}
-          <div className="mt-1 pt-1" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+          <div
+            className="mt-1 pt-1"
+            style={{ borderTop: "1px solid var(--border-subtle)" }}
+          >
             <span
               className="block px-4 pt-2 pb-1 text-[10px] font-semibold"
               style={{ color: "var(--text-muted)" }}
@@ -1016,7 +1114,10 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
                 onClick={() => setMobileOpen(false)}
                 className="relative inline-block px-4 py-3 text-sm font-semibold"
                 style={{
-                  color: pathname === link.href ? "var(--accent)" : "var(--foreground)",
+                  color:
+                    pathname === link.href
+                      ? "var(--accent)"
+                      : "var(--foreground)",
                 }}
               >
                 {link.label}
@@ -1035,72 +1136,77 @@ export function NavbarClient({ initialIsLoggedIn, initialProfile }: NavbarClient
           </div>
           {isLoggedIn ? (
             <>
-            {userProfile && (
-              <>
-                <Link
-                  href={`/profile/${userProfile.username}`}
-                  prefetch={false}
-                  onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-3 mt-1 text-sm font-semibold text-[var(--foreground)]"
-                >
-                  My Profile
-                </Link>
-                <Link
-                  href={`/profile/${userProfile.username}/achievements`}
-                  prefetch={false}
-                  onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
-                >
-                  Achievements
-                </Link>
-                <Link
-                  href="/settings"
-                  prefetch={false}
-                  onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
-                >
-                  Settings
-                </Link>
-                <Link
-                  href="/settings#referral"
-                  prefetch={false}
-                  onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
-                >
-                  Referral
-                </Link>
-                {TOUR_FLAG_ENABLED && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // See desktop button above for the same-route rationale.
-                      resetTourForReplay();
-                      setMobileOpen(false);
-                      if (pathname === "/dashboard") {
-                        window.dispatchEvent(new Event("vibetalent-tour-replay"));
-                      } else {
-                        router.push("/dashboard");
-                      }
-                    }}
-                    className="block w-full text-left px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
+              {userProfile && (
+                <>
+                  <Link
+                    href={`/profile/${userProfile.username}`}
+                    prefetch={false}
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-4 py-3 mt-1 text-sm font-semibold text-[var(--foreground)]"
                   >
-                    Replay tour
-                  </button>
-                )}
-              </>
-            )}
-            <button
-              onClick={() => { handleLogout(); setMobileOpen(false); }}
-              className="btn-brutal mt-2 w-full justify-center text-sm py-2.5 flex items-center gap-2"
-              style={{
-                backgroundColor: "var(--bg-inverted)",
-                color: "var(--text-on-inverted)",
-                border: "1px solid var(--border-hard)",
-              }}
-            >
-              <LogOut size={14} />
-              Log out
-            </button>
+                    My Profile
+                  </Link>
+                  <Link
+                    href={`/profile/${userProfile.username}/achievements`}
+                    prefetch={false}
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
+                  >
+                    Achievements
+                  </Link>
+                  <Link
+                    href="/settings"
+                    prefetch={false}
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
+                  >
+                    Settings
+                  </Link>
+                  <Link
+                    href="/settings#referral"
+                    prefetch={false}
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
+                  >
+                    Referral
+                  </Link>
+                  {TOUR_FLAG_ENABLED && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // See desktop button above for the same-route rationale.
+                        resetTourForReplay();
+                        setMobileOpen(false);
+                        if (pathname === "/dashboard") {
+                          window.dispatchEvent(
+                            new Event("vibetalent-tour-replay"),
+                          );
+                        } else {
+                          router.push("/dashboard");
+                        }
+                      }}
+                      className="block w-full text-left px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
+                    >
+                      Replay tour
+                    </button>
+                  )}
+                </>
+              )}
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setMobileOpen(false);
+                }}
+                className="btn-brutal mt-2 w-full justify-center text-sm py-2.5 flex items-center gap-2"
+                style={{
+                  backgroundColor: "var(--bg-inverted)",
+                  color: "var(--text-on-inverted)",
+                  border: "1px solid var(--border-hard)",
+                }}
+              >
+                <LogOut size={14} />
+                Log out
+              </button>
             </>
           ) : (
             <Link

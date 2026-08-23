@@ -55,15 +55,31 @@ export function TestimonialScroll() {
               />
               <div
                 className="w-[48px] h-[48px] items-center justify-center text-sm font-bold text-white shrink-0 rounded-full hidden"
-                style={{ backgroundColor: "var(--bg-inverted)", border: "1px solid var(--border-subtle)" }}
+                style={{
+                  backgroundColor: "var(--bg-inverted)",
+                  border: "1px solid var(--border-subtle)",
+                }}
               >
                 {t.name.slice(0, 2).toUpperCase()}
               </div>
               <div className="min-w-0">
-                <div className="text-sm font-bold text-[var(--foreground)] truncate">{t.name}</div>
-                <div className="text-xs font-medium text-[var(--text-muted)] truncate">{t.handle}</div>
+                <div className="text-sm font-bold text-[var(--foreground)] truncate">
+                  {t.name}
+                </div>
+                <div className="text-xs font-medium text-[var(--text-muted)] truncate">
+                  {t.handle}
+                </div>
               </div>
-              <svg aria-hidden="true" className="ml-auto shrink-0 text-[var(--text-muted)]" width={14} height={14} viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              <svg
+                aria-hidden="true"
+                className="ml-auto shrink-0 text-[var(--text-muted)]"
+                width={14}
+                height={14}
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
             </div>
             <p className="text-base text-[var(--text-tertiary)] font-medium leading-relaxed line-clamp-3">
               &ldquo;{t.text}&rdquo;

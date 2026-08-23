@@ -32,7 +32,9 @@ type Filter = "all" | "unread" | "hires" | "activity";
  */
 function NotificationChip({ n }: { n: Notification }) {
   const Icon = NOTIFICATION_ICONS[n.type] || Bell;
-  const avatar = extractNotificationAvatar(n.metadata as Record<string, unknown> | null);
+  const avatar = extractNotificationAvatar(
+    n.metadata as Record<string, unknown> | null,
+  );
   const read = n.read;
 
   if (avatar) {
@@ -104,7 +106,9 @@ function NotificationCard({
   onRead: (id: string) => void;
 }) {
   const read = n.read;
-  const link = extractNotificationLink(n.metadata as Record<string, unknown> | null);
+  const link = extractNotificationLink(
+    n.metadata as Record<string, unknown> | null,
+  );
   const tag = NOTIFICATION_TAGS[n.type] || "Update";
 
   return (
@@ -200,7 +204,7 @@ function NotificationCard({
               </Link>
             ) : (
               <span key={i}>{seg.value}</span>
-            )
+            ),
           )}
         </p>
 
@@ -286,7 +290,9 @@ export function NotificationsView({
   const [filter, setFilter] = useState<Filter>("all");
 
   const unreadCount = notifications.filter((n) => !n.read).length;
-  const hireCount = notifications.filter((n) => HIRE_NOTIFICATION_TYPES.has(n.type)).length;
+  const hireCount = notifications.filter((n) =>
+    HIRE_NOTIFICATION_TYPES.has(n.type),
+  ).length;
   const activityCount = notifications.length - hireCount;
 
   const tabs: { id: Filter; label: string; count: number }[] = [
@@ -312,7 +318,7 @@ export function NotificationsView({
     };
     for (const n of filtered) map[notificationBucket(n.created_at)].push(n);
     return BUCKET_ORDER.map((label) => ({ label, items: map[label] })).filter(
-      (g) => g.items.length > 0
+      (g) => g.items.length > 0,
     );
   })();
 
@@ -332,7 +338,9 @@ export function NotificationsView({
 
   return (
     <div className="min-h-screen">
-      <div style={{ maxWidth: 720, margin: "0 auto", padding: "40px 16px 80px" }}>
+      <div
+        style={{ maxWidth: 720, margin: "0 auto", padding: "40px 16px 80px" }}
+      >
         <Link
           href="/dashboard"
           className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[var(--text-muted)] hover:text-[var(--foreground)] no-underline"
@@ -354,7 +362,14 @@ export function NotificationsView({
             ...surfaceCard,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              minWidth: 0,
+            }}
+          >
             <div
               style={{
                 width: 46,
@@ -426,7 +441,14 @@ export function NotificationsView({
         </div>
 
         {/* FILTERS */}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+            marginBottom: 24,
+          }}
+        >
           {tabs.map((t) => {
             const active = filter === t.id;
             return (
@@ -443,7 +465,9 @@ export function NotificationsView({
                   cursor: "pointer",
                   borderRadius: 999,
                   border: `1px solid ${active ? "var(--foreground)" : "var(--border-subtle)"}`,
-                  background: active ? "var(--foreground)" : "var(--bg-surface)",
+                  background: active
+                    ? "var(--foreground)"
+                    : "var(--bg-surface)",
                   color: active ? "var(--background)" : "var(--foreground)",
                   boxShadow: active ? "none" : "var(--shadow-brutal-xs)",
                   transition: "all 0.12s",
@@ -472,13 +496,31 @@ export function NotificationsView({
 
         {/* LIST / STATES */}
         {loading ? (
-          <div style={{ padding: "40px 24px", textAlign: "center", ...surfaceCard }}>
-            <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted-soft)" }}>
+          <div
+            style={{
+              padding: "40px 24px",
+              textAlign: "center",
+              ...surfaceCard,
+            }}
+          >
+            <p
+              style={{
+                margin: 0,
+                fontSize: 13,
+                color: "var(--text-muted-soft)",
+              }}
+            >
               Loading notifications…
             </p>
           </div>
         ) : groups.length === 0 ? (
-          <div style={{ padding: "56px 24px", textAlign: "center", ...surfaceCard }}>
+          <div
+            style={{
+              padding: "56px 24px",
+              textAlign: "center",
+              ...surfaceCard,
+            }}
+          >
             <div
               style={{
                 width: 56,
@@ -495,18 +537,35 @@ export function NotificationsView({
             >
               <Bell weight="fill" size={26} />
             </div>
-            <p style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 700, color: "var(--foreground)" }}>
-              {filter === "unread" ? "No unread notifications" : "No notifications yet"}
+            <p
+              style={{
+                margin: "0 0 6px",
+                fontSize: 16,
+                fontWeight: 700,
+                color: "var(--foreground)",
+              }}
+            >
+              {filter === "unread"
+                ? "No unread notifications"
+                : "No notifications yet"}
             </p>
             <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>
-              You&apos;re all caught up. Streak reminders, hire requests, and milestones show up here.
+              You&apos;re all caught up. Streak reminders, hire requests, and
+              milestones show up here.
             </p>
           </div>
         ) : (
           <div>
             {groups.map((group) => (
               <div key={group.label} style={{ marginBottom: 26 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    marginBottom: 12,
+                  }}
+                >
                   <span
                     style={{
                       fontFamily: MONO,
@@ -517,9 +576,17 @@ export function NotificationsView({
                   >
                     {group.label}
                   </span>
-                  <span style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
+                  <span
+                    style={{
+                      flex: 1,
+                      height: 1,
+                      background: "var(--border-subtle)",
+                    }}
+                  />
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 12 }}
+                >
                   {group.items.map((n) => (
                     <NotificationCard key={n.id} n={n} onRead={onMarkRead} />
                   ))}
