@@ -1,9 +1,12 @@
 import { SealCheck, Warning } from "@phosphor-icons/react/dist/ssr";
 
 import type { BuilderTrust } from "@/lib/builder-trust";
+import { focusLabel, type FocusSignal } from "@/lib/builder-focus";
 
 export type BuilderTrustCardProps = {
   trust: BuilderTrust;
+  /** Null when GitHub could not be reached, or the builder has no handle. */
+  focus: FocusSignal | null;
   verifiedProjects: number;
   lifetimeContributions: number;
   longestStreak: number;
@@ -33,6 +36,7 @@ function monthYear(iso: string): string | null {
  */
 export function BuilderTrustCard({
   trust,
+  focus,
   verifiedProjects,
   lifetimeContributions,
   longestStreak,
@@ -94,6 +98,28 @@ export function BuilderTrustCard({
           {receipts.length > 0 ? (
             <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--bags-text-muted)]">
               {receipts.join(" · ")}
+            </p>
+          ) : null}
+
+          {/*
+            Volume says how much someone commits; this says where it lands. A
+            builder with 800 commits across forty abandoned repos scores the
+            same as one with 800 on the product they launched a token for, and
+            on this page that is the difference worth showing.
+
+            Shown with its inputs, never as a verdict: several repos is normal
+            for anyone maintaining more than one thing, and a monorepo scores as
+            perfectly focused for free.
+          */}
+          {focus && focusLabel(focus) ? (
+            <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--bags-text-muted)]">
+              <span className="font-bold text-[var(--bags-text)]">
+                {focusLabel(focus)}
+              </span>
+              {" · "}
+              {focus.concentration}% of {focus.pushes} recent pushes in{" "}
+              <span className="font-mono text-[12px]">{focus.topRepo}</span>
+              {focus.repoCount > 1 ? `, across ${focus.repoCount} repos` : null}
             </p>
           ) : null}
 

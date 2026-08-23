@@ -15,6 +15,7 @@ import {
 import { shortMint } from "@/lib/bags-board";
 import { fetchCreatorProfile, type BagsCreatorProfile } from "@/lib/bags";
 import { assessBuilderTrust } from "@/lib/builder-trust";
+import { fetchBuilderFocus } from "@/lib/builder-focus";
 import { BuilderTrustCard } from "@/components/bags/builder-trust-card";
 import { BagsAttribution } from "@/components/bags/bags-attribution";
 import { openRunde } from "../fonts";
@@ -198,7 +199,13 @@ export default async function BagsBuilderPage({
 
   const { builder, launches } = data;
 
-  const { verifiedProjects, allScores } = await loadTrustInputs(builder.id);
+  // Fetched alongside the trust inputs, and allowed to fail: GitHub rate-limits
+  // hard, and a missing focus line costs the card a sentence rather than the
+  // page a render.
+  const [{ verifiedProjects, allScores }, focus] = await Promise.all([
+    loadTrustInputs(builder.id),
+    builder.github_username ? fetchBuilderFocus(builder.github_username) : null,
+  ]);
   const trust = assessBuilderTrust(
     {
       vibeScore: builder.vibe_score ?? 0,
@@ -352,6 +359,7 @@ export default async function BagsBuilderPage({
 
         <BuilderTrustCard
           trust={trust}
+          focus={focus}
           verifiedProjects={verifiedProjects}
           lifetimeContributions={builder.lifetime_contributions ?? 0}
           longestStreak={builder.longest_streak ?? 0}

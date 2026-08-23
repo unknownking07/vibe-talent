@@ -438,8 +438,11 @@ export default async function BagsPage() {
               </h2>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--bags-text-muted)]">
                 Link the wallet you launched from and your tokens show up here
-                and on your profile. Linking takes a signature in your wallet —
-                no transaction, no fee, and no permission to move anything.
+                and on your profile. Signing costs nothing and approves nothing:
+                a message signature cannot move funds. And if you would rather
+                not connect a deployer wallet to a website at all, you can prove
+                it by sending one transaction to your own wallet with a memo we
+                give you, and pasting the signature.
               </p>
               <Link
                 href="/settings#wallet"
