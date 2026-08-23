@@ -12,6 +12,7 @@ import {
   transferNonceKey,
   transferMemo,
   verifyTransferProof,
+  findTransferProof,
   TRANSFER_NONCE_TTL_SECONDS,
 } from "@/lib/wallet-transfer-proof";
 
@@ -133,10 +134,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { signature } = (await req.json()) ?? {};
-    if (typeof signature !== "string" || !signature.trim()) {
+    // Two ways in. `address` is the watched flow: the builder names the wallet
+    // and we look for the proof ourselves. `signature` is the manual fallback
+    // for anyone whose transaction the RPC will not surface.
+    //
+    // Naming an address grants nothing. The proof is still a signed transaction
+    // carrying a challenge only this account was issued, so pointing us at a
+    // stranger's wallet finds nothing.
+    const { signature, address } = (await req.json()) ?? {};
+    const hasSignature =
+      typeof signature === "string" && Boolean(signature.trim());
+    const hasAddress = typeof address === "string" && Boolean(address.trim());
+    if (!hasSignature && !hasAddress) {
       return NextResponse.json(
-        { error: "Missing transaction signature." },
+        {
+          error:
+            "Send either your wallet address or the transaction signature.",
+        },
         { status: 400 },
       );
     }
@@ -154,10 +168,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = await verifyTransferProof(
-      signature.trim(),
-      transferMemo(pending),
-    );
+    const expectedMemo = transferMemo(pending);
+    const result = hasSignature
+      ? await verifyTransferProof(signature.trim(), expectedMemo)
+      : await findTransferProof(address.trim(), expectedMemo);
     if (!result.ok) {
       return NextResponse.json(
         { error: result.error },
@@ -166,7 +180,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Proof accepted, so the challenge is spent. Consumed before the write, so
-    // a failure below cannot leave a reusable challenge behind.
+    // a failure below cannot leave a reusable challenge behind. Note this is
+    // only reached on success: a 404 above returns with the challenge intact,
+    // which is what lets the client poll.
     await readNonce(key, true);
 
     const wallet = result.wallet;

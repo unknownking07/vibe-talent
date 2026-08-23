@@ -190,3 +190,100 @@ export async function verifyTransferProof(
 
   return { ok: true, wallet: feePayer.pubkey };
 }
+
+/**
+ * How many recent transactions to scan when watching a wallet.
+ *
+ * The builder has just been told to send one, so the proof is near the top of
+ * their history. Scanning deeper costs an RPC round trip per signature for a
+ * transaction that is not there.
+ */
+const WATCH_DEPTH = 12;
+
+/**
+ * Watch `address` for a transaction carrying `expectedMemo`, without the
+ * builder having to copy a signature back.
+ *
+ * The address is supplied by the caller here, which is safe for one reason
+ * only: naming a wallet proves nothing. The proof is still a signed
+ * transaction carrying a challenge nobody else was issued, so pointing us at
+ * someone else's wallet finds nothing unless they were handed this exact memo.
+ *
+ * 404 means "not seen yet" rather than "wrong": the client polls, and a
+ * transaction can take a few seconds to reach the RPC after the wallet returns.
+ */
+export async function findTransferProof(
+  address: string,
+  expectedMemo: string,
+): Promise<TransferProofResult> {
+  if (!SOLANA_ADDRESS_RE.test(address)) {
+    return {
+      ok: false,
+      status: 400,
+      error: "That doesn't look like a Solana address.",
+    };
+  }
+
+  const solana = CHAIN_CONFIGS.solana;
+  if (!isSolanaChain(solana)) {
+    return { ok: false, status: 500, error: "Solana is not configured." };
+  }
+
+  let signatures: string[];
+  try {
+    const res = await fetch(solanaRpcUrl(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "getSignaturesForAddress",
+        params: [address, { limit: WATCH_DEPTH, commitment: "confirmed" }],
+      }),
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (!res.ok) {
+      return {
+        ok: false,
+        status: 503,
+        error: "Couldn't reach the Solana network. Please retry.",
+      };
+    }
+    const body = await res.json();
+    const result = body?.result;
+    if (!Array.isArray(result)) {
+      return {
+        ok: false,
+        status: 503,
+        error: "Solana RPC error. Please retry.",
+      };
+    }
+    signatures = result
+      .map((entry: { signature?: unknown; err?: unknown }) =>
+        // Skip failed transactions here rather than fetching them in full.
+        !entry?.err && typeof entry?.signature === "string"
+          ? entry.signature
+          : null,
+      )
+      .filter((sig): sig is string => sig !== null);
+  } catch {
+    return {
+      ok: false,
+      status: 503,
+      error: "Couldn't reach the Solana network. Please retry.",
+    };
+  }
+
+  for (const signature of signatures) {
+    const result = await verifyTransferProof(signature, expectedMemo);
+    // Only a match ends the search. Every other outcome means this particular
+    // transaction was something else the builder happened to do.
+    if (result.ok && result.wallet === address) return result;
+  }
+
+  return {
+    ok: false,
+    status: 404,
+    error: "No matching transaction yet. Send it, then this will pick it up.",
+  };
+}

@@ -71,11 +71,14 @@ This is the existing USDC-based featuring product. The $VIBE-token-based featuri
 
 VibeTalent maintains a public trust layer over Bags launches at https://www.vibetalent.work/bags. Bags knows which wallet launched a token; VibeTalent knows which GitHub-verified builder controls that wallet. Joining the two answers a question neither side can answer alone: whether the person behind a launch actually ships software.
 
-- **How a launch is verified**: the builder links their Solana wallet by signing a server-issued nonce (a signature, not a transaction), then every mint that wallet holds fee-share authority over is checked against the Bags creator record. Only mints where Bags confirms the wallet as creator are listed.
+- **How a launch is verified**: the builder proves the launching wallet, then every mint that wallet holds fee-share authority over is checked against the Bags creator record. Only mints where Bags confirms the wallet as creator are listed.
+- **Two ways to prove a wallet**: (1) sign a server-issued nonce, a message signature that cannot move funds and is the recommended route; or (2) for builders who will not connect a deployer wallet to a website, send one transaction from that wallet to itself carrying a server-issued memo, which VibeTalent watches for on-chain. The memo reads "Link wallet to vibetalent.work" plus a single-use challenge, so the transaction states in plain words what it authorises and cannot be relayed by someone else. Either way the wallet never grants VibeTalent any spending permission.
+- **What appears without a launch**: nothing. Being a VibeTalent builder, or being in the Bags Hackathon, does not put a row on the launches board. That board counts launches proved by a wallet signature, which is why a hackathon participant with no linked wallet is listed under hackathon projects but not as a verified launch.
 - **What is never used**: self-reported X handles or profile links. A launch is only ever matched to a builder through a cryptographic wallet signature, so nobody can claim another builder's launch.
 - **What each row shows**: the builder's VibeTalent profile, how many tokens they have launched, their vibe score, and their current coding streak. Vibe score is earned from GitHub-verified projects, streaks and endorsements, and is not affected by token activity.
 - **Ranking**: builders are ranked by vibe score, not by number of launches.
-- **Coverage**: opt-in. A builder who has launched on Bags but has not linked their wallet does not appear, so the board is a lower bound on Bags activity by VibeTalent builders, never a complete list.
+- **Coverage**: opt-in. A builder who has launched on Bags but has not proved their wallet does not appear as verified, so the verified board is a lower bound, never a complete list. Launches discovered from the Bags launch feed are listed unclaimed alongside it, labelled as such.
+- **Hackathon projects**: /bags also lists the Bags Hackathon cohort, matched to builders by the GitHub owner of the submitted repository. The list is curated from the DoraHacks submissions plus winners announced separately, and is not a complete record of the programme.
 
 ## 2026 Roadmap Summary
 
