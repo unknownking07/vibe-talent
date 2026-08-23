@@ -16,10 +16,13 @@ import {
 import {
   transferNonceKey,
   transferMemo,
+  randomChallengeLamports,
   verifyTransferProof,
   findTransferProof,
   TRANSFER_NONCE_TTL_SECONDS,
+  type TransferChallenge,
 } from "@/lib/wallet-transfer-proof";
+import { CHAIN_CONFIGS, isSolanaChain } from "@/lib/chains-config";
 
 // Wallet ownership proof for builders who will not connect a wallet to a site.
 //
@@ -54,6 +57,58 @@ async function readNonce(
     : await redis.get<string>(key);
 }
 
+/** Amounts currently spoken for, when running without Redis. */
+const localReservedAmounts = new Map<number, number>();
+
+/** How many draws before giving up on finding a free amount. */
+const RESERVE_ATTEMPTS = 12;
+
+/**
+ * Claim a challenge amount nobody else is waiting on.
+ *
+ * The reservation, not the size of the range, is what makes an amount identify
+ * one challenge. It expires with the challenge, so an abandoned attempt frees
+ * its number instead of burning it forever.
+ */
+async function reserveAmount(): Promise<number | null> {
+  const ttlMs = TRANSFER_NONCE_TTL_SECONDS * 1000;
+
+  if (isLocalWalletNonceStoreEnabled()) {
+    const now = Date.now();
+    for (const [amount, expiresAt] of localReservedAmounts) {
+      if (expiresAt <= now) localReservedAmounts.delete(amount);
+    }
+    for (let i = 0; i < RESERVE_ATTEMPTS; i++) {
+      const candidate = randomChallengeLamports();
+      if (!localReservedAmounts.has(candidate)) {
+        localReservedAmounts.set(candidate, now + ttlMs);
+        return candidate;
+      }
+    }
+    return null;
+  }
+
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
+
+  const redis = new Redis({ url, token });
+  for (let i = 0; i < RESERVE_ATTEMPTS; i++) {
+    const candidate = randomChallengeLamports();
+    try {
+      // NX makes the claim atomic: only one caller can take a number.
+      const claimed = await redis.set(`wallet-amount:${candidate}`, "1", {
+        nx: true,
+        ex: TRANSFER_NONCE_TTL_SECONDS,
+      });
+      if (claimed) return candidate;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 export async function GET() {
   const authClient = await createServerSupabaseClient();
   const {
@@ -77,12 +132,9 @@ export async function GET() {
     );
   }
 
-  // The memo names the account, so it is built where the account is known and
-  // stored whole. Falling back to the id keeps the challenge issuable for an
-  // account that has not picked a username yet.
-  // Read through the session client, not the admin one: RLS is the gate, and
-  // an admin read filtered by user.id would be an app-layer check standing in
-  // for it.
+  // The challenge names the account in its memo, so it is built where the
+  // account is known. Falling back to the id keeps it issuable for someone who
+  // has not picked a username yet.
   const { data: profile } = await authClient
     .from("users")
     .select("username")
@@ -92,11 +144,30 @@ export async function GET() {
     profile as { username?: string | null } | null
   )?.username?.trim();
 
-  const memo = transferMemo(crypto.randomUUID(), handle || user.id.slice(0, 8));
+  // Reserve an amount no other open challenge holds. Two live challenges
+  // sharing a number would let whichever account polls first take the other's
+  // transfer, so uniqueness has to be claimed, not merely likely.
+  const lamports = await reserveAmount();
+  if (lamports === null) {
+    return NextResponse.json(
+      {
+        error:
+          "Wallet verification is busy right now. Please try again shortly.",
+      },
+      { status: 503 },
+    );
+  }
+
+  const challenge: TransferChallenge = {
+    lamports,
+    memo: transferMemo(crypto.randomUUID(), handle || user.id.slice(0, 8)),
+    issuedAt: Math.floor(Date.now() / 1000),
+  };
+  const stored = JSON.stringify(challenge);
   const key = transferNonceKey(user.id);
 
   if (isLocalWalletNonceStoreEnabled()) {
-    localStoreNonce(key, memo, TRANSFER_NONCE_TTL_SECONDS);
+    localStoreNonce(key, stored, TRANSFER_NONCE_TTL_SECONDS);
   } else {
     const url = process.env.UPSTASH_REDIS_REST_URL;
     const token = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -110,7 +181,7 @@ export async function GET() {
     }
     try {
       const redis = new Redis({ url, token });
-      await redis.set(key, memo, { ex: TRANSFER_NONCE_TTL_SECONDS });
+      await redis.set(key, stored, { ex: TRANSFER_NONCE_TTL_SECONDS });
     } catch {
       console.error("Wallet transfer nonce: Redis write failed");
       return NextResponse.json(
@@ -120,16 +191,21 @@ export async function GET() {
     }
   }
 
+  const solana = CHAIN_CONFIGS.solana;
+
   return NextResponse.json(
     {
-      memo,
+      lamports: challenge.lamports,
+      destination: isSolanaChain(solana) ? solana.receivingWallet : null,
+      memo: challenge.memo,
       expiresInSeconds: TRANSFER_NONCE_TTL_SECONDS,
       // Stated by the server so the UI cannot quietly describe a different
       // action from the one being verified.
       instructions:
-        "Send any amount to your own wallet from the wallet you want to prove, " +
-        "with this exact memo attached. We watch for it and verify you " +
-        "automatically. Nothing is sent to VibeTalent and no approval is granted.",
+        "From the wallet you want to prove, send exactly this many lamports to " +
+        "the address shown. We watch for it and verify you automatically. If " +
+        "your wallet can attach a memo, add the one below as well; most cannot, " +
+        "and the amount alone is enough.",
     },
     { headers: { "Cache-Control": "no-store" } },
   );
@@ -198,11 +274,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // `pending` is the memo itself, stored at issue time.
-    const expectedMemo = pending;
+    // `pending` is the serialised challenge, stored at issue time.
+    let challenge: TransferChallenge;
+    try {
+      challenge = JSON.parse(pending) as TransferChallenge;
+    } catch {
+      return NextResponse.json(
+        { error: "That verification expired. Please start again." },
+        { status: 400 },
+      );
+    }
     const result = hasSignature
-      ? await verifyTransferProof(signature.trim(), expectedMemo)
-      : await findTransferProof(address.trim(), expectedMemo);
+      ? await verifyTransferProof(signature.trim(), challenge)
+      : await findTransferProof(address.trim(), challenge);
     if (!result.ok) {
       return NextResponse.json(
         { error: result.error },

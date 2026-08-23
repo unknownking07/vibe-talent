@@ -2,6 +2,9 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 
 import {
   transferMemo,
+  randomChallengeLamports,
+  MIN_CHALLENGE_LAMPORTS,
+  MAX_CHALLENGE_LAMPORTS,
   transferNonceKey,
   verifyTransferProof,
   findTransferProof,
@@ -23,9 +26,51 @@ function mockTx(result: unknown, init: { ok?: boolean } = {}) {
   return fn;
 }
 
-/** A confirmed transaction carrying `memo`, signed by `signer`. */
-function tx(memo: string, signer = WALLET) {
+// Matches chains-config. OTHER_WALLET happens to be this same address, so
+// "somewhere else" needs a genuinely third one.
+const RECEIVER = "DYp2cUmgoBEYPxN9xPwiqKZoi5WR4SRAWJnLD1d5QAdT";
+const ELSEWHERE = "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM";
+const ISSUED_AT = 1_760_000_000;
+const CHALLENGE = {
+  lamports: 12_345,
+  memo: transferMemo("nonce-1", "abhinav"),
+  issuedAt: ISSUED_AT,
+};
+
+/** A confirmed transaction paying `lamports` to the receiving wallet. */
+function paymentTx(
+  lamports: number,
+  signer = WALLET,
+  destination = RECEIVER,
+  blockTime = ISSUED_AT + 30,
+) {
   return {
+    blockTime,
+    meta: { err: null },
+    transaction: {
+      message: {
+        accountKeys: [
+          { pubkey: signer, signer: true, writable: true },
+          { pubkey: destination, signer: false },
+        ],
+        instructions: [
+          {
+            program: "system",
+            parsed: {
+              type: "transfer",
+              info: { source: signer, destination, lamports },
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
+/** A confirmed transaction carrying `memo`, signed by `signer`. */
+function tx(memo: string, signer = WALLET, blockTime = ISSUED_AT + 30) {
+  return {
+    blockTime,
     meta: { err: null },
     transaction: {
       message: {
@@ -95,11 +140,11 @@ describe("SIGNATURE_RE", () => {
 });
 
 describe("verifyTransferProof", () => {
-  const memo = transferMemo("nonce-1", "abhinav");
+  const memo = CHALLENGE.memo;
 
   it("returns the wallet that signed, read off the transaction", async () => {
     mockTx(tx(memo));
-    await expect(verifyTransferProof(SIG, memo)).resolves.toEqual({
+    await expect(verifyTransferProof(SIG, CHALLENGE)).resolves.toEqual({
       ok: true,
       wallet: WALLET,
     });
@@ -110,7 +155,7 @@ describe("verifyTransferProof", () => {
     // transaction proves that stranger's wallet, not their own, and the link
     // route then refuses it as already taken or links the right key.
     mockTx(tx(memo, OTHER_WALLET));
-    const result = await verifyTransferProof(SIG, memo);
+    const result = await verifyTransferProof(SIG, CHALLENGE);
     expect(result).toEqual({ ok: true, wallet: OTHER_WALLET });
   });
 
@@ -118,12 +163,13 @@ describe("verifyTransferProof", () => {
     // The relay attack in one line: an attacker's challenge cannot be satisfied
     // by a transaction the victim broadcast for something else.
     mockTx(tx(transferMemo("someone-elses-nonce", "abhinav")));
-    const result = await verifyTransferProof(SIG, memo);
+    const result = await verifyTransferProof(SIG, CHALLENGE);
     expect(result).toMatchObject({ ok: false, status: 400 });
   });
 
   it("rejects a transaction with no memo at all", async () => {
     mockTx({
+      blockTime: ISSUED_AT + 30,
       meta: { err: null },
       transaction: {
         message: {
@@ -132,13 +178,13 @@ describe("verifyTransferProof", () => {
         },
       },
     });
-    const result = await verifyTransferProof(SIG, memo);
+    const result = await verifyTransferProof(SIG, CHALLENGE);
     expect(result).toMatchObject({ ok: false, status: 400 });
   });
 
   it("rejects a memo that merely contains the expected text", async () => {
     mockTx(tx(`${memo} and something else`));
-    expect(await verifyTransferProof(SIG, memo)).toMatchObject({
+    expect(await verifyTransferProof(SIG, CHALLENGE)).toMatchObject({
       ok: false,
       status: 400,
     });
@@ -146,7 +192,7 @@ describe("verifyTransferProof", () => {
 
   it("rejects a transaction that failed on-chain", async () => {
     mockTx({ ...tx(memo), meta: { err: { InstructionError: [0, "Custom"] } } });
-    expect(await verifyTransferProof(SIG, memo)).toMatchObject({
+    expect(await verifyTransferProof(SIG, CHALLENGE)).toMatchObject({
       ok: false,
       status: 400,
     });
@@ -154,6 +200,7 @@ describe("verifyTransferProof", () => {
 
   it("rejects a fee payer that is not a signer", async () => {
     mockTx({
+      blockTime: ISSUED_AT + 30,
       meta: { err: null },
       transaction: {
         message: {
@@ -162,7 +209,7 @@ describe("verifyTransferProof", () => {
         },
       },
     });
-    expect(await verifyTransferProof(SIG, memo)).toMatchObject({
+    expect(await verifyTransferProof(SIG, CHALLENGE)).toMatchObject({
       ok: false,
       status: 400,
     });
@@ -172,7 +219,7 @@ describe("verifyTransferProof", () => {
     // 404, not 400: the wallet may have returned before the RPC saw it, and the
     // builder has already paid the fee.
     mockTx(null);
-    expect(await verifyTransferProof(SIG, memo)).toMatchObject({
+    expect(await verifyTransferProof(SIG, CHALLENGE)).toMatchObject({
       ok: false,
       status: 404,
     });
@@ -183,7 +230,7 @@ describe("verifyTransferProof", () => {
       "fetch",
       vi.fn().mockRejectedValue(new Error("network down")),
     );
-    expect(await verifyTransferProof(SIG, memo)).toMatchObject({
+    expect(await verifyTransferProof(SIG, CHALLENGE)).toMatchObject({
       ok: false,
       status: 503,
     });
@@ -191,7 +238,9 @@ describe("verifyTransferProof", () => {
 
   it("refuses a malformed signature without calling the network", async () => {
     const fetchMock = mockTx(tx(memo));
-    expect(await verifyTransferProof("not-a-signature", memo)).toMatchObject({
+    expect(
+      await verifyTransferProof("not-a-signature", CHALLENGE),
+    ).toMatchObject({
       ok: false,
       status: 400,
     });
@@ -219,11 +268,11 @@ describe("findTransferProof", () => {
     return fn;
   }
 
-  const memo = transferMemo("nonce-1", "abhinav");
+  const memo = CHALLENGE.memo;
 
   it("finds the proof without the builder pasting anything", async () => {
     mockChain([{ signature: SIG }], { [SIG]: tx(memo) });
-    await expect(findTransferProof(WALLET, memo)).resolves.toEqual({
+    await expect(findTransferProof(WALLET, CHALLENGE)).resolves.toEqual({
       ok: true,
       wallet: WALLET,
     });
@@ -235,7 +284,7 @@ describe("findTransferProof", () => {
       [OTHER]: tx("some other memo"),
       [SIG]: tx(memo),
     });
-    await expect(findTransferProof(WALLET, memo)).resolves.toMatchObject({
+    await expect(findTransferProof(WALLET, CHALLENGE)).resolves.toMatchObject({
       ok: true,
     });
   });
@@ -244,7 +293,7 @@ describe("findTransferProof", () => {
     // Pointing us at someone else's address must never link it: the memo was
     // never issued to them, and the signer has to match what was asked for.
     mockChain([{ signature: SIG }], { [SIG]: tx(memo, OTHER_WALLET) });
-    await expect(findTransferProof(WALLET, memo)).resolves.toMatchObject({
+    await expect(findTransferProof(WALLET, CHALLENGE)).resolves.toMatchObject({
       ok: false,
       status: 404,
     });
@@ -252,7 +301,7 @@ describe("findTransferProof", () => {
 
   it("reports 404 while nothing has arrived, so the client can keep polling", async () => {
     mockChain([], {});
-    await expect(findTransferProof(WALLET, memo)).resolves.toMatchObject({
+    await expect(findTransferProof(WALLET, CHALLENGE)).resolves.toMatchObject({
       ok: false,
       status: 404,
     });
@@ -263,7 +312,7 @@ describe("findTransferProof", () => {
       [{ signature: SIG, err: { InstructionError: [0, "x"] } }],
       {},
     );
-    await findTransferProof(WALLET, memo);
+    await findTransferProof(WALLET, CHALLENGE);
     const methods = fetchMock.mock.calls.map(
       (c) => JSON.parse((c[1] as { body: string }).body).method,
     );
@@ -275,7 +324,7 @@ describe("findTransferProof", () => {
       "fetch",
       vi.fn().mockResolvedValue({ ok: false, status: 500 }),
     );
-    await expect(findTransferProof(WALLET, memo)).resolves.toMatchObject({
+    await expect(findTransferProof(WALLET, CHALLENGE)).resolves.toMatchObject({
       ok: false,
       status: 503,
     });
@@ -290,7 +339,7 @@ describe("findTransferProof", () => {
         .fn()
         .mockResolvedValue({ ok: true, json: async () => ({ error: "boom" }) }),
     );
-    await expect(findTransferProof(WALLET, memo)).resolves.toMatchObject({
+    await expect(findTransferProof(WALLET, CHALLENGE)).resolves.toMatchObject({
       ok: false,
       status: 503,
     });
@@ -298,7 +347,7 @@ describe("findTransferProof", () => {
 
   it("bounds how deep it scans", async () => {
     const fetchMock = mockChain([], {});
-    await findTransferProof(WALLET, memo);
+    await findTransferProof(WALLET, CHALLENGE);
     const params = JSON.parse(
       (fetchMock.mock.calls[0]![1] as { body: string }).body,
     ).params;
@@ -310,11 +359,102 @@ describe("findTransferProof", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     await expect(
-      findTransferProof("not-an-address", memo),
+      findTransferProof("not-an-address", CHALLENGE),
     ).resolves.toMatchObject({
       ok: false,
       status: 400,
     });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("randomChallengeLamports", () => {
+  it("stays inside a range that costs the builder under a cent", () => {
+    for (let i = 0; i < 200; i++) {
+      const n = randomChallengeLamports();
+      expect(n).toBeGreaterThanOrEqual(MIN_CHALLENGE_LAMPORTS);
+      expect(n).toBeLessThan(MAX_CHALLENGE_LAMPORTS);
+    }
+  });
+
+  it("does not return the same value every time", () => {
+    // Guessability is the whole point: a challenge nobody else was issued.
+    const seen = new Set(
+      Array.from({ length: 50 }, () => randomChallengeLamports()),
+    );
+    expect(seen.size).toBeGreaterThan(1);
+  });
+});
+
+describe("verifyTransferProof: the amount path", () => {
+  it("accepts an exact payment to the receiving wallet, with no memo at all", async () => {
+    // The case Phantom can actually produce. Memo support is rare enough that
+    // a memo-only scheme was unusable for most builders.
+    mockTx(paymentTx(CHALLENGE.lamports));
+    await expect(verifyTransferProof(SIG, CHALLENGE)).resolves.toEqual({
+      ok: true,
+      wallet: WALLET,
+    });
+  });
+
+  it("rejects a payment for the wrong amount", async () => {
+    mockTx(paymentTx(CHALLENGE.lamports + 1));
+    await expect(verifyTransferProof(SIG, CHALLENGE)).resolves.toMatchObject({
+      ok: false,
+      status: 400,
+    });
+  });
+
+  it("rejects the right amount sent somewhere else", async () => {
+    // Otherwise any unrelated transfer of a coincidental size would pass.
+    mockTx(paymentTx(CHALLENGE.lamports, WALLET, ELSEWHERE));
+    await expect(verifyTransferProof(SIG, CHALLENGE)).resolves.toMatchObject({
+      ok: false,
+      status: 400,
+    });
+  });
+
+  it("credits the wallet that signed, not the one named in the transfer", async () => {
+    mockTx(paymentTx(CHALLENGE.lamports, OTHER_WALLET));
+    await expect(verifyTransferProof(SIG, CHALLENGE)).resolves.toEqual({
+      ok: true,
+      wallet: OTHER_WALLET,
+    });
+  });
+});
+
+describe("verifyTransferProof: the replay boundary", () => {
+  it("refuses a transaction that predates the challenge", async () => {
+    // The attack this closes: read the receiving wallet's history, find a past
+    // transfer, draw challenges until the amount matches, then claim that
+    // sender's wallet without them doing anything at all.
+    mockTx(paymentTx(CHALLENGE.lamports, WALLET, RECEIVER, ISSUED_AT - 1));
+    await expect(verifyTransferProof(SIG, CHALLENGE)).resolves.toMatchObject({
+      ok: false,
+      status: 400,
+    });
+  });
+
+  it("accepts one settled at the moment the challenge was issued", async () => {
+    mockTx(paymentTx(CHALLENGE.lamports, WALLET, RECEIVER, ISSUED_AT));
+    await expect(verifyTransferProof(SIG, CHALLENGE)).resolves.toMatchObject({
+      ok: true,
+    });
+  });
+
+  it("refuses a transaction with no block time rather than assuming it is recent", async () => {
+    mockTx({ ...paymentTx(CHALLENGE.lamports), blockTime: null });
+    await expect(verifyTransferProof(SIG, CHALLENGE)).resolves.toMatchObject({
+      ok: false,
+      status: 400,
+    });
+  });
+
+  it("applies the same boundary to a memo proof", async () => {
+    mockTx(tx(CHALLENGE.memo, WALLET, ISSUED_AT - 1));
+    await expect(verifyTransferProof(SIG, CHALLENGE)).resolves.toMatchObject({
+      ok: false,
+      status: 400,
+    });
   });
 });
