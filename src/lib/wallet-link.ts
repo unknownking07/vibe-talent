@@ -93,13 +93,17 @@ function getLocalStore(): Map<string, LocalNonceEntry> | null {
  * Store a nonce locally. Returns false when not in local mode (caller must
  * fall back to Redis).
  */
-export function localStoreNonce(key: string, nonce: string): boolean {
+export function localStoreNonce(
+  key: string,
+  nonce: string,
+  ttlSeconds: number = NONCE_TTL_SECONDS,
+): boolean {
   const store = getLocalStore();
   if (!store) return false;
-  store.set(key, {
-    nonce,
-    expiresAt: Date.now() + NONCE_TTL_SECONDS * 1000,
-  });
+  // TTL is a parameter because the transfer-proof flow runs on a longer clock
+  // than the signing one, and staging expiring early would look like a broken
+  // feature rather than a mismatched constant.
+  store.set(key, { nonce, expiresAt: Date.now() + ttlSeconds * 1000 });
   return true;
 }
 

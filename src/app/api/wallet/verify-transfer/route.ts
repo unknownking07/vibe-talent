@@ -80,8 +80,10 @@ export async function GET() {
   // The memo names the account, so it is built where the account is known and
   // stored whole. Falling back to the id keeps the challenge issuable for an
   // account that has not picked a username yet.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (createAdminClient() as any)
+  // Read through the session client, not the admin one: RLS is the gate, and
+  // an admin read filtered by user.id would be an app-layer check standing in
+  // for it.
+  const { data: profile } = await authClient
     .from("users")
     .select("username")
     .eq("id", user.id)
@@ -94,7 +96,7 @@ export async function GET() {
   const key = transferNonceKey(user.id);
 
   if (isLocalWalletNonceStoreEnabled()) {
-    localStoreNonce(key, memo);
+    localStoreNonce(key, memo, TRANSFER_NONCE_TTL_SECONDS);
   } else {
     const url = process.env.UPSTASH_REDIS_REST_URL;
     const token = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -153,8 +155,11 @@ export async function POST(req: NextRequest) {
       typeof signature === "string" && Boolean(signature.trim());
     const hasAddress = typeof address === "string" && Boolean(address.trim());
 
+    // Keyed off the branch that actually runs below. Picking on `hasAddress`
+    // let a signature submission carry any non-empty address along and draw on
+    // the far larger polling budget.
     const { success } = await checkRateLimit(
-      hasAddress ? walletWatchLimiter : walletLinkLimiter,
+      hasSignature ? walletLinkLimiter : walletWatchLimiter,
       `transfer-verify:${user.id}`,
     );
     if (!success) {

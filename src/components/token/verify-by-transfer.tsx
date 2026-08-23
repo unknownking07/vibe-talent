@@ -109,15 +109,25 @@ export function VerifyByTransfer({
     // Counted outside React state: an updater must stay pure, and React may run
     // one more than once.
     let ticks = 0;
+    // A scan can outlast its own interval, and setInterval would start another
+    // on top. In flight means skip this tick, so one session never has two
+    // scans running at once.
+    let inFlight = false;
+
     const timer = setInterval(async () => {
-      if (cancelled || linkedRef.current) return;
+      if (cancelled || linkedRef.current || inFlight) return;
       ticks += 1;
       setAttempts(ticks);
       if (ticks >= POLL_LIMIT) {
         setWatching(false);
         return;
       }
-      await attempt({ address: address.trim() });
+      inFlight = true;
+      try {
+        await attempt({ address: address.trim() });
+      } finally {
+        inFlight = false;
+      }
     }, POLL_INTERVAL_MS);
 
     return () => {
