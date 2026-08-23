@@ -34,6 +34,19 @@ const ACTIVE_PILL_STYLE = {
 const PILL_REMOVE_BTN =
   "inline-flex items-center justify-center rounded-full p-0.5 cursor-pointer text-[var(--text-muted)] transition-colors hover:text-[var(--foreground)]";
 
+/**
+ * Read a streak bound from a number input, falling back to its default.
+ *
+ * Clearing a number input yields "", and Number("") is 0. On the maximum that
+ * silently became "show only builders with a zero streak" — the opposite of
+ * clearing the filter.
+ */
+function streakInput(raw: string, fallback: number): number {
+  if (!raw.trim()) return fallback;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 export function ExploreContent({ users }: { users: UserWithSocials[] }) {
   const [search, _setSearch] = useState("");
   const [sortBy, _setSortBy] = useState<SortOption>("vibe_score");
@@ -372,7 +385,9 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
                     min={0}
                     max={365}
                     value={minStreak}
-                    onChange={(e) => setMinStreak(Number(e.target.value))}
+                    onChange={(e) =>
+                      setMinStreak(streakInput(e.target.value, 0))
+                    }
                     aria-label="Minimum streak days"
                     className="input-brutal w-20 text-center text-sm py-1.5"
                     placeholder="Min"
@@ -385,7 +400,9 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
                     min={0}
                     max={365}
                     value={maxStreak}
-                    onChange={(e) => setMaxStreak(Number(e.target.value))}
+                    onChange={(e) =>
+                      setMaxStreak(streakInput(e.target.value, 365))
+                    }
                     aria-label="Maximum streak days"
                     className="input-brutal w-20 text-center text-sm py-1.5"
                     placeholder="Max"

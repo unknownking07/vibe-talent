@@ -93,10 +93,12 @@ export function QualityScoreBadge({
               Quality Score
             </span>
             <button
+              type="button"
               onClick={() => setShowInfo(false)}
+              aria-label="Close quality score details"
               className="text-[var(--text-muted)] hover:text-[var(--foreground)]"
             >
-              <X size={14} />
+              <X size={14} aria-hidden="true" />
             </button>
           </div>
 

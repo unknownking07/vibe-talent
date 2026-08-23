@@ -151,6 +151,7 @@ export function ProjectsContent({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
+              aria-label="Sort projects"
               className="appearance-none pl-4 pr-10 py-2.5 rounded-xl border border-[var(--border-hard)] bg-[var(--bg-surface)] text-[var(--foreground)] font-semibold text-sm cursor-pointer focus:outline-none focus:border-[var(--accent)]"
             >
               <option value="newest">Newest</option>

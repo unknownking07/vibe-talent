@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 
+import { getSiteUrl } from "@/lib/seo";
+
 interface ShareButtonProps {
   url: string;
   text: string;
@@ -14,14 +16,16 @@ type Status =
 
 export function ShareButton({ url, text, imageUrl }: ShareButtonProps) {
   const [status, setStatus] = useState<Status>("idle");
-  const absUrl =
-    typeof window !== "undefined"
-      ? new URL(url, window.location.origin).toString()
-      : url;
-  const absImageUrl =
-    imageUrl && typeof window !== "undefined"
-      ? new URL(imageUrl, window.location.origin).toString()
-      : imageUrl;
+  // Resolved against the build-inlined site URL rather than window.location,
+  // which is identical on server and client. Branching on `typeof window` gave
+  // the server a relative href and the client an absolute one — a hydration
+  // mismatch, and worse, a share link that was broken for anyone who clicked
+  // before hydration.
+  const origin = getSiteUrl();
+  const absUrl = new URL(url, origin).toString();
+  const absImageUrl = imageUrl
+    ? new URL(imageUrl, origin).toString()
+    : imageUrl;
 
   // Hold the (in-flight) image blob so a hover/focus can start generating it
   // before the click — the copy then resolves an already-warm promise instead
