@@ -35,15 +35,20 @@ export function ProofWallStats({ initial }: { initial: HeroStats }) {
   useEffect(() => {
     let cancelled = false;
     let interval: ReturnType<typeof setInterval> | null = null;
+    // A focus refresh can overlap an interval tick still in flight. Without a
+    // sequence number the slower of the two wins whenever it lands last, and
+    // the strip drops back to the older count until the next poll.
+    let latest = 0;
 
     const fetchStats = async () => {
+      const id = ++latest;
       try {
         const res = await fetch("/api/hero-stats");
         // Non-2xx bodies are the rate-limit / failure shapes, not stats.
         // Keeping the last good numbers beats blanking the strip mid-poll.
         if (!res.ok) return;
         const data = await res.json();
-        if (!cancelled && isHeroStats(data)) setStats(data);
+        if (!cancelled && id === latest && isHeroStats(data)) setStats(data);
       } catch {
         // Network errors are swallowed; the rendered numbers stay put.
       }
@@ -68,9 +73,13 @@ export function ProofWallStats({ initial }: { initial: HeroStats }) {
     };
 
     // One fetch on mount: the page itself is ISR-cached for minutes, so this
-    // is what pulls a stale strip up to date on arrival.
-    fetchStats();
-    startPolling();
+    // is what pulls a stale strip up to date on arrival. Skipped when the tab
+    // opens in the background (a middle-click into a new tab) — the visibility
+    // handler covers the moment it's actually looked at.
+    if (!document.hidden) {
+      fetchStats();
+      startPolling();
+    }
     document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {

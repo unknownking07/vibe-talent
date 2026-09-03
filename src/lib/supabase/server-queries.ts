@@ -419,11 +419,14 @@ async function _fetchHeroStats(): Promise<HeroStats> {
 
   // Throw rather than return zeros: unstable_cache would hold a strip reading
   // "0 builders tracked" for the full TTL, and the client keeps its last good
-  // numbers when the poll fails, which is the better failure.
-  if (buildersRes.error || projectsRes.error) {
-    throw new Error(
-      `Hero stats query failed: ${buildersRes.error?.message || ""} ${projectsRes.error?.message || ""}`.trim()
-    );
+  // numbers when the poll fails, which is the better failure. Every query
+  // counts here — each one is a figure on the strip, so a transient failure in
+  // any of them would otherwise be served as a confident zero.
+  const failed = [daysRes, longestRes, buildersRes, projectsRes, streakRes]
+    .map((res) => res.error?.message)
+    .filter(Boolean);
+  if (failed.length) {
+    throw new Error(`Hero stats query failed: ${failed.join("; ")}`);
   }
 
   const streaks = (streakRes.data ?? []) as { streak: number }[];
