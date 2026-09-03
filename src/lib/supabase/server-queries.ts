@@ -379,3 +379,72 @@ async function _fetchProofWall(): Promise<ProofWallData> {
 export const fetchProofWallCached = unstable_cache(_fetchProofWall, ["proof-wall-v3"], {
   revalidate: 300,
 });
+
+// ---------------------------------------------------------------------------
+// Hero stats (the polled stat strip under the proof wall)
+// ---------------------------------------------------------------------------
+
+/**
+ * The five figures the homepage stat strip renders. They already exist on the
+ * SSR path, spread across `_fetchProofWall` (days / longest streak / builders)
+ * and `_fetchHomepageData` (projects / avg streak). This gathers exactly the
+ * same counts, with exactly the same filters, into one payload the client
+ * poller can refresh from — if the filters here drift from the ones above, the
+ * number a visitor lands on and the number they hold on would disagree.
+ */
+export interface HeroStats {
+  totalBuilderDays: number;
+  longestStreak: number;
+  buildersTracked: number;
+  totalProjects: number;
+  avgStreak: number;
+}
+
+async function _fetchHeroStats(): Promise<HeroStats> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = getPublicClient() as any;
+
+  const [daysRes, longestRes, buildersRes, projectsRes, streakRes] = await Promise.all([
+    sb.from("streak_logs").select("*", { count: "exact", head: true }),
+    sb
+      .from("users")
+      .select("longest_streak")
+      .not("username", "is", null)
+      .order("longest_streak", { ascending: false })
+      .limit(1),
+    sb.from("users").select("id", { count: "exact", head: true }).not("username", "is", null),
+    sb.from("projects").select("id", { count: "exact", head: true }).eq("is_private", false),
+    sb.from("users").select("streak").not("username", "is", null),
+  ]);
+
+  // Throw rather than return zeros: unstable_cache would hold a strip reading
+  // "0 builders tracked" for the full TTL, and the client keeps its last good
+  // numbers when the poll fails, which is the better failure. Every query
+  // counts here — each one is a figure on the strip, so a transient failure in
+  // any of them would otherwise be served as a confident zero.
+  const failed = [daysRes, longestRes, buildersRes, projectsRes, streakRes]
+    .map((res) => res.error?.message)
+    .filter(Boolean);
+  if (failed.length) {
+    throw new Error(`Hero stats query failed: ${failed.join("; ")}`);
+  }
+
+  const streaks = (streakRes.data ?? []) as { streak: number }[];
+  const avgStreak = streaks.length
+    ? Math.round(streaks.reduce((acc, u) => acc + (u.streak || 0), 0) / streaks.length)
+    : 0;
+
+  return {
+    totalBuilderDays: daysRes.count ?? 0,
+    longestStreak: longestRes.data?.[0]?.longest_streak ?? 0,
+    buildersTracked: buildersRes.count ?? 0,
+    totalProjects: projectsRes.count ?? 0,
+    avgStreak,
+  };
+}
+
+// 30s. This backs a 60s client poll on the busiest page on the site, so the TTL
+// is what keeps N concurrent visitors from becoming N x 5 Supabase queries.
+export const fetchHeroStatsCached = unstable_cache(_fetchHeroStats, ["hero-stats-v1"], {
+  revalidate: 30,
+});

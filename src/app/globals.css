@@ -780,3 +780,62 @@ body:has(.chat-page-wrapper) main {
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
+
+/* Rolling stat numbers (homepage proof-wall strip, `RollingNumber`).
+   The ghost is a transparent, in-flow copy of the number: it owns the width
+   and the baseline so the absolutely-positioned digit columns can be masked
+   without shifting the layout or the suffix next to them. line-height:1 makes
+   the container exactly 1em tall, which is both the mask height and the cell
+   height — that identity is what keeps a rolled digit landing pixel-exactly
+   where the ghost's digit sits. */
+.stat-roll {
+  position: relative;
+  display: inline-block;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.stat-roll-ghost {
+  color: transparent;
+}
+.stat-roll-track {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+.stat-roll-col,
+.stat-roll-sep {
+  /* Never shrink: the track is width-constrained by the ghost, and a shrunk
+     column would slide the digits out of register with it. */
+  flex: 0 0 auto;
+}
+.stat-roll-col {
+  height: 1em;
+  overflow: hidden;
+}
+.stat-roll-strip {
+  display: block;
+  /* The per-column delay that staggers the cascade is set inline, from the
+     column's distance to the right edge. */
+  transition: transform 0.6s var(--ease-out);
+}
+.stat-roll-cell {
+  display: block;
+  height: 1em;
+}
+/* The one-shot lift that fires alongside the roll lives in RollingNumber as a
+   Web Animation, not here — see the comment there. Colour stays untouched
+   either way: the hero is single-colour above the fold. */
+@media (prefers-reduced-motion: reduce) {
+  .stat-roll-strip {
+    transition: none;
+  }
+}
+/* Forced colours (Windows high contrast) override the ghost's `transparent`
+   with a system colour, which would show it through the digits stacked on top
+   of it. Dropping the track there leaves the plain number, which is the one
+   thing that has to survive. */
+@media (forced-colors: active) {
+  .stat-roll-track {
+    display: none;
+  }
+}

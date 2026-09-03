@@ -1,14 +1,16 @@
 import Link from "next/link";
 import type { ProofWallData } from "@/lib/supabase/server-queries";
+import { ProofWallStats } from "@/components/homepage/proof-wall-stats";
 
 /**
  * The homepage hero, from the owner's design: a wall of real builder-days.
  *
  * Every square is one (builder, day) pair read from streak_logs — the last 70
  * days for the 8 most-active builders, shaded by commit count on the same
- * `--hm-*` scale as the profile heatmaps. Nothing here animates and nothing is
- * mocked; hovering a square names the builder, the day, and the commits
- * (native title tooltip, no JS).
+ * `--hm-*` scale as the profile heatmaps. Nothing here is mocked; hovering a
+ * square names the builder, the day, and the commits (native title tooltip,
+ * no JS). The wall itself is static — the only motion is the stat strip
+ * below it rolling to a new figure when one lands (`ProofWallStats`).
  *
  * The headline is deliberately sentence case (`normal-case` beats the global
  * uppercase heading rule): it's a sentence being said, not a page title.
@@ -41,29 +43,6 @@ export function ProofWallHero({
   avgStreak: number;
 }) {
   const { days, rows, totalBuilderDays, longestStreak, buildersTracked } = data;
-
-  // Every figure here is a live count. Deliberately absent: the old
-  // "Top Vibers" tile, which rendered topVibecoders.length against an array
-  // hardcoded to .slice(0, 3) — it read "3" no matter what the data did.
-  //
-  // Also deliberate: no stat is accent-coloured. The hero is single-colour
-  // text by design, so the only accent above the fold is the primary button.
-  // "Builders tracked" used to carry an `accent: true` flag; don't put it back
-  // without changing that rule too.
-  const stats = [
-    {
-      label: "GitHub-verified days",
-      value: totalBuilderDays.toLocaleString("en-US"),
-    },
-    { label: "Longest streak", value: longestStreak, suffix: "days" },
-    { label: "Builders tracked", value: buildersTracked },
-    { label: "Projects shipped", value: totalProjects },
-    {
-      label: "Avg. streak",
-      value: avgStreak,
-      suffix: avgStreak === 1 ? "day" : "days",
-    },
-  ];
 
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 pt-12 sm:pt-16 pb-14">
@@ -122,29 +101,19 @@ export function ProofWallHero({
 
       {/* Real totals + the builder/hirer CTAs */}
       <div className="mt-8 flex flex-wrap items-end justify-between gap-x-10 gap-y-8">
-        {/* Wording matters on the first tile. Roughly half of streak_logs
-            predates the platform (the github-sync backfill reads a year of
-            contribution history), so "days verified" implied activity ON
-            VibeTalent that those rows cannot support. "GitHub-verified days"
-            is what the number actually is: commit days read from GitHub
-            rather than self-reported. */}
-        <div className="flex flex-wrap gap-x-10 gap-y-6">
-          {stats.map((s) => (
-            <div key={s.label}>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                {s.label}
-              </div>
-              <div className="mt-1 text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--foreground)]">
-                {s.value}
-                {s.suffix && (
-                  <span className="ml-1.5 text-base font-bold text-[var(--text-muted)]">
-                    {s.suffix}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Live from here down: the strip polls /api/hero-stats and rolls to
+            the new figure, so a signup shows up without a reload. These
+            props are the same counts the endpoint returns, so first paint
+            already carries the real numbers (crawlers included). */}
+        <ProofWallStats
+          initial={{
+            totalBuilderDays,
+            longestStreak,
+            buildersTracked,
+            totalProjects,
+            avgStreak,
+          }}
+        />
         {/* Two doors, and hiring is the primary one. VibeTalent is sold as a
             hiring platform: demand is the scarce side, builder supply is not,
             so the accent goes to /explore and builder signup takes the quieter
