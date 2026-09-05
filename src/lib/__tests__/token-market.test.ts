@@ -6,6 +6,7 @@ import {
   fetchDailyCloses,
   changePct,
   fetchBagsDexPools,
+  fetchTokenMarkets,
 } from "@/lib/token-market";
 
 const MINT = "FfDYT3WqimMw7itMxw4kYJ26GPG78RfpZmepQCFpBAGS";
@@ -92,6 +93,81 @@ describe("fetchTokenMarket", () => {
       graduated: false,
       poolAddress: null,
     });
+  });
+});
+
+describe("fetchTokenMarkets", () => {
+  function multiEntry(address: string, fdv: string) {
+    return {
+      attributes: {
+        address,
+        name: address,
+        symbol: address.slice(0, 4),
+        fdv_usd: fdv,
+        volume_usd: { h24: "1.5" },
+      },
+    };
+  }
+
+  it("keys results by the mint on the payload, not request order", async () => {
+    mockFetch({ data: [multiEntry("BBB", "20"), multiEntry("AAA", "10")] });
+
+    const { markets } = await fetchTokenMarkets(["AAA", "BBB"]);
+
+    expect(markets.get("AAA")?.fdvUsd).toBe(10);
+    expect(markets.get("BBB")?.fdvUsd).toBe(20);
+  });
+
+  it("splits requests into chunks of thirty", async () => {
+    const mints = Array.from({ length: 61 }, (_, i) => `M${i}`);
+    const fetchMock = mockFetch({ data: [] });
+
+    const { answered } = await fetchTokenMarkets(mints);
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(answered.size).toBe(61);
+  });
+
+  it("answers for a mint it does not index, so the caller may store the null", async () => {
+    mockFetch({ data: [multiEntry("AAA", "10")] });
+
+    const { markets, answered } = await fetchTokenMarkets(["AAA", "BBB"]);
+
+    expect(markets.has("BBB")).toBe(false);
+    expect(answered.has("BBB")).toBe(true);
+  });
+
+  it("stops issuing chunks once the batch deadline passes", async () => {
+    // Every call fails slowly, the way a GeckoTerminal outage does. Without a
+    // deadline the caller would wait out all seven chunks.
+    const fetchMock = vi.fn().mockImplementation(async () => {
+      vi.advanceTimersByTime(30_000);
+      throw new Error("timeout");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    vi.useFakeTimers();
+
+    const mints = Array.from({ length: 200 }, (_, i) => `M${i}`);
+    const { answered } = await fetchTokenMarkets(mints);
+
+    // 60s budget, 30s burned per attempt: it tries, then gives up well short of
+    // the seven chunks 200 mints would otherwise cost.
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(0);
+    expect(fetchMock.mock.calls.length).toBeLessThan(4);
+    expect(answered.size).toBe(0);
+
+    vi.useRealTimers();
+  });
+
+  it("leaves a failed chunk unanswered rather than reporting it as empty", async () => {
+    mockFetch({}, { ok: false, status: 429 });
+
+    const { markets, answered } = await fetchTokenMarkets(["AAA", "BBB"]);
+
+    expect(markets.size).toBe(0);
+    // The distinction the refresh pass depends on: nothing was learned here, so
+    // these mints must keep whatever prices they already had.
+    expect(answered.size).toBe(0);
   });
 });
 
