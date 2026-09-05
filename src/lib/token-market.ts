@@ -146,6 +146,17 @@ export async function fetchTokenMarket(
 /** GeckoTerminal accepts at most 30 addresses per multi lookup. */
 const MULTI_LOOKUP_CHUNK = 30;
 
+/**
+ * Wall-clock budget for a whole batch, across every chunk.
+ *
+ * Chunks are sequential and each one can burn REQUEST_TIMEOUT_MS before it
+ * fails, so an outage would otherwise cost the caller eight seconds per chunk
+ * for as many chunks as it asked for — minutes, for a caller refreshing a whole
+ * table. Healthy runs finish far inside this; it only ever bites during an
+ * outage, which is exactly when the caller should stop asking.
+ */
+const BATCH_DEADLINE_MS = 60_000;
+
 export type TokenMarketBatch = {
   /** Market data for every requested mint GeckoTerminal indexes. */
   markets: Map<string, TokenMarket>;
@@ -173,7 +184,15 @@ export async function fetchTokenMarkets(
   const markets = new Map<string, TokenMarket>();
   const answered = new Set<string>();
 
+  const deadline = Date.now() + BATCH_DEADLINE_MS;
+
   for (let i = 0; i < mints.length; i += MULTI_LOOKUP_CHUNK) {
+    // Abandoning the rest costs nothing: their mints stay out of `answered`,
+    // which already means "not asked", so the caller keeps what it had for them
+    // and picks them up next run. Stalest-first ordering means the ones skipped
+    // here are the ones asked about first next time.
+    if (Date.now() > deadline) break;
+
     const chunk = mints.slice(i, i + MULTI_LOOKUP_CHUNK);
     const body = await geckoGet(
       `/networks/${NETWORK}/tokens/multi/${chunk

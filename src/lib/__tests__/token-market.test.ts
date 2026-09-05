@@ -137,6 +137,28 @@ describe("fetchTokenMarkets", () => {
     expect(answered.has("BBB")).toBe(true);
   });
 
+  it("stops issuing chunks once the batch deadline passes", async () => {
+    // Every call fails slowly, the way a GeckoTerminal outage does. Without a
+    // deadline the caller would wait out all seven chunks.
+    const fetchMock = vi.fn().mockImplementation(async () => {
+      vi.advanceTimersByTime(30_000);
+      throw new Error("timeout");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    vi.useFakeTimers();
+
+    const mints = Array.from({ length: 200 }, (_, i) => `M${i}`);
+    const { answered } = await fetchTokenMarkets(mints);
+
+    // 60s budget, 30s burned per attempt: it tries, then gives up well short of
+    // the seven chunks 200 mints would otherwise cost.
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(0);
+    expect(fetchMock.mock.calls.length).toBeLessThan(4);
+    expect(answered.size).toBe(0);
+
+    vi.useRealTimers();
+  });
+
   it("leaves a failed chunk unanswered rather than reporting it as empty", async () => {
     mockFetch({}, { ok: false, status: 429 });
 
