@@ -52,7 +52,13 @@ function toNumber(value: unknown): number | null {
 async function geckoGet(path: string): Promise<unknown | null> {
   try {
     const res = await fetch(`${GECKO_API_BASE}${path}`, {
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+        // GeckoTerminal is a free, keyless API and rejects some default client
+        // agents outright. Identifying the caller is both the fix and the
+        // courtesy owed to an endpoint we are not paying for.
+        "User-Agent": "vibetalent/1.0 (+https://www.vibetalent.work)",
+      },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       next: { revalidate: MARKET_REVALIDATE_S },
     });
@@ -65,21 +71,26 @@ async function geckoGet(path: string): Promise<unknown | null> {
 }
 
 /**
- * Name, artwork, price and pool for one mint.
+ * Turn one GeckoTerminal token object into a TokenMarket.
  *
- * Returns null when GeckoTerminal has never indexed the token, which is normal
- * for a launch that has not traded yet.
+ * Shared by the single and the multi lookup so both read the same fields the
+ * same way: a shape change upstream breaks one parser instead of two.
  */
-export async function fetchTokenMarket(
-  mint: string,
-): Promise<TokenMarket | null> {
-  const body = await geckoGet(
-    `/networks/${NETWORK}/tokens/${encodeURIComponent(mint)}`,
-  );
-  if (!isRecord(body) || !isRecord(body.data)) return null;
+function parseTokenMarket(
+  entry: unknown,
+  requestedMint: string | null,
+): TokenMarket | null {
+  if (!isRecord(entry)) return null;
 
-  const attrs = body.data.attributes;
+  const attrs = entry.attributes;
   if (!isRecord(attrs)) return null;
+
+  // The multi lookup returns tokens in no guaranteed order and omits any it
+  // does not index, so the mint has to come off the payload rather than off a
+  // caller's position in the request.
+  const address = typeof attrs.address === "string" ? attrs.address : null;
+  const mint = requestedMint ?? address;
+  if (!mint) return null;
 
   const launchpad = isRecord(attrs.launchpad_details)
     ? attrs.launchpad_details
@@ -87,7 +98,7 @@ export async function fetchTokenMarket(
 
   // The first related pool is the deepest one, which is the pool worth charting.
   let poolAddress: string | null = null;
-  const relationships = body.data.relationships;
+  const relationships = entry.relationships;
   if (isRecord(relationships) && isRecord(relationships.top_pools)) {
     const pools = relationships.top_pools.data;
     if (
@@ -114,6 +125,73 @@ export async function fetchTokenMarket(
     graduated: launchpad?.completed === true,
     poolAddress,
   };
+}
+
+/**
+ * Name, artwork, price and pool for one mint.
+ *
+ * Returns null when GeckoTerminal has never indexed the token, which is normal
+ * for a launch that has not traded yet.
+ */
+export async function fetchTokenMarket(
+  mint: string,
+): Promise<TokenMarket | null> {
+  const body = await geckoGet(
+    `/networks/${NETWORK}/tokens/${encodeURIComponent(mint)}`,
+  );
+  if (!isRecord(body)) return null;
+  return parseTokenMarket(body.data, mint);
+}
+
+/** GeckoTerminal accepts at most 30 addresses per multi lookup. */
+const MULTI_LOOKUP_CHUNK = 30;
+
+export type TokenMarketBatch = {
+  /** Market data for every requested mint GeckoTerminal indexes. */
+  markets: Map<string, TokenMarket>;
+  /**
+   * The mints GeckoTerminal actually answered for.
+   *
+   * A mint listed here but absent from `markets` is genuinely unindexed, which
+   * is a fact worth storing. A mint in neither belongs to a chunk whose request
+   * failed, and nothing may be concluded about it — the same "could not ask"
+   * versus "asked, and there is genuinely nothing" split the Bags client keeps.
+   */
+  answered: Set<string>;
+};
+
+/**
+ * Market data for many mints, thirty per request.
+ *
+ * The single lookup costs one request per mint, which is why the discovery cron
+ * could only afford to price a handful of launches per run. This prices a whole
+ * table of them in a couple of dozen requests.
+ */
+export async function fetchTokenMarkets(
+  mints: readonly string[],
+): Promise<TokenMarketBatch> {
+  const markets = new Map<string, TokenMarket>();
+  const answered = new Set<string>();
+
+  for (let i = 0; i < mints.length; i += MULTI_LOOKUP_CHUNK) {
+    const chunk = mints.slice(i, i + MULTI_LOOKUP_CHUNK);
+    const body = await geckoGet(
+      `/networks/${NETWORK}/tokens/multi/${chunk
+        .map(encodeURIComponent)
+        .join(",")}?include=top_pools`,
+    );
+    // A failed chunk leaves its mints out of `answered`, so a caller keeps what
+    // it already had for them instead of blanking the lot on an outage.
+    if (!isRecord(body) || !Array.isArray(body.data)) continue;
+
+    for (const mint of chunk) answered.add(mint);
+    for (const entry of body.data) {
+      const market = parseTokenMarket(entry, null);
+      if (market) markets.set(market.mint, market);
+    }
+  }
+
+  return { markets, answered };
 }
 
 /**
