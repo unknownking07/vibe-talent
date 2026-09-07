@@ -95,6 +95,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Malformed body" }, { status: 400 });
   }
 
+  // `null` parses as valid JSON, so this has to be checked before any property
+  // is read off it.
+  if (typeof body !== "object" || body === null) {
+    return NextResponse.json({ error: "Malformed body" }, { status: 400 });
+  }
+
   const payload = body as { answered?: unknown; entries?: unknown };
   if (!Array.isArray(payload.answered) || !Array.isArray(payload.entries)) {
     return NextResponse.json(

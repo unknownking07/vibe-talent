@@ -10,10 +10,17 @@ name: Bags market refresh
 # /api/cron/bags-market, which is where the writing (and its invariants) stays.
 on:
   schedule:
-    # Every 6h, offset from bags-discover at :00 so a run prices what that pass
-    # has just discovered rather than racing it.
-    - cron: "20 8/6 * * *"
+    # Every 6h, offset twenty minutes after bags-discover so a run prices what
+    # that pass has just discovered rather than racing it. Written out rather
+    # than as "20 2/6": a step expands only to the end of the field, so 8/6
+    # would give 08/14/20 and then nothing until the next morning.
+    - cron: "20 2,8,14,20 * * *"
   workflow_dispatch:
+
+# Only ever reads the repo to get the script; the work is done over HTTPS
+# against our own API with CRON_SECRET.
+permissions:
+  contents: read
 
 concurrency:
   group: bags-market
@@ -25,6 +32,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Nothing here uses git after checkout, so the token has no reason to
+          # stay in the local git config.
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:

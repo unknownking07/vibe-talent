@@ -73,7 +73,15 @@ for (let i = 0; i < mints.length; i += CHUNK) {
     continue;
   }
 
-  const body = await res.json();
+  // A 2xx carrying malformed JSON is still a failed chunk, not a failed run:
+  // letting it reject here would throw away every chunk already collected.
+  let body;
+  try {
+    body = await res.json();
+  } catch (err) {
+    console.log(`  chunk ${i / CHUNK}: unreadable body (${err.message}) — left untouched`);
+    continue;
+  }
   const data = Array.isArray(body?.data) ? body.data : [];
   answered.push(...chunk);
   entries.push(...data);
