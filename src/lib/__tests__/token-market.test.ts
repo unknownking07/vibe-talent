@@ -137,26 +137,43 @@ describe("fetchTokenMarkets", () => {
     expect(answered.has("BBB")).toBe(true);
   });
 
+  it("stops at a rate limit instead of grinding through the rest", async () => {
+    // One good chunk, then the window closes. Every later call would fail too,
+    // so the loop must not spend them.
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: [] }) })
+      .mockResolvedValue({ ok: false, status: 429, json: async () => ({}) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const mints = Array.from({ length: 150 }, (_, i) => `M${i}`);
+    const { answered } = await fetchTokenMarkets(mints);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    // Only the chunk that actually answered; the rest keep whatever they had.
+    expect(answered.size).toBe(30);
+  });
+
   it("stops issuing chunks once the batch deadline passes", async () => {
-    // Every call fails slowly, the way a GeckoTerminal outage does. Without a
-    // deadline the caller would wait out all seven chunks.
+    // A slow outage: each attempt burns 90s of wall clock before failing. Real
+    // timers stay in play (the loop paces itself between chunks), so the clock
+    // is driven directly rather than with fake timers.
+    let clock = 1_000_000;
+    const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => clock);
     const fetchMock = vi.fn().mockImplementation(async () => {
-      vi.advanceTimersByTime(30_000);
+      clock += 90_000;
       throw new Error("timeout");
     });
     vi.stubGlobal("fetch", fetchMock);
-    vi.useFakeTimers();
 
     const mints = Array.from({ length: 200 }, (_, i) => `M${i}`);
     const { answered } = await fetchTokenMarkets(mints);
 
-    // 60s budget, 30s burned per attempt: it tries, then gives up well short of
-    // the seven chunks 200 mints would otherwise cost.
-    expect(fetchMock.mock.calls.length).toBeGreaterThan(0);
-    expect(fetchMock.mock.calls.length).toBeLessThan(4);
+    // One attempt blows the 60s budget, so the other six chunks are never sent.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(answered.size).toBe(0);
 
-    vi.useRealTimers();
+    nowSpy.mockRestore();
   });
 
   it("leaves a failed chunk unanswered rather than reporting it as empty", async () => {

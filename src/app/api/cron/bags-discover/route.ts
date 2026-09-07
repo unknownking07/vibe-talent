@@ -25,16 +25,21 @@ import { fetchTokenMarkets } from "@/lib/token-market";
 /**
  * How many stored launches get their market data refreshed in one run.
  *
- * This used to be a per-run budget of twenty, spent in feed order, and it was
- * the reason the board rendered blank: the feed leads with the newest launches,
- * which are exactly the ones with no pool to price yet, and every launch past
- * the twentieth was written with null market columns that overwrote whatever an
- * earlier run had found. Thirty mints per multi lookup makes a full refresh
- * cost tens of requests rather than hundreds, so the budget is gone and the cap
- * is only a guard rail. Rows are taken stalest-first, so a table that ever
- * outgrows the cap still cycles instead of starving its tail.
+ * This used to be a budget of twenty spent in feed order, and it was the reason
+ * the board rendered blank: the feed leads with the newest launches, which are
+ * exactly the ones with no pool to price yet, and every launch past the
+ * twentieth was written with null market columns that overwrote whatever an
+ * earlier run had found.
+ *
+ * Sized to the free tier rather than to the table. Measured, GeckoTerminal
+ * accepts about five multi lookups before it starts refusing, and once refused
+ * it keeps refusing however slowly you ask — so a run that reaches for all 400
+ * rows gets one chunk's worth and thirteen rejections, which is what the first
+ * deploy did. Five chunks is what actually lands. Rows are taken stalest-first
+ * and the cron runs every six hours, so the table still cycles in well under a
+ * day, and the /bags pages spend from the same limit.
  */
-const MARKET_REFRESH_LIMIT = 1500;
+const MARKET_REFRESH_LIMIT = 150;
 
 type MarketRefresh = {
   /** Rows selected for refresh. */
