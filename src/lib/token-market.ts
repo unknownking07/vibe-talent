@@ -89,7 +89,7 @@ async function geckoGet(path: string): Promise<unknown | null> {
  * Shared by the single and the multi lookup so both read the same fields the
  * same way: a shape change upstream breaks one parser instead of two.
  */
-function parseTokenMarket(
+export function parseTokenMarket(
   entry: unknown,
   requestedMint: string | null,
 ): TokenMarket | null {

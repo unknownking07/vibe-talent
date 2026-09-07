@@ -5,7 +5,6 @@ import {
   fetchTokenCreators,
   fetchLaunchFeed,
 } from "@/lib/bags";
-import { fetchTokenMarkets } from "@/lib/token-market";
 
 /**
  * Cron job: discover Bags launches we have no wallet for.
@@ -23,107 +22,15 @@ import { fetchTokenMarkets } from "@/lib/token-market";
  */
 
 /**
- * How many stored launches get their market data refreshed in one run.
+ * Pricing lives in bags-market, not here.
  *
- * This used to be a budget of twenty spent in feed order, and it was the reason
- * the board rendered blank: the feed leads with the newest launches, which are
- * exactly the ones with no pool to price yet, and every launch past the
- * twentieth was written with null market columns that overwrote whatever an
- * earlier run had found.
- *
- * Sized to the free tier rather than to the table. Measured, GeckoTerminal
- * accepts about five multi lookups before it starts refusing, and once refused
- * it keeps refusing however slowly you ask — so a run that reaches for all 400
- * rows gets one chunk's worth and thirteen rejections, which is what the first
- * deploy did. Five chunks is what actually lands. Rows are taken stalest-first
- * and the cron runs every six hours, so the table still cycles in well under a
- * day, and the /bags pages spend from the same limit.
+ * It used to run in this loop, which is what let an unpriced launch blank a
+ * priced one. Splitting it out fixed that, but the pass still starved: it ran on
+ * the Worker, and GeckoTerminal rate-limits Cloudflare's shared egress, so it
+ * managed one chunk on its best run and none on the two after. It now runs from
+ * the GitHub Actions runner, which has an IP of its own, against
+ * /api/cron/bags-market. This route discovers; that one prices.
  */
-const MARKET_REFRESH_LIMIT = 150;
-
-type MarketRefresh = {
-  /** Rows selected for refresh. */
-  considered: number;
-  /** Rows GeckoTerminal answered for, priced or not. */
-  refreshed: number;
-  /** Of those, how many it actually indexes. */
-  priced: number;
-};
-
-/**
- * Re-price every stored launch, including the ones this run did not discover.
- *
- * Discovery only ever sees the current Bags feed, so a launch that scrolls off
- * it would keep whatever price it had on the day it appeared. Pricing the table
- * rather than the feed is what lets a row that missed out — or that had its
- * columns blanked by the old budget — recover on the next run without a
- * one-off backfill.
- */
-async function refreshMarketData(
-  sb: ReturnType<typeof createAdminClient>,
-): Promise<MarketRefresh> {
-  const empty: MarketRefresh = { considered: 0, refreshed: 0, priced: 0 };
-
-  const { data, error } = await sb
-    .from("bags_launches")
-    .select("token_mint, creator_wallet")
-    // Never-priced rows first, then the stalest. At the current table size
-    // every row makes the cut on every run.
-    .order("market_synced_at", { ascending: true, nullsFirst: true })
-    .limit(MARKET_REFRESH_LIMIT);
-
-  if (error) {
-    console.error("bags-discover: market refresh select failed:", error.message);
-    return empty;
-  }
-
-  const rows = (data ?? []) as { token_mint: string; creator_wallet: string }[];
-  if (rows.length === 0) return empty;
-
-  const { markets, answered } = await fetchTokenMarkets(
-    rows.map((r) => r.token_mint),
-  );
-
-  const now = new Date().toISOString();
-  // Only rows GeckoTerminal answered for. A chunk that failed leaves its mints
-  // untouched, so an outage costs a refresh rather than wiping real prices.
-  const updates = rows
-    .filter((r) => answered.has(r.token_mint))
-    .map((r) => {
-      const market = markets.get(r.token_mint) ?? null;
-      return {
-        token_mint: r.token_mint,
-        // Carried so the upsert has every NOT NULL column it would need if a
-        // row vanished between the select and the write. Same value either way.
-        creator_wallet: r.creator_wallet,
-        // Null here is a finding, not a gap: GeckoTerminal was asked and does
-        // not index this mint, which is normal before a launch trades.
-        token_image_url: market?.imageUrl ?? null,
-        fdv_usd: market?.fdvUsd ?? null,
-        volume_24h_usd: market?.volume24hUsd ?? null,
-        market_synced_at: now,
-      };
-    });
-
-  if (updates.length === 0) return { ...empty, considered: rows.length };
-
-  // Columns absent from the payload are left alone by the conflict update, so
-  // this cannot disturb user_id, the Bags identity fields or last_verified_at.
-  const { error: writeError } = await sb
-    .from("bags_launches")
-    .upsert(updates, { onConflict: "token_mint" });
-
-  if (writeError) {
-    console.error("bags-discover: market refresh write failed:", writeError.message);
-    return { ...empty, considered: rows.length };
-  }
-
-  return {
-    considered: rows.length,
-    refreshed: updates.length,
-    priced: updates.filter((u) => u.fdv_usd !== null).length,
-  };
-}
 
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
@@ -266,14 +173,11 @@ export async function GET(req: NextRequest) {
     if (userId) claimed += 1;
   }
 
-  const market = await refreshMarketData(sb);
-
   return NextResponse.json({
     seen,
     written,
     claimed,
     unattributable,
     lookupFailed,
-    market,
   });
 }

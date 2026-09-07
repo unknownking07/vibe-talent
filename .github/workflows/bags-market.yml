@@ -1,0 +1,48 @@
+name: Bags market refresh
+
+# Prices the launches in bags_launches from the runner's own IP.
+#
+# The lookups cannot run on the Worker: GeckoTerminal rate-limits by IP and
+# Cloudflare's egress pool is shared, so the pass that used to live inside
+# /api/cron/bags-discover managed one chunk on its best run and zero on the two
+# after, while the identical call from a laptop returned 200. The runner has an
+# IP of its own, so it does the asking and posts the answers to
+# /api/cron/bags-market, which is where the writing (and its invariants) stays.
+on:
+  schedule:
+    # Every 6h, offset twenty minutes after bags-discover so a run prices what
+    # that pass has just discovered rather than racing it. Written out rather
+    # than as "20 2/6": a step expands only to the end of the field, so 8/6
+    # would give 08/14/20 and then nothing until the next morning.
+    - cron: "20 2,8,14,20 * * *"
+  workflow_dispatch:
+
+# Only ever reads the repo to get the script; the work is done over HTTPS
+# against our own API with CRON_SECRET.
+permissions:
+  contents: read
+
+concurrency:
+  group: bags-market
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Nothing here uses git after checkout, so the token has no reason to
+          # stay in the local git config.
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Refresh market data
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SITE_URL: https://www.vibetalent.work
+        run: node scripts/bags-market-refresh.mjs
