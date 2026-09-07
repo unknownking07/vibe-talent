@@ -49,7 +49,16 @@ function toNumber(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-async function geckoGet(path: string): Promise<unknown | null> {
+/** HTTP 429. Worth naming: it is the one failure a caller must not retry into. */
+const RATE_LIMITED = 429;
+
+type GeckoResult = { body: unknown | null; status: number | null };
+
+/**
+ * As geckoGet, but reporting the status so a batch caller can tell a rate limit
+ * apart from an ordinary miss. `status: null` means the request never completed.
+ */
+async function geckoGetWithStatus(path: string): Promise<GeckoResult> {
   try {
     const res = await fetch(`${GECKO_API_BASE}${path}`, {
       headers: {
@@ -62,12 +71,16 @@ async function geckoGet(path: string): Promise<unknown | null> {
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       next: { revalidate: MARKET_REVALIDATE_S },
     });
-    if (!res.ok) return null;
-    return await res.json();
+    if (!res.ok) return { body: null, status: res.status };
+    return { body: await res.json(), status: res.status };
   } catch {
     // Timeout, network failure, or malformed JSON. All mean the same thing here.
-    return null;
+    return { body: null, status: null };
   }
+}
+
+async function geckoGet(path: string): Promise<unknown | null> {
+  return (await geckoGetWithStatus(path)).body;
 }
 
 /**
@@ -157,6 +170,17 @@ const MULTI_LOOKUP_CHUNK = 30;
  */
 const BATCH_DEADLINE_MS = 60_000;
 
+/**
+ * Breathing room between chunks.
+ *
+ * Not enough on its own to stay under the free tier's limit — measured, a burst
+ * trips it after about five calls and then keeps refusing regardless of how
+ * slowly you ask. Asking for less is the actual remedy, and the caller's slice
+ * size is where that happens. This only avoids being the rudest possible client
+ * on the way there.
+ */
+const CHUNK_PACING_MS = 1_000;
+
 export type TokenMarketBatch = {
   /** Market data for every requested mint GeckoTerminal indexes. */
   markets: Map<string, TokenMarket>;
@@ -193,12 +217,21 @@ export async function fetchTokenMarkets(
     // here are the ones asked about first next time.
     if (Date.now() > deadline) break;
 
+    if (i > 0) await new Promise((r) => setTimeout(r, CHUNK_PACING_MS));
+
     const chunk = mints.slice(i, i + MULTI_LOOKUP_CHUNK);
-    const body = await geckoGet(
+    const { body, status } = await geckoGetWithStatus(
       `/networks/${NETWORK}/tokens/multi/${chunk
         .map(encodeURIComponent)
         .join(",")}?include=top_pools`,
     );
+
+    // Once the window is exhausted every further call fails too, so grinding
+    // through the rest only burns the deadline for nothing. Stopping here is
+    // free: these mints stay out of `answered`, keep the prices they had, and
+    // sort to the front of the next run under stalest-first ordering.
+    if (status === RATE_LIMITED) break;
+
     // A failed chunk leaves its mints out of `answered`, so a caller keeps what
     // it already had for them instead of blanking the lot on an outage.
     if (!isRecord(body) || !Array.isArray(body.data)) continue;
