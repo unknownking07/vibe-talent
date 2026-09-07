@@ -211,13 +211,14 @@ export async function fetchTokenMarkets(
   const deadline = Date.now() + BATCH_DEADLINE_MS;
 
   for (let i = 0; i < mints.length; i += MULTI_LOOKUP_CHUNK) {
-    // Abandoning the rest costs nothing: their mints stay out of `answered`,
-    // which already means "not asked", so the caller keeps what it had for them
-    // and picks them up next run. Stalest-first ordering means the ones skipped
-    // here are the ones asked about first next time.
-    if (Date.now() > deadline) break;
-
     if (i > 0) await new Promise((r) => setTimeout(r, CHUNK_PACING_MS));
+
+    // Checked after the pacing delay, since the wait itself can be what pushes
+    // the run past the deadline. Abandoning the rest costs nothing: their mints
+    // stay out of `answered`, which already means "not asked", so the caller
+    // keeps what it had for them and picks them up next run — stalest-first
+    // ordering asks about the ones skipped here first next time.
+    if (Date.now() > deadline) break;
 
     const chunk = mints.slice(i, i + MULTI_LOOKUP_CHUNK);
     const { body, status } = await geckoGetWithStatus(
