@@ -5,7 +5,7 @@ import {
   fetchTokenCreators,
   fetchLaunchFeed,
 } from "@/lib/bags";
-import { fetchTokenMarket } from "@/lib/token-market";
+import { fetchTokenMarkets } from "@/lib/token-market";
 
 /**
  * Cron job: discover Bags launches we have no wallet for.
@@ -23,14 +23,102 @@ import { fetchTokenMarket } from "@/lib/token-market";
  */
 
 /**
- * How many confirmed launches get live market data in one run.
+ * How many stored launches get their market data refreshed in one run.
  *
- * GeckoTerminal's free tier rate-limits well below one call per launch, and
- * price is enrichment: a row without it still names a real launch and its
- * confirmed creator. Confirmation runs first, so this budget is only ever
- * spent on launches that survived it.
+ * This used to be a per-run budget of twenty, spent in feed order, and it was
+ * the reason the board rendered blank: the feed leads with the newest launches,
+ * which are exactly the ones with no pool to price yet, and every launch past
+ * the twentieth was written with null market columns that overwrote whatever an
+ * earlier run had found. Thirty mints per multi lookup makes a full refresh
+ * cost tens of requests rather than hundreds, so the budget is gone and the cap
+ * is only a guard rail. Rows are taken stalest-first, so a table that ever
+ * outgrows the cap still cycles instead of starving its tail.
  */
-const MARKET_ENRICH_LIMIT = 20;
+const MARKET_REFRESH_LIMIT = 1500;
+
+type MarketRefresh = {
+  /** Rows selected for refresh. */
+  considered: number;
+  /** Rows GeckoTerminal answered for, priced or not. */
+  refreshed: number;
+  /** Of those, how many it actually indexes. */
+  priced: number;
+};
+
+/**
+ * Re-price every stored launch, including the ones this run did not discover.
+ *
+ * Discovery only ever sees the current Bags feed, so a launch that scrolls off
+ * it would keep whatever price it had on the day it appeared. Pricing the table
+ * rather than the feed is what lets a row that missed out — or that had its
+ * columns blanked by the old budget — recover on the next run without a
+ * one-off backfill.
+ */
+async function refreshMarketData(
+  sb: ReturnType<typeof createAdminClient>,
+): Promise<MarketRefresh> {
+  const empty: MarketRefresh = { considered: 0, refreshed: 0, priced: 0 };
+
+  const { data, error } = await sb
+    .from("bags_launches")
+    .select("token_mint, creator_wallet")
+    // Never-priced rows first, then the stalest. At the current table size
+    // every row makes the cut on every run.
+    .order("market_synced_at", { ascending: true, nullsFirst: true })
+    .limit(MARKET_REFRESH_LIMIT);
+
+  if (error) {
+    console.error("bags-discover: market refresh select failed:", error.message);
+    return empty;
+  }
+
+  const rows = (data ?? []) as { token_mint: string; creator_wallet: string }[];
+  if (rows.length === 0) return empty;
+
+  const { markets, answered } = await fetchTokenMarkets(
+    rows.map((r) => r.token_mint),
+  );
+
+  const now = new Date().toISOString();
+  // Only rows GeckoTerminal answered for. A chunk that failed leaves its mints
+  // untouched, so an outage costs a refresh rather than wiping real prices.
+  const updates = rows
+    .filter((r) => answered.has(r.token_mint))
+    .map((r) => {
+      const market = markets.get(r.token_mint) ?? null;
+      return {
+        token_mint: r.token_mint,
+        // Carried so the upsert has every NOT NULL column it would need if a
+        // row vanished between the select and the write. Same value either way.
+        creator_wallet: r.creator_wallet,
+        // Null here is a finding, not a gap: GeckoTerminal was asked and does
+        // not index this mint, which is normal before a launch trades.
+        token_image_url: market?.imageUrl ?? null,
+        fdv_usd: market?.fdvUsd ?? null,
+        volume_24h_usd: market?.volume24hUsd ?? null,
+        market_synced_at: now,
+      };
+    });
+
+  if (updates.length === 0) return { ...empty, considered: rows.length };
+
+  // Columns absent from the payload are left alone by the conflict update, so
+  // this cannot disturb user_id, the Bags identity fields or last_verified_at.
+  const { error: writeError } = await sb
+    .from("bags_launches")
+    .upsert(updates, { onConflict: "token_mint" });
+
+  if (writeError) {
+    console.error("bags-discover: market refresh write failed:", writeError.message);
+    return { ...empty, considered: rows.length };
+  }
+
+  return {
+    considered: rows.length,
+    refreshed: updates.length,
+    priced: updates.filter((u) => u.fdv_usd !== null).length,
+  };
+}
 
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
@@ -102,8 +190,6 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  let enriched = 0;
-
   for (const launch of feed) {
     if (processed.has(launch.tokenMint)) continue;
     processed.add(launch.tokenMint);
@@ -131,14 +217,6 @@ export async function GET(req: NextRequest) {
     const wallet = creator.wallet as string;
     const userId = walletToUser.get(wallet);
 
-    // Only for launches that already passed confirmation, and only up to the
-    // budget. A brand new PRE_GRAD token usually has no pool to price anyway.
-    const withinBudget = enriched < MARKET_ENRICH_LIMIT;
-    const market = withinBudget
-      ? await fetchTokenMarket(launch.tokenMint)
-      : null;
-    if (withinBudget) enriched += 1;
-
     // Names and tickers are whatever the launcher minted. Stored raw and
     // sanitised where they are rendered, so the record stays faithful and a
     // change to the sanitiser needs no re-sync.
@@ -155,13 +233,12 @@ export async function GET(req: NextRequest) {
         typeof creator.royaltyBps === "number" ? creator.royaltyBps : 0,
       token_name: launch.name,
       token_symbol: launch.symbol,
-      // Artwork from GeckoTerminal, never from the feed: see fetchLaunchFeed.
-      token_image_url: market?.imageUrl ?? null,
-      fdv_usd: market?.fdvUsd ?? null,
-      volume_24h_usd: market?.volume24hUsd ?? null,
-      market_synced_at: new Date().toISOString(),
       last_verified_at: new Date().toISOString(),
     };
+
+    // No market columns here, deliberately. Discovery answers "who launched
+    // this"; pricing is a separate pass over the whole table. Writing both from
+    // one loop is what let an unpriced launch blank a priced one.
 
     // user_id is written ONLY when a proved wallet matches. Omitting the key
     // leaves an existing claim untouched, so a discovery pass can never unclaim
@@ -184,11 +261,14 @@ export async function GET(req: NextRequest) {
     if (userId) claimed += 1;
   }
 
+  const market = await refreshMarketData(sb);
+
   return NextResponse.json({
     seen,
     written,
     claimed,
     unattributable,
     lookupFailed,
+    market,
   });
 }
