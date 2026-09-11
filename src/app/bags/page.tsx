@@ -10,7 +10,7 @@ import {
   type BagsLaunchRow,
 } from "@/lib/bags-board";
 import { BagsBuilderRow as BoardRow } from "@/components/bags/bags-builder-row";
-import { UnverifiedLaunchRow } from "@/components/bags/unverified-launch-row";
+import { UnverifiedLaunchBoard } from "@/components/bags/unverified-launch-board";
 import { BagsAttribution } from "@/components/bags/bags-attribution";
 import { BagsMark } from "@/components/bags/bags-mark";
 import { BoardViewToggle } from "@/components/bags/board-view-toggle";
@@ -58,9 +58,6 @@ const LAUNCH_PAGE_SIZE = 1000;
  * builders and understates the launch counts of the ones that survive.
  */
 const MAX_LAUNCHES = 20_000;
-
-/** How many unverified launches the board renders. The rest are counted, not listed. */
-const MAX_UNVERIFIED_SHOWN = 25;
 
 const BUILDER_FIELDS =
   "id, username, display_name, avatar_url, github_username, vibe_score, streak";
@@ -240,9 +237,6 @@ export default async function BagsPage() {
     loadHackathonRoster(),
   ]);
   const matchedHackathon = roster.filter((r) => r.builder).length;
-  // Bounded render: the discovery cron adds rows every day, and an unbounded
-  // list would grow the page without limit. The full count is still stated.
-  const shownUnverified = unverified.slice(0, MAX_UNVERIFIED_SHOWN);
   const launchCount = board.reduce((sum, entry) => sum + entry.launchCount, 0);
 
   const jsonLd = {
@@ -377,17 +371,7 @@ export default async function BagsPage() {
                     being made about the person. If one of them is yours, link
                     the wallet and it moves up.
                   </p>
-                  <ul className="flex flex-col gap-2">
-                    {shownUnverified.map((launch) => (
-                      <UnverifiedLaunchRow key={launch.mint} launch={launch} />
-                    ))}
-                  </ul>
-                  {unverified.length > shownUnverified.length ? (
-                    <p className="mt-3 text-[12px] text-[var(--bags-text-faint)]">
-                      Showing the {shownUnverified.length} busiest of{" "}
-                      {unverified.length} tracked launches.
-                    </p>
-                  ) : null}
+                  <UnverifiedLaunchBoard launches={unverified} />
                 </section>
               ) : null}
             </>

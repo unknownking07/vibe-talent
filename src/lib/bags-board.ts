@@ -159,6 +159,49 @@ export type UnverifiedLaunch = {
 };
 
 /**
+ * Shorter than this, a query is not matched against the mint at all. Base58
+ * addresses contain nearly every letter, so one or two characters match every
+ * launch through the mint alone and the filter looks broken. Anyone actually
+ * looking up an address has more of it than this to paste.
+ */
+const MINT_MATCH_MIN_CHARS = 4;
+
+/**
+ * Does this launch match a board search?
+ *
+ * `query` is expected pre-normalised (trimmed, lower-cased) because the board
+ * filters the whole list on every keystroke and there is no reason to redo that
+ * work per row. An empty query matches everything.
+ *
+ * Matched against the raw fields rather than the sanitised ones the row
+ * renders: sanitising rewrites characters to make a string safe to display,
+ * which would make a launch unfindable by the name its creator gave it.
+ */
+export function launchMatchesQuery(
+  launch: UnverifiedLaunch,
+  query: string,
+): boolean {
+  if (!query) return true;
+
+  const textMatch = [
+    launch.name,
+    launch.symbol,
+    launch.bagsUsername,
+    launch.twitterUsername,
+    launch.profileUsername,
+  ].some((field) => field?.toLowerCase().includes(query));
+  if (textMatch) return true;
+
+  // Prefix, not substring: every Bags mint ends in the vanity suffix "BAGS", so
+  // a substring match means searching the word "bags" on the Bags board returns
+  // every row on it. A pasted address starts at the front.
+  return (
+    query.length >= MINT_MATCH_MIN_CHARS &&
+    launch.mint.toLowerCase().startsWith(query)
+  );
+}
+
+/**
  * Launches the verified board cannot carry, busiest first.
  *
  * Deliberately includes claimed-but-unverified launches. Dropping them would
