@@ -3,9 +3,11 @@ import { describe, it, expect } from "vitest";
 import {
   buildBagsBoard,
   buildUnverifiedLaunches,
+  launchMatchesQuery,
   shortMint,
   type BagsBuilderRow,
   type BagsLaunchRow,
+  type UnverifiedLaunch,
 } from "@/lib/bags-board";
 
 function builder(
@@ -262,5 +264,77 @@ describe("buildUnverifiedLaunches", () => {
       [],
     );
     expect(board[0]!.name).toBe(hostile);
+  });
+});
+
+describe("launchMatchesQuery", () => {
+  function unverified(over: Partial<UnverifiedLaunch> = {}): UnverifiedLaunch {
+    return {
+      mint: "HjMPWnCSCuSVArioHpWGiucxek1KjWK5w7T8XXqBAGS",
+      name: "Oinkington Cashbuck",
+      symbol: "OINK",
+      imageUrl: null,
+      fdvUsd: null,
+      volume24hUsd: null,
+      bagsUsername: "kannamdc",
+      twitterUsername: null,
+      profileUsername: null,
+      ...over,
+    };
+  }
+
+  it("matches on name, ticker and creator handle", () => {
+    expect(launchMatchesQuery(unverified(), "oinking")).toBe(true);
+    expect(launchMatchesQuery(unverified(), "oink")).toBe(true);
+    expect(launchMatchesQuery(unverified(), "kannamdc")).toBe(true);
+    expect(
+      launchMatchesQuery(
+        unverified({ twitterUsername: "shipsdaily" }),
+        "shipsdaily",
+      ),
+    ).toBe(true);
+    expect(
+      launchMatchesQuery(unverified({ profileUsername: "abhinav" }), "abhinav"),
+    ).toBe(true);
+  });
+
+  it("keeps every launch when the query is empty", () => {
+    expect(launchMatchesQuery(unverified({ name: null }), "")).toBe(true);
+  });
+
+  it("matches a mint by prefix so a pasted address finds its launch", () => {
+    expect(launchMatchesQuery(unverified(), "hjmpwncs")).toBe(true);
+    expect(
+      launchMatchesQuery(
+        unverified(),
+        "hjmpwncscusvarioHpWGiucxek1KjWK5w7T8XXqBAGS".toLowerCase(),
+      ),
+    ).toBe(true);
+  });
+
+  // Every Bags mint ends in the vanity suffix, so a substring match here would
+  // make the word "bags" return the entire board.
+  it("does not match a mint on its trailing vanity suffix", () => {
+    expect(launchMatchesQuery(unverified({ name: null, symbol: null, bagsUsername: null }), "bags")).toBe(
+      false,
+    );
+  });
+
+  it("ignores the mint for queries too short to be an address", () => {
+    expect(
+      launchMatchesQuery(
+        unverified({ name: null, symbol: null, bagsUsername: null }),
+        "hjm",
+      ),
+    ).toBe(false);
+  });
+
+  it("does not match a mint from its middle", () => {
+    expect(
+      launchMatchesQuery(
+        unverified({ name: null, symbol: null, bagsUsername: null }),
+        "cusvario",
+      ),
+    ).toBe(false);
   });
 });
