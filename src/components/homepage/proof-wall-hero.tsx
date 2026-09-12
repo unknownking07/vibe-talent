@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Info } from "@phosphor-icons/react/dist/ssr";
 import type { ProofWallData } from "@/lib/supabase/server-queries";
 import { ProofWallStats } from "@/components/homepage/proof-wall-stats";
 
@@ -55,7 +56,7 @@ export function ProofWallHero({
         </h1>
         <p className="text-sm sm:text-base text-[var(--text-secondary)] font-medium leading-relaxed lg:pb-2">
           Every square below is a day a builder shipped, read straight from
-          GitHub. Hover any square for the builder, the day, and the commits — click the row to open their profile.
+          GitHub. Hover any square for the builder, the day, and the commits.
           This is what you build here. It&apos;s also what you hire on.
         </p>
       </div>
@@ -113,6 +114,16 @@ export function ProofWallHero({
             );
           })}
         </div>
+        {/* Sits under the wall rather than in the explainer copy above it,
+            because that is where the affordance is. Always visible, not behind
+            a hover: a hint you have to discover does not fix discoverability.
+            It names the row as the unit on purpose — the wall reads as loose
+            dots, so "click a dot" is the wrong mental model for what is really
+            one builder per row. */}
+        <p className="mt-3 flex items-center justify-end gap-1.5 text-[11px] font-medium text-[var(--text-muted)]">
+          <Info size={13} weight="fill" aria-hidden="true" className="shrink-0" />
+          Each row is one builder. Click anywhere on it to open their profile.
+        </p>
         <p className="sr-only">
           Activity wall: the last {days.length} days of verified GitHub shipping
           activity from the {rows.length} most active builders on VibeTalent.
