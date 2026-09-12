@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
+import { syncGithubMirrors } from "@/lib/github-identity";
 import { createClient } from "@/lib/supabase/client";
 import { fetchStreakLogs } from "@/lib/supabase/queries";
 import { siteUrl } from "@/lib/seo";
@@ -43,7 +44,7 @@ import { Camera, ChatCircle, Check, Clock, Code, CurrencyDollar, Envelope, Envel
 // back to a generic checklist without it), and the Badge Holder chip reads
 // has_vibetalent_badge. It's a flat ~13-key object, so the egress is trivial.
 const DASHBOARD_USER_FIELDS =
-  "id, username, display_name, bio, avatar_url, github_username, vibe_score, streak, longest_streak, badge_level, streak_freezes_remaining, streak_freezes_used, referral_count, created_at, streak_before_break, streak_broken_at, solana_wallet";
+  "id, username, display_name, bio, avatar_url, github_username, github_id, vibe_score, streak, longest_streak, badge_level, streak_freezes_remaining, streak_freezes_used, referral_count, created_at, streak_before_break, streak_broken_at, solana_wallet";
 const DASHBOARD_PROJECT_FIELDS =
   "id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, endorsement_count, created_at";
 const DASHBOARD_SOCIAL_FIELDS = "id, user_id, twitter, telegram, github, website, farcaster";
@@ -236,27 +237,19 @@ export default function DashboardPage() {
       // doesn't bounce the user into an unfixable loop. Same lookup pattern
       // as settings/page.tsx and profile-setup/page.tsx.
       if (!profile.github_username || !socials?.github) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const ghIdentity = authUser.identities?.find((i: any) => i.provider === "github");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const ghData = (ghIdentity?.identity_data ?? {}) as any;
-        const ghUsername =
-          ghData.user_name ||
-          ghData.preferred_username ||
-          authUser.user_metadata?.user_name ||
-          authUser.user_metadata?.preferred_username ||
-          null;
-        if (ghUsername) {
-          if (!profile.github_username) {
-            profile.github_username = ghUsername;
-            sb.from("users").update({ github_username: ghUsername }).eq("id", authUser.id);
-          }
+        const identity = await syncGithubMirrors(sb, authUser.id, authUser, {
+          githubUsername: profile.github_username,
+          githubId: profile.github_id,
+          socialGithub: socials?.github,
+        });
+        if (identity) {
+          profile.github_username ||= identity.username;
           if (!socials?.github) {
-            socials = { ...(socials || {}), github: ghUsername, user_id: authUser.id };
-            sb.from("social_links").upsert(
-              { user_id: authUser.id, github: ghUsername },
-              { onConflict: "user_id" }
-            );
+            socials = {
+              ...(socials || {}),
+              github: identity.username,
+              user_id: authUser.id,
+            };
           }
         }
       }
