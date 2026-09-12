@@ -325,10 +325,14 @@ export default function ProfileSetupPage() {
     }
     const twitter = twitterResult.handle;
     const telegram = telegramResult.handle;
-    if (!twitter && !telegram) {
-      setError("Please add your X (Twitter) or Telegram so clients can contact you.");
-      return;
-    }
+    // Deliberately NOT required. This gate used to block anyone without an X
+    // or Telegram handle, on the reasoning that clients need a way to reach
+    // you — but /api/hire notifies a builder by email and an in-app
+    // notification and never reads either handle, so it was defending a path
+    // that does not use it. It was holding 17 GitHub-verified builders out of
+    // their own dashboard, 3 of whom had already shipped a project, against a
+    // hire flow with 3 requests ever. GitHub stays mandatory: that one is the
+    // verification the whole profile rests on.
     // Reflect cleaned values back so the user sees the bare handle if they
     // pasted a profile URL.
     setSocials((s) => ({ ...s, twitter, telegram }));
@@ -649,7 +653,7 @@ export default function ProfileSetupPage() {
             Social Links
           </h2>
           <p className="text-xs text-[var(--text-secondary)] font-medium">
-            GitHub required + X or Telegram so clients can reach you
+            GitHub verifies your work. The rest is optional.
           </p>
         </div>
       </div>
@@ -717,7 +721,7 @@ export default function ProfileSetupPage() {
           type="text"
           value={socials.twitter}
           onChange={(e) => setSocials({ ...socials, twitter: e.target.value })}
-          placeholder="X / Twitter handle or profile link"
+          placeholder="X / Twitter handle (optional)"
           className="input-brutal w-full"
         />
       </div>
@@ -728,7 +732,7 @@ export default function ProfileSetupPage() {
           type="text"
           value={socials.website}
           onChange={(e) => setSocials({ ...socials, website: e.target.value })}
-          placeholder="https://your-website.com"
+          placeholder="https://your-website.com (optional)"
           className="input-brutal w-full"
         />
       </div>
@@ -739,7 +743,7 @@ export default function ProfileSetupPage() {
           type="text"
           value={socials.telegram}
           onChange={(e) => setSocials({ ...socials, telegram: e.target.value })}
-          placeholder="Telegram username or t.me link"
+          placeholder="Telegram username (optional)"
           className="input-brutal w-full"
         />
       </div>

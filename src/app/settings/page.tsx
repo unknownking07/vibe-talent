@@ -257,10 +257,14 @@ export default function SettingsPage() {
     }
     const twitter = twitterResult.handle;
     const telegram = telegramResult.handle;
-    if (!twitter && !telegram) {
-      alert("Please add your X (Twitter) or Telegram so clients can contact you.");
-      return;
-    }
+    // Deliberately NOT required. This gate used to block anyone without an X
+    // or Telegram handle, on the reasoning that clients need a way to reach
+    // you — but /api/hire notifies a builder by email and an in-app
+    // notification and never reads either handle, so it was defending a path
+    // that does not use it. It was holding 17 GitHub-verified builders out of
+    // their own dashboard, 3 of whom had already shipped a project, against a
+    // hire flow with 3 requests ever. GitHub stays mandatory: that one is the
+    // verification the whole profile rests on.
     // Canonicalize the website URL so the DB stores `https://...` form. The
     // onboarding write path already does this; the settings save bypassed it
     // and could re-introduce bare-domain values that render as relative paths.
