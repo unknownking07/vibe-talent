@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Info } from "@phosphor-icons/react/dist/ssr";
 import type { ProofWallData } from "@/lib/supabase/server-queries";
 import { ProofWallStats } from "@/components/homepage/proof-wall-stats";
 
@@ -72,30 +73,61 @@ export function ProofWallHero({
           borderBottom: "1px solid var(--border-subtle)",
         }}
       >
-        <div className="flex justify-end gap-[3px] overflow-hidden" aria-hidden>
-          {days.map((day) => (
-            <div key={day} className="flex flex-col gap-[3px] shrink-0">
-              {rows.map((row) => {
-                const commits = row.cells[day];
-                return (
-                  <div
-                    key={row.username}
-                    className="w-[11px] h-[11px] sm:w-[14px] sm:h-[14px] rounded-[2px]"
-                    style={{ backgroundColor: shadeFor(commits) }}
-                    title={
-                      commits
-                        ? `@${row.username} · ${prettyDate(day)} · ${commits} ${commits === 1 ? "commit" : "commits"}`
-                        : undefined
-                    }
-                  />
-                );
-              })}
-            </div>
-          ))}
+        {/* One link per builder, not per square. The wall reads as a grid of
+            days but every square in a row belongs to the same person, so 560
+            anchors would all point at the same 8 places — and Next would
+            prefetch each one. A row-level link keeps the identical click
+            target, gives a screen reader 8 named destinations instead of a
+            wall of unlabelled cells, and is why the grid is built row-first
+            here rather than column-first.
+
+            Not aria-hidden any more, which it was while it was decorative:
+            hiding focusable links from assistive tech makes them reachable by
+            keyboard but invisible to the user driving it. */}
+        <div className="flex flex-col gap-[3px] overflow-hidden">
+          {rows.map((row) => {
+            const activeDays = days.filter((day) => row.cells[day]).length;
+            return (
+              <Link
+                key={row.username}
+                href={`/profile/${row.username}`}
+                prefetch={false}
+                aria-label={`@${row.username} — shipped on ${activeDays} of the last ${days.length} days. View profile.`}
+                className="flex justify-end gap-[3px] rounded-[3px] transition-opacity hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+              >
+                {days.map((day) => {
+                  const commits = row.cells[day];
+                  return (
+                    <div
+                      key={day}
+                      className="w-[11px] h-[11px] sm:w-[14px] sm:h-[14px] shrink-0 rounded-[2px]"
+                      style={{ backgroundColor: shadeFor(commits) }}
+                      title={
+                        commits
+                          ? `@${row.username} · ${prettyDate(day)} · ${commits} ${commits === 1 ? "commit" : "commits"}`
+                          : undefined
+                      }
+                    />
+                  );
+                })}
+              </Link>
+            );
+          })}
         </div>
+        {/* Sits under the wall rather than in the explainer copy above it,
+            because that is where the affordance is. Always visible, not behind
+            a hover: a hint you have to discover does not fix discoverability.
+            It names the row as the unit on purpose — the wall reads as loose
+            dots, so "click a dot" is the wrong mental model for what is really
+            one builder per row. */}
+        <p className="mt-3 flex items-center justify-end gap-1.5 text-[11px] font-medium text-[var(--text-muted)]">
+          <Info size={13} weight="fill" aria-hidden="true" className="shrink-0" />
+          Each row is one builder. Click anywhere on it to open their profile.
+        </p>
         <p className="sr-only">
           Activity wall: the last {days.length} days of verified GitHub shipping
           activity from the {rows.length} most active builders on VibeTalent.
+          Each row links to that builder&apos;s profile.
         </p>
       </div>
 
