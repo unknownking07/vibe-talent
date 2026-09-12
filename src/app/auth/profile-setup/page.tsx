@@ -149,10 +149,16 @@ export default function ProfileSetupPage() {
         if (typeof userRow.github_id === "number") {
           setVerifiedGithubId(userRow.github_id);
         }
-      } else {
-        // GitHub might be linked in Supabase auth but not yet synced to the
-        // users table (happens when linkIdentity succeeds but the redirect
-        // back to /auth/callback fails). Detect and sync it now.
+      }
+      // Entered whenever a mirror is incomplete, which includes a stored handle
+      // with no stable id — not only a missing handle. GitHub might be linked in
+      // Supabase auth but not yet synced to the users table (linkIdentity
+      // succeeded and the redirect back to /auth/callback did not), and a row
+      // carrying a handle alone sends github-sync down its username path, which
+      // resolves whoever owns that handle now. The live OAuth identity read here
+      // is authoritative in a way that lookup is not. Runs after the branch
+      // above so its state updates win when both have a value.
+      if (!userRow?.github_username || userRow?.github_id == null) {
         const identity = await syncGithubMirrors(supabase, user.id, user, {
           githubUsername: userRow?.github_username,
           githubId: userRow?.github_id,
