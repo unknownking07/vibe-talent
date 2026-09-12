@@ -138,13 +138,23 @@ export default function SignUpPage() {
           <GithubLogo weight="fill" size={18} />
           Continue with GitHub
         </AuthPrimaryButton>
+        {/* "Recommended" used to sit here, and it was the wrong word: profile
+            setup blocks on a verified GitHub, so anyone who picks Google or
+            email only finds out it is mandatory after they have committed.
+            Fewer than half of them ever came back to connect it. Saying so up
+            front costs a little friction here and saves the drop-off there. */}
         <p className="text-[11px] font-medium text-center text-[var(--text-muted)]">
-          Recommended: auto-verifies your GitHub and syncs your streak
+          Required — your vibe score is built from verified commits. Read-only:
+          we never push code or change your account.
         </p>
         <AuthSecondaryButton onClick={() => setConsentProvider("google")}>
           <GoogleMark />
           Continue with Google
         </AuthSecondaryButton>
+        <p className="text-[11px] font-medium text-center text-[var(--text-muted)]">
+          You will still be asked to connect GitHub before your profile goes
+          live.
+        </p>
       </div>
 
       <div className="my-6">

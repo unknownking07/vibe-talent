@@ -7,6 +7,7 @@ import { validateDisplayName, containsProfanity } from "@/lib/profanity";
 import { normalizeSocialHandle } from "@/lib/social-handles";
 import { normalizeExternalUrl, normalizeRepoUrl } from "@/lib/url-normalize";
 import { armTourTrigger, TOUR_FLAG_ENABLED } from "@/lib/onboarding";
+import { syncGithubMirrors } from "@/lib/github-identity";
 import {
   saveOnboardingProfile,
   type ProfileWriteClient,
@@ -148,47 +149,26 @@ export default function ProfileSetupPage() {
         if (typeof userRow.github_id === "number") {
           setVerifiedGithubId(userRow.github_id);
         }
-      } else {
-        // GitHub might be linked in Supabase auth but not yet synced to the
-        // users table (happens when linkIdentity succeeds but the redirect
-        // back to /auth/callback fails). Detect and sync it now.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const ghIdentity = user.identities?.find((i: any) => i.provider === "github");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const ghData = (ghIdentity?.identity_data ?? {}) as any;
-        const ghUsername =
-          ghData.user_name ||
-          ghData.preferred_username ||
-          user.user_metadata?.user_name ||
-          user.user_metadata?.preferred_username ||
-          null;
-        // GitHub's stable numeric ID. Lives in identity_data.sub (OIDC-style
-        // subject id). github-sync uses it to distinguish a legitimate
-        // rename from a handle reclaim, so capturing it on every OAuth-
-        // mediated write keeps that guard accurate.
-        const rawGhId = ghData.sub ?? ghData.provider_id ?? null;
-        const ghId =
-          rawGhId != null && /^\d+$/.test(String(rawGhId)) ? Number(rawGhId) : null;
-        if (ghUsername) {
-          resolvedGithub = ghUsername;
-          setVerifiedGithub(ghUsername);
-          setSocials((s) => ({ ...s, github: ghUsername }));
-          if (ghId !== null && Number.isFinite(ghId)) {
-            setVerifiedGithubId(ghId);
-          }
-          // Sync to DB so the rest of the app sees it
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase.from("users") as any)
-            .update({
-              github_username: ghUsername,
-              ...(ghId !== null && Number.isFinite(ghId) ? { github_id: ghId } : {}),
-            })
-            .eq("id", user.id);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase.from("social_links") as any).upsert(
-            { user_id: user.id, github: ghUsername },
-            { onConflict: "user_id" }
-          );
+      }
+      // Entered whenever a mirror is incomplete, which includes a stored handle
+      // with no stable id — not only a missing handle. GitHub might be linked in
+      // Supabase auth but not yet synced to the users table (linkIdentity
+      // succeeded and the redirect back to /auth/callback did not), and a row
+      // carrying a handle alone sends github-sync down its username path, which
+      // resolves whoever owns that handle now. The live OAuth identity read here
+      // is authoritative in a way that lookup is not. Runs after the branch
+      // above so its state updates win when both have a value.
+      if (!userRow?.github_username || userRow?.github_id == null) {
+        const identity = await syncGithubMirrors(supabase, user.id, user, {
+          githubUsername: userRow?.github_username,
+          githubId: userRow?.github_id,
+          socialGithub: null,
+        });
+        if (identity) {
+          resolvedGithub = identity.username;
+          setVerifiedGithub(identity.username);
+          setSocials((s) => ({ ...s, github: identity.username }));
+          if (identity.id !== null) setVerifiedGithubId(identity.id);
         }
       }
 
