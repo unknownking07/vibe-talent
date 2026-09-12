@@ -236,7 +236,11 @@ export default function DashboardPage() {
       // of sync, repair them in place so the missing-socials redirect below
       // doesn't bounce the user into an unfixable loop. Same lookup pattern
       // as settings/page.tsx and profile-setup/page.tsx.
-      if (!profile.github_username || !socials?.github) {
+      // github_id is part of the gate, not just the handle: a row with a
+      // handle and no stable id sends github-sync down its username path,
+      // which backfills whatever account owns that handle *now*. The live
+      // OAuth identity read here is authoritative in a way that lookup is not.
+      if (!profile.github_username || !socials?.github || profile.github_id == null) {
         const identity = await syncGithubMirrors(sb, authUser.id, authUser, {
           githubUsername: profile.github_username,
           githubId: profile.github_id,

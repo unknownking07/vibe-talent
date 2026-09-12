@@ -95,7 +95,10 @@ export default function SettingsPage() {
         // GitHub might be linked in Supabase auth but not yet synced to the
         // users table (happens when linkIdentity succeeds but the redirect
         // back to /auth/callback fails). Detect and sync it now.
-        if (!profile.github_username) {
+        // Also entered when only github_id is missing — see the dashboard
+        // gate: a handle with no stable id leaves github-sync resolving a
+        // mutable username.
+        if (!profile.github_username || profile.github_id == null) {
           const identity = await syncGithubMirrors(sb, authUser.id, authUser, {
             githubUsername: profile.github_username,
             githubId: profile.github_id,

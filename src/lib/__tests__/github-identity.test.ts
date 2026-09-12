@@ -206,6 +206,21 @@ describe("syncGithubMirrors", () => {
     ]);
   });
 
+  // A row with a handle but no stable id sends github-sync down its username
+  // path, which resolves whoever owns that handle now. The id must still be
+  // filled from the live identity even though every other mirror looks correct.
+  it("still backfills a missing github_id when the handle is already set", async () => {
+    const { client, calls } = fakeClient();
+    await syncGithubMirrors(client, "u1", user(), {
+      githubUsername: "octocat",
+      githubId: null,
+      socialGithub: "octocat",
+    });
+    expect(calls).toEqual([
+      { table: "users", op: "update", payload: { github_id: 583231 } },
+    ]);
+  });
+
   it("backfills only social_links when users is already correct", async () => {
     const { client, calls } = fakeClient();
     await syncGithubMirrors(client, "u1", user(), {
