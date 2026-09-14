@@ -258,11 +258,12 @@ export default function DashboardPage() {
         }
       }
 
-      // Enforce mandatory socials: GitHub + (X or Telegram)
+      // GitHub is the only mandatory link. A missing contact handle used to
+      // bounce people back here too, which locked GitHub-verified builders out
+      // of their own dashboard over a field /api/hire never reads — it reaches
+      // a builder by email and in-app notification.
       const hasGithub = socials?.github?.trim();
-      const hasTwitter = socials?.twitter?.trim();
-      const hasTelegram = socials?.telegram?.trim();
-      if (!hasGithub || (!hasTwitter && !hasTelegram)) {
+      if (!hasGithub) {
         window.location.href = "/auth/profile-setup?step=2";
         return;
       }
