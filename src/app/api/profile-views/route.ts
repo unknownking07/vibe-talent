@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getIP } from "@/lib/rate-limit";
 import { createHash } from "crypto";
 
 function hashIp(ip: string): string {
@@ -37,8 +38,7 @@ export async function POST(req: NextRequest) {
     // Hash IP for anonymous dedup
     let viewerIpHash: string | null = null;
     if (!viewerUserId) {
-      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-      viewerIpHash = hashIp(ip);
+      viewerIpHash = hashIp(getIP(req));
     }
 
     // Insert — the unique index will reject duplicates (same viewer, same profile, same day)
