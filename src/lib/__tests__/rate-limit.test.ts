@@ -3,6 +3,17 @@ import { NextRequest } from "next/server";
 import { getIP, checkRateLimit } from "../rate-limit";
 
 describe("getIP", () => {
+  it("prefers cf-connecting-ip, the only IP header a Worker receives", () => {
+    const req = new NextRequest("http://localhost/api/test", {
+      headers: {
+        "cf-connecting-ip": "203.0.113.7",
+        "x-forwarded-for": "1.2.3.4",
+        "x-real-ip": "9.8.7.6",
+      },
+    });
+    expect(getIP(req)).toBe("203.0.113.7");
+  });
+
   it("extracts IP from x-forwarded-for header", () => {
     const req = new NextRequest("http://localhost/api/test", {
       headers: { "x-forwarded-for": "1.2.3.4, 5.6.7.8" },

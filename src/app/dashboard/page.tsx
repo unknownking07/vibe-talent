@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { syncGithubMirrors } from "@/lib/github-identity";
+import { submitPendingReferral } from "@/lib/referral-client";
 import { createClient } from "@/lib/supabase/client";
 import { fetchStreakLogs } from "@/lib/supabase/queries";
 import { siteUrl } from "@/lib/seo";
@@ -230,6 +231,10 @@ export default function DashboardPage() {
         window.location.href = "/auth/profile-setup";
         return;
       }
+
+      // Retries a referral that onboarding couldn't credit (network blip, or
+      // GitHub not verified yet). A no-op without a saved code; never throws.
+      void submitPendingReferral();
 
       // Self-heal: if the GitHub identity is attached in auth.users but the
       // mirror columns (users.github_username / social_links.github) are out

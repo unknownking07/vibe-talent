@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendHireNotification } from "@/lib/email";
-import { createNotification } from "@/lib/notifications";
+import { notifyBuilderOfHireRequest } from "@/lib/hire-notifications";
 import { validateName, validateEmail } from "@/lib/validation";
 
 export async function POST(req: NextRequest) {
@@ -85,39 +84,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Failed to send hire request" }, { status: 500 });
     }
 
-    // Fire-and-forget: create in-app notification
-    createNotification({
-      user_id: builder_id,
-      type: "hire_request",
-      title: "New hire request",
-      message: `${nameClean} wants to hire you`,
-      metadata: { hire_request_id: data.id, sender_name: nameClean },
-    }).catch(console.error);
-
-    // Fire-and-forget: send email notification to builder
-    const serviceClient = createAdminClient();
-    serviceClient.auth.admin.getUserById(builder_id).then(({ data: userData }) => {
-      const builderEmail = userData?.user?.email;
-      if (!builderEmail) return;
-      // Look up the builder's username
-      serviceClient
-        .from("users")
-        .select("username")
-        .eq("id", builder_id)
-        .single()
-        .then(
-          ({ data: builderData }) => {
-            sendHireNotification({
-              builderEmail,
-              builderUsername: builderData?.username || "builder",
-              senderName: nameClean,
-              message: msgClean,
-              requestId: data.id,
-            }).catch(console.error);
-          },
-          console.error
-        );
-    }).catch(console.error);
+    after(() =>
+      notifyBuilderOfHireRequest({
+        builderId: builder_id,
+        senderName: nameClean,
+        message: msgClean,
+        requestId: data.id,
+      })
+    );
 
     return NextResponse.json({ success: true, id: data.id });
   } catch {

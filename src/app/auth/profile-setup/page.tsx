@@ -8,6 +8,7 @@ import { normalizeSocialHandle } from "@/lib/social-handles";
 import { normalizeExternalUrl, normalizeRepoUrl } from "@/lib/url-normalize";
 import { armTourTrigger, TOUR_FLAG_ENABLED } from "@/lib/onboarding";
 import { syncGithubMirrors } from "@/lib/github-identity";
+import { submitPendingReferral } from "@/lib/referral-client";
 import {
   saveOnboardingProfile,
   type ProfileWriteClient,
@@ -455,18 +456,22 @@ export default function ProfileSetupPage() {
     setLoading(true);
 
     try {
-      const today = new Date().toISOString().split("T")[0];
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: dbError } = await (supabase.from("streak_logs") as any).upsert(
-        {
-          user_id: userId,
-          activity_date: today,
-        },
-        { onConflict: "user_id,activity_date" }
-      );
-
-      if (dbError) throw dbError;
+      // Same path as the dashboard's Log Activity. The browser upsert this
+      // replaces showed a raw permission error whenever today's row already
+      // existed (github-sync writes one), because streak_logs has no UPDATE
+      // policy for the conflict path to use.
+      const res = await fetch("/api/streak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: today }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to log streak");
+      }
       setStreakLogged(true);
     } catch (err: unknown) {
       const message =
@@ -1024,43 +1029,9 @@ export default function ProfileSetupPage() {
           <button
             type="button"
             onClick={async () => {
-              // Process referral if exists
-              const refCode = localStorage.getItem("referral_code");
-              if (refCode && refCode !== profile.username && userId) {
-                try {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const sb = supabase as any;
-                  // Find the referrer
-                  const { data: referrer } = await sb
-                    .from("users")
-                    .select("id, referral_count")
-                    .eq("username", refCode)
-                    .maybeSingle();
-                  if (referrer) {
-                    // Create referral record
-                    await sb.from("referrals").insert({
-                      referrer_id: referrer.id,
-                      referred_id: userId,
-                    });
-                    // Give referrer a streak bonus day
-                    const today = new Date().toISOString().split("T")[0];
-                    await sb.from("streak_logs").upsert(
-                      { user_id: referrer.id, activity_date: today },
-                      { onConflict: "user_id,activity_date" }
-                    );
-                    // Increment referral count
-                    await sb
-                      .from("users")
-                      .update({
-                        referral_count: (referrer.referral_count || 0) + 1,
-                      })
-                      .eq("id", referrer.id);
-                  }
-                } catch {
-                  // Silently ignore referral errors — don't block onboarding
-                }
-                localStorage.removeItem("referral_code");
-              }
+              // Never throws; a referral that can't be credited yet is retried
+              // from the dashboard.
+              await submitPendingReferral();
               // Drop a one-time in-app nudge so new builders share their referral link.
               fetch("/api/notifications/welcome-referral", { method: "POST" }).catch(() => {});
               // Arm the onboarding tour so the dashboard fires it on mount.

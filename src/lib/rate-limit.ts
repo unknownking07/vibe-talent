@@ -34,9 +34,16 @@ function createRateLimiter(
 
 /**
  * Extract client IP from request headers.
+ *
+ * `cf-connecting-ip` comes first because the site is served by a Cloudflare
+ * Worker, which never receives `x-forwarded-for` or `x-real-ip`. Without it
+ * every visitor fell through to "unknown", so each per-IP limiter was one
+ * bucket shared by the whole site. Cloudflare also overwrites any value a
+ * client sends for it, so on the Worker it cannot be forged.
  */
 export function getIP(req: NextRequest): string {
   return (
+    req.headers.get("cf-connecting-ip")?.trim() ||
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||
     "unknown"

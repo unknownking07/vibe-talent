@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { notifyBuilderOfHireRequest } from "@/lib/hire-notifications";
 import { hireApiLimiter, checkRateLimit, getIP } from "@/lib/rate-limit";
 import { getSiteUrl } from "@/lib/seo";
 
@@ -97,11 +97,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const supabase = await createServerSupabaseClient();
+    // Service-role client throughout. API callers carry no session, and RLS
+    // allows no anonymous inserts into hire_requests, so the session client
+    // made every request from a real API caller fail. /api/hire does the same.
+    const admin = createAdminClient();
 
     // Look up builder by username
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: builder, error: builderError } = await (supabase as any)
+    const { data: builder, error: builderError } = await admin
       .from("users")
       .select("id, username")
       .eq("username", builder_username)
@@ -121,9 +123,8 @@ export async function POST(req: NextRequest) {
     // /api/hire). Concurrent requests could let 6-7 through with perfect
     // timing — acceptable given the IP-based 5/hour limit above and the cost
     // of a Supabase RPC migration. Revisit if this surface gets abused.
-    const adminClient = createAdminClient();
     const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
-    const { data: recentRequests, error: capLookupError } = await adminClient
+    const { data: recentRequests, error: capLookupError } = await admin
       .from("hire_requests")
       .select("id")
       .eq("sender_email", sender_email)
@@ -147,8 +148,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create hire request
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await admin
       .from("hire_requests")
       .insert({
         builder_id: builder.id,
@@ -168,7 +168,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const chatUrl = `${getSiteUrl()}/hire/${data.id}/chat`;
+    after(() =>
+      notifyBuilderOfHireRequest({
+        builderId: builder.id,
+        senderName: sender_name,
+        message,
+        requestId: data.id,
+      })
+    );
+
+    const chatUrl = `${getSiteUrl()}/hire/chat/${data.id}`;
 
     return NextResponse.json(
       {
