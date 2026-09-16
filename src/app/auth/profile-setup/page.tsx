@@ -8,6 +8,7 @@ import { normalizeSocialHandle } from "@/lib/social-handles";
 import { normalizeExternalUrl, normalizeRepoUrl } from "@/lib/url-normalize";
 import { armTourTrigger, TOUR_FLAG_ENABLED } from "@/lib/onboarding";
 import { syncGithubMirrors } from "@/lib/github-identity";
+import { submitPendingReferral } from "@/lib/referral-client";
 import {
   saveOnboardingProfile,
   type ProfileWriteClient,
@@ -1028,19 +1029,9 @@ export default function ProfileSetupPage() {
           <button
             type="button"
             onClick={async () => {
-              // Credit the referrer server-side: every write touches their
-              // rows, which RLS blocks from the browser.
-              const refCode = localStorage.getItem("referral_code");
-              if (refCode) {
-                await fetch("/api/referrals", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ referrer: refCode }),
-                }).catch(() => {
-                  // A referral must never block onboarding.
-                });
-                localStorage.removeItem("referral_code");
-              }
+              // Never throws; a referral that can't be credited yet is retried
+              // from the dashboard.
+              await submitPendingReferral();
               // Drop a one-time in-app nudge so new builders share their referral link.
               fetch("/api/notifications/welcome-referral", { method: "POST" }).catch(() => {});
               // Arm the onboarding tour so the dashboard fires it on mount.

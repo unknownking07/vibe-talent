@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import OAuthConsentModal from "@/components/auth/oauth-consent-modal";
 import { normalizeUsernameInput } from "@/lib/username";
+import { REFERRAL_CODE_KEY } from "@/lib/referral-client";
 import {
   AuthShell,
   AuthHeader,
@@ -41,7 +42,7 @@ export default function SignUpPage() {
   // Store referral code in localStorage so it persists through the auth flow
   useEffect(() => {
     if (ref) {
-      localStorage.setItem("referral_code", ref);
+      localStorage.setItem(REFERRAL_CODE_KEY, ref);
     }
   }, [ref]);
 
