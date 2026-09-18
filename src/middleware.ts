@@ -42,7 +42,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Anonymous visitors on non-protected routes skip updateSession entirely.
-  // updateSession calls supabase.auth.getUser() and writes Set-Cookie, which
+  // A session refresh in updateSession writes Set-Cookie, which
   // forces `cache-control: no-store` and bypasses both Vercel ISR and the
   // Cloudflare edge — meaning every visit pays the full origin round-trip
   // (Vercel iad1). With no auth cookie there's nothing to refresh anyway.

@@ -14,8 +14,10 @@ import { BadgeDisplay } from "@/components/ui/badge-display";
 import type { UserWithSocials } from "@/lib/types/database";
 import { StreakCounter } from "@/components/ui/streak-counter";
 import { ActivityHeatmap } from "@/components/ui/activity-heatmap";
+import { STREAK_PROTECT } from "@/lib/vibe-config";
 
-// Web3 stack — only pulled in when a restorable break actually exists.
+// The wallet SDK is fetched only when its controls are opened; declaring a
+// dynamic import alone doesn't defer it if the component renders on arrival.
 const LinkWallet = dynamic(
   () => import("@/components/token/link-wallet").then((m) => ({ default: m.LinkWallet })),
   { ssr: false, loading: () => <p className="text-xs text-[var(--text-muted)]">Loading wallet...</p> },
@@ -50,6 +52,7 @@ const DASHBOARD_PROJECT_FIELDS =
   "id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, endorsement_count, created_at";
 const DASHBOARD_SOCIAL_FIELDS = "id, user_id, twitter, telegram, github, website, farcaster";
 const INBOX_FIELDS = "id, sender_name, sender_email, budget, message, status, reply, replied_at, created_at";
+type DashboardUser = UserWithSocials & { solana_wallet?: string | null };
 
 // Lazy: only loaded when the tour is actually armed (post-signup or ?tour=force).
 // Keeps the ~300-line tour module + its deps out of the initial dashboard chunk.
@@ -125,11 +128,42 @@ function MidnightCountdown({ onMidnight }: { onMidnight: () => void }) {
   return <>{label}</>;
 }
 
+// Keep the recovery offer light as well: expired breaks should load no SDK,
+// and eligible builders load the existing recovery flow when they open it.
+function StreakRecoveryOptions(props: { userId: string; lostStreak: number; brokenAt: string }) {
+  const [open, setOpen] = useState(false);
+  const [available, setAvailable] = useState(false);
+  useEffect(() => {
+    if (open) return;
+    const deadline = new Date(props.brokenAt).getTime() + STREAK_PROTECT.graceHours * 3_600_000;
+    const tick = () => setAvailable(props.lostStreak >= STREAK_PROTECT.minStreakToOffer && Date.now() < deadline);
+    tick();
+    const timer = setInterval(tick, 60_000);
+    return () => clearInterval(timer);
+  }, [props.brokenAt, props.lostStreak, open]);
+  if (open) return <StreakProtectCard {...props} />;
+  if (!available) return null;
+  return (
+    <div className="p-4 rounded-xl border border-[var(--border-subtle)]">
+      <p className="text-sm font-bold text-[var(--foreground)] mb-2">Your {props.lostStreak}-day streak broke.</p>
+      <button type="button" onClick={() => setOpen(true)} className="btn-brutal btn-brutal-secondary text-xs py-1.5 px-3">
+        View streak recovery
+      </button>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
-  const [user, setUser] = useState<UserWithSocials | null>(null);
+  const [user, setUser] = useState<DashboardUser | null>(null);
   const [heatmapData, setHeatmapData] = useState<Record<string, number>>({});
   const [ghTotal, setGhTotal] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [projectsLoading, setProjectsLoading] = useState(true);
+  const [projectsLoadError, setProjectsLoadError] = useState(false);
+  const [activityLoading, setActivityLoading] = useState(true);
+  const [walletOpen, setWalletOpen] = useState(false);
+  // A refresh after a write supersedes the initial project/activity reads.
+  const dataGenerationRef = useRef(0);
   const [hireRequests, setHireRequests] = useState<HireRequest[]>([]);
   // Seed for the Tray tab's "new" badge: a head-count fetched on initial
   // load (the full list is deferred until the tab is opened). Once the list
@@ -200,32 +234,33 @@ export default function DashboardPage() {
     async function loadUserData(authUser: import("@supabase/supabase-js").User) {
       if (loaded || cancelled) return;
       loaded = true;
+      const generation = dataGenerationRef.current;
       const supabase = createClient();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any;
 
       try {
-      // Fetch profile + projects + socials + streaks + inbox badge ALL in
-      // parallel (single round trip). The inbox itself is deferred: the old
-      // hire_requests fetch pulled every request ever received — full message
-      // bodies included — plus a resolve-senders API call on every dashboard
-      // visit, just to derive the tab's "new" badge. A head-count covers the
-      // badge; the Tray tab loads the real list via loadInbox() when opened.
-      const results = await Promise.allSettled([
-        sb.from("users").select(DASHBOARD_USER_FIELDS).eq("id", authUser.id).maybeSingle(),
+      // Start all reads together, but only profile + socials gate the page.
+      // A slow project list, log history, or inbox count must not hold the
+      // whole dashboard behind its skeleton. allSettled also handles early
+      // failures while we're still waiting for the profile.
+      const projectRequest = Promise.allSettled([
         sb.from("projects").select(DASHBOARD_PROJECT_FIELDS).eq("user_id", authUser.id).order("created_at", { ascending: false }),
-        sb.from("social_links").select(DASHBOARD_SOCIAL_FIELDS).eq("user_id", authUser.id).maybeSingle(),
-        fetchStreakLogs(authUser.id),
+      ]);
+      const streakRequest = Promise.allSettled([fetchStreakLogs(authUser.id)]);
+      const inboxRequest = Promise.allSettled([
         sb.from("hire_requests").select("id", { count: "exact", head: true }).eq("builder_id", authUser.id).eq("status", "new"),
       ]);
+      const results = await Promise.allSettled([
+        sb.from("users").select(DASHBOARD_USER_FIELDS).eq("id", authUser.id).maybeSingle(),
+        sb.from("social_links").select(DASHBOARD_SOCIAL_FIELDS).eq("user_id", authUser.id).maybeSingle(),
+      ]);
+      if (cancelled) return;
 
       const profile = results[0].status === "fulfilled" ? results[0].value?.data : null;
-      const projects = results[1].status === "fulfilled" ? results[1].value?.data : [];
       // `let` because the GitHub self-heal block below may overwrite this in
-      // memory after a fire-and-forget DB upsert.
-      let socials = results[2].status === "fulfilled" ? results[2].value?.data : null;
-      const streakData = results[3].status === "fulfilled" ? results[3].value : {};
-      setNewHireSeed(results[4].status === "fulfilled" ? results[4].value?.count || 0 : 0);
+      // memory after repairing the GitHub mirrors.
+      let socials = results[1].status === "fulfilled" ? results[1].value?.data : null;
 
       if (!profile) {
         window.location.href = "/auth/profile-setup";
@@ -272,63 +307,85 @@ export default function DashboardPage() {
         window.location.href = "/auth/profile-setup?step=2";
         return;
       }
-      setHeatmapData(streakData);
+      if (cancelled) return;
+      setUser({ ...profile, projects: [], social_links: socials || null });
+      setLoading(false);
 
-      // Calculate actual streak from streak_logs (in case DB trigger didn't run)
-      const dates = Object.keys(streakData).sort().reverse();
-      const nowLocal = new Date();
-      const today = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, "0")}-${String(nowLocal.getDate()).padStart(2, "0")}`;
-      // Set todayLogged from the streakData we already fetched, instead of
-      // firing a second streak_logs query after first render. Eliminates one
-      // post-paint roundtrip on every dashboard visit.
-      if (streakData[today]) {
-        setTodayLogged(true);
-      }
-      let calculatedStreak = 0;
-      if (dates.length > 0) {
-        const yLocal = new Date(nowLocal.getTime() - 86400000);
-        const yesterday = `${yLocal.getFullYear()}-${String(yLocal.getMonth() + 1).padStart(2, "0")}-${String(yLocal.getDate()).padStart(2, "0")}`;
-        // Only count if latest log is today or yesterday
-        if (dates[0] === today || dates[0] === yesterday) {
-          calculatedStreak = 1;
-          for (let i = 1; i < dates.length; i++) {
-            const curr = new Date(dates[i - 1]);
-            const prev = new Date(dates[i]);
-            const diffDays = (curr.getTime() - prev.getTime()) / 86400000;
-            if (diffDays === 1) {
-              calculatedStreak++;
-            } else {
-              break;
+      void projectRequest.then(([result]) => {
+        if (cancelled || generation !== dataGenerationRef.current) return;
+        if (result.status === "fulfilled" && !result.value.error) {
+          setUser(prev => prev ? { ...prev, projects: result.value.data || [] } : prev);
+        } else {
+          setProjectsLoadError(true);
+        }
+        setProjectsLoading(false);
+      });
+      void inboxRequest.then(([result]) => {
+        if (!cancelled && result.status === "fulfilled" && !result.value.error) {
+          setNewHireSeed(result.value.count || 0);
+        }
+      });
+
+      const [streakResult] = await streakRequest;
+      if (cancelled) return;
+      if (generation === dataGenerationRef.current) {
+        const streakData = streakResult.status === "fulfilled" ? streakResult.value : {};
+        setHeatmapData(streakData);
+        setActivityLoading(false);
+
+        // Calculate actual streak from streak_logs (in case DB trigger didn't run)
+        const dates = Object.keys(streakData).sort().reverse();
+        const nowLocal = new Date();
+        const today = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, "0")}-${String(nowLocal.getDate()).padStart(2, "0")}`;
+        // Set todayLogged from the streakData we already fetched, instead of
+        // firing a second streak_logs query after first render. Eliminates one
+        // post-paint roundtrip on every dashboard visit.
+        if (streakData[today]) {
+          setTodayLogged(true);
+        }
+        let calculatedStreak = 0;
+        if (dates.length > 0) {
+          const yLocal = new Date(nowLocal.getTime() - 86400000);
+          const yesterday = `${yLocal.getFullYear()}-${String(yLocal.getMonth() + 1).padStart(2, "0")}-${String(yLocal.getDate()).padStart(2, "0")}`;
+          // Only count if latest log is today or yesterday
+          if (dates[0] === today || dates[0] === yesterday) {
+            calculatedStreak = 1;
+            for (let i = 1; i < dates.length; i++) {
+              const curr = new Date(dates[i - 1]);
+              const prev = new Date(dates[i]);
+              const diffDays = (curr.getTime() - prev.getTime()) / 86400000;
+              if (diffDays === 1) {
+                calculatedStreak++;
+              } else {
+                break;
+              }
             }
           }
         }
+
+        const actualStreak = Math.max(profile.streak || 0, calculatedStreak);
+        const actualLongest = Math.max(profile.longest_streak || 0, calculatedStreak);
+
+        // Preserve independently loaded projects while reconciling the streak.
+        setUser(prev => prev ? {
+          ...prev,
+          streak: actualStreak,
+          longest_streak: actualLongest,
+        } : prev);
+
+        // Recompute streak/score server-side so the profile page stays in sync.
+        // Routed through the SECURITY DEFINER update_user_streak RPC rather than a
+        // direct column write: reputation columns (streak / vibe_score /
+        // badge_level) are no longer client-writable (see the 20260529 security
+        // migration), and the RPC derives them authoritatively from streak_logs.
+        if (actualStreak !== (profile.streak || 0) || actualLongest !== (profile.longest_streak || 0)) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (sb as any).rpc("update_user_streak", { p_user_id: authUser.id }).then(() => {});
+        }
       }
 
-      const actualStreak = Math.max(profile.streak || 0, calculatedStreak);
-      const actualLongest = Math.max(profile.longest_streak || 0, calculatedStreak);
-
-      // Show UI immediately, don't wait for DB sync
-      // vibe_score is computed by the DB trigger — use the value from the profile
-      setUser({
-        ...profile,
-        streak: actualStreak,
-        longest_streak: actualLongest,
-        projects: projects || [],
-        social_links: socials || null,
-      });
-      setLoading(false);
-
-      // Recompute streak/score server-side so the profile page stays in sync.
-      // Routed through the SECURITY DEFINER update_user_streak RPC rather than a
-      // direct column write: reputation columns (streak / vibe_score /
-      // badge_level) are no longer client-writable (see the 20260529 security
-      // migration), and the RPC derives them authoritatively from streak_logs.
-      if (actualStreak !== (profile.streak || 0) || actualLongest !== (profile.longest_streak || 0)) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (sb as any).rpc("update_user_streak", { p_user_id: authUser.id }).then(() => {});
-      }
-
-      // Auto-sync GitHub if configured and hasn't synced recently
+      // Independent GitHub work still runs when a refresh superseded the
+      // initial activity read (which must not overwrite the refreshed data).
       if (socials?.github) {
         const lastSync = localStorage.getItem("last_github_sync");
         const oneHourAgo = Date.now() - 3600000;
@@ -547,12 +604,17 @@ export default function DashboardPage() {
     const sb = supabase as any;
     const { data: profile } = await sb.from("users").select(DASHBOARD_USER_FIELDS).eq("id", authUser.id).maybeSingle();
     if (!profile) return;
-    const [{ data: projects }, { data: socials }, streakData] = await Promise.all([
+    const generation = ++dataGenerationRef.current;
+    const [{ data: projects, error: projectsError }, { data: socials }, streakData] = await Promise.all([
       sb.from("projects").select(DASHBOARD_PROJECT_FIELDS).eq("user_id", authUser.id).order("created_at", { ascending: false }),
       sb.from("social_links").select(DASHBOARD_SOCIAL_FIELDS).eq("user_id", authUser.id).maybeSingle(),
       fetchStreakLogs(authUser.id),
     ]);
-    setUser({ ...profile, projects: projects || [], social_links: socials || null });
+    if (generation !== dataGenerationRef.current) return;
+    setUser(prev => ({ ...profile, projects: projectsError ? prev?.projects || [] : projects || [], social_links: socials || null }));
+    setProjectsLoading(false);
+    setProjectsLoadError(!!projectsError);
+    setActivityLoading(false);
     setHeatmapData(streakData);
     // Keep `todayLogged` in sync with the refreshed streak data. Callers like
     // handleAddProject auto-upsert a streak_logs row for today, and without
@@ -904,7 +966,7 @@ export default function DashboardPage() {
   }, [reloadUser]);
 
   const handleLogActivity = async () => {
-    if (!user || todayLogged || logging) return;
+    if (!user || todayLogged || logging || activityLoading) return;
     setLogError(null);
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -1334,7 +1396,7 @@ export default function DashboardPage() {
             </div>
             <button
               onClick={handleLogActivity}
-              disabled={logging}
+              disabled={logging || activityLoading}
               className="btn-brutal text-sm shrink-0"
               style={{
                 backgroundColor: "var(--background)",
@@ -1343,7 +1405,7 @@ export default function DashboardPage() {
                 padding: "12px 24px",
               }}
             >
-              {logging ? "Logging..." : "Log Day 1"}
+              {activityLoading ? "Loading activity..." : logging ? "Logging..." : "Log Day 1"}
               {!logging && <Fire weight="fill" size={18} className="ml-2 text-[var(--accent)]" />}
             </button>
           </div>
@@ -1403,7 +1465,7 @@ export default function DashboardPage() {
           }}
         >
           <Code weight="fill" size={20} className="text-[var(--accent)] mb-2" />
-          <div className="text-2xl font-extrabold font-mono text-[var(--foreground)]">{(user.projects ?? []).length}</div>
+          <div className="text-2xl font-extrabold font-mono text-[var(--foreground)]">{projectsLoading || projectsLoadError ? "…" : (user.projects ?? []).length}</div>
           <div className="text-xs font-medium text-[var(--text-muted)] mt-1">Projects</div>
         </div>
       </div>
@@ -1424,14 +1486,14 @@ export default function DashboardPage() {
         {(user as unknown as { streak_broken_at?: string | null })?.streak_broken_at &&
         ((user as unknown as { streak_before_break?: number | null })?.streak_before_break ?? 0) >= 3 ? (
           <div className="mb-4">
-            <StreakProtectCard
+            <StreakRecoveryOptions
               userId={user!.id}
               lostStreak={(user as unknown as { streak_before_break: number }).streak_before_break}
               brokenAt={(user as unknown as { streak_broken_at: string }).streak_broken_at}
             />
           </div>
         ) : null}
-        <ActivityHeatmap data={heatmapData} totalOverride={ghTotal > 0 ? ghTotal : undefined} />
+        {activityLoading ? <p role="status" className="min-h-48 text-sm text-[var(--text-muted)]">Loading activity...</p> : <ActivityHeatmap data={heatmapData} totalOverride={ghTotal > 0 ? ghTotal : undefined} />}
       </div>
 
       {/* Your Projects */}
@@ -1672,6 +1734,8 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {projectsLoading && <p role="status" className="text-sm text-[var(--text-muted)]">Loading projects...</p>}
+        {projectsLoadError && <p role="alert" className="text-sm text-[var(--text-muted)]">Couldn&apos;t load your projects. Refresh to try again.</p>}
         <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
           {(user.projects ?? []).map((project) => (
             <div key={project.id}>
@@ -1680,6 +1744,7 @@ export default function DashboardPage() {
                 onEdit={handleStartEdit}
                 verified={!!project.verified}
                 onVerify={verifyProject}
+                imageSizes="(max-width: 663px) calc(100vw - 48px), (max-width: 1023px) calc((100vw - 64px) / 2), 400px"
               />
               {verifyingProjectId === project.id && (
                 <div className="mt-1 px-4 py-1.5 text-[10px] font-medium text-[var(--text-muted)]">
@@ -1745,14 +1810,14 @@ export default function DashboardPage() {
             <>
               <button
                 onClick={handleLogActivity}
-                disabled={logging}
+                disabled={logging || activityLoading}
                 className="btn-brutal text-sm w-full"
                 style={{
                   backgroundColor: "var(--accent)",
                   color: "var(--text-on-inverted)",
                 }}
               >
-                {logging ? "Logging..." : "Log Activity"}
+                {activityLoading ? "Loading activity..." : logging ? "Logging..." : "Log Activity"}
               </button>
               {logError && (
                 <p
@@ -1794,11 +1859,16 @@ export default function DashboardPage() {
             <Fire weight="fill" size={16} style={{ color: "var(--accent)" }} />
             <span className="text-sm font-bold text-[var(--text-secondary)]">$VIBE Wallet</span>
           </div>
-          <LinkWallet
-            initialAddress={
-              (user as unknown as { solana_wallet?: string | null })?.solana_wallet ?? null
-            }
-          />
+          {walletOpen ? (
+            <LinkWallet initialAddress={user.solana_wallet ?? null} />
+          ) : (
+            <div>
+              {user.solana_wallet && <p className="font-mono text-xs text-[var(--text-secondary)] mb-2">{user.solana_wallet.slice(0, 6)}...{user.solana_wallet.slice(-4)}</p>}
+              <button type="button" onClick={() => setWalletOpen(true)} className="btn-brutal btn-brutal-secondary text-xs py-1.5 px-3">
+                {user.solana_wallet ? "Manage wallet" : "Link wallet"}
+              </button>
+            </div>
+          )}
         </div>
         {/* GitHub Sync */}
         {user.social_links?.github && (
