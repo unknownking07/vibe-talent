@@ -71,3 +71,18 @@ jobs:
             echo "::error::wrangler deploy failed after 3 attempts"
             exit 1
           fi
+
+      # Deploy skips OpenNext's flaky cache population, so each new build's KV
+      # entries start empty. Render the public browsing pages here instead of
+      # making the first visitor wait for their initial Supabase reads. A build
+      # query bypasses old documents in the outer colo cache; static ISR pages
+      # use their pathname for the underlying cache entry.
+      - name: Warm public page caches
+        run: |
+          for page_path in / /projects /explore /leaderboard /feed; do
+            curl --fail --silent --show-error \
+              --retry 2 --retry-delay 2 --max-time 45 \
+              --output /dev/null \
+              --write-out "Warmed ${page_path}: HTTP %{http_code}, %{time_total}s\n" \
+              "https://www.vibetalent.work${page_path}?deploy_warm=${GITHUB_SHA}"
+          done
