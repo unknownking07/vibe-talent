@@ -40,6 +40,7 @@ let profile: Record<string, unknown>;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubEnv("NEXT_PUBLIC_PRIVY_APP_ID", "configured-app");
   localStorage.clear();
   localStorage.setItem("last_github_sync", String(Date.now()));
   projects = deferred<QueryResult>();
@@ -85,6 +86,7 @@ afterEach(() => {
   act(() => root.unmount());
   container.remove();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 async function render() {
@@ -127,6 +129,13 @@ describe("dashboard loading", () => {
 
   it("loads no recovery SDK or offer for an expired break", async () => {
     profile.streak_broken_at = new Date(Date.now() - 49 * 3_600_000).toISOString();
+    await render();
+    expect(container.textContent).not.toContain("View streak recovery");
+    expect(mocks.recoveryMounted).not.toHaveBeenCalled();
+  });
+
+  it("hides recovery when the wallet integration is not configured", async () => {
+    vi.stubEnv("NEXT_PUBLIC_PRIVY_APP_ID", undefined);
     await render();
     expect(container.textContent).not.toContain("View streak recovery");
     expect(mocks.recoveryMounted).not.toHaveBeenCalled();

@@ -134,7 +134,7 @@ function StreakRecoveryOptions(props: { userId: string; lostStreak: number; brok
   const [open, setOpen] = useState(false);
   const [available, setAvailable] = useState(false);
   useEffect(() => {
-    if (open) return;
+    if (open || !process.env.NEXT_PUBLIC_PRIVY_APP_ID) return;
     const deadline = new Date(props.brokenAt).getTime() + STREAK_PROTECT.graceHours * 3_600_000;
     const tick = () => setAvailable(props.lostStreak >= STREAK_PROTECT.minStreakToOffer && Date.now() < deadline);
     tick();
