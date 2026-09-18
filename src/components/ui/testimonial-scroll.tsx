@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { testimonials } from "@/data/testimonials";
 
 export function TestimonialScroll() {
@@ -38,8 +39,7 @@ export function TestimonialScroll() {
             }}
           >
             <div className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={t.avatar}
                 alt={t.name}
                 width={48}

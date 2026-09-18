@@ -194,6 +194,7 @@ export function ProfileProjectCard({
                 src={project.image_url}
                 alt={project.title}
                 fill
+                sizes="(max-width: 663px) calc(100vw - 48px), (max-width: 1023px) calc((100vw - 64px) / 2), 400px"
                 className="object-cover"
                 style={{
                   objectPosition: crop.objectPosition,

@@ -33,20 +33,17 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // getUser() must run on every route so Supabase can refresh the auth cookie
-  // before it expires. Gating this on /dashboard/* used to leave the cookie
-  // stale whenever users sat on /projects, /feed, /profile, etc., and they'd
-  // get bounced to login on the next refresh.
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  // Validate the JWT locally against Supabase's cached public signing keys.
+  // getClaims() also refreshes expired sessions, so it must still run on
+  // public routes. Unlike getUser(), a valid asymmetric token doesn't require
+  // a trip to the auth server on every navigation, prefetch, and API request.
+  const { data, error } = await supabase.auth.getClaims();
 
   // Only protected routes redirect to login; other routes still benefit from
   // the cookie refresh above.
   const isProtectedRoute = request.nextUrl.pathname.startsWith("/dashboard");
-  if (isProtectedRoute && !user) {
-    // getUser() failing WITH an auth cookie present is a refresh that raced or
+  if (isProtectedRoute && !data?.claims?.sub) {
+    // Validation failing WITH an auth cookie present is a refresh that raced or
     // a transient auth-server blip — not proof of logout. This bites hardest
     // overnight: a tab reopened after midnight carries an hours-expired access
     // token, and one flaky refresh used to bounce a logged-in user to

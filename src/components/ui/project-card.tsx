@@ -21,7 +21,7 @@ import { createClient } from "@/lib/supabase/client";
 import { parseImageCrop } from "@/lib/image-crop";
 import { normalizeExternalUrl, normalizeRepoUrl } from "@/lib/url-normalize";
 
-function ProjectImageBanner({ url, alt }: { url: string; alt: string }) {
+function ProjectImageBanner({ url, alt, sizes }: { url: string; alt: string; sizes: string }) {
   const crop = parseImageCrop(url);
   return (
     <div className="relative w-full h-28 rounded-t-[calc(var(--radius-card)-1px)] border-b border-[var(--border-subtle)] overflow-hidden bg-[var(--bg-surface-light)]">
@@ -29,7 +29,7 @@ function ProjectImageBanner({ url, alt }: { url: string; alt: string }) {
         src={url}
         alt={alt}
         fill
-        sizes="(max-width: 768px) 100vw, 360px"
+        sizes={sizes}
         className="object-cover"
         style={{
           objectPosition: crop.objectPosition,
@@ -89,6 +89,7 @@ interface ProjectCardProps {
   verified?: boolean;
   onEdit?: (project: Project) => void;
   onVerify?: (projectId: string) => void;
+  imageSizes?: string;
 }
 
 export function ProjectCard({
@@ -98,6 +99,7 @@ export function ProjectCard({
   showReport = true,
   verified = false,
   onVerify,
+  imageSizes = "(max-width: 639px) calc(100vw - 32px), (max-width: 1023px) calc((100vw - 72px) / 2), 400px",
 }: ProjectCardProps) {
   const [reportOpen, setReportOpen] = useState(false);
   const [reported, setReported] = useState(() => !!getReportData(project.id));
@@ -179,7 +181,7 @@ export function ProjectCard({
   return (
     <div className="card-brutal h-full flex flex-col transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-brutal-hover)]">
       {project.image_url ? (
-        <ProjectImageBanner url={project.image_url} alt={project.title} />
+        <ProjectImageBanner url={project.image_url} alt={project.title} sizes={imageSizes} />
       ) : (
         <div className="w-full h-28 rounded-t-[calc(var(--radius-card)-1px)] border-b border-[var(--border-subtle)] bg-[var(--bg-surface-light)] flex items-center justify-center">
           <span className="text-3xl font-bold text-[var(--text-muted-soft)] select-none">
