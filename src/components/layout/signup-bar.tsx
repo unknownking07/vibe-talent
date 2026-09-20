@@ -181,7 +181,7 @@ export function SignupBar() {
           <Link href="/auth/login" className="signup-bar__signin">
             Sign in
           </Link>
-          <Link href="/auth/login" className="signup-bar__cta">
+          <Link href="/auth/signup" className="signup-bar__cta">
             Create profile <ArrowRight size={14} />
           </Link>
           <button

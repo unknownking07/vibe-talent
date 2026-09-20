@@ -39,6 +39,7 @@ async function _fetchAllUsers(): Promise<UserWithSocials[]> {
       .from("projects")
       .select(PROJECT_FIELDS)
       .in("user_id", userIds)
+      .eq("flagged", false)
       .eq("is_private", false),
     sb
       .from("social_links")
@@ -99,6 +100,7 @@ async function _fetchUserByUsername(username: string): Promise<UserWithSocials |
       .from("projects")
       .select(PROJECT_FIELDS)
       .eq("user_id", user.id)
+      .eq("flagged", false)
       .eq("is_private", false)
       .order("created_at", { ascending: false }),
     sb
@@ -140,9 +142,9 @@ async function _fetchHomepageData() {
 
   const [usersResult, projectsResult, builderCountResult, projectCountResult, streakResult] = await Promise.all([
     sb.from("users").select(USER_FIELDS).not("username", "is", null).order("vibe_score", { ascending: false }).limit(20),
-    sb.from("projects").select(`${PROJECT_FIELDS}, users!projects_user_id_fkey(username)`).not("live_url", "is", null).eq("is_private", false).order("created_at", { ascending: false }).limit(3),
+    sb.from("projects").select(`${PROJECT_FIELDS}, users!projects_user_id_fkey(username)`).not("live_url", "is", null).eq("flagged", false).eq("is_private", false).order("created_at", { ascending: false }).limit(3),
     sb.from("users").select("id", { count: "exact", head: true }).not("username", "is", null),
-    sb.from("projects").select("id", { count: "exact", head: true }).eq("is_private", false),
+    sb.from("projects").select("id", { count: "exact", head: true }).eq("flagged", false).eq("is_private", false),
     sb.from("users").select("streak").not("username", "is", null),
   ]);
 
@@ -169,7 +171,7 @@ async function _fetchHomepageData() {
   if (allUsers && allUsers.length > 0) {
     const allUserIds = allUsers.map((u: { id: string }) => u.id);
     const [{ data: allProjects }, { data: socials }] = await Promise.all([
-      sb.from("projects").select(PROJECT_FIELDS).in("user_id", allUserIds).eq("is_private", false),
+      sb.from("projects").select(PROJECT_FIELDS).in("user_id", allUserIds).eq("flagged", false).eq("is_private", false),
       sb.from("social_links").select(SOCIAL_FIELDS).in("user_id", allUserIds),
     ]);
 
@@ -413,7 +415,7 @@ async function _fetchHeroStats(): Promise<HeroStats> {
       .order("longest_streak", { ascending: false })
       .limit(1),
     sb.from("users").select("id", { count: "exact", head: true }).not("username", "is", null),
-    sb.from("projects").select("id", { count: "exact", head: true }).eq("is_private", false),
+    sb.from("projects").select("id", { count: "exact", head: true }).eq("flagged", false).eq("is_private", false),
     sb.from("users").select("streak").not("username", "is", null),
   ]);
 

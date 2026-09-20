@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { reportLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const AUTO_FLAG_THRESHOLD = 3;
 
@@ -15,6 +16,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const authClient = await createServerSupabaseClient();
+    const { data: { user } } = await authClient.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Sign in to report a project." }, { status: 401 });
+    }
+
     const body = await req.json();
     const { project_id, reason } = body;
 
@@ -46,11 +53,17 @@ export async function POST(req: NextRequest) {
 
     const { data: inserted, error: insertError } = await sb
       .from("project_reports")
-      .insert({ project_id, reason, reporter_token })
+      .insert({ project_id, reason, reporter_token, reporter_user_id: user.id })
       .select("id")
       .single();
 
     if (insertError) {
+      if (insertError.code === "23505") {
+        return NextResponse.json(
+          { error: "You have already reported this project." },
+          { status: 409 }
+        );
+      }
       console.error("Failed to insert report:", insertError);
       return NextResponse.json(
         { error: "Failed to submit report" },
@@ -62,6 +75,7 @@ export async function POST(req: NextRequest) {
     const { count, error: countError } = await sb
       .from("project_reports")
       .select("*", { count: "exact", head: true })
+      .not("reporter_user_id", "is", null)
       .eq("project_id", project_id);
 
     if (countError) {
@@ -139,6 +153,7 @@ export async function DELETE(req: NextRequest) {
     const { count } = await sb
       .from("project_reports")
       .select("*", { count: "exact", head: true })
+      .not("reporter_user_id", "is", null)
       .eq("project_id", report.project_id);
 
     if (count !== null && count < AUTO_FLAG_THRESHOLD) {
