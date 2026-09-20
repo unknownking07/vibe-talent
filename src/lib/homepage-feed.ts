@@ -450,7 +450,7 @@ async function _fetchFeedStats(): Promise<FeedNetworkStats> {
     { count: endorsements },
   ] = await Promise.all([
     sb.from("users").select("id", { count: "exact", head: true }),
-    sb.from("projects").select("id", { count: "exact", head: true }).eq("flagged", false),
+    sb.from("projects").select("id", { count: "exact", head: true }).eq("flagged", false).eq("is_private", false),
     sb.from("users").select("id", { count: "exact", head: true }).gt("streak", 0),
     sb.from("project_endorsements").select("id", { count: "exact", head: true }),
   ]);
