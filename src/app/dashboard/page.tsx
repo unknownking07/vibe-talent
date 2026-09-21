@@ -614,7 +614,7 @@ export default function DashboardPage() {
     setActivityLoading(false);
     setHeatmapData(streakData);
     // Keep `todayLogged` in sync with the refreshed streak data. Callers like
-    // handleAddProject auto-upsert a streak_logs row for today, and without
+    // handleAddProject logs activity through the API, and without
     // this the sidebar would still show "Log Activity" until the next mount.
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -1107,56 +1107,75 @@ export default function DashboardPage() {
     }
 
     setAddingProject(true);
-    const supabase = createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = supabase as any;
-
-    const { data: insertedProject, error } = await sb.from("projects").insert({
-      user_id: user.id,
-      title: projectForm.title,
-      description: projectForm.description,
-      tech_stack: projectForm.tech_stack ? projectForm.tech_stack.split(",").map((t: string) => t.trim()).filter(Boolean) : [],
-      live_url: normalizedLiveUrl,
-      github_url: normalizedGithubUrl,
-      build_time: projectForm.build_time || null,
-      tags: projectForm.tags ? projectForm.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [],
-    }).select("id").single();
-
-    if (error) {
-      console.error("Failed to add project:", error);
-      setAddingProject(false);
-      return;
-    }
-
-    // Upload project image if selected. The file has already been processed
-    // to a 16:9 JPEG (see validateAndSetImage), so no y/z crop params are
-    // needed — parseImageCrop falls back to center/1.0 for new URLs.
-    if (projectImageFile && insertedProject?.id) {
-      const filePath = `${user.id}/${insertedProject.id}/image.jpg`;
-      const { error: uploadError } = await sb.storage.from("project-images").upload(filePath, projectImageFile, { upsert: true, contentType: "image/jpeg" });
-      if (!uploadError) {
-        const { data: { publicUrl } } = sb.storage.from("project-images").getPublicUrl(filePath);
-        await sb.from("projects").update({ image_url: `${publicUrl}?t=${Date.now()}` }).eq("id", insertedProject.id);
+    try {
+      // The create route runs GitHub ownership verification and quality
+      // scoring. A direct insert leaves new projects unverified until cron.
+      const response = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: projectForm.title,
+          description: projectForm.description,
+          tech_stack: projectForm.tech_stack ? projectForm.tech_stack.split(",").map((t: string) => t.trim()).filter(Boolean) : [],
+          live_url: normalizedLiveUrl,
+          github_url: normalizedGithubUrl,
+          build_time: projectForm.build_time || null,
+          tags: projectForm.tags ? projectForm.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [],
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.project?.id) {
+        throw new Error(result.error || "Failed to add project");
       }
-    }
+      const insertedProject = result.project as { id: string };
 
-    // Auto-log streak when shipping a project
-    const nowLocal = new Date();
-    const today = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, "0")}-${String(nowLocal.getDate()).padStart(2, "0")}`;
-    await sb.from("streak_logs").upsert({ user_id: user.id, activity_date: today }, { onConflict: "user_id,activity_date" });
+      // Upload the processed 16:9 JPEG after the project has an ID.
+      if (projectImageFile) {
+        try {
+          const supabase = createClient();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const sb = supabase as any;
+          const filePath = `${user.id}/${insertedProject.id}/image.jpg`;
+          const { error: uploadError } = await sb.storage.from("project-images").upload(filePath, projectImageFile, { upsert: true, contentType: "image/jpeg" });
+          if (!uploadError) {
+            const { data: { publicUrl } } = sb.storage.from("project-images").getPublicUrl(filePath);
+            const { error: imageUpdateError } = await sb.from("projects").update({ image_url: `${publicUrl}?t=${Date.now()}` }).eq("id", insertedProject.id);
+            if (imageUpdateError) console.error("Failed to save project image:", imageUpdateError);
+          } else {
+            console.error("Failed to upload project image:", uploadError);
+          }
+        } catch (error) {
+          console.error("Failed to upload project image:", error);
+        }
+      }
 
-    // DB trigger auto-updates vibe_score — reload to get fresh data
-    await reloadUser();
-    setProjectForm({ title: "", description: "", tech_stack: "", live_url: "", github_url: "", build_time: "", tags: "" });
-    setProjectImageFile(null);
-    setPreviewBlobUrl(null);
-    setImageError(null);
-    setShowProjectForm(false);
-    setAddingProject(false);
+      // Log today's activity through the authenticated API; direct upserts
+      // can fail when GitHub sync already created today's streak row.
+      try {
+        const nowLocal = new Date();
+        const today = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, "0")}-${String(nowLocal.getDate()).padStart(2, "0")}`;
+        const streakResponse = await fetch("/api/streak", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ date: today }),
+        });
+        if (streakResponse.ok) window.dispatchEvent(new Event("streak-updated"));
+        else console.error("Failed to log project activity:", streakResponse.status);
+      } catch (error) {
+        console.error("Failed to log project activity:", error);
+      }
 
-    // Auto-verify if project has a GitHub URL
-    if (projectForm.github_url && insertedProject?.id) {
-      verifyProject(insertedProject.id);
+      await reloadUser().catch((error) => console.error("Failed to refresh projects:", error));
+      setProjectForm({ title: "", description: "", tech_stack: "", live_url: "", github_url: "", build_time: "", tags: "" });
+      setProjectImageFile(null);
+      setPreviewBlobUrl(null);
+      setImageError(null);
+      setShowProjectForm(false);
+    } catch (error) {
+      console.error("Failed to add project:", error);
+      setProjectError(error instanceof Error ? error.message : "Failed to add project");
+    } finally {
+      setAddingProject(false);
     }
   };
 
