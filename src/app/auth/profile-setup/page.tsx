@@ -270,12 +270,12 @@ export default function ProfileSetupPage() {
         }
       );
 
-      // Ensure baseline vibe score is set for new users (non-fatal)
+      // Ensure baseline vibe score is set for new users (non-fatal). The API
+      // binds the recalculation to this user's verified session.
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).rpc("update_user_streak", { p_user_id: userId });
+        await fetch("/api/streak/recalculate", { method: "POST" });
       } catch {
-        // Don't block onboarding if streak RPC fails
+        // Don't block onboarding if recalculation fails
       }
       setStep(2);
     } catch (err: unknown) {

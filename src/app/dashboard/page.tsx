@@ -374,13 +374,10 @@ export default function DashboardPage() {
         } : prev);
 
         // Recompute streak/score server-side so the profile page stays in sync.
-        // Routed through the SECURITY DEFINER update_user_streak RPC rather than a
-        // direct column write: reputation columns (streak / vibe_score /
-        // badge_level) are no longer client-writable (see the 20260529 security
-        // migration), and the RPC derives them authoritatively from streak_logs.
+        // The API binds the function argument to the verified session; browsers
+        // cannot invoke the privileged function with an arbitrary user ID.
         if (actualStreak !== (profile.streak || 0) || actualLongest !== (profile.longest_streak || 0)) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (sb as any).rpc("update_user_streak", { p_user_id: authUser.id }).then(() => {});
+          fetch("/api/streak/recalculate", { method: "POST" }).catch(() => {});
         }
       }
 
