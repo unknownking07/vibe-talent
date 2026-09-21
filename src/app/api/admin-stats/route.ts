@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     const [
       { count: totalBuilders },
       { count: totalProjects },
+      { count: visibleProjects },
       { data: streakData },
       { data: badgeData },
       { count: totalHires },
@@ -26,6 +27,7 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       sb.from("users").select("id", { count: "exact", head: true }),
       sb.from("projects").select("id", { count: "exact", head: true }),
+      sb.from("projects").select("id", { count: "exact", head: true }).eq("flagged", false).eq("is_private", false),
       sb.from("users").select("streak, longest_streak, vibe_score").limit(500),
       sb.from("users").select("badge_level").not("badge_level", "is", null).limit(500),
       sb.from("hire_requests").select("id", { count: "exact", head: true }),
@@ -78,7 +80,7 @@ export async function GET(request: NextRequest) {
 
     // Public surfaces (homepage / network-velocity card) consume only these
     // aggregate counters, so they stay anonymously cacheable.
-    const publicStats = { builders, projects, hires, endorsements, activeStreaks };
+    const publicStats = { builders, projects: visibleProjects || 0, hires, endorsements, activeStreaks };
 
     // The rest — week-over-week growth, badge histogram, score/streak averages
     // — is internal business-health data and is admin-only. Authorize from the
@@ -107,6 +109,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         ...publicStats,
+        projects,
         avgStreak,
         maxStreak,
         avgVibeScore,

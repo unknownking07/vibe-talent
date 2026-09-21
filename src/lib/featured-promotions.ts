@@ -238,7 +238,9 @@ export async function enrichPromotions(
     const { data: projects } = await supabase
       .from("projects")
       .select("id, title, description, tech_stack, live_url, github_url, image_url, verified, quality_score, endorsement_count, user_id")
-      .in("id", allProjectIds);
+      .in("id", allProjectIds)
+      .eq("flagged", false)
+      .eq("is_private", false);
     const projectRows = (projects ?? []) as Array<EnrichedProject & { user_id: string }>;
     const projectMap = new Map<string, EnrichedProject & { user_id: string }>();
     for (const p of projectRows) projectMap.set(p.id, p);
@@ -275,7 +277,9 @@ export async function enrichPromotions(
       };
     });
 
-    return [...evmEnriched, ...solEnriched];
+    // A payment record or contract entry may outlive its project. Never fall
+    // back to the on-chain title for a flagged, private, or deleted project.
+    return [...evmEnriched, ...solEnriched].filter((promo) => promo.project !== null);
   } catch {
     // Fail closed: if we can't verify, render nothing rather than risk showing an
     // unverified (possibly hijacked) promotion. Promotions are non-critical UI.

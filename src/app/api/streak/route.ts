@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { calculateStreak, getBadgeLevel, calculateVibeScore } from "@/lib/streak";
 import { messagesLimiter, getIP, checkRateLimit } from "@/lib/rate-limit";
+import { validateUUID } from "@/lib/validation";
 
 // POST /api/streak — Log activity (auth required, logs for authenticated user only)
 export async function POST(request: NextRequest) {
@@ -79,28 +79,30 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const userId = request.nextUrl.searchParams.get("user_id");
 
-  if (!userId) {
-    return NextResponse.json({ error: "user_id is required" }, { status: 400 });
+  if (!userId || !validateUUID(userId)) {
+    return NextResponse.json({ error: "A valid user_id is required" }, { status: 400 });
   }
 
-  // Mock: generate some dates
-  const dates: string[] = [];
-  const today = new Date();
-  for (let i = 0; i < 45; i++) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    dates.push(date.toISOString().split("T")[0]);
+  const { data, error } = await createAdminClient()
+    .from("users")
+    .select("streak, longest_streak, badge_level, vibe_score")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Failed to fetch streak:", error);
+    return NextResponse.json({ error: "Failed to fetch streak" }, { status: 500 });
   }
 
-  const { currentStreak, longestStreak } = calculateStreak(dates);
-  const badgeLevel = getBadgeLevel(longestStreak);
-  const vibeScore = calculateVibeScore(currentStreak, 5, badgeLevel);
+  if (!data) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
 
   return NextResponse.json({
     user_id: userId,
-    current_streak: currentStreak,
-    longest_streak: longestStreak,
-    badge_level: badgeLevel,
-    vibe_score: vibeScore,
+    current_streak: data.streak,
+    longest_streak: data.longest_streak,
+    badge_level: data.badge_level,
+    vibe_score: data.vibe_score,
   });
 }

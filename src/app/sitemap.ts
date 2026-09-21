@@ -58,7 +58,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           .from("users")
           .select("id, username, created_at, longest_streak")
           .not("username", "is", null),
-        supabase.from("projects").select("user_id"),
+        supabase.from("projects").select("user_id").eq("flagged", false).eq("is_private", false),
         // Builders with a verified Bags launch each get a /bags page. Their
         // errors are not fatal here: a missing table or a bad minute upstream
         // should cost those few URLs, not the whole sitemap.
