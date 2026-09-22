@@ -285,7 +285,7 @@ ${inlineSecondary({ href: dashboardUrl, prefix: "Or ", linkText: "view in dashbo
 `;
 
   try {
-    await sendEmail(client, {
+    const { error } = await sendEmail(client, {
       to: builderEmail,
       subject: `New hire request from ${senderName}`,
       text: `Hey @${builderUsername}, you've received a new hire request.\n\nFrom: ${senderName}\n"${trimmed}${truncated}"\n\nOpen chat: ${chatUrl}\nView in dashboard: ${dashboardUrl}\n\nUnsubscribe: ${unsubUrl(builderEmail)}`,
@@ -296,6 +296,7 @@ ${inlineSecondary({ href: dashboardUrl, prefix: "Or ", linkText: "view in dashbo
         unsubLink: unsubUrl(builderEmail),
       }),
     });
+    if (error) throw error;
   } catch (error) {
     console.error("Failed to send hire notification email:", error);
   }

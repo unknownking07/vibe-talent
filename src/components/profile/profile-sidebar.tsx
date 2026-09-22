@@ -363,6 +363,9 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
       >
         Hire This Builder
       </button>
+      <p className="-mt-3 text-center text-xs font-medium text-[var(--text-secondary)]">
+        Send a private request to this builder&apos;s VibeTalent inbox.
+      </p>
 
       <HireModal
         builderId={user.id}
