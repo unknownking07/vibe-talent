@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Link2 as LinkIcon, Send } from "lucide-react";
 import {
@@ -18,6 +18,7 @@ import { HireModal } from "@/components/ui/hire-modal";
 import { ShareCardModal } from "@/components/profile/share-card-modal";
 import { extractSocialHandle } from "@/lib/social-handles";
 import { normalizeExternalUrl } from "@/lib/url-normalize";
+import { trackFunnelEvent } from "@/lib/funnel-events";
 
 interface ProfileSidebarProps {
   user: UserWithSocials;
@@ -165,6 +166,10 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
   const [hireModalOpen, setHireModalOpen] = useState(false);
   const [shareCardOpen, setShareCardOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+
+  useEffect(() => {
+    trackFunnelEvent("hire_profile_viewed");
+  }, []);
 
   const profileUrl =
     typeof window !== "undefined"
@@ -358,7 +363,10 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
 
       {/* Hire button */}
       <button
-        onClick={() => setHireModalOpen(true)}
+        onClick={() => {
+          trackFunnelEvent("hire_opened");
+          setHireModalOpen(true);
+        }}
         className="btn-brutal btn-brutal-primary w-full justify-center text-base mt-3"
       >
         Hire This Builder

@@ -15,6 +15,7 @@ import type { UserWithSocials } from "@/lib/types/database";
 import { StreakCounter } from "@/components/ui/streak-counter";
 import { ActivityHeatmap } from "@/components/ui/activity-heatmap";
 import { STREAK_PROTECT } from "@/lib/vibe-config";
+import { trackFunnelEvent } from "@/lib/funnel-events";
 
 // The wallet SDK is fetched only when its controls are opened; declaring a
 // dynamic import alone doesn't defer it if the component renders on arrival.
@@ -927,6 +928,7 @@ export default function DashboardPage() {
       });
       if (res.ok) {
         const { data: newMsg } = await res.json();
+        trackFunnelEvent("hire_builder_replied");
         setChatMessages((prev) => ({
           ...prev,
           [requestId]: [...(prev[requestId] || []), newMsg],
