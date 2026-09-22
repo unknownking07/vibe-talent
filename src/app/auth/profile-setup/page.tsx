@@ -25,6 +25,7 @@ import {
   Flame,
   Github,
   Globe,
+  Mail,
   Send as TelegramIcon,
   ArrowRight,
   ArrowLeft,
@@ -70,6 +71,7 @@ export default function ProfileSetupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [contactEmail, setContactEmail] = useState<string | null>(null);
   const [oauthAvatarUrl, setOauthAvatarUrl] = useState<string | null>(null);
   const [verifiedGithub, setVerifiedGithub] = useState<string | null>(null);
   // GitHub's stable numeric ID, captured from OAuth identity. Persisted on
@@ -114,6 +116,7 @@ export default function ProfileSetupPage() {
         router.push("/auth/login");
         return;
       }
+      setContactEmail(user.email ?? null);
       setUserId(user.id);
       // Grab OAuth avatar from provider metadata
       const avatar =
@@ -662,6 +665,30 @@ export default function ProfileSetupPage() {
           </p>
         </div>
       </div>
+
+      {userId && (
+        <div
+          className="flex items-start gap-3 rounded-xl px-4 py-3"
+          style={{
+            backgroundColor: "var(--bg-surface-light)",
+            border: "1px solid var(--border-subtle)",
+          }}
+        >
+          <Mail size={18} className="mt-0.5 shrink-0 text-[var(--accent)]" />
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-[var(--foreground)]">Clients can reach you without a public email</p>
+            <p className="mt-1 text-xs font-medium leading-relaxed text-[var(--text-secondary)]">
+              Hire requests appear in your VibeTalent inbox.
+              {contactEmail ? (
+                <> Email alerts go to <span className="font-semibold text-[var(--foreground)] break-all">{contactEmail}</span>.</>
+              ) : (
+                <> Email alerts are unavailable because this account has no email address.</>
+              )}
+              {" "}We don't show this sign-in address on your public profile.
+            </p>
+          </div>
+        </div>
+      )}
 
       {verifiedGithub ? (
         <div

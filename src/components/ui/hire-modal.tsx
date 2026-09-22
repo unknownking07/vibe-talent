@@ -215,8 +215,8 @@ export function HireModal({
                 Request Sent!
               </h3>
               <p className="text-sm text-[var(--text-secondary)] font-medium">
-                Your hire request has been sent to @{builderName}. They will get
-                back to you soon.
+                Your request is saved. @{builderName} can see it in their
+                VibeTalent inbox and reply here.
               </p>
               {requestId && (
                 <div
@@ -253,6 +253,10 @@ export function HireModal({
             </div>
           ) : (
             <div className="space-y-4">
+              <p className="text-sm font-medium text-[var(--text-secondary)]">
+                Send a private request. Your email is shared with @{builderName}
+                for follow-up; their email stays private.
+              </p>
               {error && (
                 <div
                   className="p-3 text-sm font-semibold rounded-xl text-[var(--status-error-text)]"
