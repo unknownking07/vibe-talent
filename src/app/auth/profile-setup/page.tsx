@@ -10,7 +10,7 @@ import { armTourTrigger, TOUR_FLAG_ENABLED } from "@/lib/onboarding";
 import { syncGithubMirrors } from "@/lib/github-identity";
 import { submitPendingReferral } from "@/lib/referral-client";
 import { trackFunnelEvent } from "@/lib/funnel-events";
-import { isGithubRecovery } from "@/lib/onboarding-flow";
+import { getGithubReturnPath, isGithubRecovery } from "@/lib/onboarding-flow";
 import {
   saveOnboardingProfile,
   type ProfileWriteClient,
@@ -313,7 +313,7 @@ export default function ProfileSetupPage() {
     // Encode the destination so the inner "?step=2" survives. Without
     // encoding, the second "?" gets parsed as a separate query param on
     // /auth/callback and dropped, sending the user back to step 1.
-    const nextPath = encodeURIComponent("/auth/profile-setup?step=2");
+    const nextPath = encodeURIComponent(getGithubReturnPath(isRecovery));
     const { error: linkError } = await supabase.auth.linkIdentity({
       provider: "github",
       options: {
