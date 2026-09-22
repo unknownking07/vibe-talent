@@ -22,6 +22,8 @@ Use GA4's event counts to locate the largest drop-off, then inspect the relevant
 
 `onboarding_profile_viewed`, `onboarding_links_viewed`, `onboarding_project_viewed`, and `onboarding_go_viewed` mark visits to each step. `onboarding_profile_completed`, `onboarding_links_completed`, `onboarding_project_added`, `onboarding_project_skipped`, and `onboarding_completed` mark successful actions. The project step remains optional. The separate event names make stage counts available without registering GA4 custom dimensions.
 
+Dashboard redirects for an existing profile to repair its GitHub connection use `mode=recovery`. These visits are excluded from new-user onboarding events; a new user's GitHub OAuth return to step 2 remains in the normal flow and proceeds to the optional project step.
+
 ## Production smoke test
 
 Use a builder profile and inbox controlled by the team. Submit one request labeled as a test, confirm its row appears in the builder's dashboard, confirm the email arrives, reply from the builder dashboard, and confirm the sender's chat link shows the reply. Delete the test request afterward. Check the event stream for the corresponding hire events; allow for analytics blocking or processing delay.

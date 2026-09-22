@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { trackFunnelEvent } from "../funnel-events";
+import { isFirstBuilderReply, trackFunnelEvent } from "../funnel-events";
 
 type AnalyticsWindow = Window & {
   gtag?: (...args: unknown[]) => void;
@@ -27,5 +27,21 @@ describe("trackFunnelEvent", () => {
       throw new Error("blocked analytics");
     };
     expect(() => trackFunnelEvent("hire_request_created")).not.toThrow();
+  });
+});
+
+describe("isFirstBuilderReply", () => {
+  const requests = [
+    { id: "new-request", status: "read" },
+    { id: "answered-request", status: "replied" },
+  ];
+
+  it("counts the first response to an existing open request", () => {
+    expect(isFirstBuilderReply(requests, "new-request")).toBe(true);
+  });
+
+  it("does not count later responses or missing requests", () => {
+    expect(isFirstBuilderReply(requests, "answered-request")).toBe(false);
+    expect(isFirstBuilderReply(requests, "missing-request")).toBe(false);
   });
 });

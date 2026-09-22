@@ -31,3 +31,13 @@ export function trackFunnelEvent(event: FunnelEvent): void {
     // Analytics failures must never interrupt signup or hiring.
   }
 }
+
+/** The reply stage counts requests answered, rather than every message sent. */
+export function isFirstBuilderReply(
+  requests: ReadonlyArray<{ id: string; status: string }>,
+  requestId: string,
+): boolean {
+  return requests.some((request) =>
+    request.id === requestId && request.status !== "replied"
+  );
+}

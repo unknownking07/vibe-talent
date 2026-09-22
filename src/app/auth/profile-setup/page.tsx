@@ -10,6 +10,7 @@ import { armTourTrigger, TOUR_FLAG_ENABLED } from "@/lib/onboarding";
 import { syncGithubMirrors } from "@/lib/github-identity";
 import { submitPendingReferral } from "@/lib/referral-client";
 import { trackFunnelEvent } from "@/lib/funnel-events";
+import { isGithubRecovery } from "@/lib/onboarding-flow";
 import {
   saveOnboardingProfile,
   type ProfileWriteClient,
@@ -74,6 +75,7 @@ export default function ProfileSetupPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialStep = Number(searchParams.get("step")) || 1;
+  const isRecovery = isGithubRecovery(searchParams);
   const [step, setStep] = useState(initialStep);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -112,9 +114,9 @@ export default function ProfileSetupPage() {
   });
 
   useEffect(() => {
-    if (!userId || step < 1 || step > STEP_VIEW_EVENTS.length) return;
+    if (!userId || isRecovery || step < 1 || step > STEP_VIEW_EVENTS.length) return;
     trackFunnelEvent(STEP_VIEW_EVENTS[step - 1]);
-  }, [step, userId]);
+  }, [step, userId, isRecovery]);
 
   /* ── Auth check ──────────────────────────────────────────── */
 
@@ -390,9 +392,10 @@ export default function ProfileSetupPage() {
         if (dbError) throw dbError;
       }
 
-      // If returning user (came from dashboard redirect), skip to streak step
-      trackFunnelEvent("onboarding_links_completed");
-      if (initialStep === 2) {
+      // Dashboard recovery skips the optional project step. A new user who
+      // linked GitHub also returns to step 2, but should still see Projects.
+      if (!isRecovery) trackFunnelEvent("onboarding_links_completed");
+      if (isRecovery) {
         setStep(4);
       } else {
         setStep(3);
@@ -938,7 +941,7 @@ export default function ProfileSetupPage() {
         type="button"
         onClick={() => {
           setError("");
-          trackFunnelEvent("onboarding_project_skipped");
+          if (!isRecovery) trackFunnelEvent("onboarding_project_skipped");
           setStep(4);
         }}
         className="w-full text-center text-xs font-semibold text-[var(--text-secondary)] hover:text-[#FF3A00] transition-colors"
@@ -1081,7 +1084,7 @@ export default function ProfileSetupPage() {
               // Gated on the env flag so flipping the kill-switch never leaves
               // a stale signal sitting in the user's tab.
               if (TOUR_FLAG_ENABLED) armTourTrigger();
-              trackFunnelEvent("onboarding_completed");
+              if (!isRecovery) trackFunnelEvent("onboarding_completed");
               router.push("/dashboard");
             }}
             className="btn-brutal btn-brutal-primary w-full justify-center text-sm"
