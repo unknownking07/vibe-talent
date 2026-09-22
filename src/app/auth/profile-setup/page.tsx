@@ -684,7 +684,7 @@ export default function ProfileSetupPage() {
               ) : (
                 <> Email alerts are unavailable because this account has no email address.</>
               )}
-              {" "}We don't show this sign-in address on your public profile.
+              {" "}We don&apos;t show this sign-in address on your public profile.
             </p>
           </div>
         </div>
