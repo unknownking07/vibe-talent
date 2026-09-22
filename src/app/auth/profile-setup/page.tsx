@@ -9,6 +9,8 @@ import { normalizeExternalUrl, normalizeRepoUrl } from "@/lib/url-normalize";
 import { armTourTrigger, TOUR_FLAG_ENABLED } from "@/lib/onboarding";
 import { syncGithubMirrors } from "@/lib/github-identity";
 import { submitPendingReferral } from "@/lib/referral-client";
+import { trackFunnelEvent } from "@/lib/funnel-events";
+import { getGithubReturnPath, isGithubRecovery } from "@/lib/onboarding-flow";
 import {
   saveOnboardingProfile,
   type ProfileWriteClient,
@@ -60,6 +62,12 @@ interface ProjectData {
 /* ── Constants ───────────────────────────────────────────────── */
 
 const STEP_LABELS = ["Profile", "Links", "Project", "Go!"] as const;
+const STEP_VIEW_EVENTS = [
+  "onboarding_profile_viewed",
+  "onboarding_links_viewed",
+  "onboarding_project_viewed",
+  "onboarding_go_viewed",
+] as const;
 
 /* ── Component ───────────────────────────────────────────────── */
 
@@ -67,6 +75,7 @@ export default function ProfileSetupPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialStep = Number(searchParams.get("step")) || 1;
+  const isRecovery = isGithubRecovery(searchParams);
   const [step, setStep] = useState(initialStep);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -103,6 +112,11 @@ export default function ProfileSetupPage() {
     tech_stack: "",
     github_url: "",
   });
+
+  useEffect(() => {
+    if (!userId || isRecovery || step < 1 || step > STEP_VIEW_EVENTS.length) return;
+    trackFunnelEvent(STEP_VIEW_EVENTS[step - 1]);
+  }, [step, userId, isRecovery]);
 
   /* ── Auth check ──────────────────────────────────────────── */
 
@@ -280,6 +294,7 @@ export default function ProfileSetupPage() {
       } catch {
         // Don't block onboarding if recalculation fails
       }
+      trackFunnelEvent("onboarding_profile_completed");
       setStep(2);
     } catch (err: unknown) {
       if (isUsernameTakenError(err)) {
@@ -298,7 +313,7 @@ export default function ProfileSetupPage() {
     // Encode the destination so the inner "?step=2" survives. Without
     // encoding, the second "?" gets parsed as a separate query param on
     // /auth/callback and dropped, sending the user back to step 1.
-    const nextPath = encodeURIComponent("/auth/profile-setup?step=2");
+    const nextPath = encodeURIComponent(getGithubReturnPath(isRecovery));
     const { error: linkError } = await supabase.auth.linkIdentity({
       provider: "github",
       options: {
@@ -377,8 +392,10 @@ export default function ProfileSetupPage() {
         if (dbError) throw dbError;
       }
 
-      // If returning user (came from dashboard redirect), skip to streak step
-      if (initialStep === 2) {
+      // Dashboard recovery skips the optional project step. A new user who
+      // linked GitHub also returns to step 2, but should still see Projects.
+      if (!isRecovery) trackFunnelEvent("onboarding_links_completed");
+      if (isRecovery) {
         setStep(4);
       } else {
         setStep(3);
@@ -444,6 +461,7 @@ export default function ProfileSetupPage() {
         throw new Error(data.error || "Failed to save project");
       }
 
+      trackFunnelEvent("onboarding_project_added");
       setStep(4);
     } catch (err: unknown) {
       const message =
@@ -923,6 +941,7 @@ export default function ProfileSetupPage() {
         type="button"
         onClick={() => {
           setError("");
+          if (!isRecovery) trackFunnelEvent("onboarding_project_skipped");
           setStep(4);
         }}
         className="w-full text-center text-xs font-semibold text-[var(--text-secondary)] hover:text-[#FF3A00] transition-colors"
@@ -1065,6 +1084,7 @@ export default function ProfileSetupPage() {
               // Gated on the env flag so flipping the kill-switch never leaves
               // a stale signal sitting in the user's tab.
               if (TOUR_FLAG_ENABLED) armTourTrigger();
+              if (!isRecovery) trackFunnelEvent("onboarding_completed");
               router.push("/dashboard");
             }}
             className="btn-brutal btn-brutal-primary w-full justify-center text-sm"

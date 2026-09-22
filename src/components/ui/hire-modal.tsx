@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Send } from "lucide-react";
 import { CheckCircle, Lock } from "@phosphor-icons/react";
 import { createClient } from "@/lib/supabase/client";
+import { trackFunnelEvent } from "@/lib/funnel-events";
 
 interface HireModalProps {
   builderId: string;
@@ -38,6 +39,7 @@ export function HireModal({
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
   const [requestId, setRequestId] = useState<string | null>(null);
+  const formStarted = useRef(false);
   const [loggedInUser, setLoggedInUser] = useState<{
     name: string;
     email: string;
@@ -45,6 +47,7 @@ export function HireModal({
 
   useEffect(() => {
     if (!isOpen) return;
+    formStarted.current = false;
     // Check if user is logged in and auto-fill their info
     const checkAuth = async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -80,15 +83,26 @@ export function HireModal({
 
   if (!isOpen) return null;
 
+  const handleFormFocus = () => {
+    if (formStarted.current) return;
+    formStarted.current = true;
+    trackFunnelEvent("hire_form_started");
+  };
+
+  const showValidationError = (message: string) => {
+    setError(message);
+    trackFunnelEvent("hire_request_validation_failed");
+  };
+
   const handleSubmit = async () => {
     if (!form.sender_name || !form.sender_email || !form.message) {
-      setError("Please fill in all required fields.");
+      showValidationError("Please fill in all required fields.");
       return;
     }
     // Name validation: min 2 chars, letters and spaces only
     const nameClean = form.sender_name.trim();
     if (nameClean.length < 2 || !NAME_REGEX.test(nameClean)) {
-      setError(
+      showValidationError(
         "Please enter a valid name (letters only, at least 2 characters).",
       );
       return;
@@ -96,29 +110,30 @@ export function HireModal({
     // Email validation - strict
     const emailClean = form.sender_email.trim().toLowerCase();
     if (!EMAIL_REGEX.test(emailClean)) {
-      setError("Please enter a valid email address.");
+      showValidationError("Please enter a valid email address.");
       return;
     }
     // Block disposable emails
     const emailDomain = emailClean.split("@")[1];
     if (BLOCKED_DOMAINS.includes(emailDomain)) {
-      setError("Please use a real email address, not a disposable one.");
+      showValidationError("Please use a real email address, not a disposable one.");
       return;
     }
     // Block obviously fake emails
     if (emailDomain.length < 4 || !emailDomain.includes(".")) {
-      setError("Please enter a valid email address.");
+      showValidationError("Please enter a valid email address.");
       return;
     }
     // Message validation: min 20 chars
     if (form.message.trim().length < 20) {
-      setError(
+      showValidationError(
         "Please write a more detailed message (at least 20 characters).",
       );
       return;
     }
     setError("");
     setSending(true);
+    trackFunnelEvent("hire_request_submitted");
 
     try {
       const res = await fetch("/api/hire", {
@@ -136,6 +151,7 @@ export function HireModal({
       if (!res.ok) {
         const resData = await res.json();
         setError(resData.error || "Failed to send request.");
+        trackFunnelEvent("hire_request_api_failed");
         setSending(false);
         return;
       }
@@ -143,9 +159,11 @@ export function HireModal({
       const resData = await res.json();
       setRequestId(resData.id || null);
       setSent(true);
+      trackFunnelEvent("hire_request_created");
       setSending(false);
     } catch {
       setError("Something went wrong. Please try again.");
+      trackFunnelEvent("hire_request_network_failed");
       setSending(false);
     }
   };
@@ -252,7 +270,7 @@ export function HireModal({
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4" onFocusCapture={handleFormFocus}>
               <p className="text-sm font-medium text-[var(--text-secondary)]">
                 Send a private request. Your email is shared with @{builderName}
                 for follow-up; their email stays private.
