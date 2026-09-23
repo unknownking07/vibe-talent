@@ -41,7 +41,9 @@ describe("GET /api/github/repos", () => {
 
   it("returns only safe public repo details from the linked account", async () => {
     getUser.mockResolvedValue({ data: { user: linkedUser }, error: null });
-    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify([{
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 42, login: "octocat" }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{
       name: "hello-world", html_url: "https://github.com/octocat/hello-world",
       description: "Useful", language: "TypeScript", private: false,
       fork: false, archived: false, disabled: false,
@@ -55,14 +57,38 @@ describe("GET /api/github/repos", () => {
       name: "hello-world", description: "Useful", language: "TypeScript",
       github_url: "https://github.com/octocat/hello-world",
     }] });
-    expect(vi.mocked(fetch).mock.calls[0][0]).toContain("/users/octocat/repos?");
+    expect(vi.mocked(fetch).mock.calls[1][0]).toContain("/users/octocat/repos?");
   });
 
   it("reports an upstream failure without showing a stale or invented list", async () => {
     getUser.mockResolvedValue({ data: { user: linkedUser }, error: null });
-    vi.mocked(fetch).mockResolvedValue(new Response("failed", { status: 500 }));
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 42, login: "octocat" }), { status: 200 }))
+      .mockResolvedValueOnce(new Response("failed", { status: 500 }));
     const response = await GET(request());
     expect(response.status).toBe(502);
     expect(await response.json()).toHaveProperty("error");
+  });
+
+  it("uses the stable GitHub ID to find repos after a username change", async () => {
+    getUser.mockResolvedValue({ data: { user: linkedUser }, error: null });
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 42, login: "new-name" }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{
+        name: "app", html_url: "https://github.com/new-name/app",
+        description: "My app", language: "TypeScript", private: false,
+        fork: false, archived: false, disabled: false,
+        owner: { login: "new-name", id: 42 },
+      }]), { status: 200 }));
+
+    const response = await GET(request());
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ repos: [{
+      name: "app", description: "My app", language: "TypeScript",
+      github_url: "https://github.com/new-name/app",
+    }] });
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe("https://api.github.com/user/42");
+    expect(vi.mocked(fetch).mock.calls[1][0]).toContain("/users/new-name/repos?");
   });
 });

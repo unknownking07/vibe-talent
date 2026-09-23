@@ -20,8 +20,10 @@ export function GithubRepoPicker({ selectedUrl, onSelect }: Props) {
     const controller = new AbortController();
     fetch("/api/github/repos", { signal: controller.signal })
       .then(async (response) => {
-        const body = await response.json();
-        if (!response.ok) throw new Error(body.error || "Could not load repositories.");
+        const body = await response.json().catch(() => null);
+        if (!response.ok || !body || !Array.isArray(body.repos)) {
+          throw new Error(typeof body?.error === "string" ? body.error : "Could not load repositories.");
+        }
         return body.repos as RepoPickerOption[];
       })
       .then((items) => setRepos(items))
@@ -88,7 +90,7 @@ export function GithubRepoPicker({ selectedUrl, onSelect }: Props) {
               />
             </label>
           )}
-          <div className="max-h-64 overflow-y-auto space-y-1.5" aria-label="GitHub repositories">
+          <div role="group" className="max-h-64 overflow-y-auto space-y-1.5" aria-label="GitHub repositories">
             {visible.map((repo) => (
               <button
                 key={repo.github_url}

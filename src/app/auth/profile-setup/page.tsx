@@ -854,12 +854,12 @@ export default function ProfileSetupPage() {
       <GithubRepoPicker
         selectedUrl={project.github_url}
         onSelect={(repo) => {
-          setProject({
+          setProject((previous) => ({
             title: repo.name,
-            description: repo.description,
-            tech_stack: repo.language,
+            description: repo.description || previous.description,
+            tech_stack: repo.language || previous.tech_stack,
             github_url: repo.github_url,
-          });
+          }));
           setError("");
         }}
       />
