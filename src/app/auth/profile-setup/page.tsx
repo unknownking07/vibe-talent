@@ -23,6 +23,7 @@ import {
   type UsernameLookupClient,
 } from "@/lib/username";
 import { useUsernameAvailability } from "@/lib/use-username-availability";
+import { GithubRepoPicker } from "@/components/onboarding/github-repo-picker";
 import {
   Flame,
   Github,
@@ -849,6 +850,19 @@ export default function ProfileSetupPage() {
           </p>
         </div>
       </div>
+
+      <GithubRepoPicker
+        selectedUrl={project.github_url}
+        onSelect={(repo) => {
+          setProject({
+            title: repo.name,
+            description: repo.description,
+            tech_stack: repo.language,
+            github_url: repo.github_url,
+          });
+          setError("");
+        }}
+      />
 
       <div>
         <label className="text-xs font-semibold text-[var(--text-secondary)] mb-1.5 block">
