@@ -148,23 +148,20 @@ export function ProofWallHero({
         />
         {/* Two doors, and hiring is the primary one. VibeTalent is sold as a
             hiring platform: demand is the scarce side, builder supply is not,
-            so the accent goes to /explore and builder signup takes the quieter
+            so the accent goes to /agent/find and builder signup takes the quieter
             slot. Keeping both here is what stops the builder/hirer fork below
             from reading as an abrupt "who are you?" — that section is now the
             detailed version of a choice the hero already offered.
 
-            "Hire builders" is deliberately unqualified and names the intent
-            rather than the mechanic. The old label led with "Hiring?", which
-            suits a secondary aside but makes a primary CTA hedge. "Start your
-            streak" needs no qualifier either — only builders have streaks, so
-            it self-selects on its own. */}
+            The hiring pilot starts with a project brief so founders can get
+            automatic matches and optionally ask for a human shortlist. */}
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           <Link
-            href="/explore"
+            href="/agent/find"
             className="inline-flex h-12 w-full sm:w-auto items-center justify-center rounded-xl px-6 text-sm font-semibold text-white transition-[background-color,transform] hover:bg-[var(--accent-hover)] active:scale-[0.98]"
             style={{ backgroundColor: "var(--accent)" }}
           >
-            Hire builders
+            Find builders
           </Link>
           <Link
             href="/auth/signup"

@@ -6,6 +6,7 @@ import { matchUsers } from "@/lib/agent-scoring";
 import type { UserWithSocials } from "@/lib/types/database";
 import { AgentThinking } from "@/components/agent/agent-thinking";
 import { MatchCard } from "@/components/agent/match-card";
+import { FounderShortlistForm } from "@/components/agent/founder-shortlist-form";
 import { Search } from "lucide-react";
 import { BotMark } from "@/components/icons/brand";
 import type { MatchResult, TaskRequest, AgentStep } from "@/lib/types/agent";
@@ -32,6 +33,7 @@ export default function FindTalentPage() {
     budget: "500_2k",
   });
   const [techInput, setTechInput] = useState("");
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     fetchUsers().then(setAllUsers);
@@ -40,6 +42,11 @@ export default function FindTalentPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const tech = techInput.split(",").map(t => t.trim()).filter(Boolean);
+    if (tech.length > 10 || tech.some(t => t.length > 50)) {
+      setFormError("Add up to 10 technologies, with 50 characters or fewer each.");
+      return;
+    }
+    setFormError("");
     setForm(prev => ({ ...prev, tech_stack: tech }));
     setSubmitted(true);
     setThinking(true);
@@ -93,6 +100,8 @@ export default function FindTalentPage() {
                 placeholder="Describe what you're building, the problem you're solving, and what kind of builder you need..."
                 className="input-brutal resize-none"
                 required
+                minLength={20}
+                maxLength={3000}
               />
             </div>
 
@@ -107,7 +116,8 @@ export default function FindTalentPage() {
                 placeholder="Next.js, TypeScript, Supabase, TailwindCSS..."
                 className="input-brutal"
               />
-              <p className="text-xs text-[var(--text-muted-soft)] mt-1 font-medium">Comma-separated</p>
+              <p className="text-xs text-[var(--text-muted-soft)] mt-1 font-medium">Comma-separated, up to 10 technologies</p>
+              {formError && <p role="alert" className="mt-1 text-sm text-red-500">{formError}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -213,9 +223,24 @@ export default function FindTalentPage() {
             <MatchCard key={match.user.id} match={match} rank={i + 1} />
           ))}
 
+        </div>
+      )}
+
+      {!thinking && matches.length === 0 && (
+        <p className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-4 text-sm text-[var(--text-secondary)]">
+          No close matches surfaced automatically. We can still review your brief and look for relevant builders.
+        </p>
+      )}
+
+      {!thinking && (
+        <div className="mt-6 space-y-4">
+          <FounderShortlistForm
+            brief={{ ...form, tech_stack: techInput.split(",").map((tech) => tech.trim()).filter(Boolean) }}
+          />
           <button
+            type="button"
             onClick={() => { setSubmitted(false); setMatches([]); }}
-            className="btn-brutal btn-brutal-secondary text-sm w-full justify-center mt-4"
+            className="btn-brutal btn-brutal-secondary text-sm w-full justify-center"
           >
             New Search
           </button>

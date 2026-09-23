@@ -18,7 +18,7 @@ import {
  * above. The builder card stays the quieter second option.
  *
  * This section expands a choice the hero has already offered: its primary
- * "Hire builders" button points at the same /explore route as this card, and
+ * "Find builders" button points at the same /agent/find route as this card, and
  * its secondary at the same signup as the other. Keep the two in sync — if the
  * hero loses that pairing, this stops being the detailed version of a question
  * already asked and goes back to interrupting the page with "who are you?".
@@ -47,9 +47,9 @@ export function ForkHero() {
             </p>
             <ul className="mt-4 space-y-2">
               {[
-                "Ranked by proof of work, not resumes",
-                "Browse by streak, stack & vibe score",
-                "See live projects before you reach out",
+                "Describe the project you need built",
+                "See builders with shipped work",
+                "Ask for a human shortlist if you need help",
               ].map((f) => (
                 <li
                   key={f}
@@ -65,11 +65,11 @@ export function ForkHero() {
               ))}
             </ul>
             <Link
-              href="/explore"
+              href="/agent/find"
               className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-xl text-sm font-semibold text-white transition-[background-color,transform] hover:bg-[var(--accent-hover)] active:scale-[0.98]"
               style={{ backgroundColor: "var(--accent)" }}
             >
-              Explore Talent
+              Find Builders
             </Link>
           </div>
 
