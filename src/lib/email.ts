@@ -1,6 +1,8 @@
 import { Resend } from "resend";
 import { getSiteUrl } from "@/lib/seo";
 import { mondayOf } from "@/lib/cron-jobs/weekly-snapshot";
+import { SUPPORT_EMAIL } from "@/lib/support-knowledge";
+import type { FounderBriefInsert } from "@/lib/founder-brief";
 
 let resend: Resend | null = null;
 
@@ -23,6 +25,39 @@ function getResend(): Resend | null {
 
 const FROM = "VibeTalent <notifications@vibetalent.work>";
 const REPLY_TO = "hello@vibetalent.work";
+
+/** Internal notification only. The brief is saved before this is called. */
+export async function sendFounderBriefNotification(
+  brief: FounderBriefInsert & { id: string },
+): Promise<void> {
+  const client = getResend();
+  if (!client) {
+    console.error("Resend not configured: founder brief notification unavailable");
+    return;
+  }
+
+  const text = [
+    `New founder brief: ${brief.id}`,
+    `From: ${brief.name} <${brief.email}>`,
+    `Project type: ${brief.project_type}`,
+    `Timeline: ${brief.timeline}`,
+    `Budget: ${brief.budget}`,
+    `Tech: ${brief.tech_stack.join(", ") || "Not specified"}`,
+    "",
+    brief.description,
+    "",
+    "Verify candidate availability before any introduction.",
+  ].join("\n");
+  const { error } = await client.emails.send({
+    from: FROM,
+    replyTo: brief.email,
+    to: SUPPORT_EMAIL,
+    subject: "New founder shortlist request",
+    text,
+    html: `<h1>New founder shortlist request</h1><p><strong>${escapeHtml(brief.name)}</strong> (${escapeHtml(brief.email)})</p><p>Type: ${escapeHtml(brief.project_type)} · Timeline: ${escapeHtml(brief.timeline)} · Budget: ${escapeHtml(brief.budget)}</p><p>Tech: ${escapeHtml(brief.tech_stack.join(", ") || "Not specified")}</p><pre style="white-space:pre-wrap;font:inherit">${escapeHtml(brief.description)}</pre><p>Brief ID: ${escapeHtml(brief.id)}</p><p>Verify candidate availability before any introduction.</p>`,
+  });
+  if (error) throw error;
+}
 
 function unsubUrl(email: string) {
   return `${getSiteUrl()}/settings?tab=emails&ref=unsubscribe&email=${encodeURIComponent(email)}`;

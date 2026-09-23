@@ -18,6 +18,10 @@ The site sends these GA4 events when `NEXT_PUBLIC_GA_ID` is configured. Events c
 
 Use GA4's event counts to locate the largest drop-off, then inspect the relevant UX. Browser events can be blocked, so use the database's `hire_requests` and `hire_messages` rows for actual request and reply totals. The existing `profile_views` table deduplicates views and excludes self-views, while `hire_profile_viewed` counts browser renders; do not compare their raw counts as a conversion rate.
 
+## Founder shortlist pilot
+
+`founder_shortlist_opened` records opening the optional contact form on `/agent/find`. `founder_brief_submitted` records the submit attempt, and `founder_brief_created` records a successful API response. Event names carry no contact details or project text. The private `founder_briefs` table is the source of truth for submissions and manual status (`new` through `won` or `lost`). A paid trial is builder project value; it is not VibeTalent revenue. Before an introduction, confirm a builder's availability directly rather than inferring it from a GitHub streak.
+
 ## Onboarding
 
 `onboarding_profile_viewed`, `onboarding_links_viewed`, `onboarding_project_viewed`, and `onboarding_go_viewed` mark visits to each step. `onboarding_profile_completed`, `onboarding_links_completed`, `onboarding_project_added`, `onboarding_project_skipped`, and `onboarding_completed` mark successful actions. The project step remains optional. The separate event names make stage counts available without registering GA4 custom dimensions.

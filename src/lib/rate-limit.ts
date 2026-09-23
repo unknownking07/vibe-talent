@@ -95,6 +95,7 @@ export const walletWatchLimiter = createRateLimiter(
 );
 export const hireApiLimiter = createRateLimiter("hire-api", 5, "1 h");
 export const feedbackLimiter = createRateLimiter("feedback", 10, "1 h");
+export const founderBriefLimiter = createRateLimiter("founder-briefs", 5, "1 h");
 // Burn endpoints: each call verifies a real on-chain transaction, so the cost
 // of abuse is RPC round trips rather than spam. Generous enough for retries
 // while a transaction propagates (the client polls up to 6 times).

@@ -24,7 +24,7 @@ export default function PrivacyPolicyPage() {
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbLd) }}
       />
       <h1 className="text-3xl font-bold text-[var(--foreground)] mb-8">Privacy Policy</h1>
-      <p className="text-sm text-[var(--text-muted)] mb-8">Last updated: April 1, 2026</p>
+      <p className="text-sm text-[var(--text-muted)] mb-8">Last updated: September 23, 2026</p>
 
       <div className="space-y-6 text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
         <section className="p-6 rounded-2xl" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}>
@@ -44,6 +44,7 @@ export default function PrivacyPolicyPage() {
             <li><strong>Account Information:</strong> When you sign up, we collect your email address and profile information through GitHub or Google OAuth. We do not store your passwords.</li>
             <li><strong>GitHub Data:</strong> With your consent, we access your public GitHub profile, contribution history, repository metadata, and commit activity to calculate your coding streak and vibe score.</li>
             <li><strong>Profile Information:</strong> Any information you voluntarily add to your profile, including bio, social links, and project descriptions.</li>
+            <li><strong>Hiring Requests:</strong> If you request a human shortlist, we collect the name, email, project description, technologies, timing, and budget range you submit. These briefs are private and are not included in analytics events.</li>
             <li><strong>Usage Data:</strong> We automatically collect information about how you interact with the platform, including pages visited, features used, and referring URLs.</li>
             <li><strong>Analytics:</strong> We use Google Analytics to collect anonymized usage statistics to improve the platform.</li>
             <li><strong>Wallet and Payment Data:</strong> If you use the Featured Projects feature, we collect your blockchain wallet address and record on-chain transaction data (USDC payments on Base network). We do not store private keys or seed phrases. All payment transactions are processed on-chain and are publicly verifiable.</li>
@@ -54,6 +55,7 @@ export default function PrivacyPolicyPage() {
           <h2 className="text-lg font-bold text-[var(--foreground)] mb-4">3. How We Use Your Information</h2>
           <ul className="list-disc pl-6 space-y-2">
             <li>To create and maintain your developer profile on the platform</li>
+            <li>To review hiring requests, contact requesters about their projects, and arrange introductions when both sides agree</li>
             <li>To calculate and display your vibe score, coding streak, and badge level</li>
             <li>To enable clients to discover and contact you for hiring opportunities</li>
             <li>To send you notifications about hire requests, endorsements, and streak milestones</li>
@@ -68,7 +70,8 @@ export default function PrivacyPolicyPage() {
           <p className="mb-3">We do not sell your personal information. We may share data in the following cases:</p>
           <ul className="list-disc pl-6 space-y-2">
             <li><strong>Public Profile:</strong> Your profile, projects, streak, and vibe score are publicly visible by design. This is the core value proposition of the platform.</li>
-            <li><strong>Service Providers:</strong> We use third-party services (Supabase for database and authentication, Vercel for hosting, Google Analytics for usage insights) that process data on our behalf.</li>
+            <li><strong>Hiring Introductions:</strong> General shortlist briefs are not public. We share relevant project and contact details with a builder only after checking with the requester and the builder about an introduction.</li>
+            <li><strong>Service Providers:</strong> We use third-party services (Supabase for database and authentication, Cloudflare for hosting, Resend for email, and Google Analytics for usage insights) that process data on our behalf.</li>
             <li><strong>Legal Requirements:</strong> We may disclose information if required by law or to protect our rights.</li>
           </ul>
         </section>
