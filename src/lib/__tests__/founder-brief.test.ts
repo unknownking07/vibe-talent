@@ -33,6 +33,14 @@ describe("parseFounderBrief", () => {
     expect(parseFounderBrief({ ...valid, email: "founder@example.com" }).ok).toBe(false);
   });
 
+  it("accepts founder names with Unicode letters and punctuation", () => {
+    for (const name of ["José", "O’Connor", "李雷"]) {
+      const result = parseFounderBrief({ ...valid, name });
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.name).toBe(name);
+    }
+  });
+
   it("rejects vague or oversized briefs and unsupported option values", () => {
     expect(parseFounderBrief({ ...valid, description: "Build an app" }).ok).toBe(false);
     expect(parseFounderBrief({ ...valid, description: "x".repeat(3001) }).ok).toBe(false);

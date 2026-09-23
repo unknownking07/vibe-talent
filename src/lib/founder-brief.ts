@@ -1,5 +1,5 @@
 import type { TaskRequest } from "@/lib/types/agent";
-import { validateEmail, validateName } from "@/lib/validation";
+import { validateEmail } from "@/lib/validation";
 
 export type FounderBriefInsert = TaskRequest & {
   name: string;
@@ -31,11 +31,13 @@ export function parseFounderBrief(raw: unknown): ParsedBrief {
   if (input.consent !== true) {
     return { ok: false, error: "Please agree to be contacted about this request." };
   }
-  if (typeof input.name !== "string" || input.name.length > 100) {
+  if (typeof input.name !== "string") {
     return { ok: false, error: "Enter your name (100 characters or fewer)." };
   }
-  const name = validateName(input.name);
-  if (!name.valid) return { ok: false, error: name.error || "Enter a valid name." };
+  const name = input.name.trim();
+  if (name.length < 2 || name.length > 100 || !/^[\p{L}\p{M} .'\u2019-]+$/u.test(name)) {
+    return { ok: false, error: "Enter a valid name (2 to 100 characters)." };
+  }
 
   if (typeof input.email !== "string" || input.email.length > 254) {
     return { ok: false, error: "Enter a valid email address." };
@@ -80,7 +82,7 @@ export function parseFounderBrief(raw: unknown): ParsedBrief {
   return {
     ok: true,
     value: {
-      name: name.cleaned,
+      name,
       email: email.cleaned,
       description,
       tech_stack: techStack,
