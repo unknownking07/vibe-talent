@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { jsonLdHtml } from "@/lib/json-ld";
-import { siteUrl } from "@/lib/seo";
+import { defaultSocialImage, siteUrl } from "@/lib/seo";
 import { CheckCircle, Lightning, Warning } from "@phosphor-icons/react/dist/ssr";
 
 const PAGE_URL = `${siteUrl}/hire-vibe-coders`;
@@ -115,9 +115,11 @@ export const metadata: Metadata = {
     url: PAGE_URL,
     siteName: "VibeTalent",
     type: "article",
+    images: [{ url: defaultSocialImage, width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
+    images: [defaultSocialImage],
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },

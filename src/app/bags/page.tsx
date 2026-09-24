@@ -21,7 +21,7 @@ import {
 import { HACKATHON_PROJECTS } from "@/lib/hackathon-projects";
 import { openRunde } from "./fonts";
 import { jsonLdHtml } from "@/lib/json-ld";
-import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
+import { defaultSocialImage, siteUrl, buildBreadcrumbList } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Bags Builders: Verified Token Launches by Vibe Coders",
@@ -35,9 +35,11 @@ export const metadata: Metadata = {
     url: `${siteUrl}/bags`,
     siteName: "VibeTalent",
     type: "website",
+    images: [{ url: defaultSocialImage, width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
+    images: [defaultSocialImage],
     title: "Bags Builders: Verified Token Launches by Vibe Coders",
     description:
       "Who is actually behind these token launches? Bags launches matched to GitHub-verified builders and their vibe scores.",

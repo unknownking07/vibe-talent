@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 // Canonical site URL — always use www. Vercel 308-redirects the bare apex to www (vercel.json),
 // so www is the stable canonical Google indexes and social crawlers unfurl.
 export const siteUrl = "https://www.vibetalent.work";
+export const defaultSocialImage = `${siteUrl}/og-image-v3.jpg`;
 const siteName = "VibeTalent";
 
 /**
@@ -61,7 +62,7 @@ export function createMetadata(options: {
   const { title, description, path = "", image } = options;
   const fullTitle = `${title} | ${siteName}`;
   const url = `${siteUrl}${path}`;
-  const ogImage = image || `${siteUrl}/og-image-v2.jpg`;
+  const ogImage = image || defaultSocialImage;
 
   return {
     title: fullTitle,

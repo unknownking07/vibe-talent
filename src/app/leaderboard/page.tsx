@@ -1,7 +1,7 @@
 import { fetchAllUsersCached } from "@/lib/supabase/server-queries";
 import { jsonLdHtml } from "@/lib/json-ld";
 import { LeaderboardTabs } from "@/components/leaderboard/leaderboard-tabs";
-import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
+import { defaultSocialImage, siteUrl, buildBreadcrumbList } from "@/lib/seo";
 import type { Metadata } from "next";
 import { Trophy } from "@phosphor-icons/react/dist/ssr";
 
@@ -18,9 +18,11 @@ export const metadata: Metadata = {
     url: `${siteUrl}/leaderboard`,
     siteName: "VibeTalent",
     type: "website",
+    images: [{ url: defaultSocialImage, width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
+    images: [defaultSocialImage],
     title: "Top Vibe Coders: VibeTalent Leaderboard",
     description: "See the top developers ranked by vibe score, coding streak, and projects shipped.",
   },

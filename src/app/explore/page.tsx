@@ -1,7 +1,7 @@
 import { fetchAllUsersCached } from "@/lib/supabase/server-queries";
 import { jsonLdHtml } from "@/lib/json-ld";
 import { ExploreContent } from "@/components/explore/explore-content";
-import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
+import { defaultSocialImage, siteUrl, buildBreadcrumbList } from "@/lib/seo";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -17,9 +17,11 @@ export const metadata: Metadata = {
     url: `${siteUrl}/explore`,
     siteName: "VibeTalent",
     type: "website",
+    images: [{ url: defaultSocialImage, width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
+    images: [defaultSocialImage],
     title: "Explore Vibe Coders: VibeTalent",
     description: "Browse developers by streak, skills, and vibe score. Find the perfect builder for your project.",
   },

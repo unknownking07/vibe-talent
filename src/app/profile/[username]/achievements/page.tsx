@@ -5,7 +5,7 @@ import { fetchUserByUsernameCached } from "@/lib/supabase/server-queries";
 import { fetchAchievementCounters } from "@/lib/achievements/fetch";
 import { computeAchievements, toAchievementView } from "@/lib/achievements/definitions";
 import { AchievementsView } from "@/components/achievements/achievements-view";
-import { siteUrl } from "@/lib/seo";
+import { defaultSocialImage, siteUrl } from "@/lib/seo";
 
 export async function generateMetadata({
   params,
@@ -36,9 +36,11 @@ export async function generateMetadata({
       url: `${siteUrl}/profile/${encodedUsername}/achievements`,
       siteName: "VibeTalent",
       type: "profile",
+      images: [{ url: defaultSocialImage, width: 1200, height: 630 }],
     },
     twitter: {
       card: "summary_large_image",
+      images: [defaultSocialImage],
       title,
       description,
     },
