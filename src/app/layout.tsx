@@ -7,7 +7,7 @@ import { SignupBar } from "@/components/layout/signup-bar";
 import { FloatingChat } from "@/components/layout/floating-chat";
 import { PromoBillboard } from "@/components/ui/promo-billboard";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
-import { siteUrl } from "@/lib/seo";
+import { defaultSocialImage, siteUrl } from "@/lib/seo";
 import "./globals.css";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
@@ -36,27 +36,27 @@ export const metadata: Metadata = {
     "The marketplace for vibe coders. Build your reputation through streaks, proof of work, and shipping projects consistently.",
   metadataBase: new URL(siteUrl),
   openGraph: {
-    title: "VibeTalent: Find Vibe Coders Who Actually Ship",
-    description: "The marketplace for vibe coders who ship consistently.",
+    title: "VibeTalent: Hire Builders Who Ship",
+    description: "Discover builders through real projects and verified proof of work.",
     url: siteUrl,
     siteName: "VibeTalent",
     type: "website",
     locale: "en_US",
     images: [
       {
-        url: `${siteUrl}/og-image-v2.jpg`,
+        url: defaultSocialImage,
         width: 1200,
         height: 630,
-        alt: "VibeTalent: Find Vibe Coders Who Actually Ship",
+        alt: "VibeTalent: Hire Builders Who Ship",
         type: "image/jpeg",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "VibeTalent: Find Vibe Coders Who Actually Ship",
-    description: "The marketplace for vibe coders who ship consistently.",
-    images: [`${siteUrl}/og-image-v2.jpg`],
+    title: "VibeTalent: Hire Builders Who Ship",
+    description: "Discover builders through real projects and verified proof of work.",
+    images: [defaultSocialImage],
     site: "@vibetalentwork",
     creator: "@abhiontwt",
   },

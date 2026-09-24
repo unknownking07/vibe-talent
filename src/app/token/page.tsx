@@ -4,7 +4,7 @@ import { ExternalLink } from "lucide-react";
 import { Fire, Shield, TrendUp } from "@phosphor-icons/react/dist/ssr";
 import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
 import { jsonLdHtml } from "@/lib/json-ld";
-import { siteUrl } from "@/lib/seo";
+import { defaultSocialImage, siteUrl } from "@/lib/seo";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTokenStats, formatTokenCount, formatTokenPrice } from "@/lib/token-stats";
 import {
@@ -44,9 +44,11 @@ export const metadata: Metadata = {
     url: `${siteUrl}/token`,
     siteName: "VibeTalent",
     type: "website",
+    images: [{ url: defaultSocialImage, width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
+    images: [defaultSocialImage],
     title: "$VIBE Token: Burn to Vouch",
     description:
       "Burn $VIBE to back builders. Hold it for free streak freezes. Live on Solana.",

@@ -3,7 +3,7 @@ import { jsonLdHtml } from "@/lib/json-ld";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { BookOpen } from "@phosphor-icons/react/dist/ssr";
-import { siteUrl } from "@/lib/seo";
+import { defaultSocialImage, siteUrl } from "@/lib/seo";
 import { GLOSSARY_TERMS } from "@/lib/glossary";
 
 const PAGE_URL = `${siteUrl}/glossary`;
@@ -21,9 +21,11 @@ export const metadata: Metadata = {
     url: PAGE_URL,
     siteName: "VibeTalent",
     type: "website",
+    images: [{ url: defaultSocialImage, width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
+    images: [defaultSocialImage],
     title: PAGE_TITLE,
     description: PAGE_DESCRIPTION,
   },

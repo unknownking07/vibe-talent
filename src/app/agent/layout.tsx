@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { jsonLdHtml } from "@/lib/json-ld";
-import { siteUrl } from "@/lib/seo";
+import { defaultSocialImage, siteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Find a Developer with AI: VibeFinder Bot",
@@ -15,9 +15,11 @@ export const metadata: Metadata = {
     url: `${siteUrl}/agent`,
     siteName: "VibeTalent",
     type: "website",
+    images: [{ url: defaultSocialImage, width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
+    images: [defaultSocialImage],
     title: "Find a Developer with AI: VibeTalent",
     description: "Describe your project and let VibeFinder Bot match you with the right developer.",
   },

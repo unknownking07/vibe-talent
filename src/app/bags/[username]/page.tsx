@@ -26,7 +26,7 @@ import {
 } from "@/lib/token-market";
 import { TokenCard } from "@/components/bags/token-card";
 import { jsonLdHtml } from "@/lib/json-ld";
-import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
+import { defaultSocialImage, siteUrl, buildBreadcrumbList } from "@/lib/seo";
 
 // Market data is cached for the same five minutes upstream; matching it here
 // keeps the page and its numbers on one clock.
@@ -183,8 +183,9 @@ export async function generateMetadata({
       description,
       url: `${siteUrl}/bags/${username}`,
       type: "profile",
+      images: [{ url: defaultSocialImage, width: 1200, height: 630 }],
     },
-    twitter: { card: "summary_large_image", title, description },
+    twitter: { card: "summary_large_image", images: [defaultSocialImage], title, description },
   };
 }
 

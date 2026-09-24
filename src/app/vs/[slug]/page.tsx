@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { X, ArrowRight } from "lucide-react";
 import { Check, Fire, Lightning, Shield } from "@phosphor-icons/react/dist/ssr";
-import { siteUrl } from "@/lib/seo";
+import { defaultSocialImage, siteUrl } from "@/lib/seo";
 import { COMPARISONS, getComparison } from "@/lib/comparisons";
 
 export function generateStaticParams() {
@@ -31,9 +31,11 @@ export async function generateMetadata({
       url,
       siteName: "VibeTalent",
       type: "article",
+      images: [{ url: defaultSocialImage, width: 1200, height: 630 }],
     },
     twitter: {
       card: "summary_large_image",
+      images: [defaultSocialImage],
       title: c.title,
       description: c.description,
     },

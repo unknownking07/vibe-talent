@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { jsonLdHtml } from "@/lib/json-ld";
-import { siteUrl } from "@/lib/seo";
+import { defaultSocialImage, siteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Live Feed: See What Builders Are Shipping",
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: `${siteUrl}/og-image-v2.jpg`,
+        url: defaultSocialImage,
         width: 1200,
         height: 630,
         alt: "VibeTalent Live Feed",
@@ -24,6 +24,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Live Feed: VibeTalent",
     description: "Real-time GitHub activity from vibe coders. Watch developers push code, ship projects, and maintain coding streaks.",
+    images: [defaultSocialImage],
   },
   alternates: {
     canonical: `${siteUrl}/feed`,

@@ -171,9 +171,9 @@ export default async function HomePage() {
                   "VibeTalent is the vibe coders marketplace: hire AI-assisted developers ranked by coding streaks, shipped projects, and verifiable proof of work instead of resumes.",
                 logo: {
                   "@type": "ImageObject",
-                  url: `${siteUrl}/og-image-v2.jpg`,
-                  width: 1200,
-                  height: 630,
+                  url: `${siteUrl}/logo.png`,
+                  width: 669,
+                  height: 669,
                 },
                 contactPoint: {
                   "@type": "ContactPoint",

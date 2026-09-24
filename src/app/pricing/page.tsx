@@ -4,7 +4,7 @@ import { jsonLdHtml } from "@/lib/json-ld";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Megaphone, Question, Shield, Wallet } from "@phosphor-icons/react/dist/ssr";
-import { siteUrl, buildBreadcrumbList } from "@/lib/seo";
+import { siteUrl, defaultSocialImage, buildBreadcrumbList } from "@/lib/seo";
 import { getPriceSnapshot, formatUsd, type PriceSnapshot } from "@/lib/pricing";
 import { PricingTiers } from "./pricing-tiers";
 import { FeatureCheckout } from "./feature-checkout";
@@ -57,13 +57,13 @@ export async function generateMetadata(): Promise<Metadata> {
       description,
       url: PAGE_URL,
       type: "website",
-      images: [{ url: `${siteUrl}/og-image-v2.jpg`, width: 1200, height: 630 }],
+      images: [{ url: defaultSocialImage, width: 1200, height: 630 }],
     },
     twitter: {
       card: "summary_large_image",
       title: `${PAGE_TITLE} | VibeTalent`,
       description,
-      images: [`${siteUrl}/og-image-v2.jpg`],
+      images: [defaultSocialImage],
     },
   };
 }

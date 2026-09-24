@@ -3,7 +3,7 @@ import { jsonLdHtml } from "@/lib/json-ld";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { Code, Fire, GithubLogo, Lightning, Trophy, UsersThree } from "@phosphor-icons/react/dist/ssr";
-import { siteUrl } from "@/lib/seo";
+import { defaultSocialImage, siteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: { absolute: "About VibeTalent: Built by @abhiontwt" },
@@ -17,9 +17,11 @@ export const metadata: Metadata = {
     url: `${siteUrl}/about`,
     siteName: "VibeTalent",
     type: "website",
+    images: [{ url: defaultSocialImage, width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
+    images: [defaultSocialImage],
     title: "About VibeTalent",
     description:
       "The story behind VibeTalent: a marketplace that ranks developers by what they actually ship.",
