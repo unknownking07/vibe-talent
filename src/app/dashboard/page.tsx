@@ -52,6 +52,7 @@ const DASHBOARD_USER_FIELDS =
 const DASHBOARD_PROJECT_FIELDS =
   "id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, endorsement_count, created_at";
 const DASHBOARD_SOCIAL_FIELDS = "id, user_id, twitter, telegram, github, website, farcaster";
+const DASHBOARD_PROFILE_FIELDS = `${DASHBOARD_USER_FIELDS}, social_links(${DASHBOARD_SOCIAL_FIELDS})`;
 const INBOX_FIELDS = "id, sender_name, sender_email, budget, message, status, reply, replied_at, created_at";
 type DashboardUser = UserWithSocials & { solana_wallet?: string | null };
 
@@ -241,10 +242,10 @@ export default function DashboardPage() {
       const sb = supabase as any;
 
       try {
-      // Start all reads together, but only profile + socials gate the page.
+      // Start all reads together, but only the profile gates the page.
       // A slow project list, log history, or inbox count must not hold the
-      // whole dashboard behind its skeleton. allSettled also handles early
-      // failures while we're still waiting for the profile.
+      // whole dashboard behind its skeleton. The one-to-one social link is
+      // embedded in the profile response to avoid a second network request.
       const projectRequest = Promise.allSettled([
         sb.from("projects").select(DASHBOARD_PROJECT_FIELDS).eq("user_id", userId).order("created_at", { ascending: false }),
       ]);
@@ -252,16 +253,12 @@ export default function DashboardPage() {
       const inboxRequest = Promise.allSettled([
         sb.from("hire_requests").select("id", { count: "exact", head: true }).eq("builder_id", userId).eq("status", "new"),
       ]);
-      const results = await Promise.allSettled([
-        sb.from("users").select(DASHBOARD_USER_FIELDS).eq("id", userId).maybeSingle(),
-        sb.from("social_links").select(DASHBOARD_SOCIAL_FIELDS).eq("user_id", userId).maybeSingle(),
-      ]);
+      const { data: profile } = await sb.from("users").select(DASHBOARD_PROFILE_FIELDS).eq("id", userId).maybeSingle();
       if (cancelled) return;
 
-      const profile = results[0].status === "fulfilled" ? results[0].value?.data : null;
       // `let` because the GitHub self-heal block below may overwrite this in
       // memory after repairing the GitHub mirrors.
-      let socials = results[1].status === "fulfilled" ? results[1].value?.data : null;
+      let socials = profile?.social_links ?? null;
 
       if (!profile) {
         window.location.href = "/auth/profile-setup";
@@ -606,20 +603,19 @@ export default function DashboardPage() {
 
   const reloadUser = useCallback(async () => {
     const supabase = createClient();
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) return;
+    const { data: authData } = await supabase.auth.getClaims();
+    const userId = authData?.claims?.sub;
+    if (!userId) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
-    const { data: profile } = await sb.from("users").select(DASHBOARD_USER_FIELDS).eq("id", authUser.id).maybeSingle();
-    if (!profile) return;
     const generation = ++dataGenerationRef.current;
-    const [{ data: projects, error: projectsError }, { data: socials }, streakData] = await Promise.all([
-      sb.from("projects").select(DASHBOARD_PROJECT_FIELDS).eq("user_id", authUser.id).order("created_at", { ascending: false }),
-      sb.from("social_links").select(DASHBOARD_SOCIAL_FIELDS).eq("user_id", authUser.id).maybeSingle(),
-      fetchStreakLogs(authUser.id),
+    const [{ data: profile }, { data: projects, error: projectsError }, streakData] = await Promise.all([
+      sb.from("users").select(DASHBOARD_PROFILE_FIELDS).eq("id", userId).maybeSingle(),
+      sb.from("projects").select(DASHBOARD_PROJECT_FIELDS).eq("user_id", userId).order("created_at", { ascending: false }),
+      fetchStreakLogs(userId),
     ]);
-    if (generation !== dataGenerationRef.current) return;
-    setUser(prev => ({ ...profile, projects: projectsError ? prev?.projects || [] : projects || [], social_links: socials || null }));
+    if (!profile || generation !== dataGenerationRef.current) return;
+    setUser(prev => ({ ...profile, projects: projectsError ? prev?.projects || [] : projects || [], social_links: profile.social_links || null }));
     setProjectsLoading(false);
     setProjectsLoadError(!!projectsError);
     setActivityLoading(false);

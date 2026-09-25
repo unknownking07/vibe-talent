@@ -53,6 +53,7 @@ beforeEach(() => {
     github_username: "fast-builder", github_id: 123, streak: 7, longest_streak: 7,
     badge_level: "none", vibe_score: 100, created_at: new Date().toISOString(),
     streak_before_break: 7, streak_broken_at: new Date().toISOString(),
+    social_links: { github: "fast-builder" },
   };
   const responses: Record<string, Promise<QueryResult>> = {
     users: Promise.resolve({ data: profile, error: null }),
@@ -67,14 +68,14 @@ beforeEach(() => {
       getUser: vi.fn(async () => ({ data: { user: { id: "builder-id" } } })),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
     },
-    from(table: string) {
+    from: vi.fn((table: string) => {
       const response = table === "projects" && projectReads++ > 0 ? reloadedProjects.promise : responses[table];
       const query = {
         select: () => query, eq: () => query, order: () => query, maybeSingle: () => query,
         then: response.then.bind(response),
       };
       return query;
-    },
+    }),
     rpc: async () => ({ error: null }),
   });
   vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({}) })));
@@ -98,6 +99,7 @@ describe("dashboard loading", () => {
   it("shows the profile before projects, streak history, or inbox counts finish", async () => {
     await render();
     expect(mocks.client.mock.results[0].value.auth.getUser).not.toHaveBeenCalled();
+    expect(mocks.client.mock.results[0].value.from).not.toHaveBeenCalledWith("social_links");
     expect(container.textContent).toContain("Current Streak");
     expect(container.textContent).toContain("Loading projects");
     const activity = [...container.querySelectorAll("button")].find((button) => button.textContent === "Loading activity...");
