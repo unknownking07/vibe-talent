@@ -227,6 +227,22 @@ export function Footer() {
             color: "var(--text-muted)",
           }}
         >
+          <a
+            href="https://www.findalternate.com/vibetalent?ref=badge"
+            target="_blank"
+            rel="noopener"
+            className="mx-auto mb-5 flex w-fit"
+          >
+            {/* Use FindAlternate's image URL directly so its badge verifier can find it. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://www.findalternate.com/api/badge?theme=dark"
+              alt="Featured on FindAlternate"
+              width={220}
+              height={54}
+              loading="lazy"
+            />
+          </a>
           &copy; {new Date().getFullYear()} VibeTalent. Ship or miss.
           <span className="block mt-1">
             Builder:{" "}
