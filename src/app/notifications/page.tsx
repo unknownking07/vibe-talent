@@ -13,21 +13,20 @@ export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {
   const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: authData } = await supabase.auth.getClaims();
+  const claims = authData?.claims;
 
   // The login page reads `?redirect=` (not `?next=`) to decide where to send
   // the user after sign-in. Redirecting on the server means an unauthenticated
   // visitor never downloads the page JS at all.
-  if (!user) redirect("/auth/login?redirect=/notifications");
+  if (!claims?.sub) redirect("/auth/login?redirect=/notifications");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = supabase as any;
   const { data } = await sb
     .from("notifications")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("user_id", claims.sub)
     .order("created_at", { ascending: false })
     .limit(50);
 

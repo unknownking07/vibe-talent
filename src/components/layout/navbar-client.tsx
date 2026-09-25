@@ -49,7 +49,7 @@ interface NavbarClientProps {
 
 // Cache the navbar profile in localStorage so a hard refresh renders the
 // avatar from the first post-hydration paint instead of flashing the
-// "Create Profile" CTA and "??" initials while supabase.auth.getUser() and
+// "Create Profile" CTA and "??" initials while JWT validation and
 // the profile DB query resolve. The background auth check below still runs
 // and overwrites stale entries (logout in another tab, profile renamed, etc.).
 const NAV_PROFILE_CACHE_KEY = "vt-navbar-profile-v1";
@@ -168,7 +168,7 @@ export function NavbarClient({
   // would still leave hasUnloggedActivity true from a prior session.
   const isLoggedInRef = useRef(initialIsLoggedIn);
 
-  // Serialize dot checks. The eager mount kick, getUser(), INITIAL_SESSION,
+  // Serialize dot checks. The eager mount kick, getClaims(), INITIAL_SESSION,
   // and focus events can all request one within the same second; the previous
   // concurrent fetches resolved last-write-wins, so one slow failure could
   // erase the dot a successful check had just set.
@@ -278,7 +278,7 @@ export function NavbarClient({
 
     setAuthMounted(true);
 
-    // One profile fetch per user per burst: mount getUser() and the
+    // One profile fetch per user per burst: mount getClaims() and the
     // INITIAL_SESSION auth event both land within ~a second of a hard load
     // and used to double the users query on every page view. `force` bypasses
     // the guard for real profile edits (profile-updated event).
@@ -357,23 +357,22 @@ export function NavbarClient({
       void Promise.resolve().then(() => checkTodayLogged());
     }
 
-    // Check auth once on mount, then listen for changes. This still runs even
-    // when SSR pre-populated state, in case the cookie changed between render
-    // and hydration (e.g. user signed out in another tab).
-    supabase.auth.getUser().then(({ data: { user }, error }) => {
+    // Verify the session without making /auth/v1/user part of every page load.
+    // Supabase validates the JWT signature (and refreshes it when needed).
+    supabase.auth.getClaims().then(({ data, error }) => {
       if (cancelled) return;
-      // A failed getUser() — a transient 500 from /auth/v1/user, a network
-      // blip, or token-refresh churn from rapid hard refreshes — is NOT a
+      // A failed verification or token refresh is not necessarily a
       // logout. Treating it as one blanks the avatar and (below) wipes the
       // cached profile, so bail without touching state; onAuthStateChange's
       // INITIAL_SESSION and the next check reconcile the real auth state.
       if (error) return;
+      const claims = data?.claims;
       // Identity resolved — retire any check issued under the previous one.
       authGenerationRef.current += 1;
-      isLoggedInRef.current = !!user;
-      setIsLoggedIn(!!user);
-      if (user) {
-        fetchProfile(user.id, user.email);
+      isLoggedInRef.current = !!claims?.sub;
+      setIsLoggedIn(!!claims?.sub);
+      if (claims?.sub) {
+        fetchProfile(claims.sub, typeof claims.email === "string" ? claims.email : undefined);
         // fresh: an in-flight check may belong to the prior identity, so join
         // it AND queue a replacement rather than trusting its result.
         void checkTodayLogged(true);
@@ -413,11 +412,10 @@ export function NavbarClient({
     // settings page saves a display name). Without this, the onboarding dot
     // would only clear on a full reload.
     const handleProfileUpdated = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data } = await supabase.auth.getClaims();
       if (cancelled) return;
-      if (user) fetchProfile(user.id, user.email, true);
+      const claims = data?.claims;
+      if (claims?.sub) fetchProfile(claims.sub, typeof claims.email === "string" ? claims.email : undefined, true);
     };
     window.addEventListener("profile-updated", handleProfileUpdated);
 
