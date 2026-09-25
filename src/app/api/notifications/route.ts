@@ -16,9 +16,10 @@ const ALLOWED_NOTIFICATION_TYPES = [
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: authData } = await supabase.auth.getClaims();
+    const claims = authData?.claims;
 
-    if (!user) {
+    if (!claims?.sub) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
       const { count } = await sb
         .from("notifications")
         .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id)
+        .eq("user_id", claims.sub)
         .eq("read", false);
       return NextResponse.json({ data: [], unread_count: count || 0 });
     }
@@ -42,13 +43,13 @@ export async function GET(req: NextRequest) {
       sb
         .from("notifications")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", claims.sub)
         .order("created_at", { ascending: false })
         .limit(50),
       sb
         .from("notifications")
         .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id)
+        .eq("user_id", claims.sub)
         .eq("read", false),
     ]);
 
@@ -66,9 +67,10 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data } = await supabase.auth.getClaims();
+    const claims = data?.claims;
 
-    if (!user) {
+    if (!claims?.sub) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -82,7 +84,7 @@ export async function PATCH(req: NextRequest) {
       const { error } = await sb
         .from("notifications")
         .update({ read: true })
-        .eq("user_id", user.id)
+        .eq("user_id", claims.sub)
         .eq("read", false);
 
       if (error) {
@@ -96,7 +98,7 @@ export async function PATCH(req: NextRequest) {
       const { error } = await sb
         .from("notifications")
         .update({ read: true })
-        .eq("user_id", user.id)
+        .eq("user_id", claims.sub)
         .eq("type", type)
         .eq("read", false);
 
@@ -109,7 +111,7 @@ export async function PATCH(req: NextRequest) {
         .from("notifications")
         .update({ read: true })
         .eq("id", id)
-        .eq("user_id", user.id);
+        .eq("user_id", claims.sub);
 
       if (error) {
         console.error("Failed to mark notification read:", error);

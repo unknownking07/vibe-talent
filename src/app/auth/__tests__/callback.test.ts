@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sanitizeNext } from "../callback/route";
+import { sanitizeNext } from "@/lib/auth/sanitize-next";
 
 describe("sanitizeNext (auth callback open-redirect guard)", () => {
   it("falls back to /dashboard for null", () => {

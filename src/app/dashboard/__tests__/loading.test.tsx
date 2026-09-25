@@ -63,7 +63,8 @@ beforeEach(() => {
   let projectReads = 0;
   mocks.client.mockReturnValue({
     auth: {
-      getUser: async () => ({ data: { user: { id: "builder-id" } } }),
+      getClaims: async () => ({ data: { claims: { sub: "builder-id" } } }),
+      getUser: vi.fn(async () => ({ data: { user: { id: "builder-id" } } })),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
     },
     from(table: string) {
@@ -96,6 +97,7 @@ async function render() {
 describe("dashboard loading", () => {
   it("shows the profile before projects, streak history, or inbox counts finish", async () => {
     await render();
+    expect(mocks.client.mock.results[0].value.auth.getUser).not.toHaveBeenCalled();
     expect(container.textContent).toContain("Current Streak");
     expect(container.textContent).toContain("Loading projects");
     const activity = [...container.querySelectorAll("button")].find((button) => button.textContent === "Loading activity...");
@@ -104,6 +106,13 @@ describe("dashboard loading", () => {
     await act(async () => { projects.resolve({ data: [{ id: "p1", title: "Shipped project" }], error: null }); });
     expect(container.textContent).toContain("Shipped project");
     expect(container.textContent).not.toContain("Loading projects");
+  });
+
+  it("fetches the current Auth user only when a GitHub mirror needs repair", async () => {
+    profile.github_id = null;
+    await render();
+    expect(mocks.client.mock.results[0].value.auth.getUser).toHaveBeenCalledOnce();
+    expect(container.textContent).toContain("Current Streak");
   });
 
   it("does not load the wallet SDK until the wallet controls are opened", async () => {

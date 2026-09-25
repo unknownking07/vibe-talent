@@ -6,8 +6,7 @@ import { getBadgeArt, PALETTES } from "@/lib/achievements/badge-art";
 import { BadgeMedallion } from "@/components/achievements/badge-medallion";
 
 export const runtime = "nodejs";
-export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
+const size = { width: 1200, height: 630 };
 
 export async function GET(
   _req: Request,

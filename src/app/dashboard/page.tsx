@@ -232,7 +232,7 @@ export default function DashboardPage() {
     let cancelled = false;
     let loaded = false;
 
-    async function loadUserData(authUser: import("@supabase/supabase-js").User) {
+    async function loadUserData(userId: string) {
       if (loaded || cancelled) return;
       loaded = true;
       const generation = dataGenerationRef.current;
@@ -246,15 +246,15 @@ export default function DashboardPage() {
       // whole dashboard behind its skeleton. allSettled also handles early
       // failures while we're still waiting for the profile.
       const projectRequest = Promise.allSettled([
-        sb.from("projects").select(DASHBOARD_PROJECT_FIELDS).eq("user_id", authUser.id).order("created_at", { ascending: false }),
+        sb.from("projects").select(DASHBOARD_PROJECT_FIELDS).eq("user_id", userId).order("created_at", { ascending: false }),
       ]);
-      const streakRequest = Promise.allSettled([fetchStreakLogs(authUser.id)]);
+      const streakRequest = Promise.allSettled([fetchStreakLogs(userId)]);
       const inboxRequest = Promise.allSettled([
-        sb.from("hire_requests").select("id", { count: "exact", head: true }).eq("builder_id", authUser.id).eq("status", "new"),
+        sb.from("hire_requests").select("id", { count: "exact", head: true }).eq("builder_id", userId).eq("status", "new"),
       ]);
       const results = await Promise.allSettled([
-        sb.from("users").select(DASHBOARD_USER_FIELDS).eq("id", authUser.id).maybeSingle(),
-        sb.from("social_links").select(DASHBOARD_SOCIAL_FIELDS).eq("user_id", authUser.id).maybeSingle(),
+        sb.from("users").select(DASHBOARD_USER_FIELDS).eq("id", userId).maybeSingle(),
+        sb.from("social_links").select(DASHBOARD_SOCIAL_FIELDS).eq("user_id", userId).maybeSingle(),
       ]);
       if (cancelled) return;
 
@@ -282,7 +282,10 @@ export default function DashboardPage() {
       // which backfills whatever account owns that handle *now*. The live
       // OAuth identity read here is authoritative in a way that lookup is not.
       if (!profile.github_username || !socials?.github || profile.github_id == null) {
-        const identity = await syncGithubMirrors(sb, authUser.id, authUser, {
+        // A fresh user record is only needed for this uncommon repair path;
+        // the normal dashboard load uses the verified JWT subject above.
+        const { data: { user: freshUser } } = await supabase.auth.getUser();
+        const identity = await syncGithubMirrors(sb, userId, freshUser?.id === userId ? freshUser : null, {
           githubUsername: profile.github_username,
           githubId: profile.github_id,
           socialGithub: socials?.github,
@@ -293,7 +296,7 @@ export default function DashboardPage() {
             socials = {
               ...(socials || {}),
               github: identity.username,
-              user_id: authUser.id,
+              user_id: userId,
             };
           }
         }
@@ -394,7 +397,7 @@ export default function DashboardPage() {
             .then(data => {
               if (data.synced && data.dates_logged > 0) {
                 // Re-fetch streak data and update UI after successful sync
-                fetchStreakLogs(authUser.id).then(newStreakData => {
+                fetchStreakLogs(userId).then(newStreakData => {
                   // Merge with existing heatmap (GitHub contributions take priority)
                   setHeatmapData(prev => ({ ...newStreakData, ...prev }));
                   // Re-check if today was logged
@@ -443,8 +446,8 @@ export default function DashboardPage() {
         // Keys are scoped by auth user id so a second account signing in on
         // the same browser within the 1h window can't see the previous
         // user's heatmap.
-        const GH_CONTRIB_CACHE = `last_github_contributions_cache:${authUser.id}`;
-        const GH_CONTRIB_TS = `last_github_contributions_ts:${authUser.id}`;
+        const GH_CONTRIB_CACHE = `last_github_contributions_cache:${userId}`;
+        const GH_CONTRIB_TS = `last_github_contributions_ts:${userId}`;
         const applyGhData = (ghData: { total?: number; contributions?: Record<string, number> }) => {
           if (ghData.total) setGhTotal(ghData.total);
           if (ghData.contributions && Object.keys(ghData.contributions).length > 0) {
@@ -506,22 +509,29 @@ export default function DashboardPage() {
       }
     }
 
-    // Try immediate auth check first
+    // Verify the session locally when possible. getUser() always calls the
+    // remote Auth service, adding a full round trip before any profile reads.
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+    supabase.auth.getClaims().then(({ data }) => {
       if (cancelled) return;
-      if (authUser) {
-        loadUserData(authUser);
-      }
+      if (data?.claims?.sub) void loadUserData(data.claims.sub);
+      else setLoading(false);
     });
 
     // Also listen for auth state changes — catches the case where
     // session isn't ready yet after OAuth redirect / profile setup
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
-      if (session?.user) {
-        loadUserData(session.user);
-      } else {
+      if (session?.user && event !== "TOKEN_REFRESHED") {
+        // Defer the call until Supabase finishes notifying listeners. The
+        // session's embedded user is not trusted for authorization.
+        setTimeout(() => {
+          if (cancelled || loaded) return;
+          void supabase.auth.getClaims().then(({ data }) => {
+            if (!cancelled && data?.claims?.sub) void loadUserData(data.claims.sub);
+          });
+        }, 0);
+      } else if (!session?.user && event !== "INITIAL_SESSION") {
         setLoading(false);
       }
     });

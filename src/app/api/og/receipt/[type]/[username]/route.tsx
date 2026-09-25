@@ -1,8 +1,7 @@
 import { ImageResponse } from "next/og";
 import { fetchUserByUsernameCached } from "@/lib/supabase/server-queries";
 
-export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
+const size = { width: 1200, height: 630 };
 
 type ReceiptType = "weekly" | "shipped" | "custom";
 
