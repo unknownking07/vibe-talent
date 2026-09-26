@@ -82,8 +82,10 @@ async function _fetchUserByUsername(username: string): Promise<UserWithSocials |
 
   const { data: user, error } = await sb
     .from("users")
-    .select(USER_FIELDS)
+    .select(`${USER_FIELDS}, projects!projects_user_id_fkey(${PROJECT_FIELDS}), social_links!social_links_user_id_fkey(${SOCIAL_FIELDS})`)
     .eq("username", username)
+    .eq("projects.flagged", false)
+    .eq("projects.is_private", false)
     .single();
 
   // PGRST116 = "not found" (single row expected but 0 returned) — legitimate null
@@ -92,28 +94,13 @@ async function _fetchUserByUsername(username: string): Promise<UserWithSocials |
   }
   if (!user) return null;
 
-  const [{ data: projects }, { data: socialLinks }] = await Promise.all([
-    // Public profile fetch: private repos are excluded here. The profile page
-    // does a separate uncached read for owners so they still see their own
-    // private projects with a 🔒 badge.
-    sb
-      .from("projects")
-      .select(PROJECT_FIELDS)
-      .eq("user_id", user.id)
-      .eq("flagged", false)
-      .eq("is_private", false)
-      .order("created_at", { ascending: false }),
-    sb
-      .from("social_links")
-      .select(SOCIAL_FIELDS)
-      .eq("user_id", user.id)
-      .single(),
-  ]);
-
   return {
     ...user,
-    projects: projects || [],
-    social_links: socialLinks || null,
+    // Embedded relations are filtered without filtering out the parent user.
+    // Keep the existing newest-first project order for profile consumers.
+    projects: (user.projects ?? []).sort((a: { created_at: string }, b: { created_at: string }) =>
+      b.created_at.localeCompare(a.created_at)),
+    social_links: user.social_links ?? null,
   };
 }
 
