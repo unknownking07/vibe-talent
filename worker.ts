@@ -375,7 +375,14 @@ function documentForCache(response: Response, ttl: number, publicDocument: boole
 
 async function storeDocument(cache: Cache, key: Request, response: Response, publicDocument: boolean): Promise<void> {
   const ttl = sharedCacheTtl(response);
-  if (response.status !== 200 || ttl <= 0 || response.headers.has("set-cookie")) return;
+  // A removed profile or a route that becomes private must evict its old
+  // public copy. Keep stale only for transient origin failures.
+  if (response.status === 404 || response.status === 410 ||
+      (response.status === 200 && (ttl <= 0 || response.headers.has("set-cookie")))) {
+    await cache.delete(key);
+    return;
+  }
+  if (response.status !== 200) return;
   await cache.put(key, documentForCache(response, ttl, publicDocument));
 }
 
