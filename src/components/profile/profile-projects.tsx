@@ -1,23 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { Project } from "@/lib/types/database";
 import { ProfileProjectCard } from "@/components/profile/profile-project-card";
+import { StatsRibbon } from "@/components/profile/stats-ribbon";
 
 const PROJECT_FIELDS = "id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, endorsement_count, is_private, created_at";
 
-export function ProfileProjects({
+type OwnerProjectsState = { isOwner: boolean; privateProjects: Project[] };
+const OwnerProjectsContext = createContext<OwnerProjectsState | null>(null);
+
+function useOwnerProjects() {
+  const state = useContext(OwnerProjectsContext);
+  if (!state) throw new Error("Profile owner controls require ProfileOwnerProvider");
+  return state;
+}
+
+export function ProfileOwnerProvider({
   builderId,
-  username,
-  publicProjects,
-  variant,
+  children,
 }: {
   builderId: string;
-  username: string;
-  publicProjects: Project[];
-  variant: "preview" | "all";
+  children: ReactNode;
 }) {
   const [isOwner, setIsOwner] = useState(false);
   const [privateProjects, setPrivateProjects] = useState<Project[]>([]);
@@ -56,6 +62,42 @@ export function ProfileProjects({
     };
   }, [builderId]);
 
+  return (
+    <OwnerProjectsContext.Provider value={{ isOwner, privateProjects }}>
+      {children}
+    </OwnerProjectsContext.Provider>
+  );
+}
+
+export function ProfileStatsRibbon({
+  streak,
+  vibeScore,
+  publicProjectCount,
+}: {
+  streak: number;
+  vibeScore: number;
+  publicProjectCount: number;
+}) {
+  const { isOwner, privateProjects } = useOwnerProjects();
+  return (
+    <StatsRibbon
+      streak={streak}
+      vibeScore={vibeScore}
+      projectCount={publicProjectCount + (isOwner ? privateProjects.length : 0)}
+    />
+  );
+}
+
+export function ProfileProjects({
+  username,
+  publicProjects,
+  variant,
+}: {
+  username: string;
+  publicProjects: Project[];
+  variant: "preview" | "all";
+}) {
+  const { isOwner, privateProjects } = useOwnerProjects();
   const projects = isOwner
     ? [...privateProjects, ...publicProjects]
     : publicProjects;

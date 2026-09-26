@@ -3,7 +3,7 @@ import { jsonLdHtml } from "@/lib/json-ld";
 import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
 import { fetchUserByUsernameCached } from "@/lib/supabase/server-queries";
-import { ProfileProjects } from "@/components/profile/profile-projects";
+import { ProfileOwnerProvider, ProfileProjects } from "@/components/profile/profile-projects";
 import { siteUrl } from "@/lib/seo";
 
 // Mirror the same username shape we accept in the page handler below — keeps
@@ -128,12 +128,13 @@ export default async function UserProjectsPage({
         </h1>
       </div>
 
-      <ProfileProjects
-        builderId={user.id}
-        username={user.username}
-        publicProjects={user.projects ?? []}
-        variant="all"
-      />
+      <ProfileOwnerProvider builderId={user.id}>
+        <ProfileProjects
+          username={user.username}
+          publicProjects={user.projects ?? []}
+          variant="all"
+        />
+      </ProfileOwnerProvider>
     </div>
   );
 }

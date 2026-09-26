@@ -2,7 +2,6 @@ import { fetchUserByUsernameCached, fetchStreakLogsCached } from "@/lib/supabase
 import { jsonLdHtml } from "@/lib/json-ld";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ProfileSidebar } from "@/components/profile/profile-sidebar";
-import { StatsRibbon } from "@/components/profile/stats-ribbon";
 import { ProfileHeatmap } from "@/components/profile/profile-heatmap";
 import { ReviewerStats } from "@/components/profile/reviewer-stats";
 import { AchievementsTeaser } from "@/components/achievements/achievements-teaser";
@@ -10,7 +9,7 @@ import { fetchAchievementCounters } from "@/lib/achievements/fetch";
 import { computeAchievements } from "@/lib/achievements/definitions";
 import type { ReviewerTier } from "@/lib/reviewer/tier";
 import { extractSocialHandle } from "@/lib/social-handles";
-import { ProfileProjects } from "@/components/profile/profile-projects";
+import { ProfileOwnerProvider, ProfileProjects, ProfileStatsRibbon } from "@/components/profile/profile-projects";
 import ReviewsSection from "@/components/profile/reviews-section";
 import { BackedBy } from "@/components/profile/backed-by";
 import { BagsLaunches } from "@/components/profile/bags-launches";
@@ -188,6 +187,7 @@ export default async function ProfilePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
       />
+      <ProfileOwnerProvider builderId={user.id}>
       <div className="w-full max-w-[1200px] grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 items-start">
         {/* Sidebar column — primary profile sidebar + reviewer reputation block */}
         <div className="flex flex-col gap-6">
@@ -215,10 +215,10 @@ export default async function ProfilePage({
           </div>
 
           {/* Stats Ribbon */}
-          <StatsRibbon
+          <ProfileStatsRibbon
             streak={user.streak}
             vibeScore={user.vibe_score}
-            projectCount={(user.projects ?? []).length}
+            publicProjectCount={(user.projects ?? []).length}
           />
 
           {/* Achievements Teaser */}
@@ -258,7 +258,6 @@ export default async function ProfilePage({
           {/* Projects Section */}
           <section>
             <ProfileProjects
-              builderId={user.id}
               username={user.username}
               publicProjects={user.projects ?? []}
               variant="preview"
@@ -269,6 +268,7 @@ export default async function ProfilePage({
           <ReviewsSection builderId={user.id} />
         </div>
       </div>
+      </ProfileOwnerProvider>
     </div>
   );
 }

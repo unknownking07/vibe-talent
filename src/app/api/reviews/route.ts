@@ -191,6 +191,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid builder_id" }, { status: 400 });
     }
 
+    if (reviewerUserId === builder_id) {
+      return NextResponse.json({ error: "You cannot review your own profile." }, { status: 403 });
+    }
+
     const sb = createAdminClient();
 
     // Prevent duplicate reviews: one review per email per builder
