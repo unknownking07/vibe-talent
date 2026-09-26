@@ -41,6 +41,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
+  // The homepage and public profile HTML are identical for every visitor.
+  // An expired session after an overnight tab reopen must not hold up these
+  // pages while Supabase refreshes it. The client resolves login state after
+  // paint; protected pages and APIs still run updateSession below.
+  const pathname = request.nextUrl.pathname;
+  const isPublicFastPath = pathname === "/" ||
+    /^\/profile\/[^/]+(?:\/projects)?$/.test(pathname);
+  if (isPublicFastPath) {
+    return NextResponse.next({ request });
+  }
+
   // Anonymous visitors on non-protected routes skip updateSession entirely.
   // A session refresh in updateSession writes Set-Cookie, which
   // forces `cache-control: no-store` and bypasses both Vercel ISR and the

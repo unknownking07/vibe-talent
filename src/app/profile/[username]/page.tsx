@@ -1,9 +1,7 @@
-import { fetchUserByUsernameCached, fetchStreakLogsCached, fetchPrivateProjectsForOwner } from "@/lib/supabase/server-queries";
+import { fetchUserByUsernameCached, fetchStreakLogsCached } from "@/lib/supabase/server-queries";
 import { jsonLdHtml } from "@/lib/json-ld";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ProfileSidebar } from "@/components/profile/profile-sidebar";
-import { StatsRibbon } from "@/components/profile/stats-ribbon";
 import { ProfileHeatmap } from "@/components/profile/profile-heatmap";
 import { ReviewerStats } from "@/components/profile/reviewer-stats";
 import { AchievementsTeaser } from "@/components/achievements/achievements-teaser";
@@ -11,7 +9,7 @@ import { fetchAchievementCounters } from "@/lib/achievements/fetch";
 import { computeAchievements } from "@/lib/achievements/definitions";
 import type { ReviewerTier } from "@/lib/reviewer/tier";
 import { extractSocialHandle } from "@/lib/social-handles";
-import { ProfileProjectCard } from "@/components/profile/profile-project-card";
+import { ProfileOwnerProvider, ProfileProjects, ProfileStatsRibbon } from "@/components/profile/profile-projects";
 import ReviewsSection from "@/components/profile/reviews-section";
 import { BackedBy } from "@/components/profile/backed-by";
 import { BagsLaunches } from "@/components/profile/bags-launches";
@@ -69,7 +67,40 @@ export async function generateMetadata({
   };
 }
 
-export const revalidate = 3600; // ISR: regenerate at most every hour
+export const revalidate = 300;
+
+// Generate each public profile on first visit, then serve it from ISR. Owner
+// controls load in the browser and never enter this shared HTML response.
+export async function generateStaticParams() {
+  return [];
+}
+
+async function fetchReviewerMetrics(userId: string): Promise<{
+  reviewsLast30d: number;
+  calibration: number | null;
+  tier: ReviewerTier | null;
+}> {
+  const sb = createAdminClient();
+  const since = new Date();
+  since.setUTCDate(since.getUTCDate() - 30);
+
+  const [recent, reputation] = await Promise.all([
+    sb.from("reviews")
+      .select("id", { count: "exact", head: true })
+      .eq("reviewer_user_id", userId)
+      .gte("created_at", since.toISOString()),
+    sb.from("users")
+      .select("reviewer_calibration, reviewer_tier")
+      .eq("id", userId)
+      .single(),
+  ]);
+
+  return {
+    reviewsLast30d: recent.count ?? 0,
+    calibration: reputation.data?.reviewer_calibration ?? null,
+    tier: (reputation.data?.reviewer_tier ?? null) as ReviewerTier | null,
+  };
+}
 
 export default async function ProfilePage({
   params,
@@ -100,57 +131,22 @@ export default async function ProfilePage({
     );
   }
 
-  const heatmapData = await fetchStreakLogsCached(user.id);
-
-  // Achievements are non-core to profile rendering — if the aggregator
-  // fails (Supabase blip, etc.) we still want the profile page to load.
-  let achievements: ReturnType<typeof computeAchievements> = [];
-  try {
-    const achievementCounters = await fetchAchievementCounters(user);
-    achievements = computeAchievements(achievementCounters);
-  } catch (err) {
-    console.error("[profile] achievements compute failed:", err);
-  }
-
-  // Fetch reviewer reputation data — kept outside the cached user fetch so we
-  // don't bust the per-username cache when only review counts change.
-  let reviewsGiven = 0;
-  let reviewsLast30d = 0;
-  let reviewerCalibration: number | null = null;
-  let reviewerTier: ReviewerTier | null = null;
-  try {
-    const adminSb = createAdminClient();
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { count: givenCount } = await (adminSb as any)
-      .from("reviews")
-      .select("id", { count: "exact", head: true })
-      .eq("reviewer_user_id", user.id);
-    reviewsGiven = givenCount ?? 0;
-
-    const since = new Date();
-    since.setUTCDate(since.getUTCDate() - 30);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { count: last30Count } = await (adminSb as any)
-      .from("reviews")
-      .select("id", { count: "exact", head: true })
-      .eq("reviewer_user_id", user.id)
-      .gte("created_at", since.toISOString());
-    reviewsLast30d = last30Count ?? 0;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rep } = await (adminSb as any)
-      .from("users")
-      .select("reviewer_calibration, reviewer_tier")
-      .eq("id", user.id)
-      .single();
-    reviewerCalibration = rep?.reviewer_calibration ?? null;
-    reviewerTier = (rep?.reviewer_tier ?? null) as ReviewerTier | null;
-  } catch (err) {
-    // Reviewer reputation is non-critical — fall through with zeros/nulls so
-    // the profile page still renders if Supabase is briefly unavailable.
-    console.error("Failed to fetch reviewer reputation:", err);
-  }
+  // These public reads are independent. Running them together removes two
+  // sequential Supabase round trips from a cold profile render.
+  const [heatmapData, achievementCounters, reviewerMetrics] = await Promise.all([
+    fetchStreakLogsCached(user.id),
+    fetchAchievementCounters(user).catch((err) => {
+      console.error("[profile] achievements compute failed:", err);
+      return null;
+    }),
+    fetchReviewerMetrics(user.id).catch((err) => {
+      console.error("Failed to fetch reviewer reputation:", err);
+      return { reviewsLast30d: 0, calibration: null, tier: null };
+    }),
+  ]);
+  const achievements = achievementCounters
+    ? computeAchievements(achievementCounters)
+    : [];
 
   const breadcrumbLd = {
     "@context": "https://schema.org",
@@ -180,41 +176,9 @@ export default async function ProfilePage({
     knowsAbout: (user.projects ?? []).flatMap((p: { tech_stack: string[] }) => p.tech_stack ?? []).filter((v: string, i: number, a: string[]) => a.indexOf(v) === i),
   };
 
-  // Check if the logged-in user is viewing their own profile
-  let isOwner = false;
-  let viewer: { id: string; vibeScore: number } | null = null;
-  try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    isOwner = authUser?.id === user.id;
-    if (authUser) {
-      // The viewer's own vibe_score drives their vouch credibility, so the UI
-      // can show the points a burn would actually grant (0 below the floor).
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: viewerRow } = await (supabase as any)
-        .from("users")
-        .select("vibe_score")
-        .eq("id", authUser.id)
-        .maybeSingle();
-      viewer = { id: authUser.id, vibeScore: viewerRow?.vibe_score ?? 0 };
-    }
-  } catch {
-    // Not logged in — isOwner stays false and viewer stays null
-  }
-
-  // Merge in the owner's private projects so they see their own work with a
-  // 🔒 badge. Non-owners never get here — the cached fetch above already
-  // stripped private projects.
-  if (isOwner) {
-    const privateProjects = await fetchPrivateProjectsForOwner(user.id);
-    if (privateProjects.length > 0) {
-      user.projects = [...privateProjects, ...(user.projects ?? [])];
-    }
-  }
-
   return (
     <div className="flex justify-center p-4 sm:p-8">
-      {!isOwner && <ProfileViewTracker viewedUserId={user.id} />}
+      <ProfileViewTracker viewedUserId={user.id} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbLd) }}
@@ -223,15 +187,16 @@ export default async function ProfilePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
       />
+      <ProfileOwnerProvider builderId={user.id}>
       <div className="w-full max-w-[1200px] grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 items-start">
         {/* Sidebar column — primary profile sidebar + reviewer reputation block */}
         <div className="flex flex-col gap-6">
           <ProfileSidebar user={user} />
           <ReviewerStats
-            reviewsGiven={reviewsGiven}
-            reviewsLast30d={reviewsLast30d}
-            calibration={reviewerCalibration}
-            tier={reviewerTier}
+            reviewsGiven={achievementCounters?.reviewsGiven ?? 0}
+            reviewsLast30d={reviewerMetrics.reviewsLast30d}
+            calibration={reviewerMetrics.calibration}
+            tier={reviewerMetrics.tier}
           />
         </div>
 
@@ -250,10 +215,10 @@ export default async function ProfilePage({
           </div>
 
           {/* Stats Ribbon */}
-          <StatsRibbon
+          <ProfileStatsRibbon
             streak={user.streak}
             vibeScore={user.vibe_score}
-            projectCount={(user.projects ?? []).length}
+            publicProjectCount={(user.projects ?? []).length}
           />
 
           {/* Achievements Teaser */}
@@ -283,11 +248,7 @@ export default async function ProfilePage({
           {/* Shows backers when they exist, and otherwise invites the first
               vouch — without the empty state the feature is unreachable on a
               platform where nobody has vouched yet. */}
-          <BackedBy
-            builderId={user.id}
-            builderUsername={user.username}
-            viewer={viewer}
-          />
+          <BackedBy builderId={user.id} builderUsername={user.username} />
 
           {/* Sits directly under Backed by: both answer "has anyone put
               something real behind this person", one in burned tokens and one
@@ -295,48 +256,19 @@ export default async function ProfilePage({
           <BagsLaunches builderId={user.id} />
 
           {/* Projects Section */}
-          {(() => {
-            const allProjects = user.projects ?? [];
-            const visibleProjects = allProjects.slice(0, 4);
-            const hasMore = allProjects.length > 4;
-            return (
-              <section>
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-base font-bold text-[var(--foreground)]">Featured Projects</h3>
-                  {hasMore && (
-                    <Link
-                      href={`/profile/${user.username}/projects`}
-                      className="btn-brutal btn-brutal-dark text-xs py-1.5 px-4"
-                    >
-                      View All ({allProjects.length})
-                    </Link>
-                  )}
-                </div>
-                {visibleProjects.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-                    {visibleProjects.map((project) => (
-                      <ProfileProjectCard key={project.id} project={project} verified={!!project.verified} isOwner={isOwner} />
-                    ))}
-                  </div>
-                ) : (
-                  <div
-                    className="p-8 text-center font-semibold text-[var(--text-muted)] rounded-2xl"
-                    style={{
-                      backgroundColor: "var(--bg-surface)",
-                      border: "1px solid var(--border-subtle)",
-                    }}
-                  >
-                    No projects yet.
-                  </div>
-                )}
-              </section>
-            );
-          })()}
+          <section>
+            <ProfileProjects
+              username={user.username}
+              publicProjects={user.projects ?? []}
+              variant="preview"
+            />
+          </section>
 
           {/* Reviews Section */}
-          <ReviewsSection builderId={user.id} isOwner={isOwner} />
+          <ReviewsSection builderId={user.id} />
         </div>
       </div>
+      </ProfileOwnerProvider>
     </div>
   );
 }

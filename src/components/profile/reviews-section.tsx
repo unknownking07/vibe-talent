@@ -9,7 +9,6 @@ import { ReviewerByline } from "@/components/reviews/reviewer-byline";
 
 interface ReviewsSectionProps {
   builderId: string;
-  isOwner?: boolean;
 }
 
 function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
@@ -88,7 +87,6 @@ function timeAgo(dateStr: string): string {
 
 export default function ReviewsSection({
   builderId,
-  isOwner = false,
 }: ReviewsSectionProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,27 +106,35 @@ export default function ReviewsSection({
   const [deleting, setDeleting] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [authResolved, setAuthResolved] = useState(false);
+  const isOwner = currentUserId === builderId;
 
   // Auto-fetch logged-in user's name and email
   useEffect(() => {
     async function loadUser() {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        setIsLoggedIn(true);
-        setCurrentUserId(user.id);
-        setFormEmail(user.email || "");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data: profile } = await (supabase as any)
-          .from("users")
-          .select("username")
-          .eq("id", user.id)
-          .single();
-        if (profile) {
-          setFormName(profile.username || "");
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          setIsLoggedIn(true);
+          setCurrentUserId(user.id);
+          setFormEmail(user.email || "");
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: profile } = await (supabase as any)
+            .from("users")
+            .select("username")
+            .eq("id", user.id)
+            .single();
+          if (profile) {
+            setFormName(profile.username || "");
+          }
         }
+      } catch {
+        // Anonymous visitors can still review when auth is unavailable.
+      } finally {
+        setAuthResolved(true);
       }
     }
     loadUser();
@@ -155,6 +161,7 @@ export default function ReviewsSection({
   }, [builderId]);
 
   const handleSubmitReview = async () => {
+    if (!authResolved || isOwner) return;
     if (!formName.trim() || !formEmail.trim() || formRating === 0) {
       setSubmitError(
         isLoggedIn
@@ -290,7 +297,7 @@ export default function ReviewsSection({
               ({reviews.length})
             </span>
           )}
-          {!isOwner &&
+          {authResolved && !isOwner &&
             !showForm &&
             !(
               currentUserId !== null &&
@@ -325,7 +332,7 @@ export default function ReviewsSection({
       )}
 
       {/* Review form */}
-      {showForm && (
+      {showForm && authResolved && !isOwner && (
         <div
           className="mb-6 p-5 space-y-4 rounded-xl"
           style={{ backgroundColor: "var(--bg-surface-light)" }}
