@@ -21,17 +21,24 @@ const rows: Record<string, Row[]> = {
 
 class Query {
   private filters: Array<(row: Row) => boolean> = [];
+  private relationFilters: Array<(row: Row) => boolean> = [];
   private options: { count?: string; head?: boolean } = {};
   private maxRows = Infinity;
+  private fields = "";
 
   constructor(private table: string) {}
 
-  select(_fields: string, options?: { count?: string; head?: boolean }) {
+  select(fields: string, options?: { count?: string; head?: boolean }) {
+    this.fields = fields;
     this.options = options ?? {};
     return this;
   }
   eq(field: string, value: unknown) {
-    this.filters.push((row) => row[field] === value);
+    if (field.startsWith("projects.")) {
+      this.relationFilters.push((row) => row[field.slice("projects.".length)] === value);
+    } else {
+      this.filters.push((row) => row[field] === value);
+    }
     return this;
   }
   not(field: string, _operator: string, value: unknown) {
@@ -47,8 +54,17 @@ class Query {
 
   private result() {
     const matching = (rows[this.table] ?? []).filter((row) => this.filters.every((filter) => filter(row)));
+    const data = matching.slice(0, this.maxRows).map((row) => {
+      if (this.table !== "users" || !this.fields.includes("projects!")) return row;
+      return {
+        ...row,
+        projects: rows.projects.filter((project) =>
+          project.user_id === row.id && this.relationFilters.every((filter) => filter(project))),
+        social_links: rows.social_links.find((social) => social.user_id === row.id) ?? null,
+      };
+    });
     return {
-      data: this.options.head ? null : matching.slice(0, this.maxRows),
+      data: this.options.head ? null : data,
       count: this.options.count ? matching.length : null,
       error: null,
     };

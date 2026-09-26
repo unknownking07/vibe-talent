@@ -18,6 +18,7 @@ import { ShareButton } from "@/components/share/share-button";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { siteUrl } from "@/lib/seo";
+import { Suspense } from "react";
 
 export async function generateMetadata({
   params,
@@ -102,6 +103,71 @@ async function fetchReviewerMetrics(userId: string): Promise<{
   };
 }
 
+type AchievementResult = Awaited<ReturnType<typeof fetchAchievementCounters>> | null;
+type ReviewerMetrics = Awaited<ReturnType<typeof fetchReviewerMetrics>>;
+
+async function ProfileReviewerCard({
+  counters,
+  metrics,
+}: {
+  counters: Promise<AchievementResult>;
+  metrics: Promise<ReviewerMetrics>;
+}) {
+  const [achievementCounters, reviewerMetrics] = await Promise.all([counters, metrics]);
+  return (
+    <ReviewerStats
+      reviewsGiven={achievementCounters?.reviewsGiven ?? 0}
+      reviewsLast30d={reviewerMetrics.reviewsLast30d}
+      calibration={reviewerMetrics.calibration}
+      tier={reviewerMetrics.tier}
+    />
+  );
+}
+
+async function ProfileAchievements({
+  counters,
+  username,
+}: {
+  counters: Promise<AchievementResult>;
+  username: string;
+}) {
+  const achievementCounters = await counters;
+  return (
+    <AchievementsTeaser
+      achievements={achievementCounters ? computeAchievements(achievementCounters) : []}
+      username={username}
+    />
+  );
+}
+
+async function ProfileHeatmapCard({
+  data,
+  githubUsername,
+}: {
+  data: Promise<Record<string, number>>;
+  githubUsername?: string | null;
+}) {
+  const heatmapData = await data;
+  return (
+    <section
+      className="p-6 rounded-2xl"
+      style={{
+        backgroundColor: "var(--bg-surface)",
+        border: "1px solid var(--border-subtle)",
+        boxShadow: "var(--shadow-brutal)",
+      }}
+    >
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-base font-bold text-[var(--foreground)]">Contribution Heatmap</h3>
+        <Link href="/dashboard" className="btn-brutal btn-brutal-dark text-xs py-1.5 px-4">
+          Log Activity
+        </Link>
+      </div>
+      <ProfileHeatmap data={heatmapData} githubUsername={githubUsername} />
+    </section>
+  );
+}
+
 export default async function ProfilePage({
   params,
 }: {
@@ -131,22 +197,17 @@ export default async function ProfilePage({
     );
   }
 
-  // These public reads are independent. Running them together removes two
-  // sequential Supabase round trips from a cold profile render.
-  const [heatmapData, achievementCounters, reviewerMetrics] = await Promise.all([
-    fetchStreakLogsCached(user.id),
-    fetchAchievementCounters(user).catch((err) => {
-      console.error("[profile] achievements compute failed:", err);
-      return null;
-    }),
-    fetchReviewerMetrics(user.id).catch((err) => {
-      console.error("Failed to fetch reviewer reputation:", err);
-      return { reviewsLast30d: 0, calibration: null, tier: null };
-    }),
-  ]);
-  const achievements = achievementCounters
-    ? computeAchievements(achievementCounters)
-    : [];
+  // Start independent reads together. Suspense lets the core profile stream
+  // immediately while secondary reputation sections finish their queries.
+  const heatmapData = fetchStreakLogsCached(user.id);
+  const achievementCounters = fetchAchievementCounters(user).catch((err) => {
+    console.error("[profile] achievements compute failed:", err);
+    return null;
+  });
+  const reviewerMetrics = fetchReviewerMetrics(user.id).catch((err) => {
+    console.error("Failed to fetch reviewer reputation:", err);
+    return { reviewsLast30d: 0, calibration: null, tier: null };
+  });
 
   const breadcrumbLd = {
     "@context": "https://schema.org",
@@ -192,12 +253,9 @@ export default async function ProfilePage({
         {/* Sidebar column — primary profile sidebar + reviewer reputation block */}
         <div className="flex flex-col gap-6">
           <ProfileSidebar user={user} />
-          <ReviewerStats
-            reviewsGiven={achievementCounters?.reviewsGiven ?? 0}
-            reviewsLast30d={reviewerMetrics.reviewsLast30d}
-            calibration={reviewerMetrics.calibration}
-            tier={reviewerMetrics.tier}
-          />
+          <Suspense fallback={<div className="card-brutal h-24 animate-pulse" aria-label="Loading reviewer reputation" />}>
+            <ProfileReviewerCard counters={achievementCounters} metrics={reviewerMetrics} />
+          </Suspense>
         </div>
 
         {/* Main Content */}
@@ -222,38 +280,28 @@ export default async function ProfilePage({
           />
 
           {/* Achievements Teaser */}
-          <AchievementsTeaser achievements={achievements} username={user.username} />
+          <Suspense fallback={<div className="card-brutal h-24 animate-pulse" aria-label="Loading achievements" />}>
+            <ProfileAchievements counters={achievementCounters} username={user.username} />
+          </Suspense>
 
           {/* Heatmap Section */}
-          <section
-            className="p-6 rounded-2xl"
-            style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "1px solid var(--border-subtle)",
-              boxShadow: "var(--shadow-brutal)",
-            }}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-bold text-[var(--foreground)]">Contribution Heatmap</h3>
-              <Link
-                href="/dashboard"
-                className="btn-brutal btn-brutal-dark text-xs py-1.5 px-4"
-              >
-                Log Activity
-              </Link>
-            </div>
-            <ProfileHeatmap data={heatmapData} githubUsername={user.social_links?.github} />
-          </section>
+          <Suspense fallback={<div className="card-brutal h-52 animate-pulse" aria-label="Loading contribution heatmap" />}>
+            <ProfileHeatmapCard data={heatmapData} githubUsername={user.social_links?.github} />
+          </Suspense>
 
           {/* Shows backers when they exist, and otherwise invites the first
               vouch — without the empty state the feature is unreachable on a
               platform where nobody has vouched yet. */}
-          <BackedBy builderId={user.id} builderUsername={user.username} />
+          <Suspense fallback={null}>
+            <BackedBy builderId={user.id} builderUsername={user.username} />
+          </Suspense>
 
           {/* Sits directly under Backed by: both answer "has anyone put
               something real behind this person", one in burned tokens and one
               in shipped launches. */}
-          <BagsLaunches builderId={user.id} />
+          <Suspense fallback={null}>
+            <BagsLaunches builderId={user.id} />
+          </Suspense>
 
           {/* Projects Section */}
           <section>
