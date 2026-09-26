@@ -1,8 +1,8 @@
 import { defineCloudflareConfig } from "@opennextjs/cloudflare";
 import kvIncrementalCache from "@opennextjs/cloudflare/overrides/incremental-cache/kv-incremental-cache";
 import { withRegionalCache } from "@opennextjs/cloudflare/overrides/incremental-cache/regional-cache";
-import doQueue from "@opennextjs/cloudflare/overrides/queue/do-queue";
 import doShardedTagCache from "@opennextjs/cloudflare/overrides/tag-cache/do-sharded-tag-cache";
+import backgroundIsrQueue from "./src/lib/cloudflare/background-isr-queue";
 
 // OpenNext (Cloudflare) cache configuration.
 // - incrementalCache: KV behind a per-colo Cache API layer -> stores ISR output.
@@ -26,7 +26,7 @@ export default defineCloudflareConfig({
   // regional hit is *fresh*, so it does not enqueue a revalidation. That removes
   // most of the triggers that were driving the re-render storm.
   incrementalCache: withRegionalCache(kvIncrementalCache, { mode: "long-lived" }),
-  queue: doQueue,
+  queue: backgroundIsrQueue,
   // Replaces the D1 tag cache. That D1 instance is pinned to ENAM (Newark) with
   // read replication disabled, and OpenNext queries it with plain `prepare()`
   // rather than the Sessions API — so read replicas would not have been used
