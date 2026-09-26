@@ -238,16 +238,24 @@ function sharedCacheTtl(response: Response): number {
  * be folded into the key or a router prefetch and a full navigation would
  * collide. Same trick as `negotiatedFormat` above.
  */
-function documentCacheKey(request: Request, url: URL, versionId?: string): Request {
+async function documentCacheKey(request: Request, url: URL, versionId?: string): Promise<Request> {
   const keyUrl = new URL(url);
-  const variant = [
-    request.headers.get("rsc") ? "rsc" : "html",
-    request.headers.get("next-router-prefetch") ? "pf" : "",
-    request.headers.get("next-router-state-tree") ? "st" : "",
-    request.headers.get("next-router-segment-prefetch") ?? "",
-  ]
-    .filter(Boolean)
-    .join("-");
+  // These are the values in OpenNext's Vary header. Presence alone is not
+  // enough: two client navigations can carry different router state trees.
+  const variantHeaders = [
+    "rsc",
+    "next-router-state-tree",
+    "next-router-prefetch",
+    "next-router-segment-prefetch",
+    "next-url",
+  ];
+  const values = variantHeaders.map((name) => request.headers.get(name) ?? "");
+  const variant = values.every((value) => value === "")
+    ? "html"
+    : Array.from(
+      new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(values)))),
+      (byte) => byte.toString(16).padStart(2, "0"),
+    ).join("");
   keyUrl.searchParams.set("_vtvariant", variant);
   if (versionId) keyUrl.searchParams.set("_vtbuild", versionId);
   return new Request(keyUrl.toString(), { method: "GET" });
@@ -292,7 +300,7 @@ async function serveDocument(
   const startedAt = performance.now();
   const cache = (caches as unknown as WorkerCaches).default;
   const publicDocument = isPublicStaticDocumentPath(url.pathname) && !url.search;
-  const cacheKey = documentCacheKey(
+  const cacheKey = await documentCacheKey(
     request,
     url,
     publicDocument ? env.CF_VERSION_METADATA?.id : undefined,
