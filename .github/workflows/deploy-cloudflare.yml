@@ -4,6 +4,7 @@ name: Deploy to Cloudflare Workers
 # Worker (www + apex + crons). Main is protected (PR + lint-and-test required), so
 # code reaching here has already passed CI — this workflow only builds & ships.
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths-ignore:
@@ -86,3 +87,10 @@ jobs:
               --write-out "Warmed ${page_path}: HTTP %{http_code}, %{time_total}s\n" \
               "https://www.vibetalent.work${page_path}?deploy_warm=${GITHUB_SHA}"
           done
+
+      # The sitemap lists profiles with real activity. Rendering them after a
+      # deploy fills OpenNext's shared ISR cache before a visitor in any colo
+      # opens a profile for the first time. The script limits concurrency so
+      # this does not stampede Supabase.
+      - name: Warm public profile caches
+        run: node scripts/warm-public-profiles.mjs
