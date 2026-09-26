@@ -11,6 +11,7 @@ type Row = Record<string, unknown>;
 const rows: Record<string, Row[]> = {
   users: [{ id: "builder-1", username: "builder", vibe_score: 50, streak: 2, longest_streak: 2 }],
   projects: [
+    { id: "visible-older", user_id: "builder-1", is_private: false, flagged: false, live_url: "https://example.com", created_at: "2026-09-16" },
     { id: "visible", user_id: "builder-1", is_private: false, flagged: false, live_url: "https://example.com", created_at: "2026-09-19" },
     { id: "flagged", user_id: "builder-1", is_private: false, flagged: true, live_url: "https://example.com", created_at: "2026-09-18" },
     { id: "private", user_id: "builder-1", is_private: true, flagged: false, live_url: "https://example.com", created_at: "2026-09-17" },
@@ -92,12 +93,12 @@ describe("public project visibility", () => {
       fetchHeroStatsCached(),
     ]);
 
-    expect(listing.map((project: { id: string }) => project.id)).toEqual(["visible"]);
-    expect(builders[0].projects?.map((project) => project.id)).toEqual(["visible"]);
-    expect(profile?.projects?.map((project) => project.id)).toEqual(["visible"]);
-    expect(homepage.featuredProjects.map((project: { id: string }) => project.id)).toEqual(["visible"]);
-    expect(homepage.topVibecoders[0].projects?.map((project) => project.id)).toEqual(["visible"]);
-    expect(homepage.totalProjects).toBe(1);
-    expect(hero.totalProjects).toBe(1);
+    expect(listing.map((project: { id: string }) => project.id)).toEqual(["visible-older", "visible"]);
+    expect(builders[0].projects?.map((project) => project.id)).toEqual(["visible-older", "visible"]);
+    expect(profile?.projects?.map((project) => project.id)).toEqual(["visible", "visible-older"]);
+    expect(homepage.featuredProjects.map((project: { id: string }) => project.id)).toEqual(["visible-older", "visible"]);
+    expect(homepage.topVibecoders[0].projects?.map((project) => project.id)).toEqual(["visible-older", "visible"]);
+    expect(homepage.totalProjects).toBe(2);
+    expect(hero.totalProjects).toBe(2);
   });
 });

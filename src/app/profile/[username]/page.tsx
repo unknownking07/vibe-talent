@@ -253,7 +253,7 @@ export default async function ProfilePage({
         {/* Sidebar column — primary profile sidebar + reviewer reputation block */}
         <div className="flex flex-col gap-6">
           <ProfileSidebar user={user} />
-          <Suspense fallback={<div className="card-brutal h-24 animate-pulse" aria-label="Loading reviewer reputation" />}>
+          <Suspense fallback={<div className="card-brutal h-24 motion-safe:animate-pulse" aria-label="Loading reviewer reputation" />}>
             <ProfileReviewerCard counters={achievementCounters} metrics={reviewerMetrics} />
           </Suspense>
         </div>
@@ -280,12 +280,12 @@ export default async function ProfilePage({
           />
 
           {/* Achievements Teaser */}
-          <Suspense fallback={<div className="card-brutal h-24 animate-pulse" aria-label="Loading achievements" />}>
+          <Suspense fallback={<div className="card-brutal h-24 motion-safe:animate-pulse" aria-label="Loading achievements" />}>
             <ProfileAchievements counters={achievementCounters} username={user.username} />
           </Suspense>
 
           {/* Heatmap Section */}
-          <Suspense fallback={<div className="card-brutal h-52 animate-pulse" aria-label="Loading contribution heatmap" />}>
+          <Suspense fallback={<div className="card-brutal h-52 motion-safe:animate-pulse" aria-label="Loading contribution heatmap" />}>
             <ProfileHeatmapCard data={heatmapData} githubUsername={user.social_links?.github} />
           </Suspense>
 
