@@ -23,6 +23,7 @@ export { DOQueueHandler, DOShardedTagCache, BucketCachePurge } from "./.open-nex
 type Env = {
   CRON_SECRET?: string;
   NEXT_PUBLIC_SITE_URL?: string;
+  CF_VERSION_METADATA?: { id: string };
   /**
    * Set to "1" only in wrangler.beta.jsonc. Staging serves a byte-for-byte copy
    * of the site on a different hostname, which is exactly what duplicate-content
@@ -138,6 +139,10 @@ async function serveOptimizedImage(
  * endorsement.
  */
 const MAX_DOCUMENT_EDGE_TTL_SECONDS = 60;
+const STALE_DOCUMENT_EDGE_TTL_SECONDS = 24 * 60 * 60;
+const STALE_REFRESH_RETRY_MS = 10_000;
+const EDGE_FRESH_UNTIL_HEADER = "x-vt-edge-fresh-until";
+const refreshAttempts = new Map<string, number>();
 
 /**
  * Carry the origin's own Cache-Control and Vary across a cache round trip.
@@ -153,7 +158,7 @@ const ORIGIN_CACHE_CONTROL_HEADER = "x-vt-origin-cache-control";
 const ORIGIN_VARY_HEADER = "x-vt-origin-vary";
 
 /** Restore the origin's Cache-Control/Vary onto a copy taken from the cache. */
-function restoreOriginHeaders(source: Headers, edgeState: "HIT" | "MISS"): Headers {
+function restoreOriginHeaders(source: Headers, edgeState: "HIT" | "MISS" | "STALE"): Headers {
   const headers = new Headers(source);
   const cacheControl = headers.get(ORIGIN_CACHE_CONTROL_HEADER);
   const vary = headers.get(ORIGIN_VARY_HEADER);
@@ -164,6 +169,7 @@ function restoreOriginHeaders(source: Headers, edgeState: "HIT" | "MISS"): Heade
 
   headers.delete(ORIGIN_CACHE_CONTROL_HEADER);
   headers.delete(ORIGIN_VARY_HEADER);
+  headers.delete(EDGE_FRESH_UNTIL_HEADER);
   headers.set("x-vt-edge", edgeState);
   return headers;
 }
@@ -232,7 +238,7 @@ function sharedCacheTtl(response: Response): number {
  * be folded into the key or a router prefetch and a full navigation would
  * collide. Same trick as `negotiatedFormat` above.
  */
-function documentCacheKey(request: Request, url: URL): Request {
+function documentCacheKey(request: Request, url: URL, versionId?: string): Request {
   const keyUrl = new URL(url);
   const variant = [
     request.headers.get("rsc") ? "rsc" : "html",
@@ -243,7 +249,13 @@ function documentCacheKey(request: Request, url: URL): Request {
     .filter(Boolean)
     .join("-");
   keyUrl.searchParams.set("_vtvariant", variant);
+  if (versionId) keyUrl.searchParams.set("_vtbuild", versionId);
   return new Request(keyUrl.toString(), { method: "GET" });
+}
+
+/** Public ISR documents whose cache copy may survive their freshness window. */
+function isPublicStaticDocumentPath(pathname: string): boolean {
+  return pathname === "/" || /^\/profile\/[^/]+(?:\/projects)?$/.test(pathname);
 }
 
 /** Is this a path whose documents we are willing to share between visitors? */
@@ -279,12 +291,38 @@ async function serveDocument(
 ): Promise<Response> {
   const startedAt = performance.now();
   const cache = (caches as unknown as WorkerCaches).default;
-  const cacheKey = documentCacheKey(request, url);
+  const publicDocument = isPublicStaticDocumentPath(url.pathname) && !url.search;
+  const cacheKey = documentCacheKey(
+    request,
+    url,
+    publicDocument ? env.CF_VERSION_METADATA?.id : undefined,
+  );
 
   const hit = await cache.match(cacheKey);
   const cacheMs = performance.now() - startedAt;
   if (hit) {
-    const headers = restoreOriginHeaders(hit.headers, "HIT");
+    const freshUntil = Number(hit.headers.get(EDGE_FRESH_UNTIL_HEADER));
+    const stale = publicDocument && freshUntil > 0 && Date.now() >= freshUntil;
+    if (stale) {
+      const key = cacheKey.url;
+      const now = Date.now();
+      if (now - (refreshAttempts.get(key) ?? 0) >= STALE_REFRESH_RETRY_MS) {
+        refreshAttempts.set(key, now);
+        ctx.waitUntil((async () => {
+          try {
+            const refreshed = await handler.fetch(request, env, ctx);
+            // OpenNext can return the old page while it starts ISR. A later
+            // request will retry after the queue has regenerated the page.
+            if (refreshed.headers.get("x-nextjs-cache") === "STALE" ||
+                refreshed.headers.get("x-opennext-cache") === "STALE") return;
+            await storeDocument(cache, cacheKey, refreshed, true);
+          } catch (error) {
+            console.error("[edge] failed to refresh stale public document", error);
+          }
+        })());
+      }
+    }
+    const headers = restoreOriginHeaders(hit.headers, stale ? "STALE" : "HIT");
     headers.append("server-timing", `vt-cache;dur=${cacheMs.toFixed(1)}`);
     return new Response(hit.body, {
       status: hit.status,
@@ -305,12 +343,7 @@ async function serveDocument(
     return response;
   }
 
-  const stored = new Response(response.body, response);
-  stored.headers.set(ORIGIN_CACHE_CONTROL_HEADER, response.headers.get("cache-control") ?? "");
-  const originVary = response.headers.get("vary");
-  if (originVary) stored.headers.set(ORIGIN_VARY_HEADER, originVary);
-  stored.headers.set("cache-control", `public, max-age=${ttl}`);
-  stored.headers.delete("vary");
+  const stored = documentForCache(response, ttl, publicDocument);
 
   // Best-effort, exactly as with images: a failed write costs one extra origin
   // hit and must never surface on a request that already succeeded.
@@ -323,6 +356,27 @@ async function serveDocument(
     status: stored.status,
     headers,
   });
+}
+
+/** Preserve origin headers while retaining a public page for the next visit. */
+function documentForCache(response: Response, ttl: number, publicDocument: boolean): Response {
+  const stored = new Response(response.body, response);
+  stored.headers.set(ORIGIN_CACHE_CONTROL_HEADER, response.headers.get("cache-control") ?? "");
+  const originVary = response.headers.get("vary");
+  if (originVary) stored.headers.set(ORIGIN_VARY_HEADER, originVary);
+  stored.headers.set(EDGE_FRESH_UNTIL_HEADER, String(Date.now() + ttl * 1000));
+  stored.headers.set(
+    "cache-control",
+    `public, max-age=${publicDocument ? STALE_DOCUMENT_EDGE_TTL_SECONDS : ttl}`,
+  );
+  stored.headers.delete("vary");
+  return stored;
+}
+
+async function storeDocument(cache: Cache, key: Request, response: Response, publicDocument: boolean): Promise<void> {
+  const ttl = sharedCacheTtl(response);
+  if (response.status !== 200 || ttl <= 0 || response.headers.has("set-cookie")) return;
+  await cache.put(key, documentForCache(response, ttl, publicDocument));
 }
 
 /** Cloudflare cron expression -> internal cron route (mirrors vercel.json crons). */
