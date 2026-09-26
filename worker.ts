@@ -277,18 +277,25 @@ async function serveDocument(
   ctx: ExecutionContext,
   url: URL,
 ): Promise<Response> {
+  const startedAt = performance.now();
   const cache = (caches as unknown as WorkerCaches).default;
   const cacheKey = documentCacheKey(request, url);
 
   const hit = await cache.match(cacheKey);
+  const cacheMs = performance.now() - startedAt;
   if (hit) {
+    const headers = restoreOriginHeaders(hit.headers, "HIT");
+    headers.append("server-timing", `vt-cache;dur=${cacheMs.toFixed(1)}`);
     return new Response(hit.body, {
       status: hit.status,
-      headers: restoreOriginHeaders(hit.headers, "HIT"),
+      headers,
     });
   }
 
+  const originStartedAt = performance.now();
   const response = await handler.fetch(request, env, ctx);
+  const originMs = performance.now() - originStartedAt;
+  const timing = `vt-cache;dur=${cacheMs.toFixed(1)}, vt-origin;dur=${originMs.toFixed(1)}`;
 
   const ttl = sharedCacheTtl(response);
   // `Set-Cookie` means the response was personalised for this caller (the
@@ -310,9 +317,11 @@ async function serveDocument(
   ctx.waitUntil(cache.put(cacheKey, stored.clone()).catch(() => {}));
 
   // The caller gets the origin's own headers, not the edge TTL we stored under.
+  const headers = restoreOriginHeaders(stored.headers, "MISS");
+  headers.append("server-timing", timing);
   return new Response(stored.body, {
     status: stored.status,
-    headers: restoreOriginHeaders(stored.headers, "MISS"),
+    headers,
   });
 }
 
