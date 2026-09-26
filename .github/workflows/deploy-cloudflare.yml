@@ -4,7 +4,6 @@ name: Deploy to Cloudflare Workers
 # Worker (www + apex + crons). Main is protected (PR + lint-and-test required), so
 # code reaching here has already passed CI — this workflow only builds & ships.
 on:
-  workflow_dispatch:
   push:
     branches: [main]
     paths-ignore:
