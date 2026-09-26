@@ -2,9 +2,8 @@ import Link from "next/link";
 import { jsonLdHtml } from "@/lib/json-ld";
 import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
-import { fetchUserByUsernameCached, fetchPrivateProjectsForOwner } from "@/lib/supabase/server-queries";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { ProfileProjectCard } from "@/components/profile/profile-project-card";
+import { fetchUserByUsernameCached } from "@/lib/supabase/server-queries";
+import { ProfileProjects } from "@/components/profile/profile-projects";
 import { siteUrl } from "@/lib/seo";
 
 // Mirror the same username shape we accept in the page handler below — keeps
@@ -63,7 +62,11 @@ export async function generateMetadata({
   };
 }
 
-export const revalidate = 3600;
+export const revalidate = 300;
+
+export async function generateStaticParams() {
+  return [];
+}
 
 export default async function UserProjectsPage({
   params,
@@ -93,23 +96,6 @@ export default async function UserProjectsPage({
     );
   }
 
-  let isOwner = false;
-  try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    isOwner = authUser?.id === user.id;
-  } catch {
-    // not logged in
-  }
-
-  // Owner sees their private projects merged in with the public ones.
-  if (isOwner) {
-    const privateProjects = await fetchPrivateProjectsForOwner(user.id);
-    if (privateProjects.length > 0) {
-      user.projects = [...privateProjects, ...(user.projects ?? [])];
-    }
-  }
-
   const breadcrumbLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -120,8 +106,6 @@ export default async function UserProjectsPage({
       { "@type": "ListItem", position: 4, name: "Projects", item: `${siteUrl}/profile/${user.username}/projects` },
     ],
   };
-
-  const projects = user.projects ?? [];
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 sm:py-12">
@@ -138,37 +122,18 @@ export default async function UserProjectsPage({
         Back to profile
       </Link>
 
-      <div className="mb-8">
+      <div className="mb-2">
         <h1 className="text-3xl font-bold text-[var(--foreground)]">
           @{user.username}&apos;s Projects
         </h1>
-        <p className="mt-2 text-[var(--text-secondary)] font-medium">
-          {projects.length} project{projects.length === 1 ? "" : "s"} shipped
-        </p>
       </div>
 
-      {projects.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-          {projects.map((project) => (
-            <ProfileProjectCard
-              key={project.id}
-              project={project}
-              verified={!!project.verified}
-              isOwner={isOwner}
-            />
-          ))}
-        </div>
-      ) : (
-        <div
-          className="p-8 text-center font-semibold text-[var(--text-muted)] rounded-2xl"
-          style={{
-            backgroundColor: "var(--bg-surface)",
-            border: "1px solid var(--border-subtle)",
-          }}
-        >
-          No projects yet.
-        </div>
-      )}
+      <ProfileProjects
+        builderId={user.id}
+        username={user.username}
+        publicProjects={user.projects ?? []}
+        variant="all"
+      />
     </div>
   );
 }

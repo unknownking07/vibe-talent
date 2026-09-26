@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { updateSession, hasAuthSessionCookie } from "@/lib/supabase/middleware";
+import { middleware } from "@/middleware";
 
 const auth = vi.hoisted(() => ({ getClaims: vi.fn(), getUser: vi.fn() }));
 const serverClient = vi.hoisted(() => vi.fn());
@@ -23,6 +24,14 @@ function request(path = "/dashboard", cookie = "sb-example-auth-token=session") 
 }
 
 describe("session middleware", () => {
+  it("serves public home and profile pages without waiting for an expired session refresh", async () => {
+    for (const path of ["/", "/profile/builder", "/profile/builder/projects"]) {
+      const response = await middleware(request(path));
+      expect(response.headers.get("location")).toBeNull();
+    }
+    expect(auth.getClaims).not.toHaveBeenCalled();
+  });
+
   it("uses verified claims without requesting the auth user on every navigation", async () => {
     const response = await updateSession(request());
     expect(response.headers.get("location")).toBeNull();

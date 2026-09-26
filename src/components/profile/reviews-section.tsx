@@ -9,7 +9,6 @@ import { ReviewerByline } from "@/components/reviews/reviewer-byline";
 
 interface ReviewsSectionProps {
   builderId: string;
-  isOwner?: boolean;
 }
 
 function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
@@ -88,7 +87,6 @@ function timeAgo(dateStr: string): string {
 
 export default function ReviewsSection({
   builderId,
-  isOwner = false,
 }: ReviewsSectionProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,6 +106,7 @@ export default function ReviewsSection({
   const [deleting, setDeleting] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const isOwner = currentUserId === builderId;
 
   // Auto-fetch logged-in user's name and email
   useEffect(() => {
