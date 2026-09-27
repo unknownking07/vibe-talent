@@ -9,6 +9,7 @@ const NAVIGATION_TIMEOUT_MS = 5000;
 
 type PendingProfile = {
   destination: string;
+  destinationUrl: string;
   source: string;
   startedAt: number;
 };
@@ -39,7 +40,12 @@ export function ProfileNavigationLoading({
       if (!/^\/profile\/[^/]+$/.test(destinationPath)) return;
       if (destinationPath === pathname) return;
 
-      setPending({ destination: destinationPath, source: pathname, startedAt: Date.now() });
+      setPending({
+        destination: destinationPath,
+        destinationUrl: `${destination.pathname}${destination.search}${destination.hash}`,
+        source: pathname,
+        startedAt: Date.now(),
+      });
     }
 
     document.addEventListener("click", onClick, true);
@@ -56,7 +62,7 @@ export function ProfileNavigationLoading({
       // A full document request recovers the intended profile destination.
       const timeout = window.setTimeout(() => {
         if (window.location.pathname === pending.source) {
-          onNavigationStall(pending.destination);
+          onNavigationStall(pending.destinationUrl);
         }
       }, Math.max(0, NAVIGATION_TIMEOUT_MS - elapsed));
       return () => window.clearTimeout(timeout);

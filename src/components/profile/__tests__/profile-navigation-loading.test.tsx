@@ -42,9 +42,9 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function clickProfile(options: MouseEventInit = {}) {
+function clickProfile(options: MouseEventInit = {}, href = "/profile/alice") {
   const link = document.createElement("a");
-  link.href = "/profile/alice";
+  link.href = href;
   link.addEventListener("click", (event) => event.preventDefault());
   document.body.appendChild(link);
   act(() => link.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, ...options })));
@@ -91,14 +91,14 @@ describe("profile navigation loading", () => {
     const onNavigationStall = vi.fn();
     window.history.replaceState({}, "", "/explore");
     act(() => root.render(<ProfileNavigationLoading onNavigationStall={onNavigationStall} />));
-    clickProfile();
+    clickProfile({}, "/profile/alice?ref=leaderboard#reviews");
 
     act(() => vi.advanceTimersByTime(4999));
     expect(onNavigationStall).not.toHaveBeenCalled();
     expect(container.querySelector('[role="status"]')).not.toBeNull();
 
     act(() => vi.advanceTimersByTime(1));
-    expect(onNavigationStall).toHaveBeenCalledWith("/profile/alice");
+    expect(onNavigationStall).toHaveBeenCalledWith("/profile/alice?ref=leaderboard#reviews");
     expect(container.querySelector('[role="status"]')).not.toBeNull();
   });
 });
