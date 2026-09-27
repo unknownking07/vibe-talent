@@ -11,6 +11,7 @@ interface ReviewsSectionProps {
   builderId: string;
   initialReviews: PublicReview[];
   initialLoadFailed?: boolean;
+  renderedAt: number;
 }
 
 function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
@@ -74,8 +75,8 @@ function ClickableStars({
   );
 }
 
-function timeAgo(dateStr: string): string {
-  const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+function timeAgo(dateStr: string, now: number): string {
+  const seconds = Math.floor((now - new Date(dateStr).getTime()) / 1000);
   if (seconds < 60) return "just now";
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;
@@ -91,8 +92,10 @@ export default function ReviewsSection({
   builderId,
   initialReviews,
   initialLoadFailed = false,
+  renderedAt,
 }: ReviewsSectionProps) {
   const [reviews, setReviews] = useState<PublicReview[]>(initialReviews);
+  const [now, setNow] = useState(renderedAt);
   const [error, setError] = useState(false);
 
   // Review form state
@@ -111,6 +114,18 @@ export default function ReviewsSection({
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [authResolved, setAuthResolved] = useState(false);
   const isOwner = currentUserId === builderId;
+
+  useEffect(() => {
+    // The first render must match cached ISR HTML. Update relative labels only
+    // after hydration, then keep them current while the profile stays open.
+    const refresh = () => setNow(Date.now());
+    const immediate = window.setTimeout(refresh, 0);
+    const interval = window.setInterval(refresh, 60_000);
+    return () => {
+      window.clearTimeout(immediate);
+      window.clearInterval(interval);
+    };
+  }, []);
 
   // Auto-fetch logged-in user's name and email
   useEffect(() => {
@@ -455,7 +470,7 @@ export default function ReviewsSection({
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-[var(--text-muted-soft)] text-xs font-mono">
-                    {timeAgo(review.created_at)}
+                    {timeAgo(review.created_at, now)}
                   </span>
                   {currentUserId !== null &&
                     currentUserId === review.reviewer_user_id && (

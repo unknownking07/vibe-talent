@@ -107,22 +107,36 @@ async function fetchReviewerMetrics(userId: string): Promise<{
 type AchievementResult = Awaited<ReturnType<typeof fetchAchievementCounters>> | null;
 type ReviewerMetrics = Awaited<ReturnType<typeof fetchReviewerMetrics>>;
 
+async function fetchProfileReviews(builderId: string) {
+  const result = await fetchPublicReviews(builderId);
+  return { reviews: result.reviews, renderedAt: Date.now() };
+}
+
 async function ProfileReviews({
   builderId,
   data,
 }: {
   builderId: string;
-  data: ReturnType<typeof fetchPublicReviews>;
+  data: ReturnType<typeof fetchProfileReviews>;
 }) {
-  let reviews: Awaited<ReturnType<typeof fetchPublicReviews>>["reviews"] = [];
+  let reviews: Awaited<ReturnType<typeof fetchProfileReviews>>["reviews"] = [];
+  let renderedAt = 0;
   let initialLoadFailed = false;
   try {
-    reviews = (await data).reviews;
+    ({ reviews, renderedAt } = await data);
   } catch (error) {
     console.error("[profile] reviews fetch failed:", error);
     initialLoadFailed = true;
   }
-  return <ReviewsSection key={builderId} builderId={builderId} initialReviews={reviews} initialLoadFailed={initialLoadFailed} />;
+  return (
+    <ReviewsSection
+      key={builderId}
+      builderId={builderId}
+      initialReviews={reviews}
+      initialLoadFailed={initialLoadFailed}
+      renderedAt={renderedAt}
+    />
+  );
 }
 
 async function ProfileReviewerCard({
@@ -227,7 +241,7 @@ export default async function ProfilePage({
     console.error("Failed to fetch reviewer reputation:", err);
     return { reviewsLast30d: 0, calibration: null, tier: null };
   });
-  const publicReviews = fetchPublicReviews(user.id);
+  const publicReviews = fetchProfileReviews(user.id);
 
   const breadcrumbLd = {
     "@context": "https://schema.org",
