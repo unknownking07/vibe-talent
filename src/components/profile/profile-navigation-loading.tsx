@@ -5,16 +5,23 @@ import { usePathname } from "next/navigation";
 import ProfileLoading from "@/components/profile/profile-loading";
 
 const MIN_VISIBLE_MS = 500;
-const NAVIGATION_TIMEOUT_MS = 3000;
+const NAVIGATION_TIMEOUT_MS = 5000;
 
 type PendingProfile = {
   destination: string;
+  destinationUrl: string;
   source: string;
   startedAt: number;
 };
 
+const navigateToProfileDocument = (destination: string) => window.location.assign(destination);
+
 /** Keep the route skeleton visible for a beat even when a profile was prefetched. */
-export function ProfileNavigationLoading() {
+export function ProfileNavigationLoading({
+  onNavigationStall = navigateToProfileDocument,
+}: {
+  onNavigationStall?: (destination: string) => void;
+} = {}) {
   const pathname = usePathname();
   const [pending, setPending] = useState<PendingProfile | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -33,7 +40,12 @@ export function ProfileNavigationLoading() {
       if (!/^\/profile\/[^/]+$/.test(destinationPath)) return;
       if (destinationPath === pathname) return;
 
-      setPending({ destination: destinationPath, source: pathname, startedAt: Date.now() });
+      setPending({
+        destination: destinationPath,
+        destinationUrl: `${destination.pathname}${destination.search}${destination.hash}`,
+        source: pathname,
+        startedAt: Date.now(),
+      });
     }
 
     document.addEventListener("click", onClick, true);
@@ -44,17 +56,25 @@ export function ProfileNavigationLoading() {
     if (!pending) return;
 
     const elapsed = Date.now() - pending.startedAt;
-    const duration = pathname === pending.destination
-      ? MIN_VISIBLE_MS
-      : pathname === pending.source
-        ? NAVIGATION_TIMEOUT_MS
-        : 0;
+    if (pathname === pending.source) {
+      // A stalled soft navigation used to remove the overlay after three
+      // seconds, revealing the source page and looking like a redirect home.
+      // A full document request recovers the intended profile destination.
+      const timeout = window.setTimeout(() => {
+        if (window.location.pathname === pending.source) {
+          onNavigationStall(pending.destinationUrl);
+        }
+      }, Math.max(0, NAVIGATION_TIMEOUT_MS - elapsed));
+      return () => window.clearTimeout(timeout);
+    }
+
+    const duration = pathname === pending.destination ? MIN_VISIBLE_MS : 0;
     const timeout = window.setTimeout(() => {
       setPending((current) => current === pending ? null : current);
     }, Math.max(0, duration - elapsed));
 
     return () => window.clearTimeout(timeout);
-  }, [pathname, pending]);
+  }, [pathname, pending, onNavigationStall]);
 
   useLayoutEffect(() => {
     if (!pending) return;

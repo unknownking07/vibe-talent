@@ -4,11 +4,14 @@ import { useState, useEffect } from "react";
 import { Send, Trash2 } from "lucide-react";
 import { ChatText, Star } from "@phosphor-icons/react";
 import { createClient } from "@/lib/supabase/client";
-import type { Review } from "@/lib/types/database";
+import type { PublicReview } from "@/lib/types/database";
 import { ReviewerByline } from "@/components/reviews/reviewer-byline";
 
 interface ReviewsSectionProps {
   builderId: string;
+  initialReviews: PublicReview[];
+  initialLoadFailed?: boolean;
+  renderedAt: number;
 }
 
 function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
@@ -72,8 +75,8 @@ function ClickableStars({
   );
 }
 
-function timeAgo(dateStr: string): string {
-  const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+function timeAgo(dateStr: string, now: number): string {
+  const seconds = Math.floor((now - new Date(dateStr).getTime()) / 1000);
   if (seconds < 60) return "just now";
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;
@@ -87,9 +90,12 @@ function timeAgo(dateStr: string): string {
 
 export default function ReviewsSection({
   builderId,
+  initialReviews,
+  initialLoadFailed = false,
+  renderedAt,
 }: ReviewsSectionProps) {
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState<PublicReview[]>(initialReviews);
+  const [now, setNow] = useState(renderedAt);
   const [error, setError] = useState(false);
 
   // Review form state
@@ -108,6 +114,18 @@ export default function ReviewsSection({
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [authResolved, setAuthResolved] = useState(false);
   const isOwner = currentUserId === builderId;
+
+  useEffect(() => {
+    // The first render must match cached ISR HTML. Update relative labels only
+    // after hydration, then keep them current while the profile stays open.
+    const refresh = () => setNow(Date.now());
+    const immediate = window.setTimeout(refresh, 0);
+    const interval = window.setInterval(refresh, 60_000);
+    return () => {
+      window.clearTimeout(immediate);
+      window.clearInterval(interval);
+    };
+  }, []);
 
   // Auto-fetch logged-in user's name and email
   useEffect(() => {
@@ -147,18 +165,17 @@ export default function ReviewsSection({
         if (res.ok) {
           const data = await res.json();
           setReviews(data.reviews || []);
+          setError(false);
         } else {
-          setError(true);
+          if (initialLoadFailed) setError(true);
         }
       } catch (err) {
         console.error("Failed to load reviews:", err);
-        setError(true);
-      } finally {
-        setLoading(false);
+        if (initialLoadFailed) setError(true);
       }
     }
     loadReviews();
-  }, [builderId]);
+  }, [builderId, initialLoadFailed]);
 
   const handleSubmitReview = async () => {
     if (!authResolved || isOwner) return;
@@ -248,23 +265,6 @@ export default function ReviewsSection({
       setDeleting(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="card-brutal p-6">
-        <div className="animate-pulse space-y-4">
-          <div
-            className="h-6 rounded w-32"
-            style={{ backgroundColor: "var(--bg-surface-light)" }}
-          ></div>
-          <div
-            className="h-20 rounded"
-            style={{ backgroundColor: "var(--bg-surface-light)" }}
-          ></div>
-        </div>
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -470,7 +470,7 @@ export default function ReviewsSection({
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-[var(--text-muted-soft)] text-xs font-mono">
-                    {timeAgo(review.created_at)}
+                    {timeAgo(review.created_at, now)}
                   </span>
                   {currentUserId !== null &&
                     currentUserId === review.reviewer_user_id && (
