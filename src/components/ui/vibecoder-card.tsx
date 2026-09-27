@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { BadgeDisplay } from "./badge-display";
 import { StreakCounter } from "./streak-counter";
@@ -38,11 +39,17 @@ function getActivityLabel(
 }
 
 export function VibecoderCard({ user, rank }: VibecoderCardProps) {
+  const router = useRouter();
   const initials = user.username.slice(0, 2).toUpperCase();
   const activity = getActivityLabel(user.last_activity_date);
+  const profileHref = `/profile/${user.username}`;
 
   return (
-    <Link href={`/profile/${user.username}`}>
+    <Link
+      href={profileHref}
+      onMouseEnter={() => router.prefetch(profileHref)}
+      onFocus={() => router.prefetch(profileHref)}
+    >
       <div className="group relative p-5 transition-all card-brutal hover:-translate-y-0.5 hover:shadow-[var(--shadow-brutal-hover)] h-full flex flex-col">
         {rank && (
           <div
