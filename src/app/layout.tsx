@@ -129,7 +129,7 @@ export default function RootLayout({
         <Navbar />
         <ProfileNavigationLoading />
         <ErrorBoundary>
-          <main className="min-h-screen">{children}</main>
+          <main id="site-content" className="min-h-screen">{children}</main>
         </ErrorBoundary>
         <Footer />
         <SignupBar />

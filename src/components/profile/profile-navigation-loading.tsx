@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import ProfileLoading from "@/components/profile/profile-loading";
 
@@ -17,6 +17,7 @@ type PendingProfile = {
 export function ProfileNavigationLoading() {
   const pathname = usePathname();
   const [pending, setPending] = useState<PendingProfile | null>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onClick(event: MouseEvent) {
@@ -55,10 +56,43 @@ export function ProfileNavigationLoading() {
     return () => window.clearTimeout(timeout);
   }, [pathname, pending]);
 
+  useLayoutEffect(() => {
+    if (!pending) return;
+
+    const covered = ["site-content", "site-footer"]
+      .map((id) => document.getElementById(id))
+      .filter((element): element is HTMLElement => element !== null);
+    const previous = covered.map((element) => ({
+      element,
+      inert: Boolean(element.inert),
+      ariaHidden: element.getAttribute("aria-hidden"),
+    }));
+    for (const element of covered) {
+      element.inert = true;
+      element.setAttribute("aria-hidden", "true");
+    }
+
+    function positionBelowNavbar() {
+      const bottom = document.getElementById("site-navbar")?.getBoundingClientRect().bottom ?? 64;
+      if (overlayRef.current) overlayRef.current.style.top = `${Math.max(0, Math.ceil(bottom))}px`;
+    }
+    positionBelowNavbar();
+    window.addEventListener("scroll", positionBelowNavbar, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", positionBelowNavbar);
+      for (const { element, inert, ariaHidden } of previous) {
+        element.inert = inert;
+        if (ariaHidden === null) element.removeAttribute("aria-hidden");
+        else element.setAttribute("aria-hidden", ariaHidden);
+      }
+    };
+  }, [pending, pathname]);
+
   if (!pending || (pathname !== pending.source && pathname !== pending.destination)) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 top-16 z-40 overflow-y-auto bg-[var(--background)]">
+    <div ref={overlayRef} className="fixed inset-x-0 bottom-0 top-16 z-40 overflow-y-auto bg-[var(--background)]">
       <ProfileLoading />
     </div>
   );

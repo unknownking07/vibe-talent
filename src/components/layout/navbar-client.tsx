@@ -564,6 +564,7 @@ export function NavbarClient({
 
   return (
     <nav
+      id="site-navbar"
       className="sticky top-0 z-50"
       style={{
         backgroundColor: "var(--bg-surface)",

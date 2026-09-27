@@ -5,6 +5,7 @@ import { VIBE_MINT, VIBE_BUY_URL } from "@/lib/vibe-config";
 export function Footer() {
   return (
     <footer
+      id="site-footer"
       style={{
         backgroundColor: "var(--bg-surface)",
         borderTop: "1px solid var(--border-hard)",

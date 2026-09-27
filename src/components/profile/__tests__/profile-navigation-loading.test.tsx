@@ -10,12 +10,25 @@ vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
 
 let root: Root;
 let container: HTMLDivElement;
+let main: HTMLElement;
+let navbar: HTMLElement;
+let footer: HTMLElement;
 
 beforeEach(() => {
   vi.useFakeTimers();
   pathname = "/explore";
   container = document.createElement("div");
   document.body.appendChild(container);
+  main = document.createElement("main");
+  main.id = "site-content";
+  document.body.appendChild(main);
+  navbar = document.createElement("nav");
+  navbar.id = "site-navbar";
+  vi.spyOn(navbar, "getBoundingClientRect").mockReturnValue({ bottom: 100 } as DOMRect);
+  document.body.appendChild(navbar);
+  footer = document.createElement("footer");
+  footer.id = "site-footer";
+  document.body.appendChild(footer);
   root = createRoot(container);
   act(() => root.render(<ProfileNavigationLoading />));
 });
@@ -23,6 +36,9 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   container.remove();
+  main.remove();
+  navbar.remove();
+  footer.remove();
   vi.useRealTimers();
 });
 
@@ -39,6 +55,14 @@ describe("profile navigation loading", () => {
   it("shows the profile skeleton on a cached click for a short minimum duration", () => {
     clickProfile();
     expect(container.querySelector('[role="status"]')?.textContent).toContain("Loading builder profile");
+    expect(main.inert).toBe(true);
+    expect(main.getAttribute("aria-hidden")).toBe("true");
+    expect(footer.inert).toBe(true);
+    expect((container.firstElementChild as HTMLElement).style.top).toBe("100px");
+
+    vi.spyOn(navbar, "getBoundingClientRect").mockReturnValue({ bottom: 64 } as DOMRect);
+    act(() => window.dispatchEvent(new Event("scroll")));
+    expect((container.firstElementChild as HTMLElement).style.top).toBe("64px");
 
     pathname = "/profile/alice";
     act(() => root.render(<ProfileNavigationLoading />));
@@ -46,6 +70,9 @@ describe("profile navigation loading", () => {
     expect(container.querySelector('[role="status"]')).not.toBeNull();
     act(() => vi.advanceTimersByTime(1));
     expect(container.querySelector('[role="status"]')).toBeNull();
+    expect(main.inert).toBe(false);
+    expect(main.hasAttribute("aria-hidden")).toBe(false);
+    expect(footer.inert).toBe(false);
   });
 
   it("does not intercept a modified click that opens a new tab", () => {
