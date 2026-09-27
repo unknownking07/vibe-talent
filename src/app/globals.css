@@ -192,10 +192,6 @@ h3 {
   background: var(--text-muted-soft);
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
 /* Notification card hover-lift */
 .ntf-card {
   transition:
