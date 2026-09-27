@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/footer";
 import { SignupBar } from "@/components/layout/signup-bar";
 import { FloatingChat } from "@/components/layout/floating-chat";
 import { PromoBillboard } from "@/components/ui/promo-billboard";
+import { ProfileNavigationLoading } from "@/components/profile/profile-navigation-loading";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { defaultSocialImage, siteUrl } from "@/lib/seo";
 import "./globals.css";
@@ -126,6 +127,7 @@ export default function RootLayout({
       <body className="antialiased">
         <PromoBillboard />
         <Navbar />
+        <ProfileNavigationLoading />
         <ErrorBoundary>
           <main className="min-h-screen">{children}</main>
         </ErrorBoundary>
