@@ -544,6 +544,16 @@ select.input-brutal {
   border-radius: var(--radius-card);
 }
 
+.skeleton.rounded-full {
+  border-radius: 9999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
 /* Tooltip */
 .tooltip-brutal {
   position: relative;
