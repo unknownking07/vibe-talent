@@ -11,6 +11,7 @@ import type { ReviewerTier } from "@/lib/reviewer/tier";
 import { extractSocialHandle } from "@/lib/social-handles";
 import { ProfileOwnerProvider, ProfileProjects, ProfileStatsRibbon } from "@/components/profile/profile-projects";
 import ReviewsSection from "@/components/profile/reviews-section";
+import { fetchPublicReviews } from "@/lib/reviews/public-reviews";
 import { BackedBy } from "@/components/profile/backed-by";
 import { BagsLaunches } from "@/components/profile/bags-launches";
 import { ProfileViewTracker } from "@/components/profile/profile-view-tracker";
@@ -105,6 +106,24 @@ async function fetchReviewerMetrics(userId: string): Promise<{
 
 type AchievementResult = Awaited<ReturnType<typeof fetchAchievementCounters>> | null;
 type ReviewerMetrics = Awaited<ReturnType<typeof fetchReviewerMetrics>>;
+
+async function ProfileReviews({
+  builderId,
+  data,
+}: {
+  builderId: string;
+  data: ReturnType<typeof fetchPublicReviews>;
+}) {
+  let reviews: Awaited<ReturnType<typeof fetchPublicReviews>>["reviews"] = [];
+  let initialLoadFailed = false;
+  try {
+    reviews = (await data).reviews;
+  } catch (error) {
+    console.error("[profile] reviews fetch failed:", error);
+    initialLoadFailed = true;
+  }
+  return <ReviewsSection key={builderId} builderId={builderId} initialReviews={reviews} initialLoadFailed={initialLoadFailed} />;
+}
 
 async function ProfileReviewerCard({
   counters,
@@ -208,6 +227,7 @@ export default async function ProfilePage({
     console.error("Failed to fetch reviewer reputation:", err);
     return { reviewsLast30d: 0, calibration: null, tier: null };
   });
+  const publicReviews = fetchPublicReviews(user.id);
 
   const breadcrumbLd = {
     "@context": "https://schema.org",
@@ -313,7 +333,16 @@ export default async function ProfilePage({
           </section>
 
           {/* Reviews Section */}
-          <ReviewsSection builderId={user.id} />
+          <Suspense fallback={
+            <div className="card-brutal p-6" role="status" aria-label="Loading reviews">
+              <div className="animate-pulse space-y-4">
+                <div className="h-6 w-32 rounded bg-[var(--bg-surface-light)]" />
+                <div className="h-20 rounded bg-[var(--bg-surface-light)]" />
+              </div>
+            </div>
+          }>
+            <ProfileReviews builderId={user.id} data={publicReviews} />
+          </Suspense>
         </div>
       </div>
       </ProfileOwnerProvider>

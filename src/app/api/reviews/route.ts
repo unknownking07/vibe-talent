@@ -6,6 +6,7 @@ import { sendReviewNotificationEmail } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { validateName, validateEmail, validateUUID } from "@/lib/validation";
+import { fetchPublicReviews } from "@/lib/reviews/public-reviews";
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,48 +21,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid builder_id" }, { status: 400 });
     }
 
-    const sb = createAdminClient();
-    // Embed reviewer profile (username + reputation) via the reviewer_user_id FK.
-    // Anonymous reviews (reviewer_user_id IS NULL) come back with reviewer: null.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (sb as any)
-      .from("reviews")
-      .select(`
-        id, builder_id, reviewer_name, reviewer_email, rating, comment, trust_score, created_at, reviewer_user_id,
-        reviewer:users!reviewer_user_id ( username, reviewer_calibration, reviewer_tier )
-      `)
-      .eq("builder_id", builderId)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Failed to fetch reviews:", error);
-      return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 });
-    }
-
-    const reviews = data || [];
-
-    // Only count trusted reviews (trust_score >= 30) for the average rating
-    const trustedReviews = reviews.filter((r: { trust_score?: number }) => (r.trust_score ?? 100) >= 30);
-    const avgRating = trustedReviews.length > 0
-      ? Math.round((trustedReviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / trustedReviews.length) * 10) / 10
-      : 0;
-
-    // Strip trust_score (internal anti-abuse threshold) AND reviewer_email
-    // (PII) from the public response. reviewer_email must never leave the
-    // server — no client needs it, and returning it enabled email harvesting
-    // plus the old email-based delete bypass.
-    const publicReviews = reviews.map(
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      ({ trust_score: _ts, reviewer_email: _re, ...rest }: { trust_score?: number; reviewer_email?: string; [key: string]: unknown }) => rest
-    );
-
-    return NextResponse.json({
-      reviews: publicReviews,
-      average_rating: avgRating,
-      total_reviews: reviews.length,
-      trusted_reviews: trustedReviews.length,
-    });
-  } catch {
+    return NextResponse.json(await fetchPublicReviews(builderId));
+  } catch (error) {
+    console.error("Failed to fetch reviews:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

@@ -122,6 +122,9 @@ export interface Review {
   } | null;
 }
 
+// Public reviews intentionally omit the email and internal trust score.
+export type PublicReview = Omit<Review, "reviewer_email" | "trust_score" | "hire_request_id">;
+
 export interface ProjectEndorsement {
   id: string;
   project_id: string;

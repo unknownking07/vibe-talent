@@ -80,9 +80,25 @@ describe("profile navigation loading", () => {
     expect(container.querySelector('[role="status"]')).toBeNull();
   });
 
-  it("clears the skeleton if navigation never completes", () => {
+  it("keeps the skeleton visible when navigation takes longer than three seconds", () => {
     clickProfile();
     act(() => vi.advanceTimersByTime(3000));
-    expect(container.querySelector('[role="status"]')).toBeNull();
+    expect(container.querySelector('[role="status"]')).not.toBeNull();
+    expect(main.inert).toBe(true);
+  });
+
+  it("falls back to the requested profile when soft navigation stalls", () => {
+    const onNavigationStall = vi.fn();
+    window.history.replaceState({}, "", "/explore");
+    act(() => root.render(<ProfileNavigationLoading onNavigationStall={onNavigationStall} />));
+    clickProfile();
+
+    act(() => vi.advanceTimersByTime(4999));
+    expect(onNavigationStall).not.toHaveBeenCalled();
+    expect(container.querySelector('[role="status"]')).not.toBeNull();
+
+    act(() => vi.advanceTimersByTime(1));
+    expect(onNavigationStall).toHaveBeenCalledWith("/profile/alice");
+    expect(container.querySelector('[role="status"]')).not.toBeNull();
   });
 });
