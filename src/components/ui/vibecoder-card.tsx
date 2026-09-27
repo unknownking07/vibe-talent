@@ -45,6 +45,8 @@ export function VibecoderCard({ user, rank }: VibecoderCardProps) {
   const profileHref = `/profile/${user.username}`;
 
   return (
+    // Keep Next's default prefetch so a mobile tap can use the cached route or
+    // loading boundary. Hover and keyboard focus warm a likely visit sooner.
     <Link
       href={profileHref}
       onMouseEnter={() => router.prefetch(profileHref)}
