@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { jsonLdHtml } from "@/lib/json-ld";
 import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
@@ -20,12 +21,12 @@ export async function generateMetadata({
   const { username: rawMeta } = await params;
   const username = rawMeta?.trim();
   if (!username || username.length > USERNAME_MAX_LENGTH || !USERNAME_PATTERN.test(username)) {
-    return { title: "Builder Not Found" };
+    notFound();
   }
   const user = await fetchUserByUsernameCached(username);
 
   if (!user) {
-    return { title: "Builder Not Found" };
+    notFound();
   }
 
   const projectCount = (user.projects ?? []).length;
@@ -77,23 +78,13 @@ export default async function UserProjectsPage({
   const username = rawUsername?.trim();
 
   if (!username || username.length > USERNAME_MAX_LENGTH || !USERNAME_PATTERN.test(username)) {
-    return (
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-        <h1 className="text-2xl font-bold text-[var(--foreground)]">Invalid username</h1>
-        <p className="mt-2 text-[var(--text-secondary)] font-medium">This is not a valid username.</p>
-      </div>
-    );
+    notFound();
   }
 
   const user = await fetchUserByUsernameCached(username);
 
   if (!user) {
-    return (
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-        <h1 className="text-2xl font-bold text-[var(--foreground)]">Builder not found</h1>
-        <p className="mt-2 text-[var(--text-secondary)] font-medium">@{username} does not exist on VibeTalent.</p>
-      </div>
-    );
+    notFound();
   }
 
   const breadcrumbLd = {

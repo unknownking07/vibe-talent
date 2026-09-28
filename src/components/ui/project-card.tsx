@@ -192,7 +192,13 @@ export function ProjectCard({
       <div className="px-4 py-3 flex-1 flex flex-col">
         <div className="flex items-start justify-between gap-2">
           <h3 className="text-sm font-bold text-[var(--foreground)] line-clamp-2 flex-1 min-w-0 leading-tight">
-            {project.title}
+            {project.is_private ? (
+              project.title
+            ) : (
+              <Link href={`/projects/${project.id}`} className="hover:text-[var(--accent)]">
+                {project.title}
+              </Link>
+            )}
           </h3>
           <div className="flex shrink-0 gap-2">
             {onEdit && (

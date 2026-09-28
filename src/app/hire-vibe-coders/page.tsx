@@ -7,18 +7,18 @@ import { CheckCircle, Lightning, Warning } from "@phosphor-icons/react/dist/ssr"
 const PAGE_URL = `${siteUrl}/hire-vibe-coders`;
 const PAGE_TITLE = "How to Hire Vibe Coders: A Practical 2026 Guide";
 const PAGE_DESCRIPTION =
-  "How to hire vibe coders and AI-native builders: the signals that predict delivery, the ones that do not, a five-step process, and where to find them.";
+  "A practical guide to evaluating AI-assisted developers: inspect shipped projects and repositories, discuss scope, and run a small paid trial.";
 
 // Answer-first summary. Sits at the top of the page and is reused verbatim in
 // the Article description so answer engines quoting the page get the same text
 // a human reads.
 const TL_DR =
-  "Hire vibe coders on evidence of shipping, not on resumes. The strongest predictors are a live commit streak, deployed projects you can open in a browser, and repository quality you can inspect yourself. All three are public and none can be bought, unlike reviews and self-reported skill lists. Shortlist on those signals, then run one small paid trial task before committing to anything larger.";
+  "Start with public evidence: deployed projects you can open, repositories you can inspect, and a builder's GitHub-linked activity. These signals help you ask better questions, but they do not guarantee delivery. Shortlist relevant builders, discuss scope, and run a small paid trial task before committing to larger work.";
 
 const SIGNALS = [
   {
     title: "A live commit streak",
-    body: "Consecutive days of public commits. It is the hardest signal to fake, because it cannot be bought or backdated, and it measures the thing you actually care about: whether this person ships when nobody is watching.",
+    body: "Consecutive days with public GitHub contributions can show activity over time. Contribution dates and commit history can change, so use a streak as context alongside project quality and a conversation with the builder.",
   },
   {
     title: "Deployed projects with live URLs",
@@ -77,7 +77,7 @@ const RED_FLAGS = [
 const FAQ = [
   {
     q: "How do you hire vibe coders?",
-    a: "Shortlist on public shipping evidence rather than resumes: a live commit streak, deployed projects with working URLs, and readable repository quality. Open two of their projects and skim one repo yourself, which takes about ten minutes per candidate. Then run one small paid trial task before agreeing to a larger scope. On VibeTalent you can filter builders by streak, shipped projects, and vibe score, then message them directly with no platform fee.",
+    a: "Shortlist on public shipping evidence: deployed projects with working URLs, readable repositories, and GitHub-linked activity. Open two projects and skim a repo for each candidate. Then discuss scope and run one small paid trial task before agreeing to larger work. On VibeTalent you can filter builders and contact them directly with no platform fee.",
   },
   {
     q: "What is a vibe coder?",
@@ -186,6 +186,9 @@ export default function HireVibeCodersPage() {
         <p className="mt-3 text-[var(--text-secondary)] font-medium">
           A practical guide to hiring AI-native builders on evidence instead of resumes.
         </p>
+        <Link href="/hire-ai-assisted-developers" className="mt-5 inline-block text-sm font-semibold text-[var(--accent)] hover:underline">
+          Ready to hire? Compare AI-assisted developers
+        </Link>
       </div>
 
       {/* Answer-first block, so AI engines and skimmers both get the payload immediately. */}
@@ -215,9 +218,9 @@ export default function HireVibeCodersPage() {
           </p>
           <p>
             That changes what you should evaluate. Years of experience and framework checklists
-            describe how someone trained. For AI-native work, what predicts delivery is how often
-            they ship and what they have actually put in front of users. Both are public, which
-            means you can check them before you ever send a message. For definitions of the
+            describe how someone trained. For AI-native work, inspect what someone has built,
+            how they explain their decisions, and whether their experience fits your scope.
+            Public work helps you start that evaluation. For definitions of the
             individual terms, see the{" "}
             <Link href="/glossary/vibe-coder" className="text-[var(--accent)] font-semibold hover:underline">
               vibe coder
@@ -233,7 +236,7 @@ export default function HireVibeCodersPage() {
 
       <section className="mb-12">
         <h2 className="text-2xl font-bold text-[var(--foreground)] mb-6">
-          Five signals that predict delivery
+          Five signals to evaluate
         </h2>
         <div className="space-y-3">
           {SIGNALS.map((s) => (
@@ -270,9 +273,9 @@ export default function HireVibeCodersPage() {
             interview performance.
           </p>
           <p>
-            Shipping evidence resists all of that. You cannot buy a 200-day commit streak, and you
-            cannot fake a deployed application that a stranger can open and use. That is the entire
-            premise behind how{" "}
+            Shipping evidence gives you something concrete to inspect, but no single metric proves
+            ownership, quality, or reliability. Open the work, review the repository, and discuss
+            the builder&apos;s contribution. That is the premise behind how{" "}
             <Link href="/explore" className="text-[var(--accent)] font-semibold hover:underline">
               builders are ranked on VibeTalent
             </Link>
@@ -338,8 +341,8 @@ export default function HireVibeCodersPage() {
         </h2>
         <div className="space-y-4 text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
           <p>
-            VibeTalent is built specifically for this: every builder is ranked on GitHub-verified
-            streaks, shipped projects, and repository quality, and you can message them directly
+            VibeTalent is built specifically for this: compare GitHub-linked activity,
+            shipped projects, and repository quality, then message builders directly
             with no platform fee. Browse the{" "}
             <Link href="/explore" className="text-[var(--accent)] font-semibold hover:underline">
               talent directory
@@ -349,6 +352,13 @@ export default function HireVibeCodersPage() {
               leaderboard
             </Link>{" "}
             to start.
+          </p>
+          <p>
+            If you are ready to make a shortlist, visit the{" "}
+            <Link href="/hire-ai-assisted-developers" className="text-[var(--accent)] font-semibold hover:underline">
+              AI-assisted developer hiring page
+            </Link>
+            .
           </p>
           <p>
             It is not the only option, and the honest trade-off is pool size. General marketplaces

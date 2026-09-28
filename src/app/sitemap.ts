@@ -3,20 +3,23 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { siteUrl } from "@/lib/seo";
 import { GLOSSARY_TERMS } from "@/lib/glossary";
 import { COMPARISONS } from "@/lib/comparisons";
+import { isIndexableProject } from "@/lib/seo-projects";
+import type { Project } from "@/lib/types/database";
 
 // Regenerate hourly. Google polls sitemaps on its own schedule and the
-// per-user `<lastmod>` below already signals freshness to crawlers — no
-// reason to rebuild this on every request.
+// entries below are generated from public data. Only supply `lastmod` when
+// we have a timestamp for the page itself, rather than the time of this fetch.
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
-    { url: siteUrl, lastModified: new Date("2026-04-06") },
-    { url: `${siteUrl}/hire-vibe-coders`, lastModified: new Date("2026-08-12") },
-    { url: `${siteUrl}/explore`, lastModified: new Date("2026-04-01") },
+    { url: siteUrl, lastModified: new Date("2026-09-28") },
+    { url: `${siteUrl}/hire-ai-assisted-developers`, lastModified: new Date("2026-09-28") },
+    { url: `${siteUrl}/hire-vibe-coders`, lastModified: new Date("2026-09-28") },
+    { url: `${siteUrl}/explore`, lastModified: new Date("2026-09-28") },
     { url: `${siteUrl}/leaderboard`, lastModified: new Date("2026-04-01") },
     { url: `${siteUrl}/feed`, lastModified: new Date("2026-04-01") },
-    { url: `${siteUrl}/projects`, lastModified: new Date() },
+    { url: `${siteUrl}/projects` },
     { url: `${siteUrl}/agent`, lastModified: new Date("2026-04-06") },
     { url: `${siteUrl}/about`, lastModified: new Date("2026-04-06") },
     { url: `${siteUrl}/roadmap`, lastModified: new Date("2026-04-23") },
@@ -52,13 +55,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // site-wide quality signals and gives Google ~empty pages to crawl.
     // Streak-or-project (not just GitHub linked) catches builders who
     // imported projects manually or whose GitHub connect didn't land.
-    const [usersResult, projectUserIdsResult, bagsLaunchesResult] =
+    const [usersResult, projectUserIdsResult, projectPagesResult, bagsLaunchesResult] =
       await Promise.all([
         supabase
           .from("users")
-          .select("id, username, created_at, longest_streak")
+          .select("id, username, longest_streak")
           .not("username", "is", null),
         supabase.from("projects").select("user_id").eq("flagged", false).eq("is_private", false),
+        supabase
+          .from("projects")
+          .select("id, title, description, verified, live_url, github_url, user_id")
+          .eq("flagged", false)
+          .eq("is_private", false)
+          .eq("verified", true),
         // Builders with a verified Bags launch each get a /bags page. Their
         // errors are not fatal here: a missing table or a bad minute upstream
         // should cost those few URLs, not the whole sitemap.
@@ -80,7 +89,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     type SitemapUser = {
       id: string;
       username: string;
-      created_at: string;
       longest_streak: number | null;
     };
 
@@ -99,7 +107,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       )
       .map((user) => ({
         url: `${siteUrl}/profile/${user.username.trim()}`,
-        lastModified: new Date(user.created_at),
+      }));
+
+    if (projectPagesResult.error) {
+      console.error("[sitemap] project pages query failed:", projectPagesResult.error);
+    }
+    const projectPages: MetadataRoute.Sitemap = (
+      (projectPagesResult.data ?? []) as Pick<
+        Project,
+        "id" | "title" | "description" | "verified" | "live_url" | "github_url" | "user_id"
+      >[]
+    )
+      .filter(isIndexableProject)
+      .filter((project) => (usersResult.data ?? []).some((user) => user.id === project.user_id))
+      .map((project) => ({
+        url: `${siteUrl}/projects/${project.id}`,
       }));
 
     // Supabase returns data: null on a query error, so an unlogged failure here
@@ -137,7 +159,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(lastVerifiedByUser.get(user.id)!),
       }));
 
-    return [...staticPages, ...profilePages, ...bagsPages];
+    return [...staticPages, ...profilePages, ...projectPages, ...bagsPages];
   } catch (error) {
     // Last-resort fallback. The previous `catch {}` swallowed errors with
     // no signal — a column rename or env-var misconfig delisted every
