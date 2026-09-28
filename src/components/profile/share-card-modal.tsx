@@ -166,7 +166,7 @@ export function ShareCardModal({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={previewUrl} alt={`${username}'s VibeTalent card`} className="w-full h-full object-contain" />
             ) : null}
-            {loadError ? <span className="absolute inset-0 flex items-center justify-center text-sm text-[var(--text-muted)]">Card unavailable. Try again later.</span> : null}
+            {loadError ? <span className="absolute inset-0 flex items-center justify-center text-sm text-[var(--text-muted)]">Preview unavailable. Copy or download to retry.</span> : null}
           </div>
         </div>
 
@@ -174,7 +174,7 @@ export function ShareCardModal({
         <div className="flex gap-3 px-6 pb-6">
           <button
             onClick={handleDownload}
-            disabled={downloading || loading || loadError}
+            disabled={downloading || loading}
             className="btn-brutal flex-1 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
             style={{
               backgroundColor: "var(--accent)",
@@ -186,7 +186,7 @@ export function ShareCardModal({
           </button>
           <button
             onClick={handleCopy}
-            disabled={loading || loadError}
+            disabled={loading}
             className="btn-brutal flex-1 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
             style={{
               backgroundColor: copied
