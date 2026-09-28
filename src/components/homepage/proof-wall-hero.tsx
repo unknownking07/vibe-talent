@@ -50,14 +50,14 @@ export function ProofWallHero({
       {/* Headline + explainer (the explainer describes the wall below it) */}
       <div className="grid gap-6 lg:grid-cols-[1fr_minmax(0,340px)] lg:items-end">
         <h1 className="normal-case text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] text-[var(--foreground)]">
-          The resume is dead.
+          Hire AI-assisted developers
           <br />
-          The proof of work isn&apos;t.
+          who show their work.
         </h1>
         <p className="text-sm sm:text-base text-[var(--text-secondary)] font-medium leading-relaxed lg:pb-2">
-          Every square below is a day a builder shipped, read straight from
-          GitHub. Hover any square for the builder, the day, and the commits.
-          This is what you build here. It&apos;s also what you hire on.
+          Find builders for web apps, MVPs, and automations. Compare their
+          GitHub-linked activity and shipped projects, then contact the people
+          whose work fits your brief.
         </p>
       </div>
 
@@ -124,6 +124,9 @@ export function ProofWallHero({
           <Info size={13} weight="fill" aria-hidden="true" className="shrink-0" />
           Each row is one builder. Click anywhere on it to open their profile.
         </p>
+        <p className="mt-2 text-right text-xs text-[var(--text-muted)]">
+          Each square represents a public GitHub contribution day; activity alone does not verify project quality.
+        </p>
         <p className="sr-only">
           Activity wall: the last {days.length} days of verified GitHub shipping
           activity from the {rows.length} most active builders on VibeTalent.
@@ -162,6 +165,9 @@ export function ProofWallHero({
             style={{ backgroundColor: "var(--accent)" }}
           >
             Find builders
+          </Link>
+          <Link href="/hire-ai-assisted-developers" className="text-sm font-semibold text-[var(--accent)] hover:underline">
+            See how hiring works
           </Link>
           <Link
             href="/auth/signup"

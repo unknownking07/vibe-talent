@@ -36,8 +36,8 @@ export function Footer() {
               className="text-sm max-w-md font-medium"
               style={{ color: "var(--text-muted)" }}
             >
-              The marketplace for vibe coders who actually ship. Build your
-              reputation through consistency and proof of work.
+              Hire AI-assisted developers through shipped projects and public
+              GitHub activity. Builders can share their work and get discovered.
             </p>
           </div>
           <div>
@@ -48,6 +48,13 @@ export function Footer() {
               Platform
             </h4>
             <div className="flex flex-col gap-2">
+              <Link
+                href="/hire-ai-assisted-developers"
+                className="text-sm font-semibold hover:text-[var(--accent)] transition-colors"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Hire developers
+              </Link>
               <Link
                 href="/explore"
                 className="text-sm font-semibold hover:text-[var(--accent)] transition-colors"

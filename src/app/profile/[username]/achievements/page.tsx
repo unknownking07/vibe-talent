@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import { fetchUserByUsernameCached } from "@/lib/supabase/server-queries";
@@ -17,7 +18,7 @@ export async function generateMetadata({
   const user = await fetchUserByUsernameCached(username);
 
   if (!user) {
-    return { title: "Achievements" };
+    notFound();
   }
 
   const title = `@${user.username}'s Achievements`;
@@ -58,31 +59,13 @@ export default async function AchievementsPage({
   const username = rawUsername?.trim();
 
   if (!username || username.length > 50 || !/^[a-zA-Z0-9_.\- ]+$/.test(username)) {
-    return (
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-        <h1 className="text-2xl font-bold text-[var(--foreground)]">
-          Invalid username
-        </h1>
-        <p className="mt-2 font-medium text-[var(--text-secondary)]">
-          This is not a valid username.
-        </p>
-      </div>
-    );
+    notFound();
   }
 
   const user = await fetchUserByUsernameCached(username);
 
   if (!user) {
-    return (
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-        <h1 className="text-2xl font-bold text-[var(--foreground)]">
-          Builder not found
-        </h1>
-        <p className="mt-2 font-medium text-[var(--text-secondary)]">
-          @{username} does not exist on VibeTalent.
-        </p>
-      </div>
-    );
+    notFound();
   }
 
   const counters = await fetchAchievementCounters(user);

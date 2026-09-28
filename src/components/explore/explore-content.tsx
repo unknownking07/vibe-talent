@@ -191,6 +191,21 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
       return projectNorm * 0.4 + streakNorm * 0.3 + vibeNorm * 0.3;
     };
 
+    // The default first page is a hiring surface. Lead with profiles where a
+    // client can inspect substantial work and understand what the builder does.
+    // Keep every public builder available through search and the other sorts.
+    const buyerReadiness = (u: (typeof filtered)[0]) => {
+      const hasBio = (u.bio?.trim().length ?? 0) >= 40;
+      const inspectableWork = (u.projects ?? []).some(
+        (p) =>
+          p.verified &&
+          p.live_url &&
+          p.github_url &&
+          (p.description?.trim().length ?? 0) >= 80,
+      );
+      return Number(hasBio) + Number(inspectableWork);
+    };
+
     // Has-projects first, then sort by selected field, quality score as tiebreaker
     const hasProj = (u: (typeof filtered)[0]) =>
       (u.projects ?? []).length > 0 ? 1 : 0;
@@ -199,6 +214,7 @@ export function ExploreContent({ users }: { users: UserWithSocials[] }) {
       case "vibe_score":
         filtered.sort(
           (a, b) =>
+            buyerReadiness(b) - buyerReadiness(a) ||
             hasProj(b) - hasProj(a) ||
             b.vibe_score - a.vibe_score ||
             qualityScore(b) - qualityScore(a),

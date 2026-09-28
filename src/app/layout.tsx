@@ -30,15 +30,15 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Vibe Coders Marketplace: Hire Builders Who Ship | VibeTalent",
+    default: "Hire AI-Assisted Developers & Vibe Coders | VibeTalent",
     template: "%s | VibeTalent",
   },
   description:
-    "The marketplace for vibe coders. Build your reputation through streaks, proof of work, and shipping projects consistently.",
+    "Hire AI-assisted developers for web apps, MVPs, and automations. Compare GitHub-linked projects and contact builders directly on VibeTalent.",
   metadataBase: new URL(siteUrl),
   openGraph: {
-    title: "VibeTalent: Hire Builders Who Ship",
-    description: "Discover builders through real projects and verified proof of work.",
+    title: "Hire AI-Assisted Developers | VibeTalent",
+    description: "Explore shipped projects, compare builders, and hire AI-assisted developers directly.",
     url: siteUrl,
     siteName: "VibeTalent",
     type: "website",
@@ -55,8 +55,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "VibeTalent: Hire Builders Who Ship",
-    description: "Discover builders through real projects and verified proof of work.",
+    title: "Hire AI-Assisted Developers | VibeTalent",
+    description: "Explore shipped projects, compare builders, and hire AI-assisted developers directly.",
     images: [defaultSocialImage],
     site: "@vibetalentwork",
     creator: "@abhiontwt",

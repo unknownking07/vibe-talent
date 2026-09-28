@@ -3,17 +3,18 @@ import { jsonLdHtml } from "@/lib/json-ld";
 import { ExploreContent } from "@/components/explore/explore-content";
 import { defaultSocialImage, siteUrl, buildBreadcrumbList } from "@/lib/seo";
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Explore Vibe Coders: Browse Developers by Streak & Skills",
+  title: "Browse Vibe Coders & AI-Assisted Developers",
   description:
-    "Discover talented vibe coders. Filter by badge level, streak, tech stack, and more to find the perfect builder for your project.",
+    "Hire AI-assisted developers for web apps, MVPs, and automations. Compare public projects, GitHub activity, and tech stacks, then contact builders directly.",
   alternates: {
     canonical: `${siteUrl}/explore`,
   },
   openGraph: {
-    title: "Explore Vibe Coders: VibeTalent",
-    description: "Browse developers by streak, skills, and vibe score. Find the perfect builder for your project.",
+    title: "Browse AI-Assisted Developers | VibeTalent",
+    description: "Compare shipped projects and contact AI-assisted developers directly.",
     url: `${siteUrl}/explore`,
     siteName: "VibeTalent",
     type: "website",
@@ -22,8 +23,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     images: [defaultSocialImage],
-    title: "Explore Vibe Coders: VibeTalent",
-    description: "Browse developers by streak, skills, and vibe score. Find the perfect builder for your project.",
+    title: "Browse AI-Assisted Developers | VibeTalent",
+    description: "Compare shipped projects and contact AI-assisted developers directly.",
   },
 };
 
@@ -42,24 +43,10 @@ export default async function ExplorePage() {
 
   const jsonLd = {
     "@context": "https://schema.org",
-    "@graph": [
-      buildBreadcrumbList([
-        { name: "Home", path: "/" },
-        { name: "Explore Talent", path: "/explore" },
-      ]),
-      {
-        "@type": "ItemList",
-        name: "VibeTalent Builders",
-        description: "Discover talented vibe coders and find the perfect builder for your project",
-        numberOfItems: users.length,
-        itemListElement: users.slice(0, 10).map((user, i) => ({
-          "@type": "ListItem",
-          position: i + 1,
-          name: user.username,
-          url: `${siteUrl}/profile/${user.username}`,
-        })),
-      },
-    ],
+    ...buildBreadcrumbList([
+      { name: "Home", path: "/" },
+      { name: "Hire Developers", path: "/explore" },
+    ]),
   };
 
   return (
@@ -69,13 +56,18 @@ export default async function ExplorePage() {
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
       />
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[var(--foreground)]">Explore Talent</h1>
+        <h1 className="text-3xl font-bold text-[var(--foreground)]">Browse AI-assisted developers</h1>
         <p className="mt-2 text-[var(--text-secondary)] font-medium">
-          Discover talented vibe coders and find the perfect builder for your project
+          Compare shipped work, find a builder for your project, and contact them directly.
         </p>
         <p className="mt-3 hidden sm:block text-sm text-[var(--text-muted)] leading-relaxed max-w-3xl">
-          Browse our community of vibe coders: developers who prove their skills through daily coding streaks, shipped projects, and peer endorsements. Use the filters below to narrow by tech stack, badge level, or minimum streak length and find the right builder for your next project.
+          Browse developers who use AI coding tools to build web apps, MVPs, and automations.
+          Inspect their public projects and repositories, then filter by tech stack or activity.
+          GitHub activity is one signal; review the work and discuss your requirements before hiring.
         </p>
+        <Link href="/hire-ai-assisted-developers" className="mt-3 inline-block text-sm font-semibold text-[var(--accent)] hover:underline">
+          How hiring on VibeTalent works
+        </Link>
       </div>
 
       <ExploreContent users={users} />

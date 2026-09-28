@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { UserWithSocials } from "@/lib/types/database";
+import type { Project, UserWithSocials } from "@/lib/types/database";
 
 const USER_FIELDS = "id, username, display_name, bio, avatar_url, github_username, vibe_score, streak, longest_streak, badge_level, created_at";
 const PROJECT_FIELDS = "id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, endorsement_count, is_private, created_at";
@@ -214,6 +214,30 @@ export const fetchAllProjectsCached = unstable_cache(
   ["all-projects"],
   { revalidate: 60 }
 );
+
+export type PublicProjectWithAuthor = Project & {
+  users: { username: string | null; display_name: string | null } | null;
+};
+
+export const fetchPublicProjectByIdCached = (id: string) =>
+  unstable_cache(
+    async (): Promise<PublicProjectWithAuthor | null> => {
+      const { data, error } = await getPublicClient()
+        .from("projects")
+        .select(`${PROJECT_FIELDS}, users!projects_user_id_fkey(username, display_name)`)
+        .eq("id", id)
+        .eq("flagged", false)
+        .eq("is_private", false)
+        .maybeSingle();
+
+      if (error) {
+        throw new Error(`Failed to fetch project "${id}": ${error.message}`);
+      }
+      return data as PublicProjectWithAuthor | null;
+    },
+    [`public-project-${id}`],
+    { revalidate: 300 },
+  )();
 
 // Cached versions — revalidate every 60 seconds
 export const fetchAllUsersCached = unstable_cache(

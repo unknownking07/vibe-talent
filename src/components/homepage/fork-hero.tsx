@@ -43,7 +43,7 @@ export function ForkHero() {
               I&apos;m hiring
             </h2>
             <p className="mt-2 text-[var(--text-secondary)] font-semibold">
-              Hire vibe coders who actually ship.
+              Hire AI-assisted developers with shipped work you can inspect.
             </p>
             <ul className="mt-4 space-y-2">
               {[
@@ -70,6 +70,9 @@ export function ForkHero() {
               style={{ backgroundColor: "var(--accent)" }}
             >
               Find Builders
+            </Link>
+            <Link href="/hire-ai-assisted-developers" className="mt-3 text-center text-sm font-semibold text-[var(--accent)] hover:underline">
+              Compare builders and hiring options
             </Link>
           </div>
 

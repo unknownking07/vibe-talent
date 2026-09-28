@@ -16,7 +16,7 @@ const TL_DR =
 const FAQ = [
   {
     q: "What is the main difference between VibeTalent and Upwork?",
-    a: "Upwork is a generalist freelance marketplace where talent is ranked by self-reported skills, client reviews, and resume-style profiles, all of which can be gamed with paid reviews or polished marketing. VibeTalent is a developer-only marketplace where rankings come from verifiable data: GitHub commit streaks, deployed project quality, repo health, and peer endorsements weighted by the endorser's own vibe score. The data refreshes daily and cannot be faked.",
+    a: "Upwork is a general freelance marketplace with broad talent coverage. VibeTalent focuses on developers and shows GitHub-linked activity, shipped projects, repository signals, and peer endorsements. Those public signals help you inspect work, but they are not a guarantee of quality or delivery.",
   },
   {
     q: "Is VibeTalent cheaper than Upwork?",

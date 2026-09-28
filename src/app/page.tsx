@@ -46,11 +46,11 @@ const FAQ_ITEMS = [
   },
   {
     q: "How does the VibeTalent vibe score work?",
-    a: "The vibe score is VibeTalent's core reputation metric: a single number representing how consistently and effectively a developer ships code. It is calculated from four weighted components: coding streak days (40% weight), which measures consecutive days of GitHub commits; project quality scores (30% weight), based on GitHub repo health including stars, forks, commit frequency, and deployment status; GitHub activity (20% weight), covering commits, pull requests, code reviews, and issue participation; and peer endorsements (10% weight), where endorsements from higher-scored developers carry more weight. The score updates daily and is always based on verifiable, public data. It cannot be gamed through fake reviews or purchased followers. Only real, consistent shipping moves the needle.",
+    a: "The vibe score combines GitHub-linked activity, project quality signals, and peer endorsements into one reputation measure. It updates as public data changes. Use it to help find builders, then inspect their projects and discuss your requirements directly; no score can guarantee quality or delivery.",
   },
   {
     q: "What are coding streaks and why do they matter?",
-    a: "A coding streak tracks the number of consecutive days you have committed code to at least one GitHub repository. VibeTalent syncs with your GitHub profile daily, and any commit to any public repository counts toward your streak. If a full calendar day passes with no commits (based on UTC), the streak resets to zero. Streaks matter because they are the single most reliable signal of developer consistency. A long streak is nearly impossible to fake. You cannot buy a 200-day streak. For clients evaluating talent, streak length is a stronger predictor of delivery reliability than years of experience or interview performance. Developers who code every day demonstrate intrinsic motivation, discipline, and the kind of sustained effort that translates directly into project success.",
+    a: "A coding streak tracks consecutive days of public GitHub activity as reflected in the builder's linked account. It can show a pattern of activity, but contribution dates can change and a streak does not measure code quality or reliability on its own. Compare it with shipped projects, repositories, and a conversation with the builder.",
   },
   {
     q: "How do VibeTalent badges work?",
@@ -58,7 +58,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "How is VibeTalent different from Upwork or Toptal?",
-    a: "Traditional freelancer platforms like Upwork and Toptal rely on resumes, client reviews, and interview processes to evaluate developers. These signals are easy to game. Anyone can write a polished resume or get a friend to leave a five-star review. VibeTalent takes a fundamentally different approach by ranking developers on verifiable proof of work: coding streaks that track consecutive days of GitHub commits, shipped projects with live URLs you can visit, quality scores based on actual repository health, and peer endorsements from other verified developers. You cannot fake a 200-day coding streak or fabricate a deployed project with real GitHub activity. This means clients can trust that the rankings reflect genuine ability and consistency, not just good self-marketing.",
+    a: "VibeTalent lets you compare public GitHub activity, shipped projects with live URLs, repository signals, and peer endorsements before contacting a builder. These are useful starting points for evaluation, alongside interviews and references. Open the work yourself and ask what the builder contributed before making a hiring decision.",
   },
   {
     q: "Is VibeTalent free to use?",
@@ -127,7 +127,7 @@ export default async function HomePage() {
   // "Why Streaks Matter", and end-game-ladder sections into one story.
   const steps = [
     { icon: GitCommit, n: "01", title: "Ship daily", desc: "Commit every day. VibeTalent verifies your GitHub and builds your streak automatically." },
-    { icon: Fire, n: "02", title: "Build your Vibe Score", desc: "Streaks, project quality, and endorsements roll into one reputation number that can't be faked." },
+    { icon: Fire, n: "02", title: "Build your Vibe Score", desc: "Streaks, project quality, and endorsements roll into one public reputation measure." },
     { icon: Trophy, n: "03", title: "Get discovered & earn badges", desc: "Climb the leaderboard, unlock Bronze → Diamond badges, and let clients find you by proof of work." },
   ];
 
@@ -193,8 +193,21 @@ export default async function HomePage() {
       />
 
       {/* Hero — the proof wall (owner design), then the builder/hiring fork */}
-      {proofWall && (
+      {proofWall ? (
         <ProofWallHero data={proofWall} totalProjects={totalProjects} avgStreak={avgStreak} />
+      ) : (
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 pt-12 sm:pt-16 pb-14">
+          <h1 className="normal-case max-w-4xl text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.05] text-[var(--foreground)]">
+            Hire AI-assisted developers who show their work.
+          </h1>
+          <p className="mt-5 max-w-2xl text-[var(--text-secondary)]">
+            Compare shipped projects and GitHub-linked activity, then find a
+            builder for your web app, MVP, or automation.
+          </p>
+          <Link href="/hire-ai-assisted-developers" className="mt-6 inline-block font-semibold text-[var(--accent)] hover:underline">
+            See how hiring works
+          </Link>
+        </section>
       )}
       <ForkHero />
 

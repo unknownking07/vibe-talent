@@ -17,6 +17,7 @@ import { BagsLaunches } from "@/components/profile/bags-launches";
 import { ProfileViewTracker } from "@/components/profile/profile-view-tracker";
 import { ShareButton } from "@/components/share/share-button";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { siteUrl } from "@/lib/seo";
 import { Suspense } from "react";
@@ -31,7 +32,7 @@ export async function generateMetadata({
   const user = await fetchUserByUsernameCached(username);
 
   if (!user) {
-    return { title: "Builder Not Found" };
+    notFound();
   }
 
   const title = `@${user.username}: Vibe Coder`;
@@ -211,23 +212,13 @@ export default async function ProfilePage({
 
   // Validate username format to prevent unnecessary DB queries
   if (!username || username.length > 50 || !/^[a-zA-Z0-9_.\- ]+$/.test(username)) {
-    return (
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-        <h1 className="text-2xl font-bold text-[var(--foreground)]">Invalid username</h1>
-        <p className="mt-2 text-[var(--text-secondary)] font-medium">This is not a valid username.</p>
-      </div>
-    );
+    notFound();
   }
 
   const user = await fetchUserByUsernameCached(username);
 
   if (!user) {
-    return (
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20 text-center">
-        <h1 className="text-2xl font-bold text-[var(--foreground)]">Builder not found</h1>
-        <p className="mt-2 text-[var(--text-secondary)] font-medium">@{username} does not exist on VibeTalent.</p>
-      </div>
-    );
+    notFound();
   }
 
   // Start independent reads together. Suspense lets the core profile stream
