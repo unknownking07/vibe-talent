@@ -333,8 +333,16 @@ async function _fetchProofWall(): Promise<ProofWallData> {
     sb.from("users").select("id", { count: "exact", head: true }).not("username", "is", null),
   ]);
 
-  // Throw on error so unstable_cache does NOT cache an empty wall
+  // Throw on error so unstable_cache does NOT cache an empty wall or false
+  // zero counts. The stat poll checks these errors, but the first server
+  // render must uphold the same contract.
   if (topUsersRes.error) throw new Error(`Failed to fetch proof wall builders: ${topUsersRes.error.message}`);
+  if (totalRes.error || typeof totalRes.count !== "number") {
+    throw new Error(`Failed to count proof wall days: ${totalRes.error?.message ?? "count unavailable"}`);
+  }
+  if (buildersRes.error || typeof buildersRes.count !== "number") {
+    throw new Error(`Failed to count proof wall builders: ${buildersRes.error?.message ?? "count unavailable"}`);
+  }
 
   type TopUser = { id: string; username: string; longest_streak: number };
   const topUsers: TopUser[] = topUsersRes.data ?? [];
@@ -377,9 +385,9 @@ async function _fetchProofWall(): Promise<ProofWallData> {
   return {
     days: visibleDays,
     rows,
-    totalBuilderDays: totalRes.count ?? 0,
+    totalBuilderDays: totalRes.count,
     longestStreak: topUsers[0]?.longest_streak ?? 0,
-    buildersTracked: buildersRes.count ?? 0,
+    buildersTracked: buildersRes.count,
   };
 }
 
@@ -389,7 +397,7 @@ async function _fetchProofWall(): Promise<ProofWallData> {
 // 1000-row page, and that entry would otherwise keep serving a wall with
 // weeks missing until its TTL expired. Bump the suffix whenever the shape of
 // the returned data changes.
-export const fetchProofWallCached = unstable_cache(_fetchProofWall, ["proof-wall-v3"], {
+export const fetchProofWallCached = unstable_cache(_fetchProofWall, ["proof-wall-v4"], {
   revalidate: 300,
 });
 
@@ -438,6 +446,9 @@ async function _fetchHeroStats(): Promise<HeroStats> {
   const failed = [daysRes, longestRes, buildersRes, projectsRes, streakRes]
     .map((res) => res.error?.message)
     .filter(Boolean);
+  if (typeof daysRes.count !== "number" || typeof buildersRes.count !== "number" || typeof projectsRes.count !== "number") {
+    failed.push("one or more stat counts unavailable");
+  }
   if (failed.length) {
     throw new Error(`Hero stats query failed: ${failed.join("; ")}`);
   }
@@ -448,16 +459,16 @@ async function _fetchHeroStats(): Promise<HeroStats> {
     : 0;
 
   return {
-    totalBuilderDays: daysRes.count ?? 0,
+    totalBuilderDays: daysRes.count,
     longestStreak: longestRes.data?.[0]?.longest_streak ?? 0,
-    buildersTracked: buildersRes.count ?? 0,
-    totalProjects: projectsRes.count ?? 0,
+    buildersTracked: buildersRes.count,
+    totalProjects: projectsRes.count,
     avgStreak,
   };
 }
 
 // 30s. This backs a 60s client poll on the busiest page on the site, so the TTL
 // is what keeps N concurrent visitors from becoming N x 5 Supabase queries.
-export const fetchHeroStatsCached = unstable_cache(_fetchHeroStats, ["hero-stats-v1"], {
+export const fetchHeroStatsCached = unstable_cache(_fetchHeroStats, ["hero-stats-v2"], {
   revalidate: 30,
 });

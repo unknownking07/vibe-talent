@@ -166,9 +166,6 @@ export function ProofWallHero({
           >
             Find builders
           </Link>
-          <Link href="/hire-ai-assisted-developers" className="text-sm font-semibold text-[var(--accent)] hover:underline">
-            See how hiring works
-          </Link>
           <Link
             href="/auth/signup"
             className="inline-flex h-12 w-full sm:w-auto items-center justify-center rounded-xl px-6 text-sm font-semibold text-[var(--foreground)] transition-[background-color,transform] hover:bg-[var(--bg-surface-light)] active:scale-[0.98]"
