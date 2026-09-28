@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { ActivitySocialCard, ProjectSocialCard, SOCIAL_CARD_SIZE, WeeklySocialCard } from "@/components/share/social-card-image";
 import { fetchUserByUsernameCached } from "@/lib/supabase/server-queries";
-import { fetchPublicActivity, weeklyWindow } from "@/lib/share-card-data";
+import { fetchActivityDays, rollingWindow, weeklyWindow } from "@/lib/share-card-data";
 import { mondayOf } from "@/lib/cron-jobs/weekly-snapshot";
 
 type Params = { params: Promise<{ type: string; username: string }> };
@@ -22,9 +22,9 @@ export async function GET(request: Request, { params }: Params) {
     const week = url.searchParams.get("w") ?? mondayOf(new Date()).toISOString().slice(0, 10);
     const window = weeklyWindow(week);
     if (!window) return new Response("Invalid week", { status: 400 });
-    const activity = await fetchPublicActivity(user.id, window.start, window.end);
+    const activeDays = await fetchActivityDays(user.id, window.start, window.end);
     const projects = (user.projects ?? []).filter((project) => project.created_at.slice(0, 10) >= window.start && project.created_at.slice(0, 10) < window.end).length;
-    card = <WeeklySocialCard username={user.username} weekLabel={window.label} activeDays={activity.days} commits={activity.commits} projects={projects} vibeScore={user.vibe_score} />;
+    card = <WeeklySocialCard username={user.username} weekLabel={window.label} activeDays={activeDays} projects={projects} streak={user.streak} vibeScore={user.vibe_score} />;
     // The week window is fixed, while the current score and projects can still
     // change. A short TTL also lets a late GitHub sync fill its missed days.
     cacheControl = "public, max-age=60, s-maxage=300, stale-while-revalidate=600";
@@ -36,10 +36,10 @@ export async function GET(request: Request, { params }: Params) {
   } else {
     const range = url.searchParams.get("range") ?? "30d";
     if (range !== "7d" && range !== "30d" && range !== "all") return new Response("Invalid range", { status: 400 });
-    const start = range === "all" ? undefined : new Date(Date.now() - (range === "7d" ? 7 : 30) * 86400000).toISOString().slice(0, 10);
-    const activity = await fetchPublicActivity(user.id, start);
-    const projects = (user.projects ?? []).filter((project) => !start || project.created_at.slice(0, 10) >= start).length;
-    card = <ActivitySocialCard username={user.username} period={range === "all" ? "All time" : `Last ${range.slice(0, -1)} days`} activeDays={activity.days} projects={projects} vibeScore={user.vibe_score} streak={user.streak} />;
+    const window = range === "all" ? null : rollingWindow(range === "7d" ? 7 : 30);
+    const activeDays = await fetchActivityDays(user.id, window?.start, window?.end);
+    const projects = (user.projects ?? []).filter((project) => !window || (project.created_at.slice(0, 10) >= window.start && project.created_at.slice(0, 10) < window.end)).length;
+    card = <ActivitySocialCard username={user.username} period={range === "all" ? "All time" : `Last ${range.slice(0, -1)} days`} activeDays={activeDays} projects={projects} vibeScore={user.vibe_score} streak={user.streak} />;
     cacheControl = "public, max-age=60, s-maxage=300, stale-while-revalidate=600";
   }
 

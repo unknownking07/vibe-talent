@@ -9,7 +9,7 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
   const window = weeklyWindow(week);
   const og = `${siteUrl}/api/og/receipt/weekly/${username}?w=${week}`;
   const cardTitle = `@${username}'s week in public work`;
-  const description = `Public GitHub activity and projects from ${window?.label ?? week} on VibeTalent.`;
+  const description = `Recorded activity and projects from ${window?.label ?? week} on VibeTalent.`;
   return {
     title: cardTitle,
     description,

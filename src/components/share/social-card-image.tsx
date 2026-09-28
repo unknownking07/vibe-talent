@@ -99,7 +99,7 @@ export function ProfileSocialCard({ user }: { user: { username: string; display_
   );
 }
 
-export function WeeklySocialCard({ username, weekLabel, activeDays, commits, projects, vibeScore }: { username: string; weekLabel: string; activeDays: number; commits: number; projects: number; vibeScore: number }) {
+export function WeeklySocialCard({ username, weekLabel, activeDays, projects, streak, vibeScore }: { username: string; weekLabel: string; activeDays: number; projects: number; streak: number; vibeScore: number }) {
   return (
     <CardShell category="Weekly report / 02" username={username}>
       <div style={{ display: "flex", flexDirection: "column", width: "100%", justifyContent: "space-between" }}>
@@ -110,7 +110,7 @@ export function WeeklySocialCard({ username, weekLabel, activeDays, commits, pro
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <span style={{ display: "flex", fontSize: 54, fontWeight: 900, letterSpacing: "-0.055em", lineHeight: 1.03 }}>A week of<br />showing up.</span>
-            <span style={{ display: "flex", fontSize: 20, color: C.muted, marginTop: 13 }}>Public GitHub activity, week by week.</span>
+            <span style={{ display: "flex", fontSize: 20, color: C.muted, marginTop: 13 }}>Recorded activity, week by week.</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
             <span style={{ display: "flex", fontSize: 133, fontWeight: 900, lineHeight: 0.85, letterSpacing: "-0.08em", color: C.orange }}>{activeDays}<span style={{ display: "flex", fontSize: 50, color: C.cream, alignSelf: "flex-end", marginBottom: 12 }}>/7</span></span>
@@ -118,7 +118,7 @@ export function WeeklySocialCard({ username, weekLabel, activeDays, commits, pro
           </div>
         </div>
         <div style={{ display: "flex", borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}` }}>
-          <Metric label="Public commits" value={commits} />
+          <Metric label="Current streak" value={`${streak}d`} />
           <Metric label="Projects added" value={projects} />
           <Metric label="Current vibe score" value={vibeScore} />
         </div>
@@ -158,7 +158,7 @@ export function ActivitySocialCard({ username, period, activeDays, projects, vib
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <span style={{ display: "flex", fontSize: 56, fontWeight: 900, letterSpacing: "-0.055em", lineHeight: 1.02 }}>Proof over<br />promises.</span>
-            <span style={{ display: "flex", fontSize: 20, color: C.muted, marginTop: 15 }}>Public work on VibeTalent.</span>
+            <span style={{ display: "flex", fontSize: 20, color: C.muted, marginTop: 15 }}>Recorded work on VibeTalent.</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
             <span style={{ display: "flex", fontSize: 143, fontWeight: 900, lineHeight: 0.9, letterSpacing: "-0.08em", color: C.orange }}>{activeDays}</span>

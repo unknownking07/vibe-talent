@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -12,21 +12,25 @@ export function weeklyWindow(raw: string): { start: string; end: string; label: 
   return { start: startDate.toISOString().slice(0, 10), end: raw, label };
 }
 
-/** Public GitHub activity only; restored/frozen streak days are excluded. */
-export async function fetchPublicActivity(userId: string, start?: string, end?: string): Promise<{ days: number; commits: number }> {
-  const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-  let query = sb.from("streak_logs")
-    .select("activity_date, commit_count", { count: "exact" })
+/** Count recorded activity days; restored/frozen streak days are excluded. */
+export async function fetchActivityDays(userId: string, start?: string, end?: string): Promise<number> {
+  // Streak logs are owner-readable under RLS. The public image exposes only
+  // this aggregate for an already-public profile, never individual logs.
+  let query = createAdminClient().from("streak_logs")
+    .select("activity_date", { count: "exact", head: true })
     .eq("user_id", userId)
     .eq("source", "activity");
   if (start) query = query.gte("activity_date", start);
   if (end) query = query.lt("activity_date", end);
-  const { data, count, error } = await query;
+  const { count, error } = await query;
   if (error || typeof count !== "number") throw new Error(`Failed to load public activity: ${error?.message ?? "count unavailable"}`);
+  return count;
+}
+
+export function rollingWindow(days: 7 | 30, now = new Date()): { start: string; end: string } {
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   return {
-    days: count,
-    // Weekly windows hold at most seven rows. For larger ranges the card uses
-    // the exact day count and does not print this potentially paginated sum.
-    commits: (data ?? []).reduce((total, row) => total + (row.commit_count ?? 0), 0),
+    start: new Date(today - (days - 1) * DAY_MS).toISOString().slice(0, 10),
+    end: new Date(today + DAY_MS).toISOString().slice(0, 10),
   };
 }
