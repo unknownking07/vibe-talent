@@ -204,9 +204,6 @@ export default async function HomePage() {
             Compare shipped projects and GitHub-linked activity, then find a
             builder for your web app, MVP, or automation.
           </p>
-          <Link href="/hire-ai-assisted-developers" className="mt-6 inline-block font-semibold text-[var(--accent)] hover:underline">
-            See how hiring works
-          </Link>
         </section>
       )}
       <ForkHero />
