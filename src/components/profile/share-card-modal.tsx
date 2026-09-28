@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { X, Download, Copy, Loader2 } from "lucide-react";
 import { Check } from "@phosphor-icons/react";
+import { getShareImage } from "@/lib/share-image-client";
 
 interface ShareCardModalProps {
   username: string;
@@ -16,18 +17,38 @@ export function ShareCardModal({
   onClose,
 }: ShareCardModalProps) {
   const [loading, setLoading] = useState(true);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
-  const cardUrl = `/api/share-card/${username}`;
+  const cardUrl = `/api/share-card/${encodeURIComponent(username)}`;
   // Reset state when modal opens — setState here is intentional for prop-driven resets
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    if (isOpen) {
-      setLoading(true);
-      setCopied(false);
-    }
-  }, [isOpen]);
+    if (!isOpen) return;
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    setLoading(true);
+    setLoadError(false);
+    setCopied(false);
+    void getShareImage(cardUrl).then((blob) => {
+      if (cancelled) return;
+      objectUrl = URL.createObjectURL(blob);
+      setPreviewUrl(objectUrl);
+      setLoading(false);
+    }).catch((error) => {
+      if (cancelled) return;
+      console.error("Share card preview failed:", error);
+      setLoadError(true);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      setPreviewUrl(null);
+    };
+  }, [isOpen, cardUrl]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Close on escape
@@ -50,8 +71,7 @@ export function ShareCardModal({
     if (downloading) return;
     setDownloading(true);
     try {
-      const res = await fetch(cardUrl);
-      const blob = await res.blob();
+      const blob = await getShareImage(cardUrl);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -68,13 +88,9 @@ export function ShareCardModal({
 
   const handleCopy = async () => {
     try {
-      // Build the ClipboardItem synchronously with the fetch promise so Safari
-      // keeps it tied to the click gesture. The preview <img> already warmed the
-      // (now cacheable) image, so this resolves from cache near-instantly.
-      const blobPromise = fetch(cardUrl).then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.blob();
-      });
+      // Preview, copy and download share one promise. ClipboardItem is created
+      // in the click gesture so Safari can accept the already-fetched PNG.
+      const blobPromise = getShareImage(cardUrl);
       await navigator.clipboard.write([
         new ClipboardItem({ "image/png": blobPromise }),
       ]);
@@ -146,14 +162,11 @@ export function ShareCardModal({
                 />
               </div>
             )}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={cardUrl}
-              alt={`${username}'s VibeTalent card`}
-              className="w-full h-full object-contain"
-              onLoad={() => setLoading(false)}
-              onError={() => setLoading(false)}
-            />
+            {previewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={previewUrl} alt={`${username}'s VibeTalent card`} className="w-full h-full object-contain" />
+            ) : null}
+            {loadError ? <span className="absolute inset-0 flex items-center justify-center text-sm text-[var(--text-muted)]">Preview unavailable. Copy or download to retry.</span> : null}
           </div>
         </div>
 

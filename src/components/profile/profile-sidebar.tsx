@@ -16,6 +16,7 @@ import Link from "next/link";
 import type { UserWithSocials, BadgeLevel } from "@/lib/types/database";
 import { HireModal } from "@/components/ui/hire-modal";
 import { ShareCardModal } from "@/components/profile/share-card-modal";
+import { prewarmShareImage } from "@/lib/share-image-client";
 import { extractSocialHandle } from "@/lib/social-handles";
 import { normalizeExternalUrl } from "@/lib/url-normalize";
 import { trackFunnelEvent } from "@/lib/funnel-events";
@@ -386,6 +387,8 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
       <div className="flex flex-col gap-2">
         <button
           onClick={() => setShareCardOpen(true)}
+          onMouseEnter={() => prewarmShareImage(`/api/share-card/${encodeURIComponent(user.username)}`)}
+          onFocus={() => prewarmShareImage(`/api/share-card/${encodeURIComponent(user.username)}`)}
           className="btn-brutal btn-brutal-secondary w-full justify-center text-sm flex items-center gap-2"
         >
           <ShareNetwork weight="fill" size={14} />

@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 import { getSiteUrl } from "@/lib/seo";
+import { getShareImage, prewarmShareImage } from "@/lib/share-image-client";
 
 interface ShareButtonProps {
   url: string;
@@ -26,25 +27,13 @@ export function ShareButton({ url, text, imageUrl }: ShareButtonProps) {
   const absImageUrl = imageUrl
     ? new URL(imageUrl, origin).toString()
     : imageUrl;
+  // Generated images are on this app. Fetch a relative URL from the current
+  // host so local/preview deployments do not ask the production domain for a
+  // cross-origin PNG (which browsers can block at clipboard time).
+  const fetchImageUrl = imageUrl?.startsWith("/") ? imageUrl : absImageUrl;
 
-  // Hold the (in-flight) image blob so a hover/focus can start generating it
-  // before the click — the copy then resolves an already-warm promise instead
-  // of waiting on a cold Satori render. Null until warmed.
-  const blobRef = useRef<Promise<Blob> | null>(null);
-  function fetchBlob(u: string): Promise<Blob> {
-    return fetch(u).then((r) => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.blob();
-    });
-  }
   function prewarm() {
-    if (!absImageUrl || blobRef.current) return;
-    const p = fetchBlob(absImageUrl);
-    blobRef.current = p;
-    // Drop a failed warm so the click can retry from scratch.
-    void p.catch(() => {
-      if (blobRef.current === p) blobRef.current = null;
-    });
+    if (fetchImageUrl) prewarmShareImage(fetchImageUrl);
   }
 
   async function copyLink() {
@@ -59,13 +48,12 @@ export function ShareButton({ url, text, imageUrl }: ShareButtonProps) {
   }
 
   async function copyImage() {
-    if (!absImageUrl) return;
+    if (!fetchImageUrl) return;
     setStatus("copying");
     // Reuse the prewarmed blob if present; otherwise start now. The
     // ClipboardItem is built synchronously with the promise so Safari keeps it
     // tied to the click gesture. next/og emits image/png.
-    const blobPromise =
-      blobRef.current ?? (blobRef.current = fetchBlob(absImageUrl));
+    const blobPromise = getShareImage(fetchImageUrl);
     try {
       await navigator.clipboard.write([
         new ClipboardItem({ "image/png": blobPromise }),
@@ -74,7 +62,6 @@ export function ShareButton({ url, text, imageUrl }: ShareButtonProps) {
       setTimeout(() => setStatus("idle"), 1500);
     } catch (e) {
       console.error("copy image failed:", e);
-      blobRef.current = null; // allow a fresh retry
       setStatus("image-error");
       setTimeout(() => setStatus("idle"), 2000);
     }
