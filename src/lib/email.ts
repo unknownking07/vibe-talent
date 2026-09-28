@@ -263,12 +263,12 @@ export function renderWeeklyReceiptSection(opts: {
   const receiptOg = `${siteUrl}/api/og/receipt/weekly/${safeUser}?w=${opts.monday}`;
   const receiptLink = `${siteUrl}/share/${safeUser}/weekly/${opts.monday}`;
   return `<div style="margin-top:8px;padding-top:28px;border-top:1px solid ${BRAND.hairline};">
-<p style="margin:0 0 14px;font-family:${BRAND.fontMono};font-size:11px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:${BRAND.textMuted};">Your weekly receipt</p>
-<a href="${receiptLink}" style="text-decoration:none;display:block;line-height:0;"><img src="${receiptOg}" alt="weekly receipt" width="560" style="display:block;width:100%;max-width:560px;height:auto;border:0;outline:none;" /></a>
+<p style="margin:0 0 14px;font-family:${BRAND.fontMono};font-size:11px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:${BRAND.textMuted};">Your week in public work</p>
+<a href="${receiptLink}" style="text-decoration:none;display:block;line-height:0;"><img src="${receiptOg}" alt="Your VibeTalent weekly activity card" width="560" style="display:block;width:100%;max-width:560px;height:auto;border:0;outline:none;" /></a>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 0;">
 <tr><td bgcolor="${BRAND.accent}" style="background:${BRAND.accent};">
 <a href="${receiptLink}" style="display:inline-block;background:${BRAND.accent};color:${BRAND.accentText};padding:14px 26px;text-decoration:none;font-family:${BRAND.fontSans};font-size:14px;font-weight:600;letter-spacing:-0.005em;mso-padding-alt:0;">
-Share your receipt<span style="margin-left:8px;">→</span>
+Share your week<span style="margin-left:8px;">→</span>
 </a>
 </td></tr>
 </table>
