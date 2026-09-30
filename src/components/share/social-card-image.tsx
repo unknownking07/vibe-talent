@@ -1,190 +1,176 @@
 import type { ReactNode } from "react";
 
-// Keep these aligned with the site's warm dark surfaces and orange action color.
-// Every image route uses this shell so a shared link reads as VibeTalent even
-// when the platform strips the surrounding page and only shows the PNG.
-const C = {
-  bg: "#171311",
-  panel: "#211b18",
-  cream: "#f7f1e9",
-  muted: "#aa9c91",
-  line: "#504139",
-  orange: "#ff4b1f",
-};
-
-const sans = "Arial, sans-serif";
-
+// The same warm neutrals and orange used by the website. The logo is the
+// actual public/logo.png, bundled as a data URI by each image route.
+const C = { ink: "#0f0f0f", paper: "#ede7e1", white: "#ffffff", orange: "#ff3a00", darkMuted: "#a69d98", lightMuted: "#625b57" };
 export const SOCIAL_CARD_SIZE = { width: 1200, height: 630 };
+type Tone = "dark" | "light";
 
-function Brand() {
+function CardShell({ logoSrc, category, username, tone = "dark", children }: { logoSrc: string; category: string; username: string; tone?: Tone; children: ReactNode }) {
+  const dark = tone === "dark";
+  const muted = dark ? C.darkMuted : C.lightMuted;
+  const rule = dark ? "#37312e" : "#cfc5bd";
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
-      <div style={{ display: "flex", width: 27, height: 27, background: C.orange, transform: "rotate(-10deg)" }} />
-      <div style={{ display: "flex", color: C.cream, fontSize: 21, fontWeight: 900, letterSpacing: "0.07em" }}>
-        VIBE<span style={{ display: "flex", color: C.orange }}>TALENT</span>
+    <div style={{ width: 1200, height: 630, display: "flex", flexDirection: "column", padding: "36px 48px 29px", background: dark ? C.ink : C.paper, color: dark ? C.white : C.ink, fontFamily: "Arial, sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 70 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={logoSrc} alt="VibeTalent logo" width={62} height={62} style={{ width: 62, height: 62, borderRadius: 31 }} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ display: "flex", fontSize: 25, fontWeight: 900, letterSpacing: "-0.045em" }}>VIBE<span style={{ display: "flex", color: C.orange }}>TALENT</span></div>
+            <div style={{ display: "flex", fontSize: 12, fontWeight: 700, letterSpacing: "0.18em", color: muted }}>BUILDERS WHO SHIP</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ display: "flex", width: 8, height: 8, borderRadius: 4, background: C.orange }} />
+          <div style={{ display: "flex", fontSize: 15, fontWeight: 800, letterSpacing: "0.14em", color: muted }}>{category.toUpperCase()}</div>
+        </div>
+      </div>
+      <div style={{ display: "flex", height: 1, background: rule, marginTop: 25 }} />
+      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>{children}</div>
+      <div style={{ display: "flex", height: 1, background: rule }} />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 55, fontSize: 20, fontWeight: 700 }}>
+        <div style={{ display: "flex", maxWidth: 650, overflow: "hidden" }}>@{username}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 11, color: muted }}><span style={{ display: "flex", color: C.orange }}>↗</span> vibetalent.work</div>
       </div>
     </div>
   );
 }
 
-export function CardShell({
-  category,
-  username,
-  children,
-}: {
-  category: string;
-  username: string;
-  children: ReactNode;
-}) {
+function Kicker({ children }: { children: ReactNode }) {
+  return <div style={{ display: "flex", fontSize: 16, fontWeight: 900, letterSpacing: "0.17em", color: C.orange }}>{children}</div>;
+}
+
+function Stat({ label, value, tone = "dark" }: { label: string; value: string | number; tone?: Tone }) {
   return (
-    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: C.bg, color: C.cream, padding: "34px 44px 36px", fontFamily: sans }}>
-      <div style={{ display: "flex", height: 7, background: C.orange, margin: "-34px -44px 27px" }} />
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 34 }}>
-        <Brand />
-        <div style={{ display: "flex", fontSize: 15, fontWeight: 800, letterSpacing: "0.2em", color: C.muted }}>
-          {category.toUpperCase()}
-        </div>
-      </div>
-      <div style={{ display: "flex", flex: 1, minHeight: 0, marginTop: 27, padding: 38, border: `2px solid ${C.line}`, background: C.panel, position: "relative", overflow: "hidden" }}>
-        <div style={{ display: "flex", width: 10, height: 70, background: C.orange, position: "absolute", top: 38, left: 0 }} />
-        {children}
-      </div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 21, fontSize: 17, fontWeight: 700, color: C.muted }}>
-        <span style={{ display: "flex" }}>@{username}</span>
-        <span style={{ display: "flex", letterSpacing: "0.06em" }}>vibetalent.work ↗</span>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 7, minWidth: 0 }}>
+      <span style={{ display: "flex", color: tone === "dark" ? C.darkMuted : C.lightMuted, fontSize: 13, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>{label}</span>
+      <span style={{ display: "flex", color: tone === "dark" ? C.white : C.ink, fontSize: 30, fontWeight: 900, letterSpacing: "-0.04em" }}>{value}</span>
     </div>
   );
 }
 
-function Eyebrow({ children }: { children: ReactNode }) {
-  return <div style={{ display: "flex", fontSize: 16, fontWeight: 800, letterSpacing: "0.18em", color: C.orange }}>{children}</div>;
-}
-
-function Metric({ label, value }: { label: string; value: string | number }) {
+export function ProfileSocialCard({ logoSrc, user }: { logoSrc: string; user: { username: string; display_name?: string | null; github_username?: string | null; vibe_score: number; streak: number; longest_streak: number; projects?: unknown[] } }) {
+  const name = user.display_name?.trim() || user.username;
+  const nameSize = name.length > 24 ? 58 : name.length > 15 ? 70 : 86;
   return (
-    <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", flex: 1, minWidth: 0, padding: "16px 20px", borderLeft: `1px solid ${C.line}` }}>
-      <span style={{ display: "flex", fontSize: 14, fontWeight: 800, letterSpacing: "0.1em", color: C.muted, textTransform: "uppercase" }}>{label}</span>
-      <span style={{ display: "flex", fontSize: 34, fontWeight: 900, letterSpacing: "-0.04em", color: C.cream }}>{value}</span>
-    </div>
-  );
-}
-
-export function ProfileSocialCard({ user }: { user: { username: string; display_name?: string | null; github_username?: string | null; vibe_score: number; streak: number; longest_streak: number; projects?: unknown[] } }) {
-  const name = user.display_name?.trim() || `@${user.username}`;
-  return (
-    <CardShell category="Builder profile / 01" username={user.username}>
-      <div style={{ display: "flex", flexDirection: "column", width: "100%", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <Eyebrow>PROOF OF WORK, ON RECORD</Eyebrow>
-          {user.github_username ? <span style={{ display: "flex", fontSize: 15, fontWeight: 800, color: C.cream, border: `1px solid ${C.line}`, padding: "9px 13px" }}>● GITHUB LINKED</span> : null}
-        </div>
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 24 }}>
-          <div style={{ display: "flex", flexDirection: "column", width: "56%", minWidth: 0 }}>
-            <div style={{ display: "flex", fontSize: 46, fontWeight: 900, letterSpacing: "-0.045em", lineHeight: 1.05, maxHeight: 100, overflow: "hidden" }}>{name}</div>
-            <div style={{ display: "flex", fontSize: 19, color: C.muted, marginTop: 10 }}>Builder reputation you can inspect.</div>
+    <CardShell logoSrc={logoSrc} category="Builder profile" username={user.username}>
+      <div style={{ display: "flex", width: "100%", justifyContent: "space-between", padding: "31px 0 32px", gap: 36 }}>
+        <div style={{ display: "flex", width: 728, flexDirection: "column", justifyContent: "space-between" }}>
+          <Kicker>PROOF OF WORK / PUBLIC PROFILE</Kicker>
+          <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
+            <div style={{ display: "flex", fontSize: nameSize, fontWeight: 900, lineHeight: 0.99, letterSpacing: "-0.065em", maxHeight: 175, overflow: "hidden" }}>{name}</div>
+            <div style={{ display: "flex", fontSize: 22, color: C.darkMuted }}>{user.github_username ? `GitHub connected · @${user.github_username}` : "Builder on VibeTalent"}</div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-            <span style={{ display: "flex", fontSize: 16, fontWeight: 800, letterSpacing: "0.16em", color: C.muted }}>VIBE SCORE</span>
-            <span style={{ display: "flex", fontSize: 142, fontWeight: 900, lineHeight: 0.9, letterSpacing: "-0.08em", color: C.orange }}>{user.vibe_score}</span>
+          <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #37312e", paddingTop: 22, paddingRight: 28 }}>
+            <Stat label="Current streak" value={`${user.streak ?? 0} days`} />
+            <Stat label="Longest streak" value={`${user.longest_streak ?? 0} days`} />
+            <Stat label="Projects" value={user.projects?.length ?? 0} />
           </div>
         </div>
-        <div style={{ display: "flex", borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}` }}>
-          <Metric label="Current streak" value={`${user.streak ?? 0}d`} />
-          <Metric label="Longest streak" value={`${user.longest_streak ?? 0}d`} />
-          <Metric label="Projects shipped" value={user.projects?.length ?? 0} />
+        <div style={{ display: "flex", width: 330, flexDirection: "column", justifyContent: "space-between", background: C.orange, color: C.ink, borderRadius: 16, padding: "27px 29px 28px" }}>
+          <span style={{ display: "flex", fontSize: 17, fontWeight: 900, letterSpacing: "0.13em" }}>VIBE SCORE</span>
+          <span style={{ display: "flex", fontSize: 133, fontWeight: 900, lineHeight: 0.85, letterSpacing: "-0.09em", alignSelf: "flex-end" }}>{user.vibe_score}</span>
+          <span style={{ display: "flex", fontSize: 17, fontWeight: 700, maxWidth: 240, lineHeight: 1.3 }}>A reputation you can inspect.</span>
         </div>
       </div>
     </CardShell>
   );
 }
 
-export function WeeklySocialCard({ username, weekLabel, activeDays, projects, streak, vibeScore }: { username: string; weekLabel: string; activeDays: number; projects: number; streak: number; vibeScore: number }) {
+export function WeeklySocialCard({ logoSrc, username, weekLabel, activeDays, projects, streak, vibeScore }: { logoSrc: string; username: string; weekLabel: string; activeDays: number; projects: number; streak: number; vibeScore: number }) {
   return (
-    <CardShell category="Weekly report / 02" username={username}>
-      <div style={{ display: "flex", flexDirection: "column", width: "100%", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <Eyebrow>THE WEEK IN PUBLIC WORK</Eyebrow>
-          <span style={{ display: "flex", fontSize: 17, fontWeight: 800, color: C.muted }}>{weekLabel}</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ display: "flex", fontSize: 54, fontWeight: 900, letterSpacing: "-0.055em", lineHeight: 1.03 }}>A week of<br />showing up.</span>
-            <span style={{ display: "flex", fontSize: 20, color: C.muted, marginTop: 13 }}>Recorded activity, week by week.</span>
+    <CardShell logoSrc={logoSrc} category="Weekly report" username={username} tone="light">
+      <div style={{ display: "flex", width: "100%", justifyContent: "space-between", padding: "31px 0 32px", gap: 34 }}>
+        <div style={{ display: "flex", width: 715, flexDirection: "column", justifyContent: "space-between" }}>
+          <Kicker>YOUR WEEK / {weekLabel.toUpperCase()}</Kicker>
+          <div style={{ display: "flex", flexDirection: "column", gap: 15 }}>
+            <span style={{ display: "flex", flexDirection: "column", fontSize: 79, fontWeight: 900, lineHeight: 0.98, letterSpacing: "-0.065em" }}><span>A week of</span><span>showing up.</span></span>
+            <span style={{ display: "flex", fontSize: 22, color: C.lightMuted }}>Recorded activity, one day at a time.</span>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-            <span style={{ display: "flex", fontSize: 133, fontWeight: 900, lineHeight: 0.85, letterSpacing: "-0.08em", color: C.orange }}>{activeDays}<span style={{ display: "flex", fontSize: 50, color: C.cream, alignSelf: "flex-end", marginBottom: 12 }}>/7</span></span>
-            <span style={{ display: "flex", fontSize: 17, fontWeight: 800, letterSpacing: "0.12em", color: C.muted, marginTop: 12 }}>ACTIVE DAYS</span>
+          <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #cfc5bd", paddingTop: 22, paddingRight: 35 }}>
+            <Stat tone="light" label="Current streak" value={`${streak} days`} />
+            <Stat tone="light" label="Projects added" value={projects} />
+            <Stat tone="light" label="Vibe score" value={vibeScore} />
           </div>
         </div>
-        <div style={{ display: "flex", borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}` }}>
-          <Metric label="Current streak" value={`${streak}d`} />
-          <Metric label="Projects added" value={projects} />
-          <Metric label="Current vibe score" value={vibeScore} />
+        <div style={{ display: "flex", width: 352, flexDirection: "column", justifyContent: "space-between", background: C.orange, color: C.ink, borderRadius: 16, padding: "29px 30px 28px" }}>
+          <span style={{ display: "flex", fontSize: 17, fontWeight: 900, letterSpacing: "0.13em" }}>ACTIVE DAYS</span>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "flex-end" }}>
+            <span style={{ display: "flex", fontSize: 159, fontWeight: 900, lineHeight: 0.9, letterSpacing: "-0.1em" }}>{activeDays}</span>
+            <span style={{ display: "flex", fontSize: 48, fontWeight: 800, marginLeft: 6 }}>/7</span>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {Array.from({ length: 7 }, (_, i) => <div key={i} style={{ display: "flex", width: 34, height: 22, borderRadius: 4, background: i < activeDays ? C.ink : "#ff9473" }} />)}
+          </div>
         </div>
       </div>
     </CardShell>
   );
 }
 
-export function ProjectSocialCard({ username, title, qualityScore, stack }: { username: string; title: string; qualityScore: number | null; stack: string[] }) {
+export function ProjectSocialCard({ logoSrc, username, title, qualityScore, stack }: { logoSrc: string; username: string; title: string; qualityScore: number | null; stack: string[] }) {
+  const titleSize = title.length > 30 ? 60 : title.length > 18 ? 72 : 91;
   return (
-    <CardShell category="Shipped project / 03" username={username}>
-      <div style={{ display: "flex", flexDirection: "column", width: "100%", justifyContent: "space-between" }}>
-        <Eyebrow>GITHUB VERIFIED PROJECT</Eyebrow>
-        <div style={{ display: "flex", flexDirection: "column", maxWidth: 850 }}>
-          <div style={{ display: "flex", fontSize: 74, fontWeight: 900, letterSpacing: "-0.06em", lineHeight: 1.02, maxHeight: 165, overflow: "hidden" }}>{title}</div>
-          <div style={{ display: "flex", color: C.orange, fontSize: 28, fontWeight: 800, marginTop: 17 }}>Built. Shared. Verified.</div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: `1px solid ${C.line}`, paddingTop: 24 }}>
-          <div style={{ display: "flex", gap: 10 }}>
-            {stack.slice(0, 3).map((tech) => <span key={tech} style={{ display: "flex", padding: "8px 12px", border: `1px solid ${C.line}`, fontSize: 15, fontWeight: 700, color: C.muted }}>{tech.slice(0, 20)}</span>)}
+    <CardShell logoSrc={logoSrc} category="Shipped project" username={username}>
+      <div style={{ display: "flex", width: "100%", justifyContent: "space-between", padding: "31px 0 33px", gap: 36 }}>
+        <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "space-between", minWidth: 0 }}>
+          <Kicker>GITHUB VERIFIED / SHIPPED PROJECT</Kicker>
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            <span style={{ display: "flex", fontSize: titleSize, fontWeight: 900, lineHeight: 1.02, letterSpacing: "-0.06em", maxHeight: 190, overflow: "hidden" }}>{title}</span>
+            <span style={{ display: "flex", fontSize: 25, color: C.darkMuted }}>Built. Shared. Verified.</span>
           </div>
-          {qualityScore !== null ? <span style={{ display: "flex", fontSize: 22, fontWeight: 800 }}>QUALITY <span style={{ display: "flex", color: C.orange, marginLeft: 12 }}>{qualityScore}/100</span></span> : null}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 43 }}>
+            {stack.slice(0, 3).map((tech) => <span key={tech} style={{ display: "flex", padding: "10px 14px", borderRadius: 999, border: "1px solid #4b4440", color: C.white, fontSize: 16, fontWeight: 700 }}>{tech.slice(0, 18)}</span>)}
+          </div>
+        </div>
+        <div style={{ display: "flex", width: 268, flexDirection: "column", justifyContent: "space-between", alignItems: "flex-end", borderLeft: "1px solid #37312e", paddingLeft: 27 }}>
+          <span style={{ display: "flex", fontSize: 98, fontWeight: 900, lineHeight: 0.8, color: C.orange }}>↗</span>
+          {qualityScore !== null ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5 }}>
+              <span style={{ display: "flex", fontSize: 15, fontWeight: 800, letterSpacing: "0.13em", color: C.darkMuted }}>REPO QUALITY</span>
+              <span style={{ display: "flex", fontSize: 54, fontWeight: 900, letterSpacing: "-0.05em" }}>{qualityScore}<span style={{ display: "flex", fontSize: 28, color: C.orange, marginTop: 17 }}>/100</span></span>
+            </div>
+          ) : <span style={{ display: "flex", fontSize: 16, fontWeight: 800, letterSpacing: "0.13em", color: C.orange }}>OWNER VERIFIED</span>}
         </div>
       </div>
     </CardShell>
   );
 }
 
-export function ActivitySocialCard({ username, period, activeDays, projects, vibeScore, streak }: { username: string; period: string; activeDays: number; projects: number; vibeScore: number; streak: number }) {
+export function ActivitySocialCard({ logoSrc, username, period, activeDays, projects, vibeScore, streak }: { logoSrc: string; username: string; period: string; activeDays: number; projects: number; vibeScore: number; streak: number }) {
   return (
-    <CardShell category="Builder activity / 05" username={username}>
-      <div style={{ display: "flex", flexDirection: "column", width: "100%", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Eyebrow>THE BUILDER RECORD</Eyebrow>
-          <span style={{ display: "flex", fontSize: 16, fontWeight: 800, color: C.muted }}>{period.toUpperCase()}</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ display: "flex", fontSize: 56, fontWeight: 900, letterSpacing: "-0.055em", lineHeight: 1.02 }}>Proof over<br />promises.</span>
-            <span style={{ display: "flex", fontSize: 20, color: C.muted, marginTop: 15 }}>Recorded work on VibeTalent.</span>
+    <CardShell logoSrc={logoSrc} category="Builder activity" username={username} tone="light">
+      <div style={{ display: "flex", width: "100%", justifyContent: "space-between", padding: "32px 0 34px", gap: 60 }}>
+        <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "space-between" }}>
+          <Kicker>THE BUILDER RECORD / {period.toUpperCase()}</Kicker>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 21 }}>
+            <span style={{ display: "flex", fontSize: 208, fontWeight: 900, lineHeight: 0.75, letterSpacing: "-0.1em" }}>{activeDays}</span>
+            <span style={{ display: "flex", flexDirection: "column", fontSize: 33, fontWeight: 900, lineHeight: 1.05, paddingBottom: 5 }}><span style={{ display: "flex", color: C.orange }}>ACTIVE</span><span style={{ display: "flex" }}>DAYS</span></span>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-            <span style={{ display: "flex", fontSize: 143, fontWeight: 900, lineHeight: 0.9, letterSpacing: "-0.08em", color: C.orange }}>{activeDays}</span>
-            <span style={{ display: "flex", fontSize: 17, fontWeight: 800, color: C.muted, letterSpacing: "0.12em" }}>ACTIVE DAYS</span>
-          </div>
+          <span style={{ display: "flex", fontSize: 23, color: C.lightMuted }}>Recorded activity on VibeTalent.</span>
         </div>
-        <div style={{ display: "flex", borderTop: `1px solid ${C.line}`, borderBottom: `1px solid ${C.line}` }}>
-          <Metric label="Projects added" value={projects} />
-          <Metric label="Current streak" value={`${streak}d`} />
-          <Metric label="Vibe score" value={vibeScore} />
+        <div style={{ display: "flex", width: 330, flexDirection: "column", justifyContent: "space-between", borderLeft: "1px solid #cfc5bd", padding: "8px 0 8px 43px" }}>
+          <Stat tone="light" label="Projects added" value={projects} />
+          <Stat tone="light" label="Current streak" value={`${streak} days`} />
+          <Stat tone="light" label="Vibe score" value={vibeScore} />
         </div>
       </div>
     </CardShell>
   );
 }
 
-export function AchievementSocialCard({ username, title, description, status, medallion }: { username: string; title: string; description: string; status: string; medallion: ReactNode }) {
+export function AchievementSocialCard({ logoSrc, username, title, description, status, medallion }: { logoSrc: string; username: string; title: string; description: string; status: string; medallion: ReactNode }) {
+  const titleSize = title.length > 21 ? 58 : 75;
   return (
-    <CardShell category="Achievement / 04" username={username}>
-      <div style={{ display: "flex", alignItems: "center", width: "100%", gap: 34 }}>
-        <div style={{ display: "flex", width: 355, height: 355, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{medallion}</div>
-        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", minWidth: 0, flex: 1 }}>
-          <Eyebrow>{status.toUpperCase()}</Eyebrow>
-          <div style={{ display: "flex", fontSize: 62, fontWeight: 900, letterSpacing: "-0.05em", lineHeight: 1.02, marginTop: 17, maxHeight: 190, overflow: "hidden" }}>{title}</div>
-          <div style={{ display: "flex", fontSize: 24, color: C.muted, lineHeight: 1.28, marginTop: 16, maxHeight: 100, overflow: "hidden" }}>{description}</div>
-          <div style={{ display: "flex", marginTop: 26, width: 100, height: 6, background: C.orange }} />
+    <CardShell logoSrc={logoSrc} category="Achievement" username={username}>
+      <div style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between", gap: 45 }}>
+        <div style={{ display: "flex", width: 392, height: 370, alignItems: "center", justifyContent: "center", background: "#201a17", borderRadius: 16, flexShrink: 0 }}>{medallion}</div>
+        <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "center", minWidth: 0 }}>
+          <Kicker>{status.toUpperCase()}</Kicker>
+          <div style={{ display: "flex", fontSize: titleSize, fontWeight: 900, letterSpacing: "-0.055em", lineHeight: 1.02, marginTop: 21, maxHeight: 160, overflow: "hidden" }}>{title}</div>
+          <div style={{ display: "flex", fontSize: 25, color: C.darkMuted, lineHeight: 1.3, marginTop: 18, maxHeight: 92, overflow: "hidden" }}>{description}</div>
+          <div style={{ display: "flex", width: 102, height: 7, borderRadius: 4, background: C.orange, marginTop: 38 }} />
         </div>
       </div>
     </CardShell>

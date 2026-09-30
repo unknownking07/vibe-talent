@@ -36,7 +36,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ username: s
     rank: thisWeek?.rank ?? null,
     rankClimb: thisWeek && prevWeek ? prevWeek.rank - thisWeek.rank : null,
     streak: user.streak,
-    ogImageUrl: `/api/og/receipt/weekly/${user.username}?w=${weekStart}`,
+    ogImageUrl: `/api/og/receipt/weekly/${user.username}?w=${weekStart}&v=2`,
     shareUrl: `/share/${user.username}/weekly/${weekStart}`,
   }, { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } });
 }

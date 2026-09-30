@@ -14,7 +14,7 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
   const { username } = await params;
   const { range } = await searchParams;
   const r = normalizeRange(range);
-  const og = `${siteUrl}/api/og/receipt/custom/${username}?range=${r}`;
+  const og = `${siteUrl}/api/og/receipt/custom/${username}?range=${r}&v=2`;
   const cardTitle = `@${username} on VibeTalent`;
   const description = `@${username}'s builder receipt: vibe score, streak, and shipped projects, verified on VibeTalent.`;
   return {
@@ -29,7 +29,7 @@ export default async function CustomReceiptPage({ params, searchParams }: { para
   const { username } = await params;
   const { range } = await searchParams;
   const r = normalizeRange(range);
-  const ogImage = `/api/og/receipt/custom/${username}?range=${r}`;
+  const ogImage = `/api/og/receipt/custom/${username}?range=${r}&v=2`;
   const shareText = `Check out @${username} on VibeTalent`;
   const shareUrl = `/share/${username}/custom?range=${r}`;
 

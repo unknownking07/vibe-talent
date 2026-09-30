@@ -54,7 +54,7 @@ export async function generateMetadata({
       type: "profile",
       images: [
         {
-          url: `${siteUrl}/profile/${username}/opengraph-image`,
+          url: `${siteUrl}/profile/${username}/opengraph-image?v=2`,
           width: 1200,
           height: 630,
           alt: `@${username} on VibeTalent`,
@@ -65,7 +65,7 @@ export async function generateMetadata({
       card: "summary_large_image",
       title,
       description,
-      images: [`${siteUrl}/profile/${username}/opengraph-image`],
+      images: [`${siteUrl}/profile/${username}/opengraph-image?v=2`],
     },
   };
 }
@@ -293,7 +293,7 @@ export default async function ProfilePage({
             <ShareButton
               url={`/share/${user.username}/custom?range=30d`}
               text={`Check out @${user.username} on VibeTalent`}
-              imageUrl={`/api/og/receipt/custom/${user.username}?range=30d`}
+              imageUrl={`/api/og/receipt/custom/${user.username}?range=30d&v=2`}
             />
           </div>
 

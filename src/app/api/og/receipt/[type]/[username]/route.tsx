@@ -3,6 +3,7 @@ import { ActivitySocialCard, ProjectSocialCard, SOCIAL_CARD_SIZE, WeeklySocialCa
 import { fetchUserByUsernameCached } from "@/lib/supabase/server-queries";
 import { fetchActivityDays, rollingWindow, weeklyWindow } from "@/lib/share-card-data";
 import { mondayOf } from "@/lib/cron-jobs/weekly-snapshot";
+import { getShareCardLogo } from "@/lib/share-card-assets";
 
 type Params = { params: Promise<{ type: string; username: string }> };
 
@@ -13,6 +14,7 @@ export async function GET(request: Request, { params }: Params) {
   }
   const user = await fetchUserByUsernameCached(username);
   if (!user) return new Response("Not found", { status: 404 });
+  const logoSrc = await getShareCardLogo(request.url);
 
   const url = new URL(request.url);
   let card: React.ReactElement;
@@ -30,7 +32,7 @@ export async function GET(request: Request, { params }: Params) {
       return new Response("Activity unavailable", { status: 503, headers: { "Cache-Control": "no-store" } });
     }
     const projects = (user.projects ?? []).filter((project) => project.created_at.slice(0, 10) >= window.start && project.created_at.slice(0, 10) < window.end).length;
-    card = <WeeklySocialCard username={user.username} weekLabel={window.label} activeDays={activeDays} projects={projects} streak={user.streak} vibeScore={user.vibe_score} />;
+    card = <WeeklySocialCard logoSrc={logoSrc} username={user.username} weekLabel={window.label} activeDays={activeDays} projects={projects} streak={user.streak} vibeScore={user.vibe_score} />;
     // The week window is fixed, while the current score and projects can still
     // change. A short TTL also lets a late GitHub sync fill its missed days.
     cacheControl = "public, max-age=60, s-maxage=300, stale-while-revalidate=600";
@@ -38,7 +40,7 @@ export async function GET(request: Request, { params }: Params) {
     const slug = url.searchParams.get("slug");
     const project = (user.projects ?? []).find((item) => item.id === slug && item.verified);
     if (!project) return new Response("Project not found", { status: 404 });
-    card = <ProjectSocialCard username={user.username} title={project.title} qualityScore={project.quality_score && project.quality_score > 0 ? project.quality_score : null} stack={project.tech_stack ?? []} />;
+    card = <ProjectSocialCard logoSrc={logoSrc} username={user.username} title={project.title} qualityScore={project.quality_score && project.quality_score > 0 ? project.quality_score : null} stack={project.tech_stack ?? []} />;
   } else {
     const range = url.searchParams.get("range") ?? "30d";
     if (range !== "7d" && range !== "30d" && range !== "all") return new Response("Invalid range", { status: 400 });
@@ -51,7 +53,7 @@ export async function GET(request: Request, { params }: Params) {
       return new Response("Activity unavailable", { status: 503, headers: { "Cache-Control": "no-store" } });
     }
     const projects = (user.projects ?? []).filter((project) => !window || (project.created_at.slice(0, 10) >= window.start && project.created_at.slice(0, 10) < window.end)).length;
-    card = <ActivitySocialCard username={user.username} period={range === "all" ? "All time" : `Last ${range.slice(0, -1)} days`} activeDays={activeDays} projects={projects} vibeScore={user.vibe_score} streak={user.streak} />;
+    card = <ActivitySocialCard logoSrc={logoSrc} username={user.username} period={range === "all" ? "All time" : `Last ${range.slice(0, -1)} days`} activeDays={activeDays} projects={projects} vibeScore={user.vibe_score} streak={user.streak} />;
     cacheControl = "public, max-age=60, s-maxage=300, stale-while-revalidate=600";
   }
 

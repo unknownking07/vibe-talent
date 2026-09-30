@@ -22,7 +22,7 @@ export function ShareCardModal({
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
-  const cardUrl = `/api/share-card/${encodeURIComponent(username)}`;
+  const cardUrl = `/api/share-card/${encodeURIComponent(username)}?v=2`;
   // Reset state when modal opens — setState here is intentional for prop-driven resets
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {

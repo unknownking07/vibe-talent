@@ -56,7 +56,7 @@ export function AchievementShareMenu({
   }, [open]);
 
   const sharePath = `/share/achievement/${encodeURIComponent(username)}/${encodeURIComponent(achievementId)}`;
-  const imagePath = `/api/og/achievement/${encodeURIComponent(username)}/${encodeURIComponent(achievementId)}`;
+  const imagePath = `/api/og/achievement/${encodeURIComponent(username)}/${encodeURIComponent(achievementId)}?v=2`;
 
   // Fetch the share image once per URL and reuse the in-flight/resolved promise
   // for both Copy and Download. On failure we drop the cached rejection so a
