@@ -260,7 +260,7 @@ export function renderWeeklyReceiptSection(opts: {
 }): string {
   const siteUrl = getSiteUrl();
   const safeUser = encodeURIComponent(opts.username);
-  const receiptOg = `${siteUrl}/api/og/receipt/weekly/${safeUser}?w=${opts.monday}`;
+  const receiptOg = `${siteUrl}/api/og/receipt/weekly/${safeUser}?w=${opts.monday}&v=2`;
   const receiptLink = `${siteUrl}/share/${safeUser}/weekly/${opts.monday}`;
   return `<div style="margin-top:8px;padding-top:28px;border-top:1px solid ${BRAND.hairline};">
 <p style="margin:0 0 14px;font-family:${BRAND.fontMono};font-size:11px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:${BRAND.textMuted};">Your week in public work</p>

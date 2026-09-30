@@ -387,8 +387,8 @@ export function ProfileSidebar({ user }: ProfileSidebarProps) {
       <div className="flex flex-col gap-2">
         <button
           onClick={() => setShareCardOpen(true)}
-          onMouseEnter={() => prewarmShareImage(`/api/share-card/${encodeURIComponent(user.username)}`)}
-          onFocus={() => prewarmShareImage(`/api/share-card/${encodeURIComponent(user.username)}`)}
+          onMouseEnter={() => prewarmShareImage(`/api/share-card/${encodeURIComponent(user.username)}?v=2`)}
+          onFocus={() => prewarmShareImage(`/api/share-card/${encodeURIComponent(user.username)}?v=2`)}
           className="btn-brutal btn-brutal-secondary w-full justify-center text-sm flex items-center gap-2"
         >
           <ShareNetwork weight="fill" size={14} />

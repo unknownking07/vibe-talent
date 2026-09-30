@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
   const description = `${a.description} See @${user.username}'s achievements on VibeTalent.`;
   const encodedUser = encodeURIComponent(user.username);
   const encodedId = encodeURIComponent(a.id);
-  const ogUrl = `${siteUrl}/api/og/achievement/${encodedUser}/${encodedId}`;
+  const ogUrl = `${siteUrl}/api/og/achievement/${encodedUser}/${encodedId}?v=2`;
   const shareUrl = `${siteUrl}/share/achievement/${encodedUser}/${encodedId}`;
 
   return {
