@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
   const user = await fetchUserByUsernameCached(username);
   const project = user?.projects.find((item) => item.id === slug && item.verified);
   if (!project) notFound();
-  const og = `${siteUrl}/api/og/receipt/shipped/${username}?slug=${slug}&v=2`;
+  const og = `${siteUrl}/api/og/receipt/shipped/${username}?slug=${slug}&v=3`;
   const cardTitle = `@${username} shipped ${project?.title ?? "a project"}`;
   const description = `${project?.title ?? "A project"} by @${username}, GitHub verified on VibeTalent.`;
   return {
@@ -26,7 +26,7 @@ export default async function ShippedReceiptPage({ params }: { params: Promise<{
   const user = await fetchUserByUsernameCached(username);
   const project = user?.projects.find((item) => item.id === slug && item.verified);
   if (!project) notFound();
-  const ogImage = `/api/og/receipt/shipped/${username}?slug=${slug}&v=2`;
+  const ogImage = `/api/og/receipt/shipped/${username}?slug=${slug}&v=3`;
   const shareText = `Just shipped ${project?.title ?? "a project"} on VibeTalent`;
   const shareUrl = `/share/${username}/shipped/${slug}`;
 

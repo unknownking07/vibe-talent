@@ -47,7 +47,7 @@ export async function generateMetadata({
       type: "profile",
       images: [
         {
-          url: `${siteUrl}/profile/${username}/opengraph-image?v=2`,
+          url: `${siteUrl}/profile/${username}/opengraph-image?v=3`,
           width: 1200,
           height: 630,
           alt: `@${username} on VibeTalent`,
@@ -58,7 +58,7 @@ export async function generateMetadata({
       card: "summary_large_image",
       title,
       description,
-      images: [`${siteUrl}/profile/${username}/opengraph-image?v=2`],
+      images: [`${siteUrl}/profile/${username}/opengraph-image?v=3`],
     },
   };
 }

@@ -6,10 +6,10 @@ const FALLBACK_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQ
 
 export function getShareCardLogo(baseUrl = "https://www.vibetalent.work"): Promise<string> {
   logoPromise ??= (async () => {
-      // Next emits this import as a hashed /_next/static/media path. Resolve it
-      // to an absolute URL for local/Vercel; Workers can read their asset
-      // binding directly and avoid a slow edge-to-own-hostname request.
-      const url = new URL(new URL("../../public/logo.png", import.meta.url).toString(), baseUrl);
+      // The public path is also available in Cloudflare's ASSETS binding.
+      // Importing the PNG as a module creates a hashed Next path that OpenNext
+      // does not publish as a Worker static asset.
+      const url = new URL("/logo.png", baseUrl);
       let response: Response | undefined;
       try {
         const { env } = getCloudflareContext();
