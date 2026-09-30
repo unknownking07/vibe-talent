@@ -2,6 +2,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 /** Load the site's actual logo from the static asset binding on Cloudflare. */
 let logoPromise: Promise<string> | undefined;
+const FALLBACK_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 
 export function getShareCardLogo(baseUrl = "https://www.vibetalent.work"): Promise<string> {
   logoPromise ??= (async () => {
@@ -22,7 +23,8 @@ export function getShareCardLogo(baseUrl = "https://www.vibetalent.work"): Promi
       return `data:image/png;base64,${Buffer.from(await response.arrayBuffer()).toString("base64")}`;
     })().catch((error) => {
       logoPromise = undefined;
-      throw error;
+      console.error("Share card logo failed:", error);
+      return FALLBACK_LOGO;
     });
   return logoPromise;
 }
