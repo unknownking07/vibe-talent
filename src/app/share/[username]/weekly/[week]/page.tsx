@@ -7,7 +7,7 @@ import { weeklyWindow } from "@/lib/share-card-data";
 export async function generateMetadata({ params }: { params: Promise<{ username: string; week: string }> }): Promise<Metadata> {
   const { username, week } = await params;
   const window = weeklyWindow(week);
-  const og = `${siteUrl}/api/og/receipt/weekly/${username}?w=${week}&v=2`;
+  const og = `${siteUrl}/api/og/receipt/weekly/${username}?w=${week}&v=3`;
   const cardTitle = `@${username}'s week in public work`;
   const description = `Recorded activity and projects from ${window?.label ?? week} on VibeTalent.`;
   return {
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
 export default async function WeeklyReceiptPage({ params }: { params: Promise<{ username: string; week: string }> }) {
   const { username, week } = await params;
   const window = weeklyWindow(week);
-  const ogImage = `/api/og/receipt/weekly/${username}?w=${week}&v=2`;
+  const ogImage = `/api/og/receipt/weekly/${username}?w=${week}&v=3`;
   const shareText = `My week in public work on VibeTalent: ${window?.label ?? week}`;
   const shareUrl = `/share/${username}/weekly/${week}`;
 
