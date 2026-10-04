@@ -210,6 +210,17 @@ export default async function ComparisonPage({
         </div>
       </section>
 
+      {c.sources && (
+        <p className="mb-12 text-sm text-[var(--text-secondary)] leading-relaxed">
+          Official sources (checked {c.dateModified}): {c.sources.map((source, index) => (
+            <span key={source.url}>
+              {index > 0 && ", "}
+              <a href={source.url} className="underline">{source.label}</a>
+            </span>
+          ))}. Fees and service terms can change.
+        </p>
+      )}
+
       <section className="grid sm:grid-cols-2 gap-6 mb-12">
         <div
           className="p-6 rounded-2xl"

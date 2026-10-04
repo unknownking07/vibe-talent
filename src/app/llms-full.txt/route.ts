@@ -33,20 +33,24 @@ Vibe coders prioritize:
 
 ### Vibe Score
 
-The vibe score is VibeTalent's core reputation metric. It is a single number that represents how consistently and effectively a developer ships code. The score is calculated from four weighted components:
+The vibe score is VibeTalent's public reputation metric. It uses an additive formula, not fixed percentage weights:
 
-1. **Streak Days (40% weight)**: The number of consecutive days a developer has committed code to GitHub. Longer streaks earn exponentially more points.
-2. **Project Quality Scores (30% weight)**: Each project receives a quality score based on GitHub repo health metrics: stars, forks, commit frequency, README completeness, and deployment status.
-3. **GitHub Activity (20% weight)**: Overall GitHub contribution metrics including commits, pull requests, code reviews, and issue participation.
-4. **Peer Endorsements (10% weight)**: Other VibeTalent users can endorse a developer for specific skills. Endorsements from higher-scored developers carry more weight.
+1. **Activity streak points**: Current streak days contribute points linearly.
+2. **Project points**: Verified projects can contribute points from automated repository quality scores. Flagged projects are excluded from the quality-based calculation.
+3. **Badge bonuses**: Earned streak badge levels contribute bonus points.
+4. **Client review points**: Client feedback contributes to reputation.
+5. **Peer endorsements**: Endorsement counts contribute points; the public vibe score does not weight them by the endorser's score.
+6. **Contribution volume bonuses**: Recorded and recent GitHub contribution totals contribute capped bonuses.
+
+The score helps compare recorded activity and reputation alongside relevant work. It does not prove which AI tools were used or guarantee skill, authorship, or delivery. VibeFinder matching uses a separate evaluation of project evidence, skills, outcomes, and availability.
 
 ### Coding Streaks
 
-A coding streak tracks the number of consecutive days a developer has committed code to at least one GitHub repository. Streaks are the single most important trust signal on VibeTalent.
+A coding streak tracks consecutive days of recorded activity. Platform streaks and GitHub contribution evidence should be assessed alongside relevant projects.
 
 - VibeTalent syncs with the developer's GitHub profile daily.
-- Any commit to any public repository counts toward the streak.
-- The streak resets to zero if a full calendar day passes with no commits (UTC).
+- GitHub contribution records can include commits, pull requests, and other contributions.
+- Platform check-ins and streak protection also affect platform streaks; a streak is not a count of verified commits.
 - Historical streaks are preserved on the profile even after a reset.
 
 ### Badge Levels
