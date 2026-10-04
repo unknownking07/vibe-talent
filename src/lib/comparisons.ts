@@ -36,6 +36,7 @@ export type Comparison = {
   vtWins: string[];
   themWins: string[];
   faq: ComparisonFaq[];
+  sources?: { label: string; url: string }[];
   /** ISO date driving Article/FAQ `dateModified` and the sitemap `<lastmod>`. */
   dateModified: string;
 };
@@ -102,28 +103,29 @@ export const COMPARISONS: Comparison[] = [
         a: "Fiverr is better for a small, well-defined, fixed-price task: especially non-engineering work like a logo, a voiceover, or a short video. VibeTalent is better when you need a developer who can ship a real, working product, whether that is a one-week prototype or an ongoing build, because it surfaces builders proven to ship consistently.",
       },
     ],
+    sources: [{ label: "Fiverr seller earnings", url: "https://help.fiverr.com/hc/en-us/articles/9234443621137-Your-earnings-page" }],
     dateModified: "2026-10-04",
   },
   {
     slug: "toptal",
     name: "Toptal",
     competitorUrl: "https://www.toptal.com",
-    tagline: "Public, verifiable merit vs a private \"top 3%\" screen.",
+    tagline: "Public builder profiles vs managed screening and matching.",
     title: "VibeTalent vs Toptal: Which Is Better for Hiring Developers?",
     description:
-      "VibeTalent ranks developers on public, verifiable proof of work: coding streaks, shipped projects, and GitHub activity, free to use. Toptal is a premium network that vets the \"top 3%\" behind closed doors. Compare cost, vetting, and which fits your hiring needs.",
+      "Compare VibeTalent's public builder profiles with Toptal's screened talent network: hiring costs, project evidence, screening, and managed matching.",
     subtitle:
       "Which platform is better for hiring developers in 2026? A side-by-side breakdown.",
-    tldr: "VibeTalent and Toptal both promise quality but prove it differently. Toptal screens for the \"top 3%\" through a private vetting process and matches you with senior freelancers at premium, account-managed rates. VibeTalent makes the proof public: every builder is ranked on verifiable GitHub streaks, shipped projects, and repo quality you can inspect yourself: for free. Pick Toptal for hands-off, enterprise-grade staffing. Pick VibeTalent to hire AI-native builders fast, on transparent merit, with no markup and no gatekeeper.",
+    tldr: "VibeTalent offers public profiles for AI-assisted developers, which can include GitHub activity, projects, client reviews, and endorsements. Clients review the available evidence and agree terms directly with a builder. Toptal screens applicants and provides managed matching across specialist roles. Its official FAQ lists a $79 monthly platform subscription when you proceed with matching, separate from talent engagement costs. Choose based on relevant work, the support you need, and your budget.",
     rows: [
       { feature: "Talent type", vt: "AI-native developers", them: "Vetted senior freelancers" },
       { feature: "Ranking signal", vt: "Public GitHub streaks + shipped projects", them: "Private \"top 3%\" screen" },
-      { feature: "You can inspect the evidence yourself", vt: true, them: false },
+      { feature: "Assessment approach", vt: "Review public profiles + project evidence", them: "Toptal screening + managed matching" },
       { feature: "GitHub commit streak tracking", vt: true, them: false },
       { feature: "Project quality scoring from repo health", vt: true, them: false },
       { feature: "AI-powered hire matching", vt: "VibeFinder Bot", them: "Human account matcher" },
-      { feature: "Cost to start", vt: "Free", them: "Premium + deposit" },
-      { feature: "Platform fee for clients", vt: "0%", them: "Premium markup on rates" },
+      { feature: "Platform access", vt: "Free", them: "$79/month when proceeding with matching" },
+      { feature: "Hiring costs", vt: "Builder's agreed rate; no platform commission", them: "Subscription + talent engagement costs" },
       { feature: "Hiring payments", vt: "Agreed directly with the builder", them: "Managed through Toptal" },
       { feature: "Fully managed matching", vt: false, them: true },
       { feature: "Enterprise contracts & compliance", vt: false, them: true },
@@ -131,8 +133,8 @@ export const COMPARISONS: Comparison[] = [
     ],
     vtWins: [
       "You want to hire AI-native builders using Claude Code, Cursor, or Bolt",
-      "You want to verify a developer's track record yourself, not trust a private screen",
-      "You want it free, with no premium markup or refundable deposit",
+      "You want to inspect a builder's public projects and activity",
+      "You want to browse profiles and contact builders without a subscription",
       "You need a builder who can prototype and ship in days",
       "You value transparent, merit-based ranking over a curated shortlist",
     ],
@@ -146,15 +148,15 @@ export const COMPARISONS: Comparison[] = [
     faq: [
       {
         q: "What is the main difference between VibeTalent and Toptal?",
-        a: "Toptal vets freelancers privately and markets them as the \"top 3%,\" then matches you through an account manager at premium rates, but you cannot inspect the screen yourself. VibeTalent makes vetting public and verifiable: every developer is ranked on GitHub commit streaks, deployed project quality, and repo health that you can check directly on their profile, for free.",
+        a: "Toptal screens applicants through interviews, assessments, and test projects, then provides managed matching. VibeTalent focuses on AI-assisted developers with public profiles that can include GitHub activity, shipped projects, repository signals, reviews, and endorsements. Clients assess that evidence and contact builders directly.",
       },
       {
         q: "Is VibeTalent cheaper than Toptal?",
-        a: "Yes. VibeTalent is free for both clients and developers, with no platform fee on hires. Toptal is a premium service. It does not publish flat rates, typically involves a refundable deposit to start, and bills clients at account-managed rates well above a typical freelance marketplace.",
+        a: "VibeTalent charges no platform commission on direct hires; builders set their own rates. Toptal's official FAQ lists a $79 monthly platform subscription if you proceed with talent matching, separate from engagement costs. Compare the proposed rates and service terms for your project before choosing.",
       },
       {
         q: "Is VibeTalent's talent vetted like Toptal's?",
-        a: "The vetting philosophy is the opposite. Toptal vets candidates behind closed doors and asks you to trust the result. VibeTalent puts the evidence in the open: a builder's coding streak, shipped projects with live URLs, repo quality, and vibe score are all public and update daily. You do the vetting in seconds by looking at real, verifiable work.",
+        a: "They use different approaches. Toptal describes a screening process that includes interviews, assessments, and a test project. VibeTalent provides profile evidence and automated repository signals that clients can review themselves. A vibe score is a reputation signal, not an equivalent screening certification or a guarantee of delivery.",
       },
       {
         q: "Can I verify a Toptal developer's track record myself?",
@@ -165,6 +167,7 @@ export const COMPARISONS: Comparison[] = [
         a: "Toptal is better when you need fully managed staffing with enterprise contracts, compliance, and a human matcher handling the process. VibeTalent is better when you want to hire AI-native builders fast on transparent merit, without a markup or gatekeeper: ideal for startups and teams that value shipping speed and proof of work.",
       },
     ],
+    sources: [{ label: "Toptal screening and subscription FAQ", url: "https://www.toptal.com/faq" }],
     dateModified: "2026-10-04",
   },
   {
@@ -228,6 +231,7 @@ export const COMPARISONS: Comparison[] = [
         a: "Freelancer is better when you want competitive bids on a clearly scoped, often non-engineering task and value milestone escrow. VibeTalent is better when you need a developer who can ship a working product fast (a prototype or an ongoing build) because it surfaces builders proven to ship consistently rather than those who simply bid the lowest.",
       },
     ],
+    sources: [{ label: "Freelancer.com fees and charges", url: "https://www.freelancer.com/feesandcharges" }],
     dateModified: "2026-10-04",
   },
 ];

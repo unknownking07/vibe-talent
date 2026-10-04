@@ -29,11 +29,12 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     body: [
       "Vibe coding describes a shift in how software gets built. Traditional development cycles depend on lengthy specs, sprint planning, code reviews, and approvals before any production code ships. Vibe coding inverts that: the developer stays in a tight loop with an AI assistant, generates working code in minutes instead of hours, and pushes commits the same day. The cadence is measured in daily shipping, not biweekly sprints.",
       "The philosophy treats AI coding tools as the new primitive. Claude Code, Cursor, Bolt, and Windsurf handle boilerplate, scaffolding, and repetitive logic, freeing the developer to focus on product decisions, architecture, and rapid iteration. The result is that one motivated vibe coder can ship what previously took a full team, but only if they actually do it every day.",
-      "Consistency matters more than raw talent in this model. A vibe coder with a 200-day coding streak is more valuable than one with a polished resume but irregular output, because the streak is verifiable proof of work that cannot be faked. That is why VibeTalent ranks developers on shipping signals (streaks, deployed projects, and repo health) instead of credentials.",
+      "VibeTalent helps clients inspect a builder's activity and shipped projects alongside reviews and endorsements. A long streak records consistency, but does not establish code quality, AI-tool use, or delivery reliability by itself. Review relevant repositories and working demos when evaluating a developer.",
     ],
     related: ["vibe-coder", "vibe-coders-marketplace", "coding-streak", "vibe-score"],
     metaDescription:
       "Vibe coding means building software with AI tools like Claude Code, Cursor, and Bolt: staying in flow, shipping every day, and letting working code be the resume.",
+    dateModified: "2026-10-04",
   },
   {
     slug: "vibe-coder",
@@ -55,30 +56,32 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     title: "What is a coding streak?",
     shortLabel: "Coding Streak",
     summary:
-      "A coding streak is the number of consecutive days a developer has pushed at least one commit to a public GitHub repository. VibeTalent syncs streaks daily and resets them to zero if a full calendar day (UTC) passes without a commit. Streaks are the single hardest signal to fake (you cannot buy a 200-day streak) which makes them the most reliable proof of a developer's consistency and discipline.",
+      "A coding streak counts consecutive days with recorded development activity. GitHub contribution activity can include commits, pull requests, and other contributions. VibeTalent records platform activity and syncs GitHub evidence daily. A streak describes activity under the platform's rules; it does not measure code quality, prove AI-tool use, or guarantee that a developer will deliver your project.",
     body: [
-      "Coding streaks measure raw consistency. A 30-day streak means 30 consecutive days of commits. A 365-day streak means a developer shipped code every single day for a year: including weekends, holidays, and travel. The longer the streak, the more meaningful the signal.",
-      "VibeTalent tracks streaks automatically from GitHub. Any commit to any public repository counts. The streak resets to zero if a full UTC day passes without a commit, so there is no way to game it short of actually coding every day. Past streak achievements are preserved as permanent badges even if a current streak resets.",
-      "For clients evaluating developers, streak length is often a stronger predictor of delivery reliability than years of experience or interview performance. A long streak demonstrates intrinsic motivation and the kind of sustained discipline that translates directly into project success. That is why VibeTalent weights streak length at 40% of the overall vibe score.",
+      "Streaks measure the continuity of recorded activity. A contribution is not necessarily a deployed product or a substantial change. Check the underlying repositories and project demos to understand what a builder has worked on.",
+      "VibeTalent syncs GitHub contribution data into its activity records. Platform check-ins and streak protection also affect platform streaks, so a platform streak alone is not a count of GitHub commits. Profile history and badges provide additional context.",
+      "Streak days add points to the vibe score alongside projects, contribution volume, badges, client reviews, and endorsements. They do not have a fixed 40% weight. Assess relevant project work alongside the activity history when hiring.",
     ],
     related: ["vibe-score", "vibe-coding", "vibe-coder"],
     metaDescription:
-      "A coding streak counts consecutive days of GitHub commits. VibeTalent tracks streaks daily. They're the most unfakeable proof of a developer's consistency.",
+      "Learn what a coding streak measures, how VibeTalent records activity and GitHub contributions, and how streaks contribute to a builder's reputation.",
+    dateModified: "2026-10-04",
   },
   {
     slug: "vibe-score",
     title: "What is a vibe score?",
     shortLabel: "Vibe Score",
     summary:
-      "A vibe score is VibeTalent's composite reputation metric: a single number that summarizes how consistently and effectively a developer ships code. It combines four weighted inputs: coding streak (40%), project quality based on GitHub repo health (30%), GitHub activity such as commits, PRs, and reviews (20%), and peer endorsements weighted by the endorser's own vibe score (10%).",
+      "A vibe score is VibeTalent's public reputation metric. Its additive formula combines activity streak points, project points, badge bonuses, client-review points, endorsement points, and capped contribution-volume bonuses. These components do not have fixed percentage weights. The score helps clients compare activity and reputation alongside relevant project evidence; it is not a guarantee of skill or delivery.",
     body: [
-      "The vibe score exists because resumes, LinkedIn profiles, and interview performance are all easy to fake. A vibe score is not. Every input is pulled from verifiable, public data (GitHub commits, repository statistics, and endorsements from other ranked developers) and the formula is transparent.",
-      "The 40/30/20/10 weighting reflects what actually matters for hiring decisions. Streak length is weighted highest because it is the hardest signal to game and the strongest predictor of future delivery. Project quality (deployment status, stars, forks, commit frequency) ranks next because shipped products beat abandoned side projects. GitHub activity covers the broader contribution surface: PRs, code reviews, issues. Peer endorsements add a social-graph layer but are deliberately weighted lightest to prevent collusion.",
+      "The vibe score provides a summary of a builder's recorded activity and reputation. Some inputs come from GitHub; others come from platform activity, client reviews, and peer endorsements. Inspect the underlying evidence instead of treating the score as a screening certificate.",
+      "The formula adds points for streak days, projects, earned badges, reviews, endorsements, and contribution volume. Verified projects can contribute points from their automated quality score; flagged projects are excluded from that quality-based calculation. Contribution bonuses are capped. The components are additive rather than a 40/30/20/10 percentage split.",
       "Vibe scores update daily as new commits and project changes come in. The score is public on every developer's profile, used to rank the global leaderboard, and consumed by VibeFinder Bot to match clients with builders who fit a project's requirements.",
     ],
     related: ["coding-streak", "vibe-coder", "vibe-coding"],
     metaDescription:
-      "A vibe score is VibeTalent's reputation metric: 40% streak + 30% project quality + 20% GitHub activity + 10% peer endorsements. Updated daily from verifiable data.",
+      "VibeTalent's vibe score combines activity, projects, badges, reviews, endorsements, and contribution bonuses. Learn what the reputation metric measures.",
+    dateModified: "2026-10-04",
   },
   {
     slug: "vibe-coders-marketplace",
@@ -88,13 +91,13 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       "A vibe coders marketplace is a hiring platform that connects clients with developers who build using AI coding tools, and ranks them by verifiable proof of work instead of resumes. On VibeTalent, builders are surfaced by their coding streak, shipped-project quality, and GitHub activity, so clients can hire vibe coders based on what they actually ship rather than how well they interview.",
     body: [
       "A vibe coders marketplace is where clients go to find and hire developers who work in the vibe coding style: shipping software fast with AI assistants like Claude Code, Cursor, Bolt, and Windsurf. The phrase is sometimes written \"vibe coding marketplace,\" but the two can mean different things: some marketplaces sell finished vibe-coded apps and templates, while a vibe coders marketplace like VibeTalent is about hiring the people who build them.",
-      "What separates a vibe coders marketplace from a traditional freelance platform is the ranking signal. Sites like Upwork, Fiverr, and Toptal rank talent on self-reported resumes, client reviews, and interview screens. All of which can be gamed. VibeTalent ranks developers on data that cannot be faked: consecutive-day GitHub commit streaks, the quality and deployment status of shipped projects, broader GitHub activity, and peer endorsements weighted by each endorser's own reputation.",
+      "VibeTalent focuses on AI-assisted developers and presents public project evidence, GitHub activity, reviews, and endorsements. Other marketplaces also offer portfolios, feedback, screening, or managed contracts. Compare the available evidence and hiring arrangements for your project; neither activity metrics nor reviews are fraud-proof.",
       "For clients, that means you can evaluate a builder in seconds: open a profile and see a live streak, real deployed projects, and a transparent vibe score instead of a polished pitch. Hiring is direct and free: no platform fees and no middleman, and VibeFinder Bot can match a project brief to the right builders automatically. For developers, it means your daily shipping becomes a public, compounding reputation that wins work on merit.",
     ],
     related: ["vibe-coder", "vibe-coding", "vibe-score"],
     metaDescription:
       "A vibe coders marketplace connects clients with AI-native developers ranked by proof of work: coding streaks, shipped projects, and GitHub activity, not resumes.",
-    dateModified: "2026-06-05",
+    dateModified: "2026-10-04",
   },
 ];
 

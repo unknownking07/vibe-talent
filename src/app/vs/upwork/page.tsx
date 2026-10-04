@@ -33,7 +33,7 @@ const FAQ = [
   },
   {
     q: "Does VibeTalent use reviews in its rankings?",
-    a: "Yes. Client ratings contribute a capped review bonus to the vibe score, and peer endorsements also contribute points. Profiles provide project and GitHub evidence alongside that feedback so clients can check more than ratings. These signals are not fraud-proof or a delivery guarantee; verify relevant work and use clear milestones before committing to a hire.",
+    a: "Yes. Client reviews and peer endorsements contribute points to the vibe score. Profiles provide project and GitHub evidence alongside that feedback so clients can check more than ratings. These signals are not fraud-proof or a delivery guarantee; verify relevant work and use clear milestones before committing to a hire.",
   },
   {
     q: "Is Upwork or VibeTalent better for a one-off project?",

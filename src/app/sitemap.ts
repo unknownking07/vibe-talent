@@ -27,12 +27,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteUrl}/bags`, lastModified: new Date("2026-08-22") },
     { url: `${siteUrl}/privacy`, lastModified: new Date("2026-04-06") },
     { url: `${siteUrl}/terms`, lastModified: new Date("2026-04-06") },
-    { url: `${siteUrl}/glossary`, lastModified: new Date("2026-05-22") },
+    { url: `${siteUrl}/glossary`, lastModified: new Date("2026-10-04") },
     ...GLOSSARY_TERMS.map((t) => ({
       url: `${siteUrl}/glossary/${t.slug}`,
       lastModified: new Date(t.dateModified ?? "2026-05-22"),
     })),
-    { url: `${siteUrl}/vs`, lastModified: new Date("2026-06-05") },
+    { url: `${siteUrl}/vs`, lastModified: new Date("2026-10-04") },
     { url: `${siteUrl}/vs/upwork`, lastModified: new Date("2026-10-04") },
     ...COMPARISONS.map((c) => ({
       url: `${siteUrl}/vs/${c.slug}`,
