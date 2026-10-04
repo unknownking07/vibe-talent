@@ -33,7 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(t.dateModified ?? "2026-05-22"),
     })),
     { url: `${siteUrl}/vs`, lastModified: new Date("2026-06-05") },
-    { url: `${siteUrl}/vs/upwork`, lastModified: new Date("2026-05-22") },
+    { url: `${siteUrl}/vs/upwork`, lastModified: new Date("2026-10-04") },
     ...COMPARISONS.map((c) => ({
       url: `${siteUrl}/vs/${c.slug}`,
       lastModified: new Date(c.dateModified),

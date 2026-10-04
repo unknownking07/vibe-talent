@@ -51,17 +51,17 @@ export const COMPARISONS: Comparison[] = [
       "VibeTalent ranks developers on verifiable proof of work: coding streaks, shipped projects, and GitHub activity. Fiverr is a gig marketplace where sellers are ranked by levels and star reviews. Side-by-side comparison, fees, and which fits your hiring needs.",
     subtitle:
       "Which platform is better for hiring developers in 2026? A side-by-side breakdown.",
-    tldr: "VibeTalent ranks developers on verifiable proof of work (daily coding streaks, deployed projects, and GitHub activity) while Fiverr sells fixed-price \"gigs\" from sellers ranked by order volume and star reviews that are easy to inflate. Pick VibeTalent if you want to hire a developer based on what they actually ship, especially AI-native builders using Claude Code, Cursor, or Bolt. Pick Fiverr if you need a quick, packaged one-off task across many non-engineering categories and prefer paying a fixed price up front.",
+    tldr: "VibeTalent focuses on AI-assisted developers and shows GitHub activity, shipped projects, client reviews, and peer endorsements. Fiverr offers fixed-price gigs across many categories. Pick VibeTalent when you want to inspect a builder's public work and agree terms directly. Pick Fiverr when you prefer a packaged task with a defined price and marketplace-managed order. On either platform, check relevant work samples and agree on scope; activity and ratings alone do not guarantee delivery.",
     rows: [
       { feature: "Talent type", vt: "AI-native developers", them: "Generalist gig freelancers" },
       { feature: "Ranking signal", vt: "GitHub streaks + shipped projects", them: "Seller level + star reviews" },
-      { feature: "Verifiable proof of work", vt: true, them: false },
+      { feature: "Work samples to review", vt: "Projects + linked repositories", them: "Gig portfolios" },
       { feature: "GitHub commit streak tracking", vt: true, them: false },
       { feature: "Project quality scoring from repo health", vt: true, them: false },
       { feature: "AI-powered hire matching", vt: "VibeFinder Bot", them: "Category & gig search" },
       { feature: "Pricing model", vt: "Direct hire, negotiate freely", them: "Fixed-price gig packages" },
       { feature: "Service fee for the freelancer", vt: "0%", them: "~20% commission" },
-      { feature: "Crypto payments (USDC)", vt: true, them: false },
+      { feature: "Hiring payments", vt: "Agreed directly with the builder", them: "Managed through Fiverr" },
       { feature: "Built-in order protection", vt: false, them: true },
       { feature: "Non-engineering roles", vt: false, them: true },
       { feature: "Public daily activity feed", vt: true, them: false },
@@ -69,9 +69,9 @@ export const COMPARISONS: Comparison[] = [
     vtWins: [
       "You want to hire AI-native developers using Claude Code, Cursor, or Bolt",
       "You care more about shipping evidence than star ratings",
-      "You want to pay in USDC with no platform fees",
+      "You want to agree payment terms directly with a builder",
       "You need a builder who can prototype and ship in days, not a canned package",
-      "You are tired of inflated gig reviews and want verifiable signal",
+      "You want to inspect project evidence alongside client reviews",
     ],
     themWins: [
       "You need non-engineering work (logos, voiceover, video, copy)",
@@ -83,7 +83,7 @@ export const COMPARISONS: Comparison[] = [
     faq: [
       {
         q: "What is the main difference between VibeTalent and Fiverr?",
-        a: "Fiverr is a gig marketplace where freelancers sell fixed-price packages and are ranked by seller level, order volume, and star reviews: signals that can be inflated. VibeTalent is a developer-only marketplace where rankings come from verifiable data: GitHub commit streaks, deployed project quality, repo health, and peer endorsements weighted by the endorser's own vibe score. The data refreshes daily and cannot be faked.",
+        a: "Fiverr offers packaged freelance gigs across many categories. VibeTalent focuses on AI-assisted developers and presents GitHub activity, shipped projects, repository quality signals, client reviews, and endorsements. These signals help you inspect work, but none is fraud-proof or a delivery guarantee.",
       },
       {
         q: "Is VibeTalent cheaper than Fiverr?",
@@ -91,18 +91,18 @@ export const COMPARISONS: Comparison[] = [
       },
       {
         q: "Can I hire AI-native developers on Fiverr?",
-        a: "You can find sellers on Fiverr who advertise AI tools in their gig descriptions, but there is no way to verify that they ship working software with those tools daily. VibeTalent was built specifically for vibe coders (developers who use Claude Code, Cursor, Bolt, and Windsurf to ship code every day) and ranks them on the GitHub activity that proves they actually do it.",
+        a: "You can find developers advertising AI-tool experience on both platforms. VibeTalent focuses on AI-assisted builders and shows their projects and GitHub-linked activity. That activity does not prove which AI tools were used; ask for relevant demos and discuss how the developer tests and reviews generated code.",
       },
       {
-        q: "Does Fiverr show GitHub data?",
-        a: "No. Fiverr ranks sellers on gig performance metrics (order volume, on-time delivery, response rate, and buyer reviews) not on code. VibeTalent makes GitHub activity the core ranking signal: coding streak length alone is 40% of a developer's vibe score, with deployed project quality and repo health on top.",
+        q: "How does GitHub activity contribute to VibeTalent's rankings?",
+        a: "The vibe score combines activity streaks, contribution volume, projects, badges, client review bonuses, and endorsements. Streaks do not have a fixed percentage weight. Profiles expose linked repositories and project evidence so you can inspect relevant work alongside the score.",
       },
       {
         q: "Is Fiverr or VibeTalent better for a one-off task?",
         a: "Fiverr is better for a small, well-defined, fixed-price task: especially non-engineering work like a logo, a voiceover, or a short video. VibeTalent is better when you need a developer who can ship a real, working product, whether that is a one-week prototype or an ongoing build, because it surfaces builders proven to ship consistently.",
       },
     ],
-    dateModified: "2026-06-05",
+    dateModified: "2026-10-04",
   },
   {
     slug: "toptal",
@@ -124,7 +124,7 @@ export const COMPARISONS: Comparison[] = [
       { feature: "AI-powered hire matching", vt: "VibeFinder Bot", them: "Human account matcher" },
       { feature: "Cost to start", vt: "Free", them: "Premium + deposit" },
       { feature: "Platform fee for clients", vt: "0%", them: "Premium markup on rates" },
-      { feature: "Crypto payments (USDC)", vt: true, them: false },
+      { feature: "Hiring payments", vt: "Agreed directly with the builder", them: "Managed through Toptal" },
       { feature: "Fully managed matching", vt: false, them: true },
       { feature: "Enterprise contracts & compliance", vt: false, them: true },
       { feature: "Public daily activity feed", vt: true, them: false },
@@ -158,14 +158,14 @@ export const COMPARISONS: Comparison[] = [
       },
       {
         q: "Can I verify a Toptal developer's track record myself?",
-        a: "Not directly: Toptal's screening is internal, and you mostly see a curated profile and the matcher's recommendation. On VibeTalent, every ranking signal is public GitHub-derived data, so you can audit a builder's commit history, deployed projects, and consistency yourself before you reach out.",
+        a: "Ask for relevant work samples and references on either platform. On VibeTalent, public profiles can include GitHub-linked activity, deployed projects, repository signals, client reviews, and endorsements. Those signals make a starting point for your own assessment; not every score component comes from GitHub.",
       },
       {
         q: "Is Toptal or VibeTalent better for enterprise hiring?",
         a: "Toptal is better when you need fully managed staffing with enterprise contracts, compliance, and a human matcher handling the process. VibeTalent is better when you want to hire AI-native builders fast on transparent merit, without a markup or gatekeeper: ideal for startups and teams that value shipping speed and proof of work.",
       },
     ],
-    dateModified: "2026-06-05",
+    dateModified: "2026-10-04",
   },
   {
     slug: "freelancer",
@@ -177,17 +177,17 @@ export const COMPARISONS: Comparison[] = [
       "VibeTalent ranks developers on verifiable proof of work: coding streaks, shipped projects, and GitHub activity. Freelancer.com runs on competitive bidding and reviews. Side-by-side comparison, fees, and which fits your hiring needs.",
     subtitle:
       "Which platform is better for hiring developers in 2026? A side-by-side breakdown.",
-    tldr: "VibeTalent ranks developers on verifiable proof of work (daily coding streaks, deployed projects, and GitHub activity) while Freelancer.com runs on competitive bidding, where freelancers underbid each other and rankings lean on ratings and reviews that are easy to game. Pick VibeTalent if you want to hire on demonstrated shipping ability, especially AI-native builders using Claude Code, Cursor, or Bolt. Pick Freelancer if you want a huge global pool, contest-style sourcing, and the lowest possible bid for a well-defined task.",
+    tldr: "VibeTalent focuses on AI-assisted developers and shows public GitHub activity, shipped projects, client reviews, and endorsements. Freelancer.com lets clients post projects and compare bids across a wider range of roles. Pick VibeTalent to inspect public work and contact builders directly. Pick Freelancer.com when you want competitive bids, contests, or milestone payment management. For either route, assess relevant samples and define deliverables before agreeing to work together.",
     rows: [
       { feature: "Talent type", vt: "AI-native developers", them: "Generalist global freelancers" },
       { feature: "Ranking signal", vt: "GitHub streaks + shipped projects", them: "Bids + ratings + reviews" },
-      { feature: "Verifiable proof of work", vt: true, them: false },
+      { feature: "Work samples to review", vt: "Projects + linked repositories", them: "Portfolio samples" },
       { feature: "GitHub commit streak tracking", vt: true, them: false },
       { feature: "Project quality scoring from repo health", vt: true, them: false },
       { feature: "How you source talent", vt: "Browse merit rankings + VibeFinder Bot", them: "Post a project, collect bids" },
       { feature: "AI-powered hire matching", vt: "VibeFinder Bot", them: false },
       { feature: "Service fee for the freelancer", vt: "0%", them: "~10% or fixed fee" },
-      { feature: "Crypto payments (USDC)", vt: true, them: false },
+      { feature: "Hiring payments", vt: "Agreed directly with the builder", them: "Managed through Freelancer.com" },
       { feature: "Milestone escrow", vt: false, them: true },
       { feature: "Contests & non-engineering roles", vt: false, them: true },
       { feature: "Public daily activity feed", vt: true, them: false },
@@ -196,8 +196,8 @@ export const COMPARISONS: Comparison[] = [
       "You want to hire AI-native developers using Claude Code, Cursor, or Bolt",
       "You care about shipping evidence, not who bids the lowest",
       "You want to skip bidding wars and browse builders ranked on merit",
-      "You want to pay in USDC with no platform fees",
-      "You want verifiable signal instead of gameable reviews",
+      "You want to agree payment terms directly with a builder",
+      "You want project evidence alongside client reviews",
     ],
     themWins: [
       "You want the lowest possible bid for a clearly scoped task",
@@ -209,7 +209,7 @@ export const COMPARISONS: Comparison[] = [
     faq: [
       {
         q: "What is the main difference between VibeTalent and Freelancer?",
-        a: "Freelancer.com is a bidding marketplace: you post a project and freelancers compete on price, with rankings driven by ratings, reviews, and completion rate: signals that can be gamed. VibeTalent removes bidding entirely and ranks developers on verifiable data: GitHub commit streaks, deployed project quality, repo health, and peer endorsements that refresh daily and cannot be faked.",
+        a: "Freelancer.com lets clients post projects and compare freelance bids. VibeTalent focuses on AI-assisted developers with public project evidence, GitHub activity, client reviews, and endorsements. You can contact builders directly after reviewing their work; those signals are not fraud-proof or a delivery guarantee.",
       },
       {
         q: "Is VibeTalent cheaper than Freelancer?",
@@ -220,15 +220,15 @@ export const COMPARISONS: Comparison[] = [
         a: "Bidding optimizes for the lowest price, which often means a race to the bottom rather than the best builder. VibeTalent ranks developers on demonstrated ability (coding streaks, shipped projects, and repo quality) so you start from proven builders instead of sorting through bids and hoping the reviews are real.",
       },
       {
-        q: "Does Freelancer show GitHub data?",
-        a: "No. Freelancer.com ranks talent on bids, ratings, reviews, and on-platform completion history, not on code. VibeTalent makes GitHub activity the core ranking signal: coding streak length alone is 40% of a developer's vibe score, with deployed project quality and repo health on top.",
+        q: "How does GitHub activity contribute to VibeTalent's rankings?",
+        a: "The vibe score combines activity streaks, contribution volume, projects, badges, client review bonuses, and endorsements. Streaks do not have a fixed percentage weight. Inspect linked repositories and relevant project samples alongside the score when assessing a developer.",
       },
       {
         q: "Is Freelancer or VibeTalent better for a one-off project?",
         a: "Freelancer is better when you want competitive bids on a clearly scoped, often non-engineering task and value milestone escrow. VibeTalent is better when you need a developer who can ship a working product fast (a prototype or an ongoing build) because it surfaces builders proven to ship consistently rather than those who simply bid the lowest.",
       },
     ],
-    dateModified: "2026-06-05",
+    dateModified: "2026-10-04",
   },
 ];
 

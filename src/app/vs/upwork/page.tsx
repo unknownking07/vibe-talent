@@ -8,10 +8,11 @@ import { defaultSocialImage, siteUrl } from "@/lib/seo";
 const PAGE_URL = `${siteUrl}/vs/upwork`;
 const PAGE_TITLE = "VibeTalent vs Upwork: Which Is Better for Hiring Developers?";
 const PAGE_DESCRIPTION =
-  "VibeTalent ranks developers on verifiable proof of work: coding streaks, shipped projects, and GitHub activity. Upwork relies on resumes and client reviews. Side-by-side comparison, pricing, and which platform fits your hiring needs.";
+  "Compare VibeTalent and Upwork for hiring developers: public GitHub activity and shipped projects, marketplace fees, matching tools, and payment protection.";
+const DATE_MODIFIED = "2026-10-04";
 
 const TL_DR =
-  "VibeTalent ranks developers on verifiable proof of work (daily coding streaks, deployed projects, and GitHub activity) while Upwork relies on self-reported resumes and client reviews that are easy to game. Pick VibeTalent if you want to hire developers based on what they actually ship, especially AI-native builders using Claude Code, Cursor, or Bolt. Pick Upwork if you need a generalist freelance marketplace with escrow and a broad talent pool across non-engineering roles.";
+  "VibeTalent focuses on AI-assisted developers, with public GitHub activity, shipped projects, client reviews, and peer endorsements you can inspect before contacting a builder. Upwork covers a broader range of freelance work and provides contracts, payment protection, and matching tools. Choose VibeTalent to build a shortlist from public work and agree terms directly. Choose Upwork when you want to manage the contract and payments inside a marketplace. On either platform, review relevant samples and agree on scope before hiring.";
 
 const FAQ = [
   {
@@ -20,36 +21,36 @@ const FAQ = [
   },
   {
     q: "Is VibeTalent cheaper than Upwork?",
-    a: "VibeTalent is free for both developers and clients. There is no platform fee on hires and no commission on payments. The only paid feature is optional Featured Projects placement, priced in USDC on Base or Solana with no platform markup. Upwork charges freelancers a 10% service fee and adds a payment processing fee on top of that, plus a 5% client marketplace fee on hires.",
+    a: "VibeTalent charges no platform commission on direct hires; clients and builders agree their own rates and payment terms. Optional project promotion is paid separately. Upwork's freelancer service fee ranges from 0% to 15% per contract. Clients on its Basic plan pay a Marketplace Fee of up to 7.99%, with a 3% rate for eligible U.S. bank-account payments, plus a one-time contract initiation fee of $0.99 to $14.99. Fees and exceptions can change; check Upwork's official fee pages before hiring.",
   },
   {
     q: "Can I hire AI-native developers on Upwork?",
-    a: "You can search for developers on Upwork who list AI tools in their skill tags, but there is no way to verify that they actually use those tools daily or ship working software with them. VibeTalent was built specifically for vibe coders (developers who use Claude Code, Cursor, Bolt, and Windsurf to ship code every day) and ranks them on the activity that proves they actually do it.",
+    a: "Yes. You can look for developers with relevant AI-tool experience on either platform. VibeTalent focuses on AI-assisted builders and makes their projects and GitHub-linked activity visible. GitHub activity does not prove which AI tool someone used. Ask for relevant demos, repository access where appropriate, and an explanation of how the developer tests and reviews generated code.",
   },
   {
-    q: "Does Upwork show GitHub data?",
-    a: "Upwork lets freelancers link their GitHub profile, but it does not pull commit history, repo quality, or streak data into rankings. The Upwork search algorithm weights job success score, hours billed, and client reviews. VibeTalent makes GitHub activity the core ranking signal: coding streak length is 40% of the vibe score by itself.",
+    q: "What GitHub evidence can I review on VibeTalent?",
+    a: "VibeTalent profiles can show GitHub-verified activity streaks, linked repositories, shipped projects, and automated repository quality signals. The vibe score combines activity, projects, badges, client reviews, and endorsements; streaks do not have a fixed percentage weight. Inspect the underlying work as well as the score. Commit counts and repository signals do not establish code quality or authorship on their own.",
   },
   {
-    q: "How does VibeTalent prevent fake reviews?",
-    a: "VibeTalent does not rely on reviews. Rankings come from public GitHub data (commit streaks, repo statistics, deployment status, and contribution patterns) none of which can be paid for or fabricated. Peer endorsements exist but are weighted at only 10% of the vibe score and weighted by the endorser's own score to make collusion economically unattractive.",
+    q: "Does VibeTalent use reviews in its rankings?",
+    a: "Yes. Client ratings contribute a capped review bonus to the vibe score, and peer endorsements also contribute points. Profiles provide project and GitHub evidence alongside that feedback so clients can check more than ratings. These signals are not fraud-proof or a delivery guarantee; verify relevant work and use clear milestones before committing to a hire.",
   },
   {
     q: "Is Upwork or VibeTalent better for a one-off project?",
-    a: "Upwork is better for one-off non-engineering projects (design, copywriting, virtual assistance, video editing) or for hiring at large scale with escrow protection. VibeTalent is better for finding a developer who can ship a working product fast (whether that is a one-week prototype or an ongoing build relationship) because the platform surfaces builders proven to ship consistently.",
+    a: "VibeTalent can help you find AI-assisted developers for a prototype or ongoing build through public profiles and direct contact. Upwork may fit better if you need non-engineering roles or marketplace-managed contracts and payment protection. Choose based on the developer's relevant work, the project scope, and the payment arrangements you need.",
   },
 ];
 
 const COMPARISON_ROWS: { feature: string; vt: string | boolean; up: string | boolean }[] = [
   { feature: "Talent type", vt: "AI-native developers", up: "Generalist freelancers" },
-  { feature: "Ranking signal", vt: "GitHub streaks + shipped projects", up: "Resumes + client reviews" },
-  { feature: "Verifiable proof of work", vt: true, up: false },
+  { feature: "Profile evidence", vt: "GitHub activity, projects, reviews + endorsements", up: "Skills, portfolios, work history + client feedback" },
+  { feature: "Work samples to review", vt: "Projects + linked repositories", up: "Portfolio samples" },
   { feature: "GitHub commit streak tracking", vt: true, up: false },
   { feature: "Project quality scoring from repo health", vt: true, up: false },
-  { feature: "AI-powered hire matching", vt: "VibeFinder Bot", up: "Project catalog search" },
-  { feature: "Platform fee for clients", vt: "0%", up: "5% marketplace fee" },
-  { feature: "Service fee for developers", vt: "0%", up: "10% service fee" },
-  { feature: "Crypto payments (USDC)", vt: true, up: false },
+  { feature: "Matching tools", vt: "VibeFinder Bot", up: "Talent search, Project Catalog + Uma (availability varies)" },
+  { feature: "Platform commission for clients", vt: "0% on direct hires", up: "Basic: up to 7.99% + contract initiation fee" },
+  { feature: "Service fee for developers", vt: "0% on direct hires", up: "0–15% per contract" },
+  { feature: "Hiring payments", vt: "Agreed directly with the builder", up: "Managed through Upwork" },
   { feature: "Escrow protection", vt: false, up: true },
   { feature: "Non-engineering roles", vt: false, up: true },
   { feature: "Public daily activity feed", vt: true, up: false },
@@ -89,7 +90,7 @@ export default function VsUpworkPage() {
   const faqLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    dateModified: "2026-05-22",
+    dateModified: DATE_MODIFIED,
     mainEntity: FAQ.map(({ q, a }) => ({
       "@type": "Question",
       name: q,
@@ -104,7 +105,7 @@ export default function VsUpworkPage() {
     description: PAGE_DESCRIPTION,
     url: PAGE_URL,
     mainEntityOfPage: { "@type": "WebPage", "@id": PAGE_URL },
-    dateModified: "2026-05-22",
+    dateModified: DATE_MODIFIED,
     author: { "@type": "Organization", "@id": `${siteUrl}/#organization`, name: "VibeTalent" },
     publisher: { "@type": "Organization", "@id": `${siteUrl}/#organization`, name: "VibeTalent" },
     about: [
@@ -146,6 +147,9 @@ export default function VsUpworkPage() {
         </h1>
         <p className="mt-3 text-[var(--text-secondary)] font-medium">
           Which platform is better for hiring developers in 2026? A side-by-side breakdown.
+        </p>
+        <p className="mt-2 text-xs text-[var(--text-muted)]">
+          Updated October 4, 2026. Fees vary by contract and plan.
         </p>
       </div>
 
@@ -235,6 +239,16 @@ export default function VsUpworkPage() {
         </div>
       </section>
 
+      <p className="mb-12 text-sm text-[var(--text-secondary)] leading-relaxed">
+        Upwork sources: {" "}
+        <a className="underline" href="https://support.upwork.com/hc/en-us/articles/211062538-Learn-about-the-Freelancer-Service-Fee">freelancer fees</a>, {" "}
+        <a className="underline" href="https://support.upwork.com/hc/en-us/articles/4660220468499-What-is-the-Client-Marketplace-Fee">client fees</a>, {" "}
+        <a className="underline" href="https://support.upwork.com/hc/en-us/articles/26106318334611-What-is-the-Contract-Initiation-Fee-on-Upwork">contract initiation fees</a>, and {" "}
+        <a className="underline" href="https://support.upwork.com/hc/en-us/articles/45809718947859-How-to-use-Uma-Upwork-s-Mindful-AI-to-search-for-freelancers">Uma search availability</a>.
+        {" "}See <Link href="/pricing" className="underline">VibeTalent pricing</Link> and {" "}
+        <Link href="/hire-ai-assisted-developers" className="underline">how hiring works</Link>.
+      </p>
+
       <section className="grid sm:grid-cols-2 gap-6 mb-12">
         <div
           className="p-6 rounded-2xl"
@@ -253,9 +267,9 @@ export default function VsUpworkPage() {
           <ul className="space-y-2 text-sm text-[var(--text-secondary)] font-medium">
             <li>You want to hire AI-native developers using Claude Code, Cursor, or Bolt</li>
             <li>You care more about shipping evidence than years of experience</li>
-            <li>You want to pay in USDC with no platform fees</li>
-            <li>You need a builder who can prototype and ship in days, not months</li>
-            <li>You are tired of fake five-star reviews and want verifiable signal</li>
+            <li>You want to agree rates and payment terms directly with a builder</li>
+            <li>You are shortlisting developers for a prototype or ongoing product</li>
+            <li>You want project evidence alongside client reviews</li>
           </ul>
         </div>
 
