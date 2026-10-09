@@ -8,7 +8,7 @@
 export const SUPPORT_EMAIL = "vibetalentwork@gmail.com";
 
 export const PLATFORM_FACTS = `## Vibe Score
-A community activity score, not a verified hiring or delivery score. The additive formula includes a baseline, streak days, project verification/automated quality signals, contribution-volume credit, badges, endorsements, and a capped review bonus. There is no fixed percentage split. Activity and community signals can be manipulated; a high score does not establish work quality or honest authorship.
+Vibe score is a public reputation score: baseline 10 + the strongest public verified project's evidence (0–100) + endorsements + trusted reviews + existing vouch credit. Commits, contribution totals, streaks, badges, popularity and project count add zero points. Project evidence checks ownership, README, test-related files/config, CI/container config and live URL reachability; they do not establish passing tests or client delivery.
 
 ## Coding Streaks
 - Consecutive days of recorded activity, including GitHub sync and manual check-ins.
@@ -52,7 +52,7 @@ A community activity score, not a verified hiring or delivery score. The additiv
 
 ## Key pages
 - /explore: browse and filter all builders (by language, framework, streak, badge, vibe score)
-- /leaderboard: community activity rankings by vibe score
+- /leaderboard: rankings by project evidence and community reputation
 - /feed: live GitHub activity feed
 - /agent and /agent/chat: VibeFinder, the AI assistant for talent matching and platform help
 - /dashboard. Your own profile, streak, and projects`;

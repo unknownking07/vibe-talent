@@ -19,7 +19,7 @@ type WeeklyApiRow = {
 };
 
 export function LeaderboardTabs({ users }: { users: UserWithSocials[] }) {
-  const [tab, setTab] = useState<Tab>("week");
+  const [tab, setTab] = useState<Tab>("all");
   const [weeklyRows, setWeeklyRows] = useState<ActiveBuilderRowProps[] | null>(
     null,
   );

@@ -12,7 +12,7 @@ interface Props {
 /**
  * Container + header shared by the loading and loaded states, so the skeleton
  * reserves the exact frame the real list drops into — no layout shift when the
- * weekly fetch resolves. The "ACTIVE BUILDERS / LAST 7 DAYS" header is static
+ * weekly fetch resolves. The "BUILDERS / LAST 7 DAYS" header is static
  * chrome, so it renders immediately rather than shimmering.
  */
 function WeeklyShell({
@@ -26,14 +26,15 @@ function WeeklyShell({
     <div
       className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-2xl overflow-hidden shadow-[var(--shadow-brutal-sm)]"
       aria-busy={loading || undefined}
-      aria-label={loading ? "Loading active builders" : undefined}
+      aria-label={loading ? "Loading builders" : undefined}
     >
       <header className="bg-[var(--bg-inverted)] text-[var(--text-on-inverted)] px-5 py-4 flex justify-between items-center">
-        <h3 className="text-[15px] font-bold">ACTIVE BUILDERS</h3>
+        <h3 className="text-[15px] font-bold">BUILDERS</h3>
         <span className="bg-[var(--accent)] text-white px-3 py-1 text-[12px] font-semibold rounded-full">
           LAST 7 DAYS
         </span>
       </header>
+      <p className="px-5 pt-4 text-xs text-[var(--text-muted)]">All builders, ranked by vibe score. This week’s activity is shown for context. Commits and streaks add zero points.</p>
       <div>{children}</div>
     </div>
   );
@@ -82,7 +83,7 @@ export function WeeklyTab({ rows, error }: Props) {
   if (error) {
     return (
       <div className="text-[13px] text-[var(--status-error-text)] bg-[var(--status-error-bg)] border border-[var(--status-error-border)] p-4 rounded-xl">
-        Couldn&apos;t load active builders ({error}).
+        Couldn&apos;t load builders ({error}).
       </div>
     );
   }
@@ -98,7 +99,7 @@ export function WeeklyTab({ rows, error }: Props) {
   if (rows.length === 0) {
     return (
       <div className="text-[13px] text-[var(--text-muted)] p-4">
-        No active builders in the last 7 days yet.
+        No builders to show yet.
       </div>
     );
   }

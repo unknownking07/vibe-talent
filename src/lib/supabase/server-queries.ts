@@ -23,7 +23,7 @@ async function _fetchAllUsers(): Promise<UserWithSocials[]> {
     .from("users")
     .select(USER_FIELDS)
     .not("username", "is", null)
-    .order("vibe_score", { ascending: false });
+    .order("vibe_score", { ascending: false }).order("username").order("id");
 
   // Throw on error so unstable_cache does NOT cache empty results
   if (error) {
@@ -128,7 +128,7 @@ async function _fetchHomepageData() {
   const sb = getPublicClient() as any;
 
   const [usersResult, projectsResult, builderCountResult, projectCountResult, streakResult] = await Promise.all([
-    sb.from("users").select(USER_FIELDS).not("username", "is", null).order("vibe_score", { ascending: false }).limit(20),
+    sb.from("users").select(USER_FIELDS).not("username", "is", null).order("vibe_score", { ascending: false }).order("username").order("id").limit(20),
     sb.from("projects").select(`${PROJECT_FIELDS}, users!projects_user_id_fkey(username)`).not("live_url", "is", null).eq("flagged", false).eq("is_private", false).order("created_at", { ascending: false }).limit(3),
     sb.from("users").select("id", { count: "exact", head: true }).not("username", "is", null),
     sb.from("projects").select("id", { count: "exact", head: true }).eq("flagged", false).eq("is_private", false),

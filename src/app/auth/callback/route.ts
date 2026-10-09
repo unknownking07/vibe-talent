@@ -1,3 +1,4 @@
+import { readGithubIdentity } from "@/lib/github-identity";
 import { createServerClient } from "@supabase/ssr";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
@@ -54,13 +55,7 @@ export async function GET(request: Request) {
         // Only derive the handle when a GitHub identity is actually linked.
         // user_metadata persists after unlinkIdentity, so a later Google/email
         // login must not resurrect a handle the builder disconnected.
-        const githubUsername = githubIdentity
-          ? ghData.user_name ||
-            ghData.preferred_username ||
-            user.user_metadata?.user_name ||
-            user.user_metadata?.preferred_username ||
-            null
-          : null;
+        const githubUsername = readGithubIdentity(user)?.username ?? null;
         // GitHub's stable numeric ID lands in identity_data.sub (OIDC-style
         // subject identifier — string-encoded). We coerce here once because
         // github-sync uses this on every run to tell a legitimate rename

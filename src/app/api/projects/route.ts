@@ -1,3 +1,7 @@
+import { repositoryControlVerified } from "@/lib/project-verification";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { readGithubIdentity } from "@/lib/github-identity";
+import { writeProjectAnalysis } from "@/lib/project-analysis-write";
 import { NextRequest, NextResponse } from "next/server";
 import { after } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -138,9 +142,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Use authenticated user's ID, NOT client-supplied user_id
+    // Only this server pipeline can insert projects; bind ownership to the session.
+    const admin = createAdminClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any).from("projects").insert({
+    const { data, error } = await (admin as any).from("projects").insert({
       user_id: user.id,
       title: title.trim().slice(0, 100),
       description: description.trim().slice(0, 500),
@@ -156,37 +161,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to create project" }, { status: 500 });
     }
 
-    // Auto-verify if GitHub URL owner matches authenticated user's GitHub username.
-    // Source of truth for the handle is users.github_username (synced from the
-    // GitHub identity on every OAuth callback, covering linked-later accounts
-    // whose user_metadata doesn't hold the GitHub handle). OAuth metadata is a
-    // fallback for the first-login edge case before the callback has written.
+    // Ownership comes from the provider identity, never editable profile metadata.
     if (data && normalizedGithubUrl) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: userRow } = await (supabase as any)
         .from("users")
-        .select("github_username, username")
+        .select("username")
         .eq("id", user.id)
         .single();
 
-      const githubUsername =
-        userRow?.github_username ||
-        user.user_metadata?.user_name ||
-        user.user_metadata?.preferred_username ||
-        null;
-      // VibeTalent profile slug — distinct from the GitHub handle above, and
-      // the one that appears in badge/profile URLs we look for in the README.
+      const githubIdentity = readGithubIdentity(user);
       const profileUsername: string | null = userRow?.username ?? null;
 
       const parsed = parseGithubRepoUrl(normalizedGithubUrl);
-      if (githubUsername && parsed && parsed.owner.toLowerCase() === githubUsername.toLowerCase()) {
+      if (githubIdentity && parsed) {
         const { owner: repoOwner, repo: repoName } = parsed;
 
         // Run quality analysis + live URL check after response (guaranteed by Next.js after())
         after(async () => {
           try {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const sb = supabase as any;
+            const sb = admin as any;
             const qualityResult = await analyzeRepository(repoOwner, repoName, providerToken, profileUsername);
 
             // If GitHub analysis fails (rate limit, transient API error, etc.)
@@ -203,6 +198,9 @@ export async function POST(request: NextRequest) {
               return;
             }
 
+            const ownsRepo = await repositoryControlVerified(repoOwner, repoName, qualityResult.metrics.owner_github_id, githubIdentity.id, user.id, providerToken);
+            if (!ownsRepo) return;
+
             const qualityScore = qualityResult.metrics.quality_score;
             const qualityMetrics = toRepoQualityData(qualityResult.metrics);
 
@@ -211,7 +209,7 @@ export async function POST(request: NextRequest) {
               live_url_ok = await checkLiveUrl(normalizedLiveUrl);
             }
 
-            const { error: updateError } = await sb.from("projects").update({
+            const { data: saved, error: updateError } = await writeProjectAnalysis(sb, { id: data.id, user_id: user.id, github_url: normalizedGithubUrl!, live_url: normalizedLiveUrl }, {
               verified: true,
               quality_score: qualityScore,
               quality_metrics: qualityMetrics,
@@ -219,9 +217,9 @@ export async function POST(request: NextRequest) {
               // Re-sync from the full analysis — the create-time probe may
               // have failed silently while the post-response probe succeeded.
               is_private: qualityResult.metrics.is_private,
-            }).eq("id", data.id);
+            });
 
-            if (!updateError) {
+            if (!updateError && saved) {
               createNotification({
                 user_id: user.id,
                 type: "project_verified",

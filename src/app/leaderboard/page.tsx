@@ -7,15 +7,15 @@ import Link from "next/link";
 import { Trophy } from "@phosphor-icons/react/dist/ssr";
 
 export const metadata: Metadata = {
-  title: "Top Vibe Coders: Developer Leaderboard by Streak & Score",
+  title: "Top Vibe Coders: Developer Leaderboard by Project Evidence",
   description:
-    "See the top vibe coders ranked by vibe score, streak, and listed projects. Community activity rankings.",
+    "See the top vibe coders ranked by verified project evidence and community feedback. Commits and streaks add zero score points.",
   alternates: {
     canonical: `${siteUrl}/leaderboard`,
   },
   openGraph: {
     title: "Top Vibe Coders: VibeTalent Leaderboard",
-    description: "See the top developers ranked by vibe score, coding streak, and listed projects.",
+    description: "See the top developers ranked by vibe score from project evidence and community feedback.",
     url: `${siteUrl}/leaderboard`,
     siteName: "VibeTalent",
     type: "website",
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     images: [defaultSocialImage],
     title: "Top Vibe Coders: VibeTalent Leaderboard",
-    description: "See the top developers ranked by vibe score, coding streak, and listed projects.",
+    description: "See the top developers ranked by vibe score from project evidence and community feedback.",
   },
 };
 
@@ -51,7 +51,7 @@ export default async function LeaderboardPage() {
       {
         "@type": "ItemList",
         name: "VibeTalent Leaderboard",
-        description: "Top vibe coders ranked by vibe score, streak, and listed projects",
+        description: "Top vibe coders ranked by vibe score from project evidence and community feedback",
         numberOfItems: users.length,
         itemListElement: users.slice(0, 10).map((user, i) => ({
           "@type": "ListItem",
@@ -77,9 +77,9 @@ export default async function LeaderboardPage() {
           <Trophy weight="duotone" size={32} className="text-[#CA8A04]" />
         </div>
         <h1 className="text-3xl font-bold text-[var(--foreground)]">Leaderboard</h1>
-        <p className="mt-2 text-[var(--text-secondary)] font-medium">Community activity rankings</p>
+        <p className="mt-2 text-[var(--text-secondary)] font-medium">Project evidence and community reputation</p>
         <p className="mt-3 text-sm text-[var(--text-muted)] leading-relaxed max-w-2xl mx-auto">
-          Vibe score combines recorded activity, repository signals, badges, and community feedback. Commit volume and streaks can be inflated; rank does not verify authorship, working software, or client delivery.
+          Commits, contribution totals, streaks and activity badges add zero score points. Vibe score uses the strongest public project with verified GitHub ownership, plus community feedback. Repository checks do not prove working software or client delivery.
         </p>
       </div>
 

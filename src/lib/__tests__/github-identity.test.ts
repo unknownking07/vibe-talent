@@ -95,7 +95,7 @@ describe("readGithubIdentity", () => {
     expect(readGithubIdentity(unlinked)).toBeNull();
   });
 
-  it("falls back through preferred_username then metadata", () => {
+  it("uses provider preferred_username but refuses user-editable metadata", () => {
     const viaPreferred = user({
       identities: [identity("github", { preferred_username: "hubot" })],
     });
@@ -105,7 +105,7 @@ describe("readGithubIdentity", () => {
       identities: [identity("github", {})],
       user_metadata: { user_name: "hubot" },
     });
-    expect(readGithubIdentity(viaMetadata)?.username).toBe("hubot");
+    expect(readGithubIdentity(viaMetadata)).toBeNull();
   });
 
   it("treats a non-numeric or missing subject id as no id", () => {

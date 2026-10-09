@@ -1,22 +1,16 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`calculateVibeScore numeric baseline > beginner — 5 streak, 1 unverified, no badge 1`] = `21`;
+exports[`calculateVibeScore numeric baseline > beginner — 5 streak, 1 unverified, no badge 1`] = `10`;
 
-exports[`calculateVibeScore numeric baseline > diamond with endorsements + review bonus 1`] = `951`;
+exports[`calculateVibeScore numeric baseline > diamond with endorsements + review bonus 1`] = `120`;
 
-exports[`calculateVibeScore numeric baseline > flagged project contributes zero 1`] = `35`;
+exports[`calculateVibeScore numeric baseline > flagged project contributes zero 1`] = `50`;
 
-exports[`calculateVibeScore numeric baseline > high-score — 200 streak, 3 projects with quality scores, gold 1`] = `461`;
+exports[`calculateVibeScore numeric baseline > high-score — 200 streak, 3 projects with quality scores, gold 1`] = `50`;
 
-exports[`calculateVibeScore numeric baseline > legacy path — count-based scoring, no project detail 1`] = `97`;
+exports[`calculateVibeScore numeric baseline > legacy path — count-based scoring, no project detail 1`] = `10`;
 
-exports[`calculateVibeScore numeric baseline > shipper — 45 streak, 3 verified projects, bronze 1`] = `125`;
-
-exports[`calculateVibeScore numeric baseline > volume credit: 16k lifetime, 0 recent — addresses Meta's 16k-commit case 1`] = `136`;
-
-exports[`calculateVibeScore numeric baseline > volume credit: active veteran — 50k lifetime, 100 last-30d, gold badge 1`] = `394`;
-
-exports[`calculateVibeScore numeric baseline > volume credit: light user — 200 lifetime, 5 last-30d 1`] = `37`;
+exports[`calculateVibeScore numeric baseline > shipper — 45 streak, 3 verified projects, bronze 1`] = `50`;
 
 exports[`evaluateUser numeric baseline (locks before refactor) > beginner persona — low streak, 1 unverified project 1`] = `
 {

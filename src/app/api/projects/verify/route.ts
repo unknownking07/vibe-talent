@@ -1,8 +1,17 @@
+import { repositoryControlVerified } from "@/lib/project-verification";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { readGithubIdentity } from "@/lib/github-identity";
+import { writeProjectAnalysis } from "@/lib/project-analysis-write";
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createNotification } from "@/lib/notifications";
-import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl, toRepoQualityData } from "@/lib/github-quality";
+import {
+  analyzeRepository,
+  checkLiveUrl,
+  parseGithubRepoUrl,
+  toRepoQualityData,
+} from "@/lib/github-quality";
 
 /**
  * Invalidate the cached profile read so the new "Verified" badge appears
@@ -13,7 +22,7 @@ import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl, toRepoQualityData 
 async function invalidateProfileCache(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sb: any,
-  userId: string
+  userId: string,
 ): Promise<void> {
   try {
     const { data: userRow } = await sb
@@ -39,7 +48,7 @@ export async function POST(request: Request) {
     if (!project_id) {
       return NextResponse.json(
         { error: "project_id is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -57,61 +66,52 @@ export async function POST(request: Request) {
     // GitHub provider token from the current session — required for private
     // repos. Stale sessions may not have it; we fall back to unauthenticated
     // requests, which is fine for public repos but will 404 on private.
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     const providerToken = session?.provider_token ?? undefined;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = supabase as any;
+    const sb = createAdminClient() as any;
 
-    // Resolve GitHub handle from users.github_username (authoritative; synced
-    // from the GitHub identity on every OAuth callback). Fall back to OAuth
-    // metadata only for the first-login edge case before the callback wrote.
-    // Also pull `username` here so the success response can return a
-    // shipped_receipt_url without a second round-trip.
+    // Only provider identity data establishes ownership; fetch the public slug for receipts.
     const { data: userRow } = await sb
       .from("users")
-      .select("github_username, username")
+      .select("username")
       .eq("id", user.id)
       .single();
 
-    const githubUsername =
-      userRow?.github_username ||
-      user.user_metadata?.user_name ||
-      user.user_metadata?.preferred_username ||
-      null;
+    const githubIdentity = readGithubIdentity(user);
 
     const profileUsername: string | null = userRow?.username ?? null;
 
-    if (!githubUsername) {
+    if (!githubIdentity) {
       return NextResponse.json(
         {
           verified: false,
           reason:
             "No GitHub username found in your account. Please log in with GitHub OAuth.",
         },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
     // Fetch the project
     const { data: project, error: projectError } = await sb
       .from("projects")
-      .select("id, user_id, github_url")
+      .select("id, user_id, github_url, live_url")
       .eq("id", project_id)
       .single();
 
     if (projectError || !project) {
-      return NextResponse.json(
-        { error: "Project not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
     // Ensure user owns this project
     if (project.user_id !== user.id) {
       return NextResponse.json(
         { error: "You can only verify your own projects" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -121,7 +121,7 @@ export async function POST(request: Request) {
           verified: false,
           reason: "No GitHub URL set for this project. Add a GitHub URL first.",
         },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
@@ -137,195 +137,107 @@ export async function POST(request: Request) {
           reason:
             "Invalid GitHub URL format. Expected: https://github.com/{owner}/{repo}",
         },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
     const { owner: repoOwner, repo: repoName } = parsed;
 
-    // Method 1: Owner match
-    if (repoOwner.toLowerCase() === githubUsername.toLowerCase()) {
-      // Run quality analysis on the repo
-      const qualityResult = await analyzeRepository(repoOwner, repoName, providerToken, profileUsername);
-
-      // Detected a private repo (our public-only OAuth can't read it). Private
-      // repos aren't supported yet — read-only support is coming via a GitHub
-      // App. Give an honest message rather than prompting a scope grant that
-      // doesn't exist for OAuth Apps.
-      if (qualityResult.errorCode === "needs_repo_scope") {
-        return NextResponse.json(
-          {
-            verified: false,
-            reason: "Private repositories aren't supported yet — support is coming soon. Public repos verify automatically.",
-            code: "private_unsupported",
-          },
-          { status: 200 }
-        );
-      }
-      const qualityScore = qualityResult.success ? (qualityResult.metrics?.quality_score ?? 0) : 0;
-      const qualityMetrics = (qualityResult.success && qualityResult.metrics)
-        ? toRepoQualityData(qualityResult.metrics)
-        : null;
-
-      // Check live URL health if provided
-      let live_url_ok: boolean | null = null;
-      const { data: fullProject } = await sb
-        .from("projects")
-        .select("live_url")
-        .eq("id", project_id)
-        .single();
-      if (fullProject?.live_url) {
-        live_url_ok = await checkLiveUrl(fullProject.live_url);
-      }
-
-      await sb
-        .from("projects")
-        .update({
-          verified: true,
-          quality_score: qualityScore,
-          quality_metrics: qualityMetrics,
-          live_url_ok,
-          is_private: qualityResult.metrics?.is_private ?? false,
-        })
-        .eq("id", project_id);
-
-      createNotification({
-        user_id: user.id,
-        type: "project_verified",
-        title: "Project verified",
-        message: `Your project has been verified via owner match. Quality score: ${qualityScore}/100.`,
-        metadata: { project_id, quality_score: qualityScore },
-      }).catch(console.error);
-
-      // Bust the profile cache so the new badge appears on the next page
-      // visit instead of waiting up to 60s for unstable_cache to expire.
-      await invalidateProfileCache(sb, user.id);
-
-      // Projects don't have a slug column today — id is the canonical handle
-      // used by /share/[username]/shipped/[slug] (slug is treated as a label).
-      const receiptSlug = project.id;
-      const shipped_receipt_url = profileUsername
-        ? `/share/${profileUsername}/shipped/${receiptSlug}`
-        : null;
-
+    const qualityResult = await analyzeRepository(
+      repoOwner,
+      repoName,
+      providerToken,
+      profileUsername,
+    );
+    if (
+      qualityResult.errorCode === "needs_repo_scope" ||
+      qualityResult.metrics?.is_private
+    ) {
       return NextResponse.json({
-        verified: true,
-        reason: "Repository owner matches your GitHub username.",
-        method: "owner_match",
-        quality_score: qualityScore,
-        quality_metrics: qualityMetrics,
-        live_url_ok,
-        shipped_receipt_url,
+        verified: false,
+        reason: "Private repositories aren't supported yet.",
+        code: "private_unsupported",
       });
     }
-
-    // Method 2: Verification file check
-    // Check if the repo contains a .vibetalent file at root
-    try {
-      const fileResponse = await fetch(
-        `https://api.github.com/repos/${repoOwner}/${repoName}/contents/.vibetalent`,
-        {
-          headers: {
-            Accept: "application/vnd.github.v3+json",
-            "User-Agent": "VibeTalent-Verification",
-          },
-        }
-      );
-
-      if (fileResponse.ok) {
-        const fileData = await fileResponse.json();
-
-        // Decode the file content (base64 encoded by GitHub API)
-        let fileContent = "";
-        if (fileData.content) {
-          fileContent = Buffer.from(fileData.content, "base64")
-            .toString("utf-8")
-            .trim();
-        }
-
-        // Check if file contains the user's GitHub username or user ID
-        if (
-          fileContent.includes(githubUsername) ||
-          fileContent.includes(user.id)
-        ) {
-          // Run quality analysis on the repo
-          const qualityResult = await analyzeRepository(repoOwner, repoName, providerToken, profileUsername);
-          const qualityScore = qualityResult.success ? (qualityResult.metrics?.quality_score ?? 0) : 0;
-          const qualityMetrics = (qualityResult.success && qualityResult.metrics)
-            ? toRepoQualityData(qualityResult.metrics)
-            : null;
-
-          // Check live URL health
-          let live_url_ok: boolean | null = null;
-          const { data: fullProject } = await sb
-            .from("projects")
-            .select("live_url")
-            .eq("id", project_id)
-            .single();
-          if (fullProject?.live_url) {
-            live_url_ok = await checkLiveUrl(fullProject.live_url);
-          }
-
-          await sb
-            .from("projects")
-            .update({
-              verified: true,
-              quality_score: qualityScore,
-              quality_metrics: qualityMetrics,
-              live_url_ok,
-              is_private: qualityResult.metrics?.is_private ?? false,
-            })
-            .eq("id", project_id);
-
-          createNotification({
-            user_id: user.id,
-            type: "project_verified",
-            title: "Project verified",
-            message: `Your project has been verified via verification file. Quality score: ${qualityScore}/100.`,
-            metadata: { project_id, quality_score: qualityScore },
-          }).catch(console.error);
-
-          // Bust the profile cache so the new badge appears immediately
-          // instead of waiting up to 60s for unstable_cache to expire.
-          await invalidateProfileCache(sb, user.id);
-
-          // Projects don't have a slug column today — id is the canonical
-          // handle used by /share/[username]/shipped/[slug].
-          const receiptSlug = project.id;
-          const shipped_receipt_url = profileUsername
-            ? `/share/${profileUsername}/shipped/${receiptSlug}`
-            : null;
-
-          return NextResponse.json({
-            verified: true,
-            reason:
-              "Verification file (.vibetalent) found with your credentials.",
-            method: "verification_file",
-            quality_score: qualityScore,
-            quality_metrics: qualityMetrics,
-            live_url_ok,
-            shipped_receipt_url,
-          });
-        } else {
-          return NextResponse.json({
-            verified: false,
-            reason: `Verification file found but does not contain your GitHub username ("${githubUsername}") or user ID. Update the .vibetalent file in the repo root.`,
-          });
-        }
-      }
-    } catch {
-      // GitHub API request failed, fall through to instructions
+    if (!qualityResult.success || !qualityResult.metrics) {
+      return NextResponse.json({
+        verified: false,
+        reason: "Repository analysis failed. Please retry verification.",
+      });
     }
-
-    // Neither method worked
+    const verified = await repositoryControlVerified(
+      repoOwner,
+      repoName,
+      qualityResult.metrics.owner_github_id,
+      githubIdentity.id,
+      user.id,
+      providerToken,
+    );
+    if (!verified) {
+      return NextResponse.json({
+        verified: false,
+        reason: `GitHub ownership was not confirmed. For a shared repository, put your VibeTalent account ID ${user.id} on its own line in a .vibetalent file at the repository root, then retry.`,
+      });
+    }
+    const qualityScore = qualityResult.metrics.quality_score;
+    const live_url_ok = project.live_url
+      ? await checkLiveUrl(project.live_url)
+      : null;
+    const { data: saved, error: saveError } = await writeProjectAnalysis(
+      sb,
+      project,
+      {
+        verified: true,
+        quality_score: qualityScore,
+        quality_metrics: toRepoQualityData(qualityResult.metrics),
+        live_url_ok,
+        is_private: qualityResult.metrics.is_private,
+      },
+    );
+    if (saveError)
+      return NextResponse.json(
+        { error: "Failed to save verification" },
+        { status: 500 },
+      );
+    if (!saved)
+      return NextResponse.json(
+        {
+          verified: false,
+          reason: "Project changed during verification. Please retry.",
+        },
+        { status: 409 },
+      );
+    createNotification({
+      user_id: user.id,
+      type: "project_verified",
+      title: "Project verified",
+      message: `Your project has been verified. Repository checks: ${qualityScore}/100.`,
+      metadata: { project_id, quality_score: qualityScore },
+    }).catch(console.error);
+    await invalidateProfileCache(sb, user.id);
     return NextResponse.json({
-      verified: false,
-      reason: `Repository owner "${repoOwner}" does not match your GitHub username "${githubUsername}". To verify, add a file called ".vibetalent" to the root of the repo containing your GitHub username "${githubUsername}" or your user ID "${user.id}".`,
+      verified: true,
+      reason:
+        qualityResult.metrics.owner_github_id === githubIdentity.id &&
+        githubIdentity.id !== null
+          ? "Repository owner ID matches your linked GitHub account."
+          : "Verification file (.vibetalent) names your VibeTalent account.",
+      method:
+        qualityResult.metrics.owner_github_id === githubIdentity.id &&
+        githubIdentity.id !== null
+          ? "owner_match"
+          : "verification_file",
+      quality_score: qualityScore,
+      quality_metrics: toRepoQualityData(qualityResult.metrics),
+      live_url_ok,
+      shipped_receipt_url: profileUsername
+        ? `/share/${encodeURIComponent(profileUsername)}/shipped/${project.id}`
+        : null,
     });
   } catch {
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

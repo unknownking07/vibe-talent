@@ -56,7 +56,7 @@ const STEPS: readonly Step[] = [
   {
     number: "03",
     title: "Climb the score",
-    body: "Streaks + project quality + endorsements = your vibe score.",
+    body: "Verified project evidence + community feedback = your vibe score. Commits and streaks add zero points.",
     icon: Trophy,
   },
   {

@@ -48,9 +48,8 @@ function asHandle(value: unknown): string | null {
  * The GitHub handle this account has actually proved, or null.
  *
  * Returns null unless a GitHub identity is currently attached, whatever
- * `user_metadata` still remembers. `user_metadata` is only consulted as a
- * fallback *for the handle itself*, because older identities predate Supabase
- * copying `user_name` into `identity_data`.
+ * `user_metadata` still remembers. User-editable metadata must never establish
+ * repository ownership; an incomplete provider identity requires a fresh login.
  */
 export function readGithubIdentity(
   user: User | null | undefined,
@@ -59,12 +58,9 @@ export function readGithubIdentity(
   if (!identity) return null;
 
   const data = (identity.identity_data ?? {}) as Record<string, unknown>;
-  const metadata = (user?.user_metadata ?? {}) as Record<string, unknown>;
   const username =
     asHandle(data.user_name) ??
-    asHandle(data.preferred_username) ??
-    asHandle(metadata.user_name) ??
-    asHandle(metadata.preferred_username);
+    asHandle(data.preferred_username);
   if (!username) return null;
 
   // Lives in identity_data.sub (OIDC-style subject id, string-encoded).

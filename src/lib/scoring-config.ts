@@ -7,52 +7,16 @@
  *    `npm test -- scoring-baseline` to see if snapshots shift —
  *    any shift is a real scoring change and should be intentional.
  *
- * Two "badge bonus" tables exist on purpose: the vibe-score badge bonuses
- * (streak.ts, integer-friendly) and the agent-eval badge bonuses
- * (agent-scoring.ts, 0–100 reputation scale) are tuned independently.
+ * Streaks, badges and contribution volume are descriptive and earn no vibe-score points.
  */
 import type { BadgeLevel } from "./types/database";
 
 // ---- Vibe score (streak.ts) ----
 export const VIBE_SCORE = {
   baseline: 10,
-  perStreakDay: 2,
-  verifiedProjectBase: 5,
-  unverifiedProjectPoints: 1,
-  qualityScoreDivisor: 10,
-  qualityScoreCapPerProject: 10,
   perEndorsement: 5,
   reviewMultiplier: 2,
   reviewCap: 50,
-  badgeBonuses: { none: 0, bronze: 10, silver: 20, gold: 30, diamond: 40 } as Record<BadgeLevel, number>,
-  // Volume credit: rewards lifetime contribution count and recent activity
-  // beyond just streak consistency. Values mirror the SQL migration
-  // 20260430_add_volume_credit_to_vibe_score.sql so DB and TS stay in sync.
-  volumeCredit: {
-    // min(floor(sqrt(lifetime_contributions)), lifetimeCap)
-    // 100 → +10, 1k → +31, 10k → +100, 16k → +126, 62.5k+ → cap
-    // sqrt is intentional — log was too gentle (16k → +16), this gives heavy
-    // committers visible separation from casual users while still capping
-    // outliers (1M-commit bots don't dwarf platform activity).
-    lifetimeCap: 250,
-    // min(floor(contributions_30d * recent30dWeight), recent30dCap)
-    // 100 commits in last 30 days → +50 (capped)
-    recent30dWeight: 0.5,
-    recent30dCap: 50,
-  },
-} as const;
-
-// ---- Per-project quality score (streak.ts calculateProjectScore) ----
-export const PROJECT_SCORE = {
-  unverifiedFlat: 1,
-  verifiedBase: 5,
-  liveUrlBonus: 3,
-  githubBonus: 2,
-  longDescBonus: 2,
-  imageBonus: 1,
-  techStackBonus: 2,
-  longDescThreshold: 50,
-  techStackThreshold: 3,
 } as const;
 
 // ---- Badge tier thresholds (streak.ts getBadgeLevel) ----

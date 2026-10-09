@@ -8,71 +8,22 @@ import { VibeScore } from "@/components/ui/vibe-score";
 import { Pagination } from "@/components/ui/pagination";
 import Link from "next/link";
 import Image from "next/image";
-import { Code, Fire, Lightning, SealCheck } from "@phosphor-icons/react";
+import { SealCheck } from "@phosphor-icons/react";
 
 const PAGE_SIZE = 15;
-type Tab = "vibe_score" | "streak" | "projects";
 
 export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
-  const [activeTab, _setActiveTab] = useState<Tab>("vibe_score");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const setActiveTab = useCallback((v: Tab) => {
-    _setActiveTab(v);
-    setCurrentPage(1);
-  }, []);
   const goToPage = useCallback((page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
-  const sortedUsers = [...users]
-    .filter((user) => {
-      switch (activeTab) {
-        case "streak":
-          return user.longest_streak > 0;
-        case "projects":
-          return (user.projects ?? []).length > 0;
-        default:
-          return true;
-      }
-    })
-    .sort((a, b) => {
-      switch (activeTab) {
-        case "vibe_score":
-          return b.vibe_score - a.vibe_score;
-        case "streak":
-          return b.longest_streak - a.longest_streak;
-        case "projects":
-          return b.projects.length - a.projects.length;
-      }
-    });
-
-  // The streak board ranks on `longest_streak`, so its Streak column has to
-  // show that same figure. Rendering `streak` (the run they are on today)
-  // there put builders whose streak has since broken near the top beside a
-  // 0, which reads as a leaderboard that cannot sort. Every other board keeps
-  // showing the live streak, so the header renames to say which one it is.
-  const isStreakBoard = activeTab === "streak";
-  const streakShown = (user: UserWithSocials) =>
-    isStreakBoard ? user.longest_streak : user.streak;
-
-  // Shape-typed rather than `typeof Trophy`: the map now mixes Phosphor
-  // components with the hand-drawn brand glyphs, which are plain function
-  // components rather than forwardRef exotics.
-  const tabs: {
-    id: Tab;
-    label: string;
-    icon: React.ComponentType<{
-      size?: number;
-      weight?: "fill" | "duotone" | "regular" | "bold";
-      className?: string;
-    }>;
-  }[] = [
-    { id: "vibe_score", label: "Vibe Score", icon: Lightning },
-    { id: "streak", label: "Longest Streak", icon: Fire },
-    { id: "projects", label: "Most Projects", icon: Code },
-  ];
+  const sortedUsers = [...users].sort((a, b) =>
+    b.vibe_score - a.vibe_score || a.username.localeCompare(b.username)
+  );
+  const streakShown = (user: UserWithSocials) => user.streak;
 
   const podium = sortedUsers.slice(0, 3);
   const totalPages = Math.ceil(sortedUsers.length / PAGE_SIZE);
@@ -84,25 +35,7 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
 
   return (
     <>
-      {/* Tabs */}
-      <div className="flex justify-center mb-10">
-        <div className="inline-flex rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-1">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-colors ${
-                activeTab === tab.id
-                  ? "bg-[var(--accent)] text-white"
-                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-surface-light)]"
-              }`}
-            >
-              <tab.icon weight="fill" size={16} />
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
+
 
       {/* Podium */}
       <div className="grid grid-cols-3 gap-4 mb-10 max-w-3xl mx-auto items-end">
@@ -199,7 +132,7 @@ export function LeaderboardContent({ users }: { users: UserWithSocials[] }) {
                 Vibe Score
               </th>
               <th className="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-white hidden sm:table-cell">
-                {isStreakBoard ? "Longest" : "Streak"}
+                Streak
               </th>
               <th className="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-white hidden sm:table-cell">
                 Projects

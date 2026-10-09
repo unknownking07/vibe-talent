@@ -1,6 +1,8 @@
 import type { Project, UserWithSocials } from "./types/database";
 import type { EvaluationResult, EvaluationDimensions, MatchResult, TaskRequest } from "./types/agent";
 import { AGENT_EVAL, MATCH } from "./scoring-config";
+import { projectEvidenceScore } from "./project-evidence";
+export { projectEvidenceScore } from "./project-evidence";
 
 function clamp(min: number, max: number, value: number): number {
   return Math.min(max, Math.max(min, value));
@@ -12,17 +14,6 @@ export function publicVerifiedProjects(user: UserWithSocials): Project[] {
     project.verified && !project.is_private &&
     !(project as Project & { flagged?: boolean }).flagged
   );
-}
-
-/** Broad stored flags include runner/container config, not verified execution. */
-export function projectEvidenceScore(project: Project): number {
-  if (!project.verified || project.is_private || (project as Project & { flagged?: boolean }).flagged) return 0;
-  const E = AGENT_EVAL.projectEvidence;
-  return E.ownership +
-    (project.quality_metrics?.has_readme ? E.readme : 0) +
-    (project.quality_metrics?.has_tests ? E.testRelatedFiles : 0) +
-    (project.quality_metrics?.has_ci ? E.ciOrContainerConfig : 0) +
-    (project.live_url && project.live_url_ok === true ? E.reachableDemo : 0);
 }
 
 function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
