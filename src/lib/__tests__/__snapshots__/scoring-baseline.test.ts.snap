@@ -23,15 +23,15 @@ exports[`evaluateUser numeric baseline (locks before refactor) > beginner person
   "badge_level": "none",
   "dimensions": {
     "activity_recency": 62,
-    "client_outcomes": 0,
+    "client_outcomes": null,
     "consistency": 19,
-    "project_quality": 2,
+    "project_quality": 0,
     "reputation": 3,
-    "tech_breadth": 36,
+    "tech_breadth": 0,
   },
-  "overall_score": 15,
+  "overall_score": 0,
   "risks_count": 4,
-  "strengths_count": 2,
+  "strengths_count": 0,
   "username": "beginner",
 }
 `;
@@ -41,15 +41,15 @@ exports[`evaluateUser numeric baseline (locks before refactor) > diamond persona
   "badge_level": "diamond",
   "dimensions": {
     "activity_recency": 100,
-    "client_outcomes": 0,
+    "client_outcomes": null,
     "consistency": 100,
-    "project_quality": 100,
+    "project_quality": 60,
     "reputation": 100,
     "tech_breadth": 36,
   },
-  "overall_score": 70,
-  "risks_count": 1,
-  "strengths_count": 6,
+  "overall_score": 60,
+  "risks_count": 2,
+  "strengths_count": 2,
   "username": "diamond",
 }
 `;
@@ -59,15 +59,15 @@ exports[`evaluateUser numeric baseline (locks before refactor) > high-score gold
   "badge_level": "gold",
   "dimensions": {
     "activity_recency": 100,
-    "client_outcomes": 0,
+    "client_outcomes": null,
     "consistency": 100,
-    "project_quality": 93,
+    "project_quality": 85,
     "reputation": 100,
     "tech_breadth": 36,
   },
-  "overall_score": 69,
-  "risks_count": 1,
-  "strengths_count": 6,
+  "overall_score": 85,
+  "risks_count": 2,
+  "strengths_count": 4,
   "username": "highscore",
 }
 `;
@@ -77,15 +77,15 @@ exports[`evaluateUser numeric baseline (locks before refactor) > inactive person
   "badge_level": "bronze",
   "dimensions": {
     "activity_recency": 20,
-    "client_outcomes": 0,
+    "client_outcomes": null,
     "consistency": 49,
-    "project_quality": 2,
+    "project_quality": 0,
     "reputation": 27,
-    "tech_breadth": 36,
+    "tech_breadth": 0,
   },
-  "overall_score": 19,
+  "overall_score": 0,
   "risks_count": 4,
-  "strengths_count": 2,
+  "strengths_count": 0,
   "username": "inactive",
 }
 `;
@@ -95,15 +95,15 @@ exports[`evaluateUser numeric baseline (locks before refactor) > shipper persona
   "badge_level": "bronze",
   "dimensions": {
     "activity_recency": 78,
-    "client_outcomes": 0,
+    "client_outcomes": null,
     "consistency": 100,
-    "project_quality": 100,
+    "project_quality": 40,
     "reputation": 38,
     "tech_breadth": 36,
   },
-  "overall_score": 59,
-  "risks_count": 1,
-  "strengths_count": 4,
+  "overall_score": 40,
+  "risks_count": 3,
+  "strengths_count": 1,
   "username": "shipper",
 }
 `;
@@ -111,7 +111,7 @@ exports[`evaluateUser numeric baseline (locks before refactor) > shipper persona
 exports[`matchUsers numeric baseline > orders and scores across 5 personas deterministically 1`] = `
 [
   {
-    "match_score": 79,
+    "match_score": 86,
     "matched_skills": [
       "React",
       "Typescript",
@@ -121,7 +121,7 @@ exports[`matchUsers numeric baseline > orders and scores across 5 personas deter
     "username": "highscore",
   },
   {
-    "match_score": 79,
+    "match_score": 76,
     "matched_skills": [
       "React",
       "Typescript",
@@ -131,34 +131,28 @@ exports[`matchUsers numeric baseline > orders and scores across 5 personas deter
     "username": "diamond",
   },
   {
-    "match_score": 74,
+    "match_score": 68,
     "matched_skills": [
       "React",
       "Typescript",
     ],
-    "reasons_count": 4,
+    "reasons_count": 3,
     "recommended_for": "MVP development",
     "username": "shipper",
   },
   {
-    "match_score": 50,
-    "matched_skills": [
-      "React",
-      "Typescript",
-    ],
+    "match_score": 0,
+    "matched_skills": [],
+    "reasons_count": 2,
+    "recommended_for": "MVP development",
+    "username": "beginner",
+  },
+  {
+    "match_score": 0,
+    "matched_skills": [],
     "reasons_count": 2,
     "recommended_for": "MVP development",
     "username": "inactive",
-  },
-  {
-    "match_score": 49,
-    "matched_skills": [
-      "React",
-      "Typescript",
-    ],
-    "reasons_count": 1,
-    "recommended_for": "MVP development",
-    "username": "beginner",
   },
 ]
 `;

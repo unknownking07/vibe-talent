@@ -6,24 +6,17 @@
 // existing agent-scoring engine. Each tool returns a compact JSON payload for
 // the model plus optional `AgentBuilderCard`s the UI renders directly.
 
-import { matchUsers, evaluateUser } from "@/lib/agent-scoring";
+import { matchUsers, evaluateUser, publicVerifiedProjects, projectEvidenceScore } from "@/lib/agent-scoring";
 import type { ToolDefinition } from "@/lib/deepseek";
-import type { UserWithSocials } from "@/lib/types/database";
+import type { Project, UserWithSocials } from "@/lib/types/database";
 import type { TaskRequest } from "@/lib/types/agent";
 import type { AgentBuilderCard } from "./types";
 
-// Mirrors the public column sets used by lib/supabase/queries.ts, minus
-// fields the scorer never reads. All public data — never select email-like
-// or private columns here.
-const USER_FIELDS =
-  "id, username, display_name, bio, avatar_url, github_username, vibe_score, streak, longest_streak, badge_level, created_at";
-const PROJECT_FIELDS =
-  "id, user_id, title, description, tech_stack, live_url, live_url_ok, github_url, tags, verified, quality_score, quality_metrics, endorsement_count";
+import { fetchPublicBuilderPool, PUBLIC_BUILDER_FIELDS as USER_FIELDS, PUBLIC_PROJECT_FIELDS as PROJECT_FIELDS } from "@/lib/supabase/builder-pool";
 
-// How many builders one search can return / how big the ranking pool is.
+// Page through all eligible builders before ranking; activity is not an admission gate.
 const MAX_RESULTS = 6;
 const DEFAULT_RESULTS = 3;
-const POOL_SIZE = 200;
 const MAX_SKILLS = 10;
 const BIO_PREVIEW = 140;
 const TECH_PREVIEW = 6;
@@ -83,16 +76,12 @@ export function normalizeUsername(raw: unknown): string | null {
 
 /** Short verifiable facts for a builder — same spirit as matchUsers reasons. */
 export function buildReasons(user: UserWithSocials): string[] {
+  const projects = publicVerifiedProjects(user);
   const reasons: string[] = [];
-  if (user.streak > 30) reasons.push(`${user.streak}-day active streak`);
-  if (user.badge_level !== "none") {
-    reasons.push(`${user.badge_level.charAt(0).toUpperCase() + user.badge_level.slice(1)} badge holder`);
-  }
-  const projects = user.projects ?? [];
-  const verified = projects.filter((p) => p.verified).length;
-  if (verified > 0) reasons.push(`${verified} GitHub-verified project${verified > 1 ? "s" : ""}`);
-  else if (projects.length > 0) reasons.push(`Shipped ${projects.length} project${projects.length > 1 ? "s" : ""}`);
-  if (user.vibe_score > 0) reasons.push(`Vibe score: ${user.vibe_score}`);
+  if (projects.length > 0) reasons.push(`${projects.length} public project${projects.length === 1 ? "" : "s"} with GitHub ownership verified`);
+  if (projects.some(p => p.live_url && p.live_url_ok === true)) reasons.push("Live URL reachable at its last check");
+  if (user.streak > 30) reasons.push(`${user.streak}-day activity streak (not delivery evidence)`);
+  if (user.vibe_score > 0) reasons.push(`Activity vibe score: ${user.vibe_score} (not a hiring score)`);
   return reasons.slice(0, 4);
 }
 
@@ -157,7 +146,7 @@ export const AGENT_TOOLS: ToolDefinition[] = [
     function: {
       name: "search_builders",
       description:
-        "Search and rank VibeTalent builders from live platform data. Ranking is deterministic (computed from verified GitHub activity, streaks, project quality, and reputation) and results come back in ranked order. Use whenever the user wants to find, hire, compare, or browse builders.",
+        "Search and rank VibeTalent builders from live platform data. Default hiring ranking uses public ownership-verified portfolio evidence and listed skills; activity and vibe score add no hiring points. Ranking is deterministic and results come back in ranked order. Use whenever the user wants to find, hire, compare, or browse builders.",
       parameters: {
         type: "object",
         properties: {
@@ -165,7 +154,7 @@ export const AGENT_TOOLS: ToolDefinition[] = [
             type: "array",
             items: { type: "string" },
             description:
-              'Tech skills the project needs, e.g. ["next.js", "typescript"]. Omit to rank on overall reputation instead.',
+              'Tech skills the project needs, e.g. ["next.js", "typescript"]. Omit to rank on inspectable portfolio evidence instead.',
           },
           project_description: {
             type: "string",
@@ -173,17 +162,17 @@ export const AGENT_TOOLS: ToolDefinition[] = [
           },
           min_vibe_score: {
             type: "number",
-            description: "Only include builders at or above this vibe score.",
+            description: "Activity filter: only use if the user explicitly requests a minimum vibe score.",
           },
           active_only: {
             type: "boolean",
-            description: "Only include builders with an active daily coding streak.",
+            description: "Activity filter: only use if the user explicitly requests an active recorded streak.",
           },
           sort: {
             type: "string",
             enum: [...SEARCH_SORTS],
             description:
-              "best_match (default) blends skill overlap with the reputation evaluation; the others are simple sorts on one stat.",
+              "best_match (default) uses skills listed on ownership-verified public projects and inspectable repository signals, excluding streaks and vibe score; the others are activity/stat sorts, not hiring recommendations.",
           },
           limit: {
             type: "number",
@@ -198,7 +187,7 @@ export const AGENT_TOOLS: ToolDefinition[] = [
     function: {
       name: "get_builder",
       description:
-        "Fetch one builder's full public profile and VibeFinder's deterministic evaluation: overall score, dimension breakdown, strengths, risks, and their top projects with GitHub quality scores. Use when a specific builder is being discussed or compared.",
+        "Fetch one builder's full public profile and VibeFinder's deterministic evaluation: overall score, dimension breakdown, strengths, risks, and their public projects with ownership status and inspectable repository signals. Use when a specific builder is being discussed or compared.",
       parameters: {
         type: "object",
         properties: {
@@ -238,44 +227,10 @@ export interface ToolExecution {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyClient = any;
 
-async function fetchBuilderPool(supabase: AnyClient): Promise<UserWithSocials[]> {
-  const { data: users, error } = await supabase
-    .from("users")
-    .select(USER_FIELDS)
-    .not("username", "is", null)
-    .order("vibe_score", { ascending: false })
-    .limit(POOL_SIZE);
-  if (error) throw error;
-  if (!users?.length) return [];
-
-  const userIds = users.map((u: { id: string }) => u.id);
-  const [projectsRes, socialsRes] = await Promise.all([
-    supabase
-      .from("projects")
-      .select(PROJECT_FIELDS)
-      .in("user_id", userIds)
-      .eq("flagged", false)
-      .eq("is_private", false),
-    supabase.from("social_links").select("user_id, telegram").in("user_id", userIds),
-  ]);
-  // A failed read must NOT degrade into "builder with zero projects" — that
-  // would silently skew every ranking. Throw so the executor answers honestly.
-  if (projectsRes.error) throw projectsRes.error;
-  if (socialsRes.error) throw socialsRes.error;
-  const projects = projectsRes.data;
-  const socials = socialsRes.data;
-
-  return users.map((user: UserWithSocials) => ({
-    ...user,
-    projects: (projects || []).filter((p: { user_id: string }) => p.user_id === user.id),
-    social_links:
-      (socials || []).find((s: { user_id: string }) => s.user_id === user.id) || null,
-  }));
-}
 
 async function searchBuilders(supabase: AnyClient, rawArgs: unknown): Promise<ToolExecution> {
   const args = normalizeSearchArgs(rawArgs);
-  let pool = await fetchBuilderPool(supabase);
+  let pool = await fetchPublicBuilderPool(supabase);
 
   if (args.minVibeScore !== null) pool = pool.filter((u) => u.vibe_score >= args.minVibeScore!);
   if (args.activeOnly) pool = pool.filter((u) => u.streak > 0);
@@ -364,12 +319,17 @@ async function getBuilder(supabase: AnyClient, rawArgs: unknown): Promise<ToolEx
   const card = toCard(full, evaluation.overall_score, evaluation.strengths.slice(0, 3));
 
   const topProjects = [...(projects || [])]
-    .sort((a, b) => (b.quality_score ?? 0) - (a.quality_score ?? 0))
+    .sort((a: Project, b: Project) => projectEvidenceScore(b) - projectEvidenceScore(a))
     .slice(0, 3)
     .map((p) => ({
       title: p.title,
       tech: (p.tech_stack ?? []).slice(0, TECH_PREVIEW),
-      quality_score: p.quality_score,
+      portfolio_evidence_score: projectEvidenceScore(p),
+      github_url: p.github_url,
+      live_url: p.live_url,
+      live_url_reachable_at_last_check: p.live_url_ok ?? null,
+      test_related_files_or_config: p.quality_metrics?.has_tests ?? null,
+      ci_or_container_config: p.quality_metrics?.has_ci ?? null,
       verified: p.verified,
       has_live_url: !!p.live_url,
       endorsements: p.endorsement_count ?? 0,

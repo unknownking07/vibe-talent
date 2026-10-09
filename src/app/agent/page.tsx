@@ -48,7 +48,7 @@ export default function AgentHubPage() {
             <h2 className="text-lg font-bold text-[var(--foreground)]">Find Talent</h2>
             <p className="mt-2 text-sm text-[var(--text-secondary)] font-medium">
               Describe your project and let VibeFinder Robot analyze every builder on the platform
-              to find your perfect match.
+              to surface relevant public project evidence.
             </p>
             <div className="mt-4 text-sm font-semibold text-[var(--accent)]">
               Start Matching →
@@ -77,8 +77,7 @@ export default function AgentHubPage() {
             </div>
             <h2 className="text-lg font-bold text-[var(--foreground)]">Evaluate Builder</h2>
             <p className="mt-2 text-sm text-[var(--text-secondary)] font-medium">
-              Run a deep evaluation on any builder, analyzing git activity, streak consistency,
-              project quality, and reputation.
+              Inspect public portfolio signals and GitHub ownership. Activity is shown separately; client delivery is not verified.
             </p>
             <div className="mt-4 text-sm font-semibold text-[var(--accent)]">
               Browse Builders →
@@ -160,7 +159,7 @@ export default function AgentHubPage() {
         <div className="grid sm:grid-cols-4 gap-6">
           {[
             { step: "01", title: "Describe", text: "Tell the bot what you're building and what skills you need" },
-            { step: "02", title: "Analyze", text: "Robot scans all builders: git activity, streaks, project quality, tech stack" },
+            { step: "02", title: "Analyze", text: "Review public ownership-verified projects and listed technologies" },
             { step: "03", title: "Match", text: "Get ranked recommendations with match scores and reasoning" },
             { step: "04", title: "Contact", text: "Robot drafts a personalized hire request and provides direct contact links" },
           ].map((item) => (

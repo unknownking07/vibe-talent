@@ -3,18 +3,19 @@ import { jsonLdHtml } from "@/lib/json-ld";
 import { LeaderboardTabs } from "@/components/leaderboard/leaderboard-tabs";
 import { defaultSocialImage, siteUrl, buildBreadcrumbList } from "@/lib/seo";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Trophy } from "@phosphor-icons/react/dist/ssr";
 
 export const metadata: Metadata = {
   title: "Top Vibe Coders: Developer Leaderboard by Streak & Score",
   description:
-    "See the top vibe coders ranked by vibe score, streak, and projects shipped. The most consistent builders on the platform.",
+    "See the top vibe coders ranked by vibe score, streak, and listed projects. Community activity rankings.",
   alternates: {
     canonical: `${siteUrl}/leaderboard`,
   },
   openGraph: {
     title: "Top Vibe Coders: VibeTalent Leaderboard",
-    description: "See the top developers ranked by vibe score, coding streak, and projects shipped.",
+    description: "See the top developers ranked by vibe score, coding streak, and listed projects.",
     url: `${siteUrl}/leaderboard`,
     siteName: "VibeTalent",
     type: "website",
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     images: [defaultSocialImage],
     title: "Top Vibe Coders: VibeTalent Leaderboard",
-    description: "See the top developers ranked by vibe score, coding streak, and projects shipped.",
+    description: "See the top developers ranked by vibe score, coding streak, and listed projects.",
   },
 };
 
@@ -50,7 +51,7 @@ export default async function LeaderboardPage() {
       {
         "@type": "ItemList",
         name: "VibeTalent Leaderboard",
-        description: "Top vibe coders ranked by vibe score, streak, and projects shipped",
+        description: "Top vibe coders ranked by vibe score, streak, and listed projects",
         numberOfItems: users.length,
         itemListElement: users.slice(0, 10).map((user, i) => ({
           "@type": "ListItem",
@@ -76,10 +77,16 @@ export default async function LeaderboardPage() {
           <Trophy weight="duotone" size={32} className="text-[#CA8A04]" />
         </div>
         <h1 className="text-3xl font-bold text-[var(--foreground)]">Leaderboard</h1>
-        <p className="mt-2 text-[var(--text-secondary)] font-medium">The most consistent builders on the platform</p>
-        <p className="mt-3 hidden sm:block text-sm text-[var(--text-muted)] leading-relaxed max-w-2xl mx-auto">
-          The VibeTalent leaderboard ranks developers by their vibe score: a reputation metric calculated from coding streaks, project quality, GitHub activity, and community endorsements. The most consistent builders rise to the top, proving their dedication through daily shipping.
+        <p className="mt-2 text-[var(--text-secondary)] font-medium">Community activity rankings</p>
+        <p className="mt-3 text-sm text-[var(--text-muted)] leading-relaxed max-w-2xl mx-auto">
+          Vibe score combines recorded activity, repository signals, badges, and community feedback. Commit volume and streaks can be inflated; rank does not verify authorship, working software, or client delivery.
         </p>
+      </div>
+
+      <div className="mb-8 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 text-sm text-[var(--text-secondary)]">
+        <p className="font-semibold text-[var(--foreground)]">Hiring? Start with the work.</p>
+        <p className="mt-1">Founder matches use public projects with verified GitHub ownership and inspectable repository signals. Streaks and vibe score add no hiring-score points. Inspect the source and demo, then agree a paid trial directly with the builder.</p>
+        <Link href="/agent/find" className="mt-3 inline-block font-semibold text-[var(--accent)]">Find builders by project evidence →</Link>
       </div>
 
       <LeaderboardTabs users={users} />

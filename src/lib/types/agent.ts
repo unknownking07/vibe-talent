@@ -6,7 +6,8 @@ export interface EvaluationDimensions {
   tech_breadth: number;
   activity_recency: number;
   reputation: number;
-  client_outcomes: number;
+  /** Unknown: the hire flow does not record accepted deliverables. */
+  client_outcomes: null;
 }
 
 export interface EvaluationResult {

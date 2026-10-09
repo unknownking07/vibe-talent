@@ -74,27 +74,14 @@ export const AGENT_EVAL = {
     scale: 10,
   },
 
-  // Quality-based project scoring (when quality_metrics is present)
-  projectQuality: {
-    avgWeight: 0.6,
-    quantityBonusPerProject: 5,
-    quantityBonusMax: 20,
-    liveBonusPerProject: 5,
-    liveBonusMax: 15,
-    liveSiteOkPerProject: 5,
-    unverifiedPointsPer: 1,
-    endorsementBonusPer: 3,
-    endorsementBonusMax: 15,
-  },
-
-  // Heuristic fallback (when no quality_metrics)
-  projectQualityFallback: {
-    verifiedPer: 15,
-    unverifiedPer: 2,
-    liveUrlPer: 10,
-    githubPer: 5,
-    longDescBonus: 10,
-    longDescThreshold: 50,
+  // Inspectable signals on the strongest public, ownership-verified repo.
+  // No credit for commit volume, popularity, project count, or endorsements.
+  projectEvidence: {
+    ownership: 40,
+    readme: 15,
+    testRelatedFiles: 15,
+    ciOrContainerConfig: 10,
+    reachableDemo: 20,
   },
 
   techBreadth: {
@@ -114,16 +101,6 @@ export const AGENT_EVAL = {
     reviewCap: 25,
   },
 
-  // Weights for combined overall_score (sum to 1.0)
-  overallWeights: {
-    projectQuality: 0.25,
-    clientOutcomes: 0.20,
-    consistency: 0.15,
-    techBreadth: 0.15,
-    activityRecency: 0.10,
-    reputation: 0.15,
-  },
-
   // Display/UI caps on extracted lists
   maxStrengths: 6,
   maxRisks: 5,
@@ -132,19 +109,13 @@ export const AGENT_EVAL = {
 // ---- Task-to-user matching (agent-scoring.ts matchUsers) ----
 export const MATCH = {
   weights: {
-    skill: 0.40,
-    evaluation: 0.30,
-    tag: 0.15,
-    availability: 0.15,
+    skill: 0.50,
+    evaluation: 0.40,
+    tag: 0.10,
   },
   defaultSkillScore: 50, // when task has no requested tech
   tagMatchScore: 80,
   tagNoMatchScore: 20,
-  availability: {
-    activeMultiplier: 2,
-    activeCap: 100,
-    inactiveScore: 10,
-  },
   maxResults: 5,
   maxReasons: 4,
 } as const;

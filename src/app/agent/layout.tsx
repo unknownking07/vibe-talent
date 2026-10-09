@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     canonical: `${siteUrl}/agent`,
   },
   description:
-    "Use AI to find the perfect vibe coder for your project. Describe what you need and get matched with builders who have the right skills and track record.",
+    "Describe your project and find builders by listed technologies and public portfolio evidence. Inspect their work before arranging a paid trial.",
   openGraph: {
     title: "Find a Developer with AI: VibeTalent",
     description: "Describe your project and let VibeFinder Bot match you with the right developer.",
@@ -40,7 +40,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
     "@type": "SoftwareApplication",
     name: "VibeFinder Bot",
     description:
-      "AI-powered talent matching bot that analyzes builder profiles, coding streaks, and project quality to find the perfect developer for your project.",
+      "AI talent matching using public project evidence and listed technologies. Activity rankings are separate from hiring evaluations.",
     url: `${siteUrl}/agent`,
     applicationCategory: "BusinessApplication",
     operatingSystem: "Web",

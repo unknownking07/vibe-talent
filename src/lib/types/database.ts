@@ -133,14 +133,20 @@ export interface ProjectEndorsement {
 }
 
 export interface ClientOutcomes {
-  total_hires: number;
-  completed_hires: number;
+  total_requests: number;
+  replied_requests: number;
+  response_rate: number;
+  returning_contacts: number;
   avg_rating: number;
   total_reviews: number;
-  repeat_clients: number;
   avg_response_hours: number | null;
-  completion_rate: number;
-  outcome_score: number;
+  /** @deprecated Hire requests are conversations, not verified hires. */
+  total_hires: null;
+  /** Unknown until an accepted-deliverable workflow exists. */
+  completed_hires: null;
+  repeat_clients: null;
+  completion_rate: null;
+  outcome_score: null;
 }
 
 export interface Referral {
