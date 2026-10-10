@@ -13,10 +13,10 @@ import type { EvaluationResult, AgentStep } from "@/lib/types/agent";
 
 const evaluationSteps: AgentStep[] = [
   { label: "Connecting to VibeTalent data layer...", duration: 800 },
-  { label: "Scanning coding activity and streak history...", duration: 1200 },
-  { label: "Analyzing project portfolio and deployments...", duration: 1000 },
+  { label: "Checking public repository ownership...", duration: 1200 },
+  { label: "Reading repository and live URL check results...", duration: 1000 },
   { label: "Evaluating tech stack diversity...", duration: 900 },
-  { label: "Computing reputation and badge metrics...", duration: 700 },
+  { label: "Separating activity from hiring evidence...", duration: 700 },
   { label: "Generating evaluation report...", duration: 1100 },
 ];
 
@@ -88,7 +88,7 @@ export default function EvaluatePage({
             VibeFinder Evaluation: @{username}
           </h1>
           <p className="text-sm text-[var(--text-secondary)] font-medium">
-            Deep analysis of coding activity, project quality, and reputation
+            Public portfolio evidence, with activity shown separately
           </p>
         </div>
       </div>

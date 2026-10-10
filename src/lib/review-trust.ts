@@ -3,7 +3,7 @@
  *
  * Detects fake/bot reviews by analyzing multiple signals.
  * Returns a trust_score (0-100) where:
- *   100 = highly trustworthy (linked to completed hire, real email, unique patterns)
+ *   100 = highly trustworthy (linked to a replied request, email/pattern heuristics)
  *   0   = almost certainly fake (disposable email, duplicate patterns, speed anomalies)
  *
  * Reviews with trust_score < 30 are flagged and excluded from avg rating.
@@ -45,7 +45,7 @@ export function calculateReviewTrust(signals: TrustSignals): TrustResult {
 
   // === POSITIVE SIGNALS ===
 
-  // Linked to a completed hire request (strongest signal)
+  // Linked to a replied hire request (conversation evidence, not completed work)
   if (signals.has_hire_request && signals.hire_status === "replied") {
     score += 30;
   }

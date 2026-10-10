@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
     let checked = 0;
     let alive = 0;
     let dead = 0;
+    let errors = 0;
 
     // Process in batches of 10 to avoid overwhelming servers
     const BATCH_SIZE = 10;
@@ -50,21 +51,26 @@ export async function GET(req: NextRequest) {
       const results = await Promise.all(
         batch.map(async (project) => {
           const isOk = await checkLiveUrl(project.live_url!);
-          return { id: project.id, live_url_ok: isOk };
+          return { id: project.id, live_url: project.live_url!, live_url_ok: isOk };
         })
       );
 
       for (const result of results) {
-        const { error: updateErr } = await supabase
+        const { data: saved, error: updateErr } = await supabase
           .from("projects")
           .update({ live_url_ok: result.live_url_ok })
-          .eq("id", result.id);
+          .eq("id", result.id)
+          .eq("live_url", result.live_url)
+          .select("id")
+          .maybeSingle();
 
         if (updateErr) {
           console.error(`Failed to update project ${result.id}:`, updateErr);
+          errors++;
           continue;
         }
 
+        if (!saved) continue; // The demo changed during the check.
         checked++;
         if (result.live_url_ok) alive++;
         else dead++;
@@ -76,7 +82,8 @@ export async function GET(req: NextRequest) {
       checked,
       alive,
       dead,
-    });
+      errors,
+    }, { status: errors ? 503 : 200 });
   } catch (error) {
     console.error("Live URL check error:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

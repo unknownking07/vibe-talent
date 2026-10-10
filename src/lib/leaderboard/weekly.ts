@@ -80,8 +80,8 @@ interface CurrentUserForActive {
 
 /**
  * Joins active-days + commit counts with current users.
- * Filters: must have at least 1 active day in last 7d.
- * Sort: commits7d desc, activeDays7d desc, streak desc, vibeScore desc.
+ * Includes zero-activity builders: activity cannot affect ranking eligibility.
+ * Rank by vibe score; activity is display-only and never breaks a tie.
  */
 export function computeActiveBuilders(
   activeDaysByUserId: Map<string, number>,
@@ -91,7 +91,6 @@ export function computeActiveBuilders(
   const rows: ActiveBuilderRow[] = [];
   for (const u of current) {
     const days = activeDaysByUserId.get(u.id) ?? 0;
-    if (days <= 0) continue;
     rows.push({
       username: u.username,
       avatar_url: u.avatar_url,
@@ -102,11 +101,6 @@ export function computeActiveBuilders(
       vibeScore: u.vibe_score,
     });
   }
-  rows.sort((a, b) => {
-    if (b.commits7d !== a.commits7d) return b.commits7d - a.commits7d;
-    if (b.activeDays7d !== a.activeDays7d) return b.activeDays7d - a.activeDays7d;
-    if (b.streak !== a.streak) return b.streak - a.streak;
-    return b.vibeScore - a.vibeScore;
-  });
+  rows.sort((a, b) => b.vibeScore - a.vibeScore || a.username.localeCompare(b.username));
   return rows;
 }

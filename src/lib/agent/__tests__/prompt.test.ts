@@ -11,6 +11,14 @@ describe("buildAgentSystemPrompt", () => {
     expect(prompt).toContain(SUPPORT_EMAIL);
   });
 
+  it("keeps activity, review heuristics, and replies separate from delivery evidence", () => {
+    const prompt = buildAgentSystemPrompt(null);
+    expect(prompt).not.toContain("cannot be gamed");
+    expect(prompt).toContain("Hire replies establish conversations only");
+    expect(prompt).toContain("never as an implicit hiring filter");
+    expect(prompt).toContain("funding and deliverable acceptance are not managed");
+  });
+
   it("describes an anonymous visitor when no viewer is present", () => {
     const prompt = buildAgentSystemPrompt(null);
     expect(prompt).toContain("not signed in");

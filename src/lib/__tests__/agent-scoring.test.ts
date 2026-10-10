@@ -104,13 +104,13 @@ describe("evaluateUser", () => {
     });
     const result = evaluateUser(user);
 
-    Object.values(result.dimensions).forEach((dim) => {
+    Object.values(result.dimensions).filter(dim => dim !== null).forEach((dim) => {
       expect(dim).toBeGreaterThanOrEqual(0);
       expect(dim).toBeLessThanOrEqual(100);
     });
   });
 
-  it("gives higher score to more active users", () => {
+  it("keeps activity out of the hiring score", () => {
     const activeUser = createMockUser({ streak: 100, longest_streak: 200 });
     const inactiveUser = createMockUser({
       streak: 0,
@@ -121,9 +121,7 @@ describe("evaluateUser", () => {
     const activeResult = evaluateUser(activeUser);
     const inactiveResult = evaluateUser(inactiveUser);
 
-    expect(activeResult.overall_score).toBeGreaterThan(
-      inactiveResult.overall_score,
-    );
+    expect(activeResult.overall_score).toBe(inactiveResult.overall_score);
   });
 
   it("gives higher score to users with more projects", () => {
@@ -212,7 +210,7 @@ describe("evaluateUser", () => {
     );
   });
 
-  it("returns max 5 strengths and max 4 risks", () => {
+  it("returns at most 6 strengths and 5 risks", () => {
     const user = createMockUser({
       streak: 200,
       longest_streak: 400,
@@ -220,8 +218,8 @@ describe("evaluateUser", () => {
       badge_level: "diamond",
     });
     const result = evaluateUser(user);
-    expect(result.strengths.length).toBeLessThanOrEqual(5);
-    expect(result.risks.length).toBeLessThanOrEqual(4);
+    expect(result.strengths.length).toBeLessThanOrEqual(6);
+    expect(result.risks.length).toBeLessThanOrEqual(5);
   });
 });
 
@@ -283,7 +281,7 @@ describe("matchUsers", () => {
           github_url: null,
           build_time: null,
           tags: [],
-          verified: false,
+          verified: true,
         }),
       ],
     });
@@ -302,7 +300,7 @@ describe("matchUsers", () => {
           github_url: null,
           build_time: null,
           tags: [],
-          verified: false,
+          verified: true,
         }),
       ],
     });
@@ -322,7 +320,7 @@ describe("matchUsers", () => {
           github_url: null,
           build_time: null,
           tags: [],
-          verified: false,
+          verified: true,
         }),
       ],
     });
@@ -330,6 +328,68 @@ describe("matchUsers", () => {
     const results = matchUsers([user], task);
     expect(results[0].matched_skills).toContain("React");
     expect(results[0].matched_skills).toContain("Typescript");
+  });
+});
+
+describe("hiring evidence safeguards", () => {
+  const task: TaskRequest = {
+    description: "Build a React dashboard",
+    tech_stack: ["React"],
+    project_type: "mvp", timeline: "flexible", budget: "500_2k",
+  };
+
+  it("does not reward inflated streaks, badges, or vibe scores in hiring", () => {
+    const ordinary = createMockUser({ streak: 0, longest_streak: 0, vibe_score: 10, badge_level: "none" });
+    const inflated = { ...ordinary, streak: 10000, longest_streak: 10000, vibe_score: 1000000, badge_level: "diamond" as const };
+    expect(evaluateUser(inflated).overall_score).toBe(evaluateUser(ordinary).overall_score);
+    expect(matchUsers([inflated], task)[0].match_score).toBe(matchUsers([ordinary], task)[0].match_score);
+  });
+
+  it("does not let commit counts, stars, or endorsements inflate portfolio evidence", () => {
+    const project = createMockProject({ quality_metrics: { has_tests: true, has_ci: true, has_readme: true } as Project["quality_metrics"] });
+    const ordinary = createMockUser({ projects: [project] });
+    const inflated = createMockUser({ projects: [{ ...project, quality_score: 100, endorsement_count: 10000, quality_metrics: { ...project.quality_metrics!, total_commits: 1000000, stars: 1000000, community_score: 100, maintenance_score: 100 } }] });
+    expect(evaluateUser(inflated).overall_score).toBe(evaluateUser(ordinary).overall_score);
+  });
+
+  it("does not reward a flood of duplicate or unverified projects", () => {
+    const project = createMockProject();
+    const ordinary = createMockUser({ projects: [project] });
+    const flooded = createMockUser({ projects: [project, ...Array.from({ length: 100 }, (_, i) => createMockProject({ id: `spam-${i}`, verified: false, quality_score: 100, endorsement_count: 100 }))] });
+    const duplicated = createMockUser({ projects: Array.from({ length: 100 }, (_, i) => ({ ...project, id: `duplicate-${i}` })) });
+    expect(evaluateUser(flooded).overall_score).toBe(evaluateUser(ordinary).overall_score);
+    expect(evaluateUser(duplicated).overall_score).toBe(evaluateUser(ordinary).overall_score);
+  });
+
+  it("breaks tied hiring scores independently of input activity order", () => {
+    const first = createMockUser({ username: "aaa", vibe_score: 10, streak: 0 });
+    const second = createMockUser({ username: "zzz", vibe_score: 1000000, streak: 10000 });
+    expect(matchUsers([second, first], task).map(match => match.user.username)).toEqual(["aaa", "zzz"]);
+  });
+
+  it("puts inspectable work above an activity-only profile", () => {
+    const farmer = createMockUser({ username: "farmer", streak: 10000, longest_streak: 10000, vibe_score: 1000000, badge_level: "diamond", projects: [] });
+    const builder = createMockUser({ username: "builder", streak: 0, longest_streak: 0, vibe_score: 10, badge_level: "none" });
+    expect(evaluateUser(farmer).overall_score).toBe(0);
+    expect(matchUsers([farmer, builder], task)[0].user.username).toBe("builder");
+  });
+
+  it("excludes private, flagged, and unverified projects from hiring evidence and skills", () => {
+    const hidden = createMockProject({ is_private: true });
+    const flagged = { ...createMockProject(), flagged: true };
+    const user = createMockUser({ projects: [hidden, flagged, createMockProject({ verified: false })] });
+    expect(evaluateUser(user).overall_score).toBe(0);
+    expect(matchUsers([user], task)[0].matched_skills).toEqual([]);
+  });
+
+  it("describes repository checks without claiming delivery or passing tests", () => {
+    const user = createMockUser({ projects: [createMockProject({ quality_metrics: { has_tests: true, has_ci: true } as Project["quality_metrics"] })] });
+    const result = evaluateUser(user);
+    expect(result.strengths.join(" ")).toContain("Test-related files or configuration detected");
+    expect(result.summary).toContain("delivery");
+    expect(result.summary).not.toMatch(/reliable|production-grade|Has shipped/);
+    expect(result.strengths.join(" ")).not.toMatch(/test suites|Open source contributor/);
+    expect(result.risks.join(" ")).toContain("paid trial");
   });
 });
 

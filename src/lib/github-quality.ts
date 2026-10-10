@@ -1,17 +1,17 @@
+import { repositoryChecksScore } from "./project-evidence";
 import type { RepoQualityData } from "./types/database";
 
 /**
  * GitHub Repository Quality Scoring
  *
- * Analyzes public GitHub repo data to produce an anti-gaming quality score.
- * Scores are based on signals that are hard to fake:
- *   - Community validation (stars, forks, external contributors)
- *   - Code substance (languages, file structure, tests, CI)
- *   - Maintenance (commit spread, recency)
- *   - Deployment (live URL health)
+ * Records public repository activity as descriptive statistics. The score uses
+ * README, test-related files/config and CI/container configuration only.
+ * These checks do not verify meaningful authorship, test execution or delivery.
  */
 
 export interface RepoQualityMetrics {
+  // Immutable owner ID is used by server verification, never a score input.
+  owner_github_id?: number | null;
   // Raw GitHub data
   stars: number;
   forks: number;
@@ -25,8 +25,7 @@ export interface RepoQualityMetrics {
   readme_length: number;
   // True when the repo's README links back to this builder's VibeTalent
   // profile or badge. Deliberately does NOT feed any score: a README link is
-  // trivially fakeable, and this file's whole premise is scoring only signals
-  // that are hard to fake. It exists to render a "Badge Holder" chip.
+  // trivially fakeable. It exists to render a "Badge Holder" chip.
   has_vibetalent_badge: boolean;
   last_commit_date: string | null;
   created_at: string | null;
@@ -352,50 +351,16 @@ export async function analyzeRepository(
     const forks = repoData.forks_count || 0;
     const open_issues = repoData.open_issues_count || 0;
 
-    // --- SCORING ---
-
-    // Community Score (0-100): stars, forks, contributors, issues from strangers
-    // These are the hardest signals to fake
-    const starPoints = Math.min(40, stars * 4);           // 10 stars = 40 pts (cap)
-    const forkPoints = Math.min(20, forks * 5);           // 4 forks = 20 pts (cap)
-    const contribPoints = Math.min(25, (contributors - 1) * 8); // 3 external contributors = 24 pts
-    const issuePoints = Math.min(15, open_issues * 3);    // 5 issues = 15 pts
-    const community_score = Math.min(100, starPoints + forkPoints + contribPoints + issuePoints);
-
-    // Substance Score (0-100): LOC, languages, tests, CI, README
-    const totalBytes = Object.values(languages).reduce((sum, b) => sum + b, 0);
-    const langCount = Object.keys(languages).length;
-    const locPoints = Math.min(25, Math.floor(totalBytes / 2000));  // ~50KB code = 25 pts
-    const langPoints = Math.min(15, langCount * 5);                 // 3 languages = 15 pts
-    const testPoints = has_tests ? 25 : 0;
-    const ciPoints = has_ci ? 15 : 0;
-    const readmePoints = has_readme ? Math.min(20, Math.floor(readme_length / 250)) : 0; // 5KB readme = 20 pts
-    const substance_score = Math.min(100, locPoints + langPoints + testPoints + ciPoints + readmePoints);
-
-    // Maintenance Score (0-100): commit count, recency, repo age
-    const commitPoints = Math.min(35, Math.floor(total_commits / 3)); // 100+ commits = 33 pts
-    const daysSinceLastPush = lastPush
-      ? Math.floor((now.getTime() - lastPush.getTime()) / (1000 * 60 * 60 * 24))
-      : 999;
-    const recencyPoints =
-      daysSinceLastPush <= 7 ? 35 :
-      daysSinceLastPush <= 30 ? 25 :
-      daysSinceLastPush <= 90 ? 15 :
-      daysSinceLastPush <= 180 ? 5 : 0;
-    // Sustained work: commits per week of repo age
-    const weeksAlive = Math.max(1, repoAgeDays / 7);
-    const commitsPerWeek = total_commits / weeksAlive;
-    const sustainedPoints = Math.min(30, Math.floor(commitsPerWeek * 10)); // 3 commits/week = 30 pts
-    const maintenance_score = Math.min(100, commitPoints + recencyPoints + sustainedPoints);
-
-    // Final composite — community weighted highest (hardest to fake)
-    const quality_score = Math.round(
-      community_score * 0.35 +
-      substance_score * 0.35 +
-      maintenance_score * 0.30
-    );
+    // Presence checks only. Commit volume/recency, contributor aliases, code
+    // bytes and popularity cannot increase this score. Preserve legacy metric
+    // keys for API compatibility, with activity/popularity credit set to zero.
+    const community_score = 0;
+    const maintenance_score = 0;
+    const substance_score = repositoryChecksScore({ has_readme, has_tests, has_ci });
+    const quality_score = substance_score;
 
     const metrics: RepoQualityMetrics = {
+      owner_github_id: Number.isSafeInteger(repoData.owner?.id) ? repoData.owner.id : null,
       stars,
       forks,
       open_issues,

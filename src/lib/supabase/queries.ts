@@ -1,3 +1,4 @@
+import { fetchPublicBuilderPool } from "@/lib/supabase/builder-pool";
 import { createClient } from "@/lib/supabase/client";
 import type { UserWithSocials, HireRequest } from "@/lib/types/database";
 
@@ -5,36 +6,11 @@ import type { UserWithSocials, HireRequest } from "@/lib/types/database";
 const supabase = () => createClient() as any;
 
 const USER_FIELDS = "id, username, display_name, bio, avatar_url, github_username, vibe_score, streak, longest_streak, badge_level, created_at";
-const PROJECT_FIELDS = "id, user_id, title, description, tech_stack, live_url, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, endorsement_count, created_at";
+const PROJECT_FIELDS = "id, user_id, title, description, tech_stack, live_url, live_url_ok, is_private, github_url, image_url, build_time, tags, verified, quality_score, quality_metrics, endorsement_count, created_at";
 const SOCIAL_FIELDS = "id, user_id, twitter, telegram, github, website, farcaster";
 
 export async function fetchUsers(): Promise<UserWithSocials[]> {
-  const { data: users, error } = await supabase()
-    .from("users")
-    .select(USER_FIELDS)
-    .order("vibe_score", { ascending: false });
-
-  if (error || !users) return [];
-
-  const userIds = users.map((u: UserWithSocials) => u.id);
-
-  const [{ data: projects }, { data: socialLinks }] = await Promise.all([
-    supabase()
-      .from("projects")
-      .select(PROJECT_FIELDS)
-      .in("user_id", userIds)
-      .eq("flagged", false),
-    supabase()
-      .from("social_links")
-      .select(SOCIAL_FIELDS)
-      .in("user_id", userIds),
-  ]);
-
-  return users.map((user: UserWithSocials) => ({
-    ...user,
-    projects: (projects || []).filter((p: { user_id: string }) => p.user_id === user.id),
-    social_links: (socialLinks || []).find((s: { user_id: string }) => s.user_id === user.id) || null,
-  }));
+  return fetchPublicBuilderPool(supabase());
 }
 
 export async function fetchUserByUsername(username: string): Promise<UserWithSocials | null> {

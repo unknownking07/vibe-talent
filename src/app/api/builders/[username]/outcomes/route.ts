@@ -4,7 +4,7 @@ import { computeClientOutcomes } from "@/lib/client-outcomes";
 
 /**
  * GET /api/builders/[username]/outcomes
- * Returns client outcome metrics for a builder (public).
+ * Returns public conversation/review metrics. Delivery fields are null (unknown).
  */
 export async function GET(
   _req: NextRequest,

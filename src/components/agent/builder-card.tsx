@@ -36,7 +36,7 @@ export function BuilderCard({ builder, rank }: BuilderCardProps) {
           rank === 1 ? "var(--shadow-brutal-accent)" : "var(--shadow-brutal)",
       }}
     >
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-3 sm:gap-4">
         {/* Rank + Avatar */}
         <div className="flex flex-col items-center gap-2">
           <div
@@ -72,18 +72,18 @@ export function BuilderCard({ builder, rank }: BuilderCardProps) {
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-bold text-[var(--foreground)]">
+            <div className="flex min-w-0 flex-1 items-center gap-2 flex-wrap">
+              <h3 className="break-all font-bold text-[var(--foreground)]">
                 @{builder.username}
               </h3>
               <BadgeDisplay level={builder.badge_level} size="sm" />
             </div>
             {builder.match_score !== null && (
               <div
-                className="font-extrabold font-mono text-lg"
+                className="shrink-0 whitespace-nowrap font-extrabold font-mono text-lg"
                 style={{ color: getScoreColor(builder.match_score) }}
               >
-                {builder.match_score}%
+                {builder.match_score}/100
               </div>
             )}
           </div>
@@ -104,7 +104,7 @@ export function BuilderCard({ builder, rank }: BuilderCardProps) {
             {builder.verified_projects_count > 0 && (
               <span className="flex items-center gap-1">
                 <SealCheck weight="fill" size={12} className="text-[#16A34A]" />
-                {builder.verified_projects_count} verified
+                {builder.verified_projects_count} ownership verified
               </span>
             )}
           </div>

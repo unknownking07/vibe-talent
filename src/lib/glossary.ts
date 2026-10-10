@@ -45,7 +45,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     body: [
       "Vibe coders are the next generation of independent builders. They use AI coding assistants (Claude Code, Cursor, Bolt, Windsurf, GitHub Copilot) as a force multiplier, not a crutch. The output is real, deployed software shipped at a cadence that traditional teams cannot match.",
       "The most distinctive trait is daily shipping. A vibe coder commits to GitHub every day, deploys updates frequently, and treats their public repos as a living portfolio. This is fundamentally different from a developer with a strong resume but sporadic output: clients can verify a vibe coder's work in seconds by checking their commit history, demo links, and project quality.",
-      "VibeTalent surfaces vibe coders by ranking them on verifiable signals: coding streak length, project shipping rate, repo health (stars, forks, deployment status), and peer endorsements from other vibe coders. The leaderboard rewards builders who show up every day, not those who interview well.",
+      "VibeTalent ranks builders using public verified project evidence and community feedback. Commit volume, streaks and popularity earn zero score points. Founders should inspect the source and working demos before agreeing a paid trial.",
     ],
     related: ["vibe-coding", "vibe-coders-marketplace", "coding-streak", "vibe-score"],
     metaDescription:
@@ -60,7 +60,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     body: [
       "Streaks measure the continuity of recorded activity. A contribution is not necessarily a deployed product or a substantial change. Check the underlying repositories and project demos to understand what a builder has worked on.",
       "VibeTalent syncs GitHub contribution data into its activity records. Platform check-ins and streak protection also affect platform streaks, so a platform streak alone is not a count of GitHub commits. Profile history and badges provide additional context.",
-      "Streak days add points to the vibe score alongside projects, contribution volume, badges, client reviews, and endorsements. They do not have a fixed 40% weight. Assess relevant project work alongside the activity history when hiring.",
+      "Streak days, activity badges and contribution volume add zero vibe-score points. They remain activity context. Assess relevant project work and agree acceptance criteria for a paid trial when hiring.",
     ],
     related: ["vibe-score", "vibe-coding", "vibe-coder"],
     metaDescription:
@@ -72,15 +72,15 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     title: "What is a vibe score?",
     shortLabel: "Vibe Score",
     summary:
-      "A vibe score is VibeTalent's public reputation metric. Its additive formula combines activity streak points, project points, badge bonuses, client-review points, endorsement points, and capped contribution-volume bonuses. These components do not have fixed percentage weights. The score helps clients compare activity and reputation alongside relevant project evidence; it is not a guarantee of skill or delivery.",
+      "Vibe score is VibeTalent's public reputation metric: baseline 10, evidence from the strongest public project with verified GitHub ownership, and community feedback. Commits, contribution counts, streaks, badges and project count add zero points. Repository checks do not guarantee working software or client delivery.",
     body: [
-      "The vibe score provides a summary of a builder's recorded activity and reputation. Some inputs come from GitHub; others come from platform activity, client reviews, and peer endorsements. Inspect the underlying evidence instead of treating the score as a screening certificate.",
-      "The formula adds points for streak days, projects, earned badges, reviews, endorsements, and contribution volume. Verified projects can contribute points from their automated quality score; flagged projects are excluded from that quality-based calculation. Contribution bonuses are capped. The components are additive rather than a 40/30/20/10 percentage split.",
-      "Vibe scores update daily as new commits and project changes come in. The score is public on every developer's profile, used to rank the global leaderboard, and consumed by VibeFinder Bot to match clients with builders who fit a project's requirements.",
+      "The project component is capped at 100: ownership verification contributes 40, a README 15, test-related files or configuration 15, CI or container configuration 10, and a reachable demo 20. Only the strongest public, verified, unflagged project counts; duplicates add no points.",
+      "Endorsements, trusted reviews and existing vouch credit are separate community signals. Activity totals, push recency, popularity and historical composite quality scores cannot increase the score or break leaderboard ties.",
+      "Repository analysis detects files and configuration; it does not verify passing tests, meaningful authorship or delivery. Inspect the source and demo, request a walkthrough, and agree a paid trial with clear acceptance criteria.",
     ],
     related: ["coding-streak", "vibe-coder", "vibe-coding"],
     metaDescription:
-      "VibeTalent's vibe score combines activity, projects, badges, reviews, endorsements, and contribution bonuses. Learn what the reputation metric measures.",
+      "Learn how VibeTalent scores project evidence and community feedback. Commits, streaks and contribution totals earn zero points.",
     dateModified: "2026-10-04",
   },
   {

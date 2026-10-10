@@ -14,13 +14,15 @@ import type { MatchResult, TaskRequest, AgentStep } from "@/lib/types/agent";
 const matchSteps: AgentStep[] = [
   { label: "Parsing project requirements...", duration: 700 },
   { label: "Scanning all builder profiles on VibeTalent...", duration: 1000 },
-  { label: "Analyzing git activity and streak data...", duration: 1200 },
+  { label: "Checking public, ownership-verified projects...", duration: 1200 },
   { label: "Matching tech stacks and project experience...", duration: 1100 },
   { label: "Scoring and ranking candidates...", duration: 900 },
   { label: "Generating match report...", duration: 800 },
 ];
 
 export default function FindTalentPage() {
+  const [poolLoading, setPoolLoading] = useState(true);
+  const [poolError, setPoolError] = useState("");
   const [allUsers, setAllUsers] = useState<UserWithSocials[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [thinking, setThinking] = useState(false);
@@ -36,11 +38,14 @@ export default function FindTalentPage() {
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
-    fetchUsers().then(setAllUsers);
+    fetchUsers().then(setAllUsers)
+      .catch(() => setPoolError("Builder data is unavailable. Refresh the page to try again."))
+      .finally(() => setPoolLoading(false));
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (poolLoading || poolError) return;
     const tech = techInput.split(",").map(t => t.trim()).filter(Boolean);
     if (tech.length > 10 || tech.some(t => t.length > 50)) {
       setFormError("Add up to 10 technologies, with 50 characters or fewer each.");
@@ -75,10 +80,14 @@ export default function FindTalentPage() {
           <div>
             <h1 className="text-2xl font-bold text-[var(--foreground)]">Find Talent</h1>
             <p className="text-sm text-[var(--text-secondary)] font-medium">
-              Describe your project and let VibeFinder Robot find the best vibe coders
+              Match against public project evidence and listed technologies
             </p>
           </div>
         </div>
+
+        <p className="mb-6 text-sm leading-relaxed text-[var(--text-secondary)]">Streaks and vibe score add no match points. Repository ownership is verified; skills are builder-listed and delivery is not verified. Review the work and arrange a paid trial directly with the builder.</p>
+
+        {poolError && <p role="alert" className="mb-4 text-sm text-[var(--status-error-text)]">{poolError}</p>}
 
         <form onSubmit={handleSubmit}>
           <div
@@ -171,10 +180,11 @@ export default function FindTalentPage() {
 
             <button
               type="submit"
+              disabled={poolLoading || Boolean(poolError)}
               className="btn-brutal btn-brutal-primary w-full justify-center text-base flex items-center gap-2"
             >
               <BotMark weight="fill" size={18} />
-              Find My Vibe Coder
+              {poolLoading ? "Loading public project evidence…" : "Find My Vibe Coder"}
             </button>
           </div>
         </form>
@@ -216,7 +226,7 @@ export default function FindTalentPage() {
             }}
           >
             <BotMark weight="fill" size={14} className="inline mr-2 text-[var(--accent)]" />
-            Found {matches.length} matching vibe coders. Ranked by skill match, consistency, and reputation.
+            Found {matches.length} matching vibe coders. Ranked by listed skills and public portfolio evidence. Activity adds no match points.
           </div>
 
           {matches.map((match, i) => (

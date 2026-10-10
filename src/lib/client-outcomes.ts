@@ -1,15 +1,6 @@
 /**
- * Client Outcomes Scoring
- *
- * Computes a builder's outcome score based on real hire interactions:
- *   - Completed hires (replied hire requests)
- *   - Client ratings (weighted by trust_score)
- *   - Repeat clients (same email hiring again)
- *   - Response time (how fast builder replies)
- *   - Completion rate (replied / total)
- *
- * This is the hardest signal to fake because it requires real people
- * sending hire requests, having conversations, and leaving reviews.
+ * Public interaction metrics. Replies and reviews do not prove paid delivery.
+ * Legacy delivery fields remain present as null (unknown) for API consumers.
  */
 
 import type { ClientOutcomes } from "@/lib/types/database";
@@ -31,15 +22,15 @@ export function computeClientOutcomes(
   hireRequests: HireRequestRow[],
   reviews: ReviewRow[]
 ): ClientOutcomes {
-  const totalHires = hireRequests.length;
+  const totalRequests = hireRequests.length;
 
-  // Completed = builder replied
-  const completedHires = hireRequests.filter((h) => h.status === "replied").length;
+  // A reply establishes a conversation only.
+  const repliedRequests = hireRequests.filter((h) => h.status === "replied").length;
 
-  // Completion rate
-  const completionRate = totalHires > 0 ? Math.round((completedHires / totalHires) * 100) : 0;
+  // Response rate
+  const responseRate = totalRequests > 0 ? Math.round((repliedRequests / totalRequests) * 100) : 0;
 
-  // Trusted reviews only (trust_score >= 30)
+  // Reviews passing the existing abuse heuristic; delivery is still unverified.
   const trustedReviews = reviews.filter((r) => r.trust_score >= 30);
   const totalReviews = trustedReviews.length;
   const avgRating =
@@ -55,14 +46,15 @@ export function computeClientOutcomes(
         ) / 10
       : 0;
 
-  // Repeat clients: count emails that sent more than 1 hire request
+  // Returning contacts: repeated requests do not establish repeat paid work.
   // Normalize emails to prevent case/whitespace variants being treated as different clients
   const emailCounts = new Map<string, number>();
   for (const h of hireRequests) {
     const normalizedEmail = h.sender_email.trim().toLowerCase();
+    if (!normalizedEmail) continue;
     emailCounts.set(normalizedEmail, (emailCounts.get(normalizedEmail) || 0) + 1);
   }
-  const repeatClients = Array.from(emailCounts.values()).filter((c) => c > 1).length;
+  const returningContacts = Array.from(emailCounts.values()).filter((c) => c > 1).length;
 
   // Average response time (hours from created_at to replied_at)
   const responseTimes: number[] = [];
@@ -82,42 +74,18 @@ export function computeClientOutcomes(
       ? Math.round((responseTimes.reduce((s, h) => s + h, 0) / responseTimes.length) * 10) / 10
       : null;
 
-  // --- OUTCOME SCORE (0-100) ---
-  // Weighted composite of all client outcome signals
-  let outcomeScore = 0;
-
-  // Completed hires (0-30 pts): having real hire conversations
-  outcomeScore += Math.min(30, completedHires * 6);
-
-  // Avg rating from trusted reviews (0-25 pts)
-  if (totalReviews > 0) {
-    outcomeScore += Math.round((avgRating / 5) * 25);
-  }
-
-  // Review volume (0-15 pts): more trusted reviews = more signal
-  outcomeScore += Math.min(15, totalReviews * 3);
-
-  // Repeat clients (0-15 pts): the ultimate trust signal
-  outcomeScore += Math.min(15, repeatClients * 5);
-
-  // Response speed (0-15 pts): fast responders are more reliable
-  if (avgResponseHours !== null) {
-    if (avgResponseHours <= 2) outcomeScore += 15;
-    else if (avgResponseHours <= 8) outcomeScore += 12;
-    else if (avgResponseHours <= 24) outcomeScore += 8;
-    else if (avgResponseHours <= 72) outcomeScore += 4;
-  }
-
-  outcomeScore = Math.min(100, outcomeScore);
-
   return {
-    total_hires: totalHires,
-    completed_hires: completedHires,
+    total_requests: totalRequests,
+    replied_requests: repliedRequests,
+    response_rate: responseRate,
+    returning_contacts: returningContacts,
     avg_rating: avgRating,
     total_reviews: totalReviews,
-    repeat_clients: repeatClients,
     avg_response_hours: avgResponseHours,
-    completion_rate: completionRate,
-    outcome_score: outcomeScore,
+    total_hires: null,
+    completed_hires: null,
+    repeat_clients: null,
+    completion_rate: null,
+    outcome_score: null,
   };
 }

@@ -1,3 +1,6 @@
+import { repositoryControlVerified } from "@/lib/project-verification";
+import { readGithubIdentity, type GithubIdentity } from "@/lib/github-identity";
+import { writeProjectAnalysis } from "@/lib/project-analysis-write";
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl, toRepoQualityData } from "@/lib/github-quality";
@@ -32,8 +35,8 @@ function sleep(ms: number): Promise<void> {
  *   2. Transient GitHub API failures during the async after() callback in the
  *      submission flow — the project saved but auto-verify never completed.
  *
- * Only verifies via owner match. Projects needing .vibetalent file verification
- * still go through POST /api/projects/verify on demand.
+ * Proves control with immutable GitHub owner IDs or an explicit account UUID
+ * in .vibetalent. Legacy username-only file proofs require an updated file.
  */
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
@@ -70,7 +73,7 @@ export async function GET(req: NextRequest) {
     // starving legitimate owner-mismatch retries.
     const { data: linkedUserRows, error: linkedUsersError } = await sb
       .from("users")
-      .select("id, github_username, username")
+      .select("id, github_username, github_id, username")
       .not("github_username", "is", null)
       .neq("github_username", "")
       .order("id", { ascending: true })
@@ -85,7 +88,7 @@ export async function GET(req: NextRequest) {
     // Separate map for the VibeTalent profile slug — that's what appears in
     // badge/profile URLs we look for in the README, not the GitHub handle.
     const profileUsernameById = new Map<string, string>();
-    for (const row of (linkedUserRows ?? []) as { id: string; github_username: string; username: string | null }[]) {
+    for (const row of (linkedUserRows ?? []) as { id: string; github_username: string; github_id: number | null; username: string | null }[]) {
       if (row.github_username) usernameById.set(row.id, row.github_username);
       if (row.username) profileUsernameById.set(row.id, row.username);
     }
@@ -137,6 +140,20 @@ export async function GET(req: NextRequest) {
         .eq("id", projectId);
     }
 
+    const ownerProofs = new Map<string, Promise<GithubIdentity | null>>();
+    const verifiedOwner = (ownerId: string) => {
+      let proof = ownerProofs.get(ownerId);
+      if (!proof) {
+        proof = (async () => {
+          const { data, error } = await supabase.auth.admin.getUserById(ownerId);
+          if (error) throw error;
+          return readGithubIdentity(data.user);
+        })();
+        ownerProofs.set(ownerId, proof);
+      }
+      return proof;
+    };
+
     let verified = 0;
     let skipped = 0;
     let errors = 0;
@@ -162,20 +179,12 @@ export async function GET(req: NextRequest) {
                 return;
               }
 
-              const githubUsername = usernameById.get(project.user_id);
-              if (!githubUsername) {
-                // Defensive: the SQL prefilter above narrows candidates to
-                // user_ids that have a github_username, so this should be
-                // unreachable unless the user row was deleted mid-run. Skip
-                // without stamping — if the user re-appears with a username,
-                // the next run will pick this project up immediately.
+              const githubIdentity = await verifiedOwner(project.user_id);
+              if (!githubIdentity) {
+                // A stored mirror alone is not proof. The provider may have
+                // been disconnected since the candidate query. Retry after a
+                // new GitHub connection rather than trusting editable metadata.
                 skipped++;
-                return;
-              }
-
-              if (parsed.owner.toLowerCase() !== githubUsername.toLowerCase()) {
-                skipped++;
-                await markAttempted(project.id);
                 return;
               }
 
@@ -183,7 +192,7 @@ export async function GET(req: NextRequest) {
               const qualityResult = await analyzeRepository(
                 repoOwner,
                 repoName,
-                undefined,
+                process.env.GITHUB_TOKEN,
                 profileUsernameById.get(project.user_id) ?? null
               );
 
@@ -192,6 +201,12 @@ export async function GET(req: NextRequest) {
               // check, and don't push it into the retry-window deadzone.
               if (!qualityResult.success) {
                 errors++;
+                return;
+              }
+
+              if (!await repositoryControlVerified(repoOwner, repoName, qualityResult.metrics?.owner_github_id, githubIdentity.id, project.user_id, process.env.GITHUB_TOKEN)) {
+                skipped++;
+                await markAttempted(project.id);
                 return;
               }
 
@@ -205,21 +220,20 @@ export async function GET(req: NextRequest) {
                 live_url_ok = await checkLiveUrl(project.live_url);
               }
 
-              const { error: updateError } = await sb
-                .from("projects")
-                .update({
+              const { data: saved, error: updateError } = await writeProjectAnalysis(sb, project, {
                   verified: true,
                   quality_score: qualityScore,
                   quality_metrics: qualityMetrics,
                   live_url_ok,
+                  is_private: qualityResult.metrics?.is_private ?? false,
                   last_verify_attempt_at: new Date().toISOString(),
-                })
-                .eq("id", project.id);
+                });
 
               if (updateError) {
                 throw updateError;
               }
 
+              if (!saved) { skipped++; return; }
               verified++;
 
               // Only notify on the first verification — projects already

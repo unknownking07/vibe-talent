@@ -3,10 +3,27 @@ import { getSiteUrl } from "@/lib/seo";
 import { runReviewerCalibration } from "@/lib/cron-jobs/reviewer-calibration";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-// Daily orchestrator awaits each child cron sequentially, so its own
-// timeout has to be long enough to cover the slowest child plus all
-// the others. github-sync alone can run up to 5 min at scale.
-export const maxDuration = 300;
+// 90s for GitHub sync + 7 × 60s siblings + 30s calibration = 540s,
+// below the external scheduler's 600s request deadline.
+export const maxDuration = 600;
+
+async function boundedJob<T>(name: string, timeoutMs: number, work: (signal: AbortSignal) => Promise<T>): Promise<T> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      const error = new Error(`${name} timed out after ${timeoutMs}ms`);
+      controller.abort(error);
+      reject(error);
+    }, timeoutMs);
+  });
+  try {
+    // The race also bounds service bindings that do not honor AbortSignal.
+    return await Promise.race([work(controller.signal), timeout]);
+  } finally {
+    clearTimeout(timer!);
+  }
+}
 
 /**
  * Fan out to a sibling cron route as its own Worker invocation.
@@ -19,16 +36,18 @@ export const maxDuration = 300;
  * the binding is absent, so fall back to the public fetch.
  */
 async function cronFetch(url: string, init: RequestInit): Promise<Response> {
+  let self: { fetch: (input: string, init?: RequestInit) => Promise<Response> } | undefined;
   try {
     const { env } = getCloudflareContext();
-    const self = (env as {
+    self = (env as {
       WORKER_SELF_REFERENCE?: { fetch: (input: string, init?: RequestInit) => Promise<Response> };
     }).WORKER_SELF_REFERENCE;
-    if (self) return await self.fetch(url, init);
   } catch {
     // Not running on Cloudflare (or context unavailable) — use the public URL.
   }
-  return fetch(url, init);
+  // A failed binding request may already have run the job. Do not execute it
+  // a second time via public fetch (which also strips auth on Cloudflare).
+  return self ? self.fetch(url, init) : fetch(url, init);
 }
 
 /**
@@ -66,9 +85,13 @@ export async function GET(req: NextRequest) {
   // Run jobs sequentially to be predictable
   for (const job of jobs) {
     try {
-      const res = await cronFetch(`${siteUrl}${job.path}`, { headers });
-      const data = await res.json().catch(() => ({}));
-      results[job.name] = { status: res.status, data };
+      results[job.name] = await boundedJob(job.name, job.name === "github-sync" ? 90_000 : 60_000, async (signal) => {
+        const res = await cronFetch(`${siteUrl}${job.path}`, { headers, signal });
+        const data = await res.json();
+        const partialFailure = data && typeof data === "object" &&
+          (Boolean(data.error) || (typeof data.errors === "number" && data.errors > 0));
+        return { status: res.ok && partialFailure ? 503 : res.status, data };
+      });
     } catch (error) {
       results[job.name] = { status: 500, error: String(error) };
     }
@@ -77,20 +100,22 @@ export async function GET(req: NextRequest) {
   const summary = Object.entries(results).map(([name, r]: [string, { status: number }]) => `${name}:${r.status}`).join(", ");
   console.log(`Daily cron completed: ${summary}`);
 
-  // Run reviewer calibration in-process after the fan-out so we don't burn
-  // another Vercel cron slot. Isolated try/catch: a calibration failure must
-  // not mask the orchestrator's primary results.
+  const failedJobs = Object.keys(results).filter(name => results[name].status >= 400);
+
+  // Keep calibration failure visible without losing the sibling results.
   let reviewerCalibration: { updated: number; skipped: number } | null = null;
   try {
-    reviewerCalibration = await runReviewerCalibration();
+    reviewerCalibration = await boundedJob("reviewer-calibration", 30_000, () => runReviewerCalibration());
   } catch (error) {
     console.error("Daily cron reviewer-calibration error:", error);
+    failedJobs.push("reviewer-calibration");
   }
 
   return NextResponse.json({
-    message: "Daily cron completed",
+    message: failedJobs.length ? "Daily cron completed with failures" : "Daily cron completed",
+    failed_jobs: failedJobs,
     results,
     reviewerCalibration,
     ran_at: new Date().toISOString(),
-  });
+  }, { status: failedJobs.length ? 503 : 200 });
 }

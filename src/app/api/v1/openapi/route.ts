@@ -263,13 +263,13 @@ export async function GET() {
             verified: {
               type: "boolean",
               description:
-                "True when GitHub ownership is verified (owner-match or .vibetalent file).",
+                "True when repository control is verified by authenticated GitHub owner ID or an exact VibeTalent UUID in .vibetalent. This does not prove delivery.",
             },
             quality_score: {
               type: "integer",
               nullable: true,
               description:
-                "Composite 0-100 score from public GitHub signals (community, substance, maintenance).",
+                "Repository file checks (0-100): README 30, test-related files 40, CI/container configuration 30. Does not certify code quality or delivery; commit volume and popularity earn no points.",
             },
             quality_metrics: {
               type: "object",

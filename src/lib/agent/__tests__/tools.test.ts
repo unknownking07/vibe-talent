@@ -107,10 +107,9 @@ describe("buildReasons", () => {
       })
     );
     expect(reasons).toEqual([
-      "45-day active streak",
-      "Bronze badge holder",
-      "1 GitHub-verified project",
-      "Vibe score: 320",
+      "1 public project with GitHub ownership verified",
+      "45-day activity streak (not delivery evidence)",
+      "Activity vibe score: 320 (not a hiring score)",
     ]);
   });
 

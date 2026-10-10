@@ -6,7 +6,7 @@ export default function AgentChatPage() {
       title="VibeFinder"
       subtitle="AI talent scout: live platform data"
       greeting={
-        "Hey! I'm VibeFinder. I can search every builder on VibeTalent by real shipping data (vibe scores, streaks, verified projects) evaluate specific builders, draft hire messages, and answer any question about the platform. What do you need?"
+        "Hey! I'm VibeFinder. I can find builders using public project evidence and listed skills, explain what is verified, draft hire messages, and answer platform questions. Streaks and vibe score do not increase hiring matches. What do you need?"
       }
       suggestions={[
         "Find me a Next.js builder for an MVP",

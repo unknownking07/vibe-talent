@@ -11,22 +11,22 @@ function buildLlmsTxt(p: PriceSnapshot): string {
 
 > The marketplace for vibe coders who actually ship.
 
-VibeTalent is a developer talent marketplace that ranks software engineers by coding consistency, shipped projects, and community endorsements rather than traditional resumes.
+VibeTalent is a developer talent marketplace that helps founders find developers through relevant projects, repository control checks, and community feedback.
 
 ## Key Concepts
 
 - **Vibe Coding**: Building software using AI-powered IDEs (Claude Code, Cursor, Bolt, etc.) with a focus on shipping fast and consistently.
-- **Vibe Score**: A reputation metric calculated from a developer's streak, project quality, GitHub activity, and peer endorsements.
-- **Streaks**: Consecutive days a developer has committed code. Streaks are the core trust signal on VibeTalent.
+- **Vibe Score**: A reputation summary based on the strongest public verified project evidence and trusted community feedback. Commit volume, streaks, badges, and project counts earn no points.
+- **Streaks**: Consecutive days of logged activity. Descriptive context only; they do not establish talent, reliability, or delivery.
 - **Badge Levels**: Bronze (30-day streak), Silver (90-day), Gold (180-day), Diamond (365-day).
-- **Quality Score**: A per-project metric based on GitHub repo health: community engagement, code substance, and maintenance activity.
+- **Quality Score**: Repository file checks for README, test-related files, and CI/container configuration. This does not certify code quality or delivery.
 
 ## How It Works
 
 1. Developers sign up and connect their GitHub profiles.
-2. They add projects with live URLs that get verified.
-3. The platform tracks their daily coding streak and calculates a vibe score.
-4. Clients browse builders by tech stack, badge level, and streak, or use the AI agent to get matched automatically.
+2. They add projects; repository control and demo reachability are checked separately.
+3. Reputation uses project evidence and trusted feedback; activity does not add score points.
+4. Clients browse relevant projects and listed skills, or use the AI agent to find candidates, then agree on a scoped paid trial to evaluate delivery.
 
 ## Key Pages
 
@@ -75,7 +75,7 @@ VibeTalent maintains a public trust layer over Bags launches at https://www.vibe
 - **Two ways to prove a wallet**: (1) sign a server-issued nonce, a message signature that cannot move funds and is the recommended route; or (2) for builders who will not connect a deployer wallet to a website, send an exact randomly-chosen amount of a few thousand lamports (well under a cent) to VibeTalent's Solana receiving address, which VibeTalent watches for on-chain. The second route works in any wallet that can send SOL, including Phantom. A memo naming the account is accepted as an additional binding where a wallet supports attaching one, which most do not. Either way the wallet never grants VibeTalent any spending permission, and neither route can stop someone who is tricked into signing anyway.
 - **What appears without a launch**: nothing. Being a VibeTalent builder, or being in the Bags Hackathon, does not put a row on the launches board. That board counts launches proved by a wallet signature, which is why a hackathon participant with no linked wallet is listed under hackathon projects but not as a verified launch.
 - **What is never used**: self-reported X handles or profile links. A launch is only ever matched to a builder through a cryptographic proof from the launching wallet, so a launch cannot be claimed by anyone who does not control that wallet's key.
-- **What each row shows**: the builder's VibeTalent profile, how many tokens they have launched, their vibe score, and their current coding streak. Vibe score is earned from GitHub-verified projects, streaks and endorsements, and is not affected by token activity.
+- **What each row shows**: the builder's VibeTalent profile, how many tokens they have launched, their vibe score, and their current coding streak. Vibe score is earned from public verified project evidence and community feedback; commits and streaks earn zero points, and is not affected by token activity.
 - **Ranking**: builders are ranked by vibe score, not by number of launches.
 - **Coverage**: opt-in. A builder who has launched on Bags but has not proved their wallet does not appear as verified, so the verified board is a lower bound, never a complete list. Launches discovered from the Bags launch feed are listed unclaimed alongside it, labelled as such.
 - **Hackathon projects**: /bags also lists the Bags Hackathon cohort, matched to builders by the GitHub owner of the submitted repository. The list is curated from the DoraHacks submissions plus winners announced separately, and is not a complete record of the programme.

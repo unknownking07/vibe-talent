@@ -1,9 +1,19 @@
-import type { UserWithSocials } from "./types/database";
+import type { Project, UserWithSocials } from "./types/database";
 import type { EvaluationResult, EvaluationDimensions, MatchResult, TaskRequest } from "./types/agent";
 import { AGENT_EVAL, MATCH } from "./scoring-config";
+import { projectEvidenceScore } from "./project-evidence";
+export { projectEvidenceScore } from "./project-evidence";
 
 function clamp(min: number, max: number, value: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+/** Ownership verification provides inspectable evidence, not delivery assurance. */
+export function publicVerifiedProjects(user: UserWithSocials): Project[] {
+  return (user.projects ?? []).filter(project =>
+    project.verified && !project.is_private &&
+    !(project as Project & { flagged?: boolean }).flagged
+  );
 }
 
 function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
@@ -11,38 +21,10 @@ function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
   const consistency = clamp(0, 100,
     (user.streak * C.streakWeight + user.longest_streak * C.longestStreakWeight) / C.normalizer * C.scale
   );
-
-  // Project Quality: use GitHub quality scores when available, fallback to heuristics
-  const verifiedProjects = (user.projects ?? []).filter(p => p.verified);
-  const unverifiedProjects = (user.projects ?? []).filter(p => !p.verified);
-  const withLiveUrl = verifiedProjects.filter(p => p.live_url).length;
-  const withGithub = verifiedProjects.filter(p => p.github_url).length;
-
-  // Use quality_metrics presence as the indicator that analysis ran (quality_score === 0 can be a valid result)
-  const scoredProjects = verifiedProjects.filter(p => p.quality_metrics != null);
-  let project_quality: number;
-  if (scoredProjects.length > 0) {
-    const PQ = AGENT_EVAL.projectQuality;
-    const avgQuality = scoredProjects.reduce((sum, p) => sum + p.quality_score, 0) / scoredProjects.length;
-    const quantityBonus = Math.min(PQ.quantityBonusMax, scoredProjects.length * PQ.quantityBonusPerProject);
-    const liveBonus = Math.min(PQ.liveBonusMax, withLiveUrl * PQ.liveBonusPerProject);
-    const liveSiteOkBonus = verifiedProjects.filter(p => p.live_url_ok === true).length * PQ.liveSiteOkPerProject;
-    project_quality = clamp(0, 100,
-      avgQuality * PQ.avgWeight + quantityBonus + liveBonus + liveSiteOkBonus + unverifiedProjects.length * PQ.unverifiedPointsPer
-    );
-  } else {
-    const PQF = AGENT_EVAL.projectQualityFallback;
-    const avgDescLen = verifiedProjects.length > 0
-      ? verifiedProjects.reduce((sum, p) => sum + p.description.length, 0) / verifiedProjects.length
-      : 0;
-    project_quality = clamp(0, 100,
-      verifiedProjects.length * PQF.verifiedPer + unverifiedProjects.length * PQF.unverifiedPer +
-      withLiveUrl * PQF.liveUrlPer + withGithub * PQF.githubPer + (avgDescLen > PQF.longDescThreshold ? PQF.longDescBonus : 0)
-    );
-  }
-
-  // Tech Breadth: unique technologies
-  const allTech = new Set((user.projects ?? []).flatMap(p => (p.tech_stack ?? []).map(t => t.toLowerCase())));
+  const projects = publicVerifiedProjects(user);
+  // Duplicates and project volume add no points.
+  const project_quality = Math.max(0, ...projects.map(projectEvidenceScore));
+  const allTech = new Set(projects.flatMap(p => (p.tech_stack ?? []).map(t => t.trim().toLowerCase())).filter(Boolean));
   const tech_breadth = clamp(0, 100, allTech.size * AGENT_EVAL.techBreadth.perUniqueTech);
 
   // Activity Recency: based on active streak
@@ -50,14 +32,6 @@ function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
   const activity_recency = user.streak > 0
     ? clamp(0, 100, AR.activeBase + Math.min(AR.activeMaxBonus, user.streak * AR.perStreakDay))
     : AR.inactiveScore;
-
-  // Endorsements bonus: peer-validated projects boost quality
-  const totalEndorsements = (user.projects ?? []).reduce((sum, p) => sum + (p.endorsement_count || 0), 0);
-  const endorsementBonus = Math.min(
-    AGENT_EVAL.projectQuality.endorsementBonusMax,
-    totalEndorsements * AGENT_EVAL.projectQuality.endorsementBonusPer
-  );
-  project_quality = clamp(0, 100, project_quality + endorsementBonus);
 
   // Reputation: based on vibe_score, badge, and client reviews
   const REP = AGENT_EVAL.reputation;
@@ -69,115 +43,46 @@ function evaluateDimensions(user: UserWithSocials): EvaluationDimensions {
     (user.vibe_score / REP.vibeScoreDivisor) + (AGENT_EVAL.badgeBonuses[user.badge_level] || 0) + reviewBonus
   );
 
-  // Client Outcomes: real hire completions, trusted reviews, repeat clients
-  const outcomes = user.client_outcomes;
-  const client_outcomes = outcomes?.outcome_score != null
-    ? clamp(0, 100, outcomes.outcome_score)
-    : 0;
+  // The current hire flow records replies, not accepted deliverables.
+  const client_outcomes = null;
 
   return { consistency, project_quality, tech_breadth, activity_recency, reputation, client_outcomes };
 }
 
-function generateSummary(user: UserWithSocials, dims: EvaluationDimensions, overall: number): string {
-  const parts: string[] = [];
-
-  if (dims.consistency > 70) {
-    parts.push(`Demonstrates exceptional consistency with a ${user.streak}-day active streak.`);
-  } else if (dims.consistency > 40) {
-    parts.push(`Shows solid commitment with a ${user.streak}-day coding streak.`);
-  } else {
-    parts.push(`Currently building consistency with a ${user.streak}-day streak.`);
-  }
-
-  if (dims.project_quality > 60) {
-    parts.push(`Has shipped ${(user.projects ?? []).length} quality projects with live deployments and source code.`);
-  } else if ((user.projects ?? []).length > 0) {
-    parts.push(`Has ${(user.projects ?? []).length} project${(user.projects ?? []).length > 1 ? "s" : ""} in their portfolio.`);
-  }
-
-  const allTech = [...new Set((user.projects ?? []).flatMap(p => p.tech_stack))];
-  if (allTech.length > 4) {
-    parts.push(`Versatile tech stack spanning ${allTech.slice(0, 4).join(", ")}, and more.`);
-  }
-
-  if (overall >= 80) {
-    parts.push("Highly recommended for production-grade work.");
-  } else if (overall >= 60) {
-    parts.push("A reliable builder for most project types.");
-  }
-
-  return parts.join(" ");
+function generateSummary(user: UserWithSocials): string {
+  const count = publicVerifiedProjects(user).length;
+  const portfolio = count > 0
+    ? `${count} public project${count === 1 ? " has" : "s have"} GitHub ownership verification. The score reflects inspectable repository signals on the strongest project.`
+    : "No public projects with verified GitHub ownership are available to assess.";
+  return `${portfolio} Commit counts, streaks, badges, and vibe score do not increase this score. Repository checks do not verify product functionality or client delivery; inspect the work and agree a paid trial before hiring.`;
 }
 
-function extractStrengths(user: UserWithSocials, dims: EvaluationDimensions): string[] {
+function extractStrengths(user: UserWithSocials): string[] {
+  const projects = publicVerifiedProjects(user);
   const strengths: string[] = [];
-  if (user.streak > 90) strengths.push(`${user.streak}-day active coding streak`);
-  else if (user.streak > 30) strengths.push(`${user.streak}-day streak shows dedication`);
-  if (user.badge_level === "diamond") strengths.push("Diamond badge holder: top tier");
-  else if (user.badge_level === "gold") strengths.push("Gold badge: proven consistency");
-  const verifiedProjCount = (user.projects ?? []).filter(p => p.verified).length;
-  const highQualityCount = (user.projects ?? []).filter(p => p.quality_score >= 50).length;
-  if (highQualityCount >= 2) strengths.push(`${highQualityCount} high-quality verified projects`);
-  else if (verifiedProjCount >= 3) strengths.push(`${verifiedProjCount} verified shipped projects`);
-  else if ((user.projects ?? []).length >= 3) strengths.push(`${(user.projects ?? []).length} shipped projects`);
-  const hasTests = (user.projects ?? []).some(p => p.quality_metrics?.has_tests);
-  if (hasTests) strengths.push("Projects include test suites");
-  const hasCi = (user.projects ?? []).some(p => p.quality_metrics?.has_ci);
-  if (hasCi) strengths.push("Uses CI/CD pipelines");
-  if (dims.tech_breadth > 60) strengths.push("Diverse tech stack");
-  if ((user.projects ?? []).some(p => p.live_url)) strengths.push("Has live deployed projects");
-  if ((user.projects ?? []).some(p => p.github_url)) strengths.push("Open source contributor");
-  if (user.vibe_score > 500) strengths.push(`High vibe score: ${user.vibe_score}`);
-  if (user.client_outcomes) {
-    if (user.client_outcomes.completed_hires >= 3) strengths.push(`${user.client_outcomes.completed_hires} completed hires`);
-    if (user.client_outcomes.avg_rating >= 4.5 && user.client_outcomes.total_reviews >= 2) strengths.push(`${user.client_outcomes.avg_rating}/5 avg rating from trusted reviews`);
-    if (user.client_outcomes.repeat_clients > 0) strengths.push(`${user.client_outcomes.repeat_clients} repeat client${user.client_outcomes.repeat_clients > 1 ? "s" : ""}`);
-    if (user.client_outcomes.avg_response_hours !== null && user.client_outcomes.avg_response_hours <= 4) strengths.push("Fast responder (< 4h avg)");
-  }
-  const totalEndorsements = (user.projects ?? []).reduce((sum, p) => sum + (p.endorsement_count || 0), 0);
-  if (totalEndorsements >= 5) strengths.push(`${totalEndorsements} peer endorsements across projects`);
+  if (projects.length > 0) strengths.push(`${projects.length} public project${projects.length === 1 ? "" : "s"} with GitHub ownership verified`);
+  if (projects.some(p => p.quality_metrics?.has_readme)) strengths.push("README detected in a verified repository");
+  if (projects.some(p => p.quality_metrics?.has_tests)) strengths.push("Test-related files or configuration detected; execution not verified");
+  if (projects.some(p => p.quality_metrics?.has_ci)) strengths.push("CI or container configuration detected; runs not verified");
+  if (projects.some(p => p.live_url && p.live_url_ok === true)) strengths.push("A live URL was reachable at its last check");
   return strengths.slice(0, AGENT_EVAL.maxStrengths);
 }
 
-function extractRisks(user: UserWithSocials, dims: EvaluationDimensions): string[] {
-  const risks: string[] = [];
-  const unverifiedCount = (user.projects ?? []).filter(p => !p.verified).length;
-  const verifiedCount = (user.projects ?? []).filter(p => p.verified).length;
-  if (unverifiedCount > 0 && verifiedCount === 0) risks.push("No verified projects: ownership unconfirmed");
-  else if (unverifiedCount > verifiedCount) risks.push(`${unverifiedCount} of ${(user.projects ?? []).length} projects are unverified`);
-  const lowQualityCount = (user.projects ?? []).filter(p => p.verified && p.quality_score > 0 && p.quality_score < 20).length;
-  if (lowQualityCount > 0) risks.push(`${lowQualityCount} project${lowQualityCount > 1 ? "s" : ""} scored low on quality analysis`);
-  if (user.streak === 0) risks.push("Currently inactive, no active streak");
-  if ((user.projects ?? []).length < 2) risks.push("Limited project portfolio");
-  if (!user.social_links?.telegram) risks.push("No Telegram for quick communication");
-  if (!(user.projects ?? []).some(p => p.live_url)) risks.push("No live deployed projects");
-  if (dims.tech_breadth < 30) risks.push("Narrow tech stack");
-  if (user.badge_level === "none") risks.push("No badge earned yet");
-  if (user.client_outcomes) {
-    if (user.client_outcomes.total_hires > 0 && user.client_outcomes.completion_rate < 50) {
-      risks.push(`Low completion rate: ${user.client_outcomes.completion_rate}%`);
-    }
-    if (user.client_outcomes.avg_response_hours !== null && user.client_outcomes.avg_response_hours > 72) {
-      risks.push("Slow to respond (> 3 days avg)");
-    }
-  }
+function extractRisks(user: UserWithSocials): string[] {
+  const projects = publicVerifiedProjects(user);
+  const risks = ["Client delivery is not verified. Agree scope, acceptance criteria, and a paid trial with the builder."];
+  if (projects.length === 0) risks.push("No public projects with verified GitHub ownership");
+  if ((user.projects ?? []).some(p => !p.verified && !p.is_private)) risks.push("Some public projects are unverified; ownership is unconfirmed");
+  if (!projects.some(p => p.live_url && p.live_url_ok === true)) risks.push("No live demo confirmed reachable; inspect the source and request a walkthrough");
+  if (projects.some(p => p.quality_metrics == null)) risks.push("Repository analysis is unavailable for some verified projects");
   return risks.slice(0, AGENT_EVAL.maxRisks);
 }
 
 export function evaluateUser(user: UserWithSocials): EvaluationResult {
   const dims = evaluateDimensions(user);
 
-  // Weights: quality and client outcomes are heaviest (hardest to fake)
-  // Consistency is lowest weight (easiest to fake with daily commits)
-  const W = AGENT_EVAL.overallWeights;
-  const overall = Math.round(
-    dims.project_quality * W.projectQuality +
-    dims.client_outcomes * W.clientOutcomes +
-    dims.consistency * W.consistency +
-    dims.tech_breadth * W.techBreadth +
-    dims.activity_recency * W.activityRecency +
-    dims.reputation * W.reputation
-  );
+  // Only inspectable portfolio signals affect the hiring evaluation.
+  const overall = Math.round(dims.project_quality);
 
   return {
     username: user.username,
@@ -188,11 +93,11 @@ export function evaluateUser(user: UserWithSocials): EvaluationResult {
       tech_breadth: Math.round(dims.tech_breadth),
       activity_recency: Math.round(dims.activity_recency),
       reputation: Math.round(dims.reputation),
-      client_outcomes: Math.round(dims.client_outcomes),
+      client_outcomes: dims.client_outcomes,
     },
-    summary: generateSummary(user, dims, overall),
-    strengths: extractStrengths(user, dims),
-    risks: extractRisks(user, dims),
+    summary: generateSummary(user),
+    strengths: extractStrengths(user),
+    risks: extractRisks(user),
     badge_level: user.badge_level,
     evaluated_at: new Date().toISOString(),
   };
@@ -202,9 +107,10 @@ export function matchUsers(users: UserWithSocials[], task: TaskRequest): MatchRe
   const requestedTech = task.tech_stack.map(t => t.toLowerCase().trim()).filter(Boolean);
 
   const results = users.map(user => {
-    const userTech = (user.projects ?? []).flatMap(p => (p.tech_stack ?? []).map(t => t.toLowerCase()));
+    const projects = publicVerifiedProjects(user);
+    const userTech = projects.flatMap(p => (p.tech_stack ?? []).map(t => t.trim().toLowerCase()));
     const userTechSet = new Set(userTech);
-    const userTags = (user.projects ?? []).flatMap(p => (p.tags ?? []).map(t => t.toLowerCase()));
+    const userTags = projects.flatMap(p => (p.tags ?? []).map(t => t.trim().toLowerCase()).filter(Boolean));
 
     // Skill overlap
     const matchedSkills = requestedTech.filter(t => userTechSet.has(t));
@@ -221,23 +127,18 @@ export function matchUsers(users: UserWithSocials[], task: TaskRequest): MatchRe
     const tagMatches = userTags.filter(t => descWords.some(w => t.includes(w) || w.includes(t)));
     const tagScore = tagMatches.length > 0 ? MATCH.tagMatchScore : MATCH.tagNoMatchScore;
 
-    // Availability proxy
-    const A = MATCH.availability;
-    const availScore = user.streak > 0 ? Math.min(A.activeCap, user.streak * A.activeMultiplier) : A.inactiveScore;
-
-    const match_score = Math.round(
+    const match_score = projects.length === 0 ? 0 : Math.round(
       skillScore * MATCH.weights.skill +
       evalScore * MATCH.weights.evaluation +
-      tagScore * MATCH.weights.tag +
-      availScore * MATCH.weights.availability
+      tagScore * MATCH.weights.tag
     );
 
     const match_reasons: string[] = [];
-    if (matchedSkills.length > 0) match_reasons.push(`Knows ${matchedSkills.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")}`);
-    if (user.streak > 30) match_reasons.push(`${user.streak}-day active streak`);
-    if (user.badge_level !== "none") match_reasons.push(`${user.badge_level.charAt(0).toUpperCase() + user.badge_level.slice(1)} badge holder`);
-    if ((user.projects ?? []).length > 2) match_reasons.push(`Shipped ${(user.projects ?? []).length} projects`);
-    if (user.vibe_score > 400) match_reasons.push(`Vibe score: ${user.vibe_score}`);
+    if (matchedSkills.length > 0) match_reasons.push(`Listed on ownership-verified projects: ${matchedSkills.join(", ")}`);
+    if (projects.length > 0) match_reasons.push(`${projects.length} public project${projects.length === 1 ? "" : "s"} with GitHub ownership verified`);
+    else match_reasons.push("No public ownership-verified project evidence");
+    if (projects.some(p => p.live_url && p.live_url_ok === true)) match_reasons.push("Live URL reachable at its last check");
+    match_reasons.push("Delivery not verified; review the work before agreeing a trial");
 
     const projectTypeLabels = {
       mvp: "MVP development",
@@ -255,7 +156,7 @@ export function matchUsers(users: UserWithSocials[], task: TaskRequest): MatchRe
     };
   });
 
-  return results.sort((a, b) => b.match_score - a.match_score).slice(0, MATCH.maxResults);
+  return results.sort((a, b) => b.match_score - a.match_score || a.user.username.localeCompare(b.user.username)).slice(0, MATCH.maxResults);
 }
 
 export function generateHireMessage(
@@ -265,12 +166,12 @@ export function generateHireMessage(
   matchedSkills: string[]
 ): string {
   const skillPart = matchedSkills.length > 0
-    ? ` Your expertise in ${matchedSkills.join(", ")} makes you an ideal candidate.`
+    ? ` I saw ${matchedSkills.join(", ")} listed on your projects.`
     : "";
 
   return `Hi @${targetUsername},
 
-I'm ${senderName}, and I came across your profile on VibeTalent. Your consistent shipping track record caught my attention.${skillPart}
+I'm ${senderName}, and I came across your profile on VibeTalent. Your project portfolio caught my attention.${skillPart}
 
 I'm working on a project: ${projectDescription}
 

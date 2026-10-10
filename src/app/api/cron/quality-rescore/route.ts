@@ -1,3 +1,6 @@
+import { readGithubIdentity } from "@/lib/github-identity";
+import { repositoryControlVerified } from "@/lib/project-verification";
+import { writeProjectAnalysis } from "@/lib/project-analysis-write";
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { analyzeRepository, checkLiveUrl, parseGithubRepoUrl, toRepoQualityData } from "@/lib/github-quality";
@@ -139,10 +142,14 @@ export async function GET(req: NextRequest) {
               githubToken,
               profileUsernameById.get(project.user_id) ?? null
             );
-            const qualityScore = qualityResult.success ? (qualityResult.metrics?.quality_score ?? 0) : 0;
-            const qualityMetrics = (qualityResult.success && qualityResult.metrics)
-              ? toRepoQualityData(qualityResult.metrics)
-              : null;
+            if (!qualityResult.success || !qualityResult.metrics) throw new Error(qualityResult.error ?? "Repository analysis failed");
+            const { data: ownerData, error: ownerError } = await supabase.auth.admin.getUserById(project.user_id);
+            if (ownerError) throw ownerError;
+            const providerId = readGithubIdentity(ownerData.user)?.id;
+            const stillVerified = await repositoryControlVerified(repoOwner, repoName,
+              qualityResult.metrics.owner_github_id, providerId, project.user_id, githubToken);
+            const qualityScore = stillVerified ? qualityResult.metrics.quality_score : 0;
+            const qualityMetrics = stillVerified ? toRepoQualityData(qualityResult.metrics) : null;
 
             let live_url_ok: boolean | null = null;
             if (project.live_url) {
@@ -150,17 +157,19 @@ export async function GET(req: NextRequest) {
             }
 
             // Update triggers on_project_change which recalculates vibe_score
-            const { error: updateError } = await sb.from("projects").update({
+            const { data: saved, error: updateError } = await writeProjectAnalysis(sb, project, {
+              verified: stillVerified,
+              is_private: qualityResult.metrics.is_private,
               quality_score: qualityScore,
               quality_metrics: qualityMetrics,
               live_url_ok,
-            }).eq("id", project.id);
+            });
 
             if (updateError) {
               throw updateError;
             }
 
-            rescored++;
+            if (saved) rescored++;
           } catch (err) {
             console.error(`Failed to rescore project ${project.id}:`, err);
             errors++;

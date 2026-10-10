@@ -14,15 +14,22 @@ function getScoreColor(score: number): string {
 }
 
 const dimensionLabels: Record<string, string> = {
-  consistency: "Consistency",
-  project_quality: "Project Quality",
-  tech_breadth: "Tech Breadth",
-  activity_recency: "Activity Recency",
-  reputation: "Reputation",
+  consistency: "Recorded consistency (context only)",
+  project_quality: "Portfolio Evidence",
+  tech_breadth: "Listed technologies (context only)",
+  activity_recency: "Recorded activity (context only)",
+  reputation: "Community score (context only)",
 };
 
 export function EvaluationReport({ report }: EvaluationReportProps) {
   const scoreColor = getScoreColor(report.overall_score);
+  const visibleDimensions = {
+    project_quality: report.dimensions.project_quality,
+    tech_breadth: report.dimensions.tech_breadth,
+    consistency: report.dimensions.consistency,
+    activity_recency: report.dimensions.activity_recency,
+    reputation: report.dimensions.reputation,
+  };
 
   return (
     <div className="space-y-6">
@@ -36,7 +43,7 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
         }}
       >
         <div className="text-xs font-medium text-[var(--text-muted)] mb-2">
-          Agent Score
+          Portfolio evidence score
         </div>
         <div
           className="text-6xl font-extrabold font-mono"
@@ -49,6 +56,10 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
         </div>
       </div>
 
+      <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
+        Based on the strongest public project with verified GitHub ownership: ownership 40 points, README 15, test-related files/configuration 15, CI/container configuration 10, and a reachable live URL 20. Configuration detection does not verify executable tests or successful CI. Activity and community metrics below add no points. This score is not a probability of successful delivery.
+      </p>
+
       {/* Dimension Scores */}
       <div
         className="p-6 rounded-2xl"
@@ -59,10 +70,10 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
         }}
       >
         <h3 className="text-sm font-semibold text-[var(--foreground)] mb-4">
-          Dimension Analysis
+          Evidence and activity context
         </h3>
         <div className="space-y-3">
-          {Object.entries(report.dimensions).map(([key, value]) => (
+          {Object.entries(visibleDimensions).map(([key, value]) => (
             <div key={key}>
               <div className="flex justify-between text-sm mb-1">
                 <span className="font-semibold text-[var(--foreground)]">
@@ -102,7 +113,7 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
         }}
       >
         <h3 className="text-sm font-semibold text-[var(--foreground)] mb-3">
-          AI Summary
+          What this evidence means
         </h3>
         <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">
           {report.summary}
@@ -121,7 +132,7 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
         >
           <h4 className="text-sm font-bold text-[var(--status-success-text)] flex items-center gap-2 mb-3">
             <Shield weight="fill" size={16} />
-            Strengths
+            Observed evidence
           </h4>
           <ul className="space-y-2">
             {report.strengths.map((s, i) => (
@@ -149,7 +160,7 @@ export function EvaluationReport({ report }: EvaluationReportProps) {
         >
           <h4 className="text-sm font-bold text-[var(--status-error-text)] flex items-center gap-2 mb-3">
             <Warning weight="fill" size={16} />
-            Risks
+            Before hiring
           </h4>
           <ul className="space-y-2">
             {report.risks.map((r, i) => (

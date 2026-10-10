@@ -8,19 +8,21 @@
 export const SUPPORT_EMAIL = "vibetalentwork@gmail.com";
 
 export const PLATFORM_FACTS = `## Vibe Score
-The core reputation metric: one number for how consistently and effectively a developer ships. It is calculated from four weighted components:
-- Streak Days: 40%
-- Project Quality: 30% (GitHub repo health: stars, forks, commit frequency, README, deployment status)
-- GitHub Activity: 20% (commits, pull requests, code reviews, issues)
-- Peer Endorsements: 10% (endorsements from higher-scored developers count for more)
-It updates daily and is based entirely on public, verifiable data. It cannot be gamed with fake reviews or purchased followers.
+Vibe score is a public reputation score: baseline 10 + the strongest public verified project's evidence (0–100) + endorsements + trusted reviews + existing vouch credit. Commits, contribution totals, streaks, badges, popularity and project count add zero points. Project evidence checks ownership, README, test-related files/config, CI/container config and live URL reachability; they do not establish passing tests or client delivery.
 
 ## Coding Streaks
-- A streak = consecutive days with at least one commit to any PUBLIC GitHub repo.
-- Synced from GitHub daily.
-- Resets to zero if a full calendar day (UTC) passes with no commits.
-- Your longest/historical streak is preserved on your profile even after a reset.
-- Commits to private repos do NOT count: VibeTalent only reads public GitHub activity.
+- Consecutive days of recorded activity, including GitHub sync and manual check-ins.
+- A streak does not prove meaningful code changes or a shipped product.
+- Public GitHub activity is synced daily. Private activity sharing is optional; VibeTalent does not read private repository source code.
+- Longest/historical streaks are preserved after a reset.
+
+## Hiring evidence
+- The default founder match ranks skills and tags listed on public, ownership-verified projects alongside inspectable repository signals. Skills and tags are builder-provided, not independently assessed.
+- Streaks, badges, vibe score, raw commit counts, repository popularity, project volume, endorsements, and reviews do not add points to the hiring evaluation.
+- The portfolio evidence score uses the strongest public ownership-verified project: ownership 40, README detected 15, test-related files/configuration detected 15, CI/container configuration detected 10, and a live URL reachable at its last check 20.
+- Ownership verification does not establish original authorship, working functionality, security, or delivery quality. Test-related flags can mean test configuration only; CI flags can mean container files only. Neither proves passing tests or successful runs.
+- Hire replies establish conversations only. There is no verified completed-hire count, completion rate, or repeat-paying-client metric yet. Review trust scores are abuse heuristics, not proof of delivery.
+- Founders should inspect the linked source/demo, request a walkthrough, and agree a small paid trial with scope and acceptance criteria directly with the builder. VibeTalent does not currently manage trial funding, acceptance, or payouts.
 
 ## Badges (permanent once earned)
 - Bronze: 30-day streak
@@ -41,7 +43,7 @@ It updates daily and is based entirely on public, verifiable data. It cannot be 
 - Clients can also chat with VibeFinder (at /agent/chat) to describe a project and get matched with builders.
 
 ## Endorsements & Reviews
-- Users can endorse other builders for specific skills; endorsements from higher-scored developers carry more weight.
+- Users can endorse projects. Endorsements reflect community feedback, not verified client delivery.
 - Builders can receive reviews on their profile.
 
 ## Pricing
@@ -50,7 +52,7 @@ It updates daily and is based entirely on public, verifiable data. It cannot be 
 
 ## Key pages
 - /explore: browse and filter all builders (by language, framework, streak, badge, vibe score)
-- /leaderboard: top builders by vibe score
+- /leaderboard: rankings by project evidence and community reputation
 - /feed: live GitHub activity feed
 - /agent and /agent/chat: VibeFinder, the AI assistant for talent matching and platform help
 - /dashboard. Your own profile, streak, and projects`;

@@ -1,14 +1,13 @@
+import { projectEvidenceScore, type ProjectEvidenceInput } from "./project-evidence";
 import type { BadgeLevel } from "@/lib/types/database";
-import { VIBE_SCORE, PROJECT_SCORE, BADGE_THRESHOLDS } from "@/lib/scoring-config";
+import { VIBE_SCORE, BADGE_THRESHOLDS } from "@/lib/scoring-config";
 
-/** Minimal project shape needed for quality scoring. */
-export interface ProjectScoreInput {
-  verified: boolean;
-  live_url: string | null;
-  github_url: string | null;
-  description: string;
-  image_url: string | null;
-  tech_stack: string[];
+/** Legacy metadata is accepted for callers, but only verified evidence earns credit. */
+export interface ProjectScoreInput extends ProjectEvidenceInput {
+  github_url?: string | null;
+  description?: string;
+  image_url?: string | null;
+  tech_stack?: string[];
 }
 
 /**
@@ -72,34 +71,9 @@ export function calculateStreak(activityDates: string[]): {
   return { currentStreak, longestStreak: Math.max(longestStreak, currentStreak) };
 }
 
-/**
- * Score a single project based on quality signals.
- * Verified projects earn bonus points for completeness;
- * unverified projects get a flat 1 point.
- *
- * Breakdown (verified only):
- *   Base:              5 pts
- *   Live URL:         +3 pts
- *   GitHub URL:       +2 pts
- *   Description >50c: +2 pts
- *   Screenshot/image: +1 pt
- *   Tech stack >=3:    +2 pts
- *   Max per project:  15 pts
- */
+/** Same evidence rules as hiring and the database; no activity-derived quality score. */
 export function calculateProjectScore(project: ProjectScoreInput): number {
-  if (!project.verified) return PROJECT_SCORE.unverifiedFlat;
-
-  let score = PROJECT_SCORE.verifiedBase;
-  if (project.live_url) score += PROJECT_SCORE.liveUrlBonus;
-  if (project.github_url) score += PROJECT_SCORE.githubBonus;
-  if (project.description && project.description.length > PROJECT_SCORE.longDescThreshold) {
-    score += PROJECT_SCORE.longDescBonus;
-  }
-  if (project.image_url) score += PROJECT_SCORE.imageBonus;
-  if (project.tech_stack && project.tech_stack.length >= PROJECT_SCORE.techStackThreshold) {
-    score += PROJECT_SCORE.techStackBonus;
-  }
-  return score;
+  return projectEvidenceScore(project);
 }
 
 /**
@@ -112,92 +86,31 @@ export function calculateReviewBonus(avgRating: number, reviewCount: number): nu
   return Math.min(VIBE_SCORE.reviewCap, Math.round(avgRating * reviewCount * VIBE_SCORE.reviewMultiplier));
 }
 
-/**
- * Calculate vibe score based on streak, projects, badges, reviews, and quality scores.
- *
- * New formula uses actual GitHub quality scores instead of flat project count:
- *   (Current Streak x 2)
- * + (sum of per-project contribution based on quality_score)
- * + Badge Bonus
- * + Review Bonus
- *
- * Per-project contribution (when ProjectForScoring[] is provided):
- *   - Verified with quality_score > 0: min(quality_score / 10, 10) points
- *   - Verified without quality_score: 5 points
- *   - Unverified: 1 point
- *
- * Accepts either detailed project list (preferred) or legacy count-based params.
+/** Activity arguments remain for compatibility and deliberately earn zero points.
+ * Count-only inputs cannot establish verified evidence, so they earn zero points.
+ * Reputation uses the strongest public verified project, plus community feedback.
+ * The authoritative database additionally includes its existing vouch credit.
  */
-export interface ProjectForScoring {
-  verified: boolean;
+export interface ProjectForScoring extends ProjectEvidenceInput {
   quality_score?: number;
-  flagged?: boolean;
 }
 
 export function calculateVibeScore(
-  currentStreak: number,
+  _currentStreak: number,
   projectCountOrProjects: number | ProjectScoreInput[],
-  badgeLevel: BadgeLevel,
-  verifiedCount?: number,
+  _badgeLevel: BadgeLevel,
+  _verifiedCount?: number,
   projects?: ProjectForScoring[],
   reviewBonus: number = 0,
   endorsementCount: number = 0,
-  lifetimeContributions: number = 0,
-  contributions30d: number = 0
+  _lifetimeContributions: number = 0,
+  _contributions30d: number = 0
 ): number {
-  const baseline = VIBE_SCORE.baseline;
-  const streakPoints = currentStreak * VIBE_SCORE.perStreakDay;
-
-  let projectPoints: number;
-  if (projects && projects.length > 0) {
-    // New quality-based scoring using GitHub quality scores
-    projectPoints = projects
-      .filter((p) => !p.flagged)
-      .reduce((sum, p) => {
-        if (p.verified && p.quality_score && p.quality_score > 0) {
-          return sum + Math.min(
-            Math.floor(p.quality_score / VIBE_SCORE.qualityScoreDivisor),
-            VIBE_SCORE.qualityScoreCapPerProject
-          );
-        } else if (p.verified) {
-          return sum + VIBE_SCORE.verifiedProjectBase;
-        }
-        return sum + VIBE_SCORE.unverifiedProjectPoints;
-      }, 0);
-  } else if (Array.isArray(projectCountOrProjects)) {
-    // Score each project individually using ProjectScoreInput
-    projectPoints = projectCountOrProjects.reduce(
-      (sum, p) => sum + calculateProjectScore(p),
-      0
-    );
-  } else {
-    // Legacy path: flat scoring for backward compatibility
-    const verified = verifiedCount ?? projectCountOrProjects;
-    const unverified = projectCountOrProjects - verified;
-    projectPoints = verified * VIBE_SCORE.verifiedProjectBase + unverified * VIBE_SCORE.unverifiedProjectPoints;
-  }
-
-  const endorsementPoints = endorsementCount * VIBE_SCORE.perEndorsement;
-
-  const volumePoints = Math.min(
-    Math.floor(Math.sqrt(Math.max(0, lifetimeContributions))),
-    VIBE_SCORE.volumeCredit.lifetimeCap
-  );
-  const recentPoints = Math.min(
-    Math.floor(contributions30d * VIBE_SCORE.volumeCredit.recent30dWeight),
-    VIBE_SCORE.volumeCredit.recent30dCap
-  );
-
-  return (
-    baseline +
-    streakPoints +
-    projectPoints +
-    VIBE_SCORE.badgeBonuses[badgeLevel] +
-    reviewBonus +
-    endorsementPoints +
-    volumePoints +
-    recentPoints
-  );
+  void _lifetimeContributions;
+  void _contributions30d;
+  const evidence = projects ?? (Array.isArray(projectCountOrProjects) ? projectCountOrProjects : []);
+  const projectPoints = evidence.reduce((best, project) => Math.max(best, projectEvidenceScore(project)), 0);
+  return VIBE_SCORE.baseline + projectPoints + reviewBonus + endorsementCount * VIBE_SCORE.perEndorsement;
 }
 
 /**

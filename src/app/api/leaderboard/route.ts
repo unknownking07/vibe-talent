@@ -21,10 +21,17 @@ export async function GET(request: NextRequest) {
       windowStart.setUTCDate(windowStart.getUTCDate() - 6);
       const windowStartStr = windowStart.toISOString().slice(0, 10);
 
-      const { data: logs } = await sb
-        .from("streak_logs")
-        .select("user_id, activity_date, commit_count")
-        .gte("activity_date", windowStartStr);
+      const today = new Date().toISOString().slice(0, 10);
+      const logs: Array<{ user_id: string; activity_date: string; commit_count: number }> = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await sb.from("streak_logs")
+          .select("user_id, activity_date, commit_count")
+          .gte("activity_date", windowStartStr).lte("activity_date", today)
+          .order("user_id").order("activity_date").range(offset, offset + 999);
+        if (error) throw error;
+        logs.push(...(data ?? []));
+        if ((data ?? []).length < 1000) break;
+      }
 
       // Aggregate distinct dates AND sum commit counts per user
       const datesByUser = new Map<string, Set<string>>();
@@ -41,46 +48,19 @@ export async function GET(request: NextRequest) {
       const activeDaysByUserId = new Map<string, number>();
       for (const [uid, dates] of datesByUser) activeDaysByUserId.set(uid, dates.size);
 
-      // Take top 200 active user IDs to bound the user query
-      const topUserIds = [...activeDaysByUserId.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 200)
-        .map(([uid]) => uid);
-
-      if (topUserIds.length === 0) {
-        return NextResponse.json(
-          { leaderboard: [], range: "week", mode: "active" },
-          { headers: { "Cache-Control": "public, max-age=30, s-maxage=60, stale-while-revalidate=120" } },
-        );
-      }
-
-      // Top-user details and the full ranking list are independent — run them in parallel.
-      const [usersRes, allRankedRes] = await Promise.all([
-        sb
-          .from("users")
+      // Read the complete score ranking; activity volume must not select which
+      // builders are admitted to the weekly candidate pool.
+      const enriched: Array<{ id: string; username: string; avatar_url: string | null; vibe_score: number; streak: number; rank: number }> = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await sb.from("users")
           .select("id, username, avatar_url, vibe_score, streak")
-          .in("id", topUserIds)
-          .not("username", "is", null),
-        sb
-          .from("users")
-          .select("id")
           .not("username", "is", null)
-          .order("vibe_score", { ascending: false }),
-      ]);
-      const users = usersRes.data;
-      const allRanked = allRankedRes.data;
-
-      const rankByUserId = new Map<string, number>();
-      (allRanked ?? []).forEach((u: { id: string }, i: number) => rankByUserId.set(u.id, i + 1));
-
-      const enriched = (users ?? []).map((u: { id: string; username: string; avatar_url: string | null; vibe_score: number; streak: number }) => ({
-        id: u.id,
-        username: u.username,
-        avatar_url: u.avatar_url,
-        vibe_score: u.vibe_score,
-        streak: u.streak ?? 0,
-        rank: rankByUserId.get(u.id) ?? 9999,
-      }));
+          .order("vibe_score", { ascending: false }).order("username").order("id")
+          .range(offset, offset + 999);
+        if (error) throw error;
+        for (const u of data ?? []) enriched.push({ ...u, streak: u.streak ?? 0, rank: enriched.length + 1 });
+        if ((data ?? []).length < 1000) break;
+      }
 
       const builders = computeActiveBuilders(activeDaysByUserId, commitsByUser, enriched).slice(0, limit);
 
@@ -90,12 +70,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const orderColumn = sort === "projects" ? "vibe_score" : sort === "streak" ? "longest_streak" : "vibe_score";
+    // Legacy sort parameters cannot turn activity back into a reputation rank.
+    void sort;
+    const orderColumn = "vibe_score";
     const { data: users, error } = await sb
       .from("users")
       .select("id, username, avatar_url, vibe_score, streak, longest_streak, badge_level")
       .not("username", "is", null)
-      .order(orderColumn, { ascending: false })
+      .order(orderColumn, { ascending: false }).order("username").order("id")
       .limit(limit);
 
     if (error || !users) {

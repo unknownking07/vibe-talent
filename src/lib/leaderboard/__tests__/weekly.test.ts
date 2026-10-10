@@ -44,7 +44,7 @@ describe("computeClimbers", () => {
 });
 
 describe("computeActiveBuilders", () => {
-  it("filters out users with 0 active days", () => {
+  it("includes zero-activity builders in reputation order", () => {
     const active = new Map<string, number>([["a", 5]]);
     const commits = new Map<string, number>([["a", 20], ["b", 0]]);
     const current = [
@@ -52,10 +52,11 @@ describe("computeActiveBuilders", () => {
       { id: "b", username: "beta",  vibe_score: 500, streak: 0, avatar_url: null, rank: 5 },
     ];
     const result = computeActiveBuilders(active, commits, current);
-    expect(result.map(r => r.username)).toEqual(["alpha"]);
+    expect(result.map(r => r.username)).toEqual(["beta", "alpha"]);
+    expect(result[0].activeDays7d).toBe(0);
   });
 
-  it("sorts by commits desc as primary", () => {
+  it("sorts by vibe score regardless of commit volume", () => {
     const active = new Map<string, number>([["a", 7], ["b", 7], ["c", 7]]);
     const commits = new Map<string, number>([["a", 12], ["b", 47], ["c", 5]]);
     const current = [
@@ -64,10 +65,10 @@ describe("computeActiveBuilders", () => {
       { id: "c", username: "cara",  vibe_score: 500, streak: 10, avatar_url: null, rank: 5 },
     ];
     const result = computeActiveBuilders(active, commits, current);
-    expect(result.map(r => r.username)).toEqual(["beta", "alpha", "cara"]);
+    expect(result.map(r => r.username)).toEqual(["cara", "alpha", "beta"]);
   });
 
-  it("falls back to active days desc when commits tie", () => {
+  it("does not use active days to break a score tie", () => {
     const active = new Map<string, number>([["a", 4], ["b", 7]]);
     const commits = new Map<string, number>([["a", 10], ["b", 10]]);
     const current = [
@@ -75,10 +76,10 @@ describe("computeActiveBuilders", () => {
       { id: "b", username: "beta",  vibe_score: 100, streak: 5, avatar_url: null, rank: 30 },
     ];
     const result = computeActiveBuilders(active, commits, current);
-    expect(result.map(r => r.username)).toEqual(["beta", "alpha"]);
+    expect(result.map(r => r.username)).toEqual(["alpha", "beta"]);
   });
 
-  it("falls back to streak desc when commits and active days tie", () => {
+  it("uses a neutral username tie-break instead of streak", () => {
     const active = new Map<string, number>([["a", 5], ["b", 5]]);
     const commits = new Map<string, number>([["a", 10], ["b", 10]]);
     const current = [
