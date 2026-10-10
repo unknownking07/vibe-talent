@@ -146,8 +146,16 @@ GRANT EXECUTE ON FUNCTION public.project_evidence_score(public.projects), public
 -- into the new scoring system. Backfill re-analyzes owner-matched public repos
 -- through the protected server pipeline; file-proof/org repos can be reverified
 -- manually. This also removes old activity-derived repository quality scores.
+-- Skip already-cleared rows: some legacy link-less projects predate the
+-- NOT VALID projects_has_live_or_github constraint, which rejects even a
+-- no-op UPDATE. Keep the constraint intact and these unverified rows at zero.
 UPDATE public.projects SET verified=false, quality_score=0, quality_metrics=NULL,
-  live_url_ok=NULL, last_verify_attempt_at=NULL WHERE verification_version < 2;
+  live_url_ok=NULL, last_verify_attempt_at=NULL
+WHERE verification_version < 2 AND (
+  verified IS DISTINCT FROM false OR quality_score IS DISTINCT FROM 0
+  OR quality_metrics IS NOT NULL OR live_url_ok IS NOT NULL
+  OR last_verify_attempt_at IS NOT NULL
+);
 
 -- Existing totals contain activity credit: seed every user from evidence and
 -- feedback first, then converge the UNCHANGED vouch calculation from below.

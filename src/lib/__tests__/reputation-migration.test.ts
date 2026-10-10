@@ -8,6 +8,7 @@ const alice = "00000000-0000-0000-0000-000000000001";
 const bot = "00000000-0000-0000-0000-000000000002";
 const recipient = "00000000-0000-0000-0000-000000000003";
 const project = "10000000-0000-0000-0000-000000000001";
+const legacyProject = "10000000-0000-0000-0000-000000000002";
 const db = new PGlite();
 const migrationPath =
   "supabase/migrations/20261009112538_commit_independent_reputation.sql";
@@ -67,6 +68,10 @@ beforeAll(async () => {
     INSERT INTO auth.identities VALUES ('${alice}','github','{"user_name":"alice","sub":"1"}'), ('${bot}','github','{"user_name":"bot","sub":"2"}');
     INSERT INTO public.projects(id,user_id,github_url,live_url,verified,quality_score,quality_metrics,live_url_ok)
       VALUES ('${project}','${alice}','https://github.com/alice/app','https://example.com',true,80,'{"has_readme":true,"has_tests":true,"has_ci":true}',true);
+    -- Production has link-less projects created before this NOT VALID constraint.
+    INSERT INTO public.projects(id,user_id,title) VALUES ('${legacyProject}','${bot}','Legacy project');
+    ALTER TABLE public.projects ADD CONSTRAINT projects_has_live_or_github
+      CHECK ((live_url IS NOT NULL AND live_url <> '') OR (github_url IS NOT NULL AND github_url <> '')) NOT VALID;
     -- A voucher whose old score comes entirely from farmed activity.
     INSERT INTO public.vouches VALUES ('${bot}','${recipient}',1000000);
   `);
@@ -82,6 +87,13 @@ beforeAll(async () => {
 afterAll(() => db.close());
 
 describe("commit-independent reputation migration on PostgreSQL", () => {
+  it("preserves already-cleared legacy projects without weakening the link constraint", async () => {
+    expect((await db.query("SELECT verified,quality_score,quality_metrics,verification_version FROM public.projects WHERE id=$1", [legacyProject])).rows[0]).toEqual({
+      verified: false, quality_score: 0, quality_metrics: null, verification_version: 0,
+    });
+    await expect(db.exec(`INSERT INTO public.projects(user_id,title) VALUES ('${bot}','New link-less project')`)).rejects.toMatchObject({ code: "23514" });
+    expect(await score(bot)).toBe(10);
+  });
   it("removes old activity credit, including credit inherited through an inflated voucher", async () => {
     expect(await score()).toBe(10);
     expect(
