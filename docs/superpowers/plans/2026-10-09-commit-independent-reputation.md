@@ -1,6 +1,6 @@
 # Commit-independent reputation
 
-Status: user authorized production rollout on 2026-10-10. Implementation and local checks complete; full production build/activation waiting for live database recovery. Migration NOT applied.
+Status: production rollout authorized and activated on 2026-10-10. Application PR #299 and migration repair PR #300 are merged and deployed. The matching migration was applied individually in the SQL editor after database recovery. Cron recovery results are recorded below.
 
 ## Scoring contract
 
@@ -44,3 +44,13 @@ GitHub scheduled runs 38044483209 (quality-rescore), 38047851647 (verify-backfil
 Admin Supabase requests now have a 20s transport deadline. Daily fanout bounds each child and calibration, retains service-binding authentication, never retries a failed binding through public fetch, and returns 503 for failed/partially failed children. GitHub Actions also rejects partial JSON failures and records transport errors. No automatic replay of mutating jobs is added. Live URL checks compare the originally checked URL before restoring health. Public skill/OpenAPI/llms guidance describes the new scoring contract and does not present activity or repository file presence as proof of delivery.
 
 Release verification (2026-10-10): 853 tests pass across 87 files; source lint and TypeScript pass. Cron YAML and bash syntax pass; JSON success/failure fixtures exercise the workflow guard. Independent review reports no code blockers. Cloudflare build compiles and type-checks, but static rendering times out against the unavailable production database. Restart/recovery and a successful fresh full build are required before merging the coordinated release.
+
+## 2026-10-10 production recovery and activation
+
+Supabase reported the project unhealthy with a nearly depleted disk I/O budget on Nano compute. A restart restored SQL and REST access; the project subsequently reported ACTIVE_HEALTHY. All 230 users and 202 projects remain present. Resource pressure was observed, but no individual application query was established as the outage's cause. No compute upgrade was purchased.
+
+Both application and migration deployments passed. The migration initially rolled back on nine legacy linkless projects under the existing NOT VALID link constraint. The repair skips already-cleared legacy rows instead of issuing a no-op UPDATE that revalidates that constraint; the constraint remains enforced. SQL tests reproduce that failure and verify the repaired migration, protected writes, and fresh v2 proof preservation. The applied migration and its repair are committed.
+
+The first verification backfill restored fresh proof for 84 projects and reported 59 repository errors. Sampled failed repositories return GitHub 404. Backfill now treats not_found/needs_repo_scope as unavailable candidates, leaves them unverified, and stamps a bounded retry window; rate limits, network failures, unknown errors, and database write failures remain operational errors. Retry timestamp writes compare ownership and both original URLs so an edited repository is not postponed by stale work.
+
+Recovery runs: quality-rescore 38059358185 passed (no projects needed rescoring); daily 38059624198 passed. The classification follow-up still requires deployment and a fresh verify-backfill run. Follow-up release verification: 861 tests across 88 files, source lint, TypeScript, and the full Cloudflare OpenNext build pass. Independent review found no blockers.
