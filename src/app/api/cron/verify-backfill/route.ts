@@ -133,11 +133,17 @@ export async function GET(req: NextRequest) {
 
     // Stamp non-verifiable-via-owner-match projects so the next run skips them
     // for RETRY_WINDOW_DAYS and works through the rest of the backlog instead.
-    async function markAttempted(projectId: string) {
-      await sb
+    async function markAttempted(project: { id: string; user_id: string; github_url: string; live_url: string | null }) {
+      const query = sb
         .from("projects")
         .update({ last_verify_attempt_at: new Date().toISOString() })
-        .eq("id", projectId);
+        .eq("id", project.id)
+        .eq("user_id", project.user_id)
+        .eq("github_url", project.github_url);
+      const { error } = await (project.live_url === null
+        ? query.is("live_url", null)
+        : query.eq("live_url", project.live_url));
+      if (error) throw error;
     }
 
     const ownerProofs = new Map<string, Promise<GithubIdentity | null>>();
@@ -175,7 +181,7 @@ export async function GET(req: NextRequest) {
               const parsed = parseGithubRepoUrl(project.github_url);
               if (!parsed) {
                 skipped++;
-                await markAttempted(project.id);
+                await markAttempted(project);
                 return;
               }
 
@@ -200,13 +206,20 @@ export async function GET(req: NextRequest) {
               // for a future run to retry. Don't mark verified without a valid
               // check, and don't push it into the retry-window deadzone.
               if (!qualityResult.success) {
+                // Deleted/private repositories are expected candidate outcomes,
+                // not scheduler outages. Keep them unverified and retry later.
+                if (qualityResult.errorCode === "not_found" || qualityResult.errorCode === "needs_repo_scope") {
+                  await markAttempted(project);
+                  skipped++;
+                  return;
+                }
                 errors++;
                 return;
               }
 
               if (!await repositoryControlVerified(repoOwner, repoName, qualityResult.metrics?.owner_github_id, githubIdentity.id, project.user_id, process.env.GITHUB_TOKEN)) {
                 skipped++;
-                await markAttempted(project.id);
+                await markAttempted(project);
                 return;
               }
 
