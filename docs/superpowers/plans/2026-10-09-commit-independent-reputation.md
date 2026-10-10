@@ -1,6 +1,6 @@
 # Commit-independent reputation
 
-Status: implemented and tested locally; NOT deployed and migration NOT applied.
+Status: user authorized production rollout on 2026-10-10. Implementation and local checks complete; full production build/activation waiting for live database recovery. Migration NOT applied.
 
 ## Scoring contract
 
@@ -36,3 +36,11 @@ If any migration statement fails, its explicit transaction rolls everything back
 ## Verification
 
 Automated tests execute the actual migration against isolated PostgreSQL (PGlite), with realistic roles/RLS and score triggers. They cover volume farming, legacy proof removal, swapped unique GitHub IDs, protected writes/RPC, content editing, proof invalidation, trusted renames, unchanged vouch handling and reapplication. Separate regressions cover analyzer activity invariance, ranking eligibility/ties, immutable GitHub owner IDs, UUID file proofs and actual Supabase serialization of conditional analysis writes. Final local checks: 842 tests pass across 84 files; source-only lint and TypeScript pass; Cloudflare OpenNext build passes. Independent review reports no remaining blockers after the transient-proof retry fix. Re-run applicable checks after subsequent code changes.
+
+## 2026-10-10 release hardening
+
+GitHub scheduled runs 38044483209 (quality-rescore), 38047851647 (verify-backfill), and 38049448471 (daily) failed before repository processing. Reads returned "Failed to fetch projects/users"; daily timed out at 600s. Direct production SQL and REST probes also timed out, and PostgREST logs report schema-cache query statement timeouts (PGRST002). The infrastructure bottleneck requires resource inspection/recovery before applying the coordinated migration.
+
+Admin Supabase requests now have a 20s transport deadline. Daily fanout bounds each child and calibration, retains service-binding authentication, never retries a failed binding through public fetch, and returns 503 for failed/partially failed children. GitHub Actions also rejects partial JSON failures and records transport errors. No automatic replay of mutating jobs is added. Live URL checks compare the originally checked URL before restoring health. Public skill/OpenAPI/llms guidance describes the new scoring contract and does not present activity or repository file presence as proof of delivery.
+
+Release verification (2026-10-10): 853 tests pass across 87 files; source lint and TypeScript pass. Cron YAML and bash syntax pass; JSON success/failure fixtures exercise the workflow guard. Independent review reports no code blockers. Cloudflare build compiles and type-checks, but static rendering times out against the unavailable production database. Restart/recovery and a successful fresh full build are required before merging the coordinated release.

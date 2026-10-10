@@ -9,10 +9,10 @@ You are interacting with **VibeTalent**: an AI-agent-native marketplace for hiri
 
 ## What You Can Do
 
-1. **Search Builders**: Find developers by skills, streak, vibe score
+1. **Search Builders**: Find developers by skills and inspect verified project evidence
 2. **View Profiles**: Get full builder profiles with projects, tech stack, and stats
 3. **Send Hire Requests**: Submit hire requests to any builder programmatically
-4. **Browse Leaderboard**: See top builders ranked by vibe score, streak, or projects
+4. **Browse Leaderboard**: Browse reputation rankings; activity statistics are descriptive
 
 ## API Base URL
 
@@ -40,7 +40,7 @@ GET ${SITE_URL}/api/v1/builders
 
 **Example:**
 \`\`\`
-GET ${SITE_URL}/api/v1/builders?skills=react,nextjs&min_streak=7&verified_only=true&sort=vibe_score&limit=10
+GET ${SITE_URL}/api/v1/builders?skills=react,nextjs&verified_only=true&sort=vibe_score&limit=10
 \`\`\`
 
 **Response:**
@@ -104,11 +104,11 @@ GET ${SITE_URL}/api/v1/builders/abhinav
         "build_time": "1 day",
         "tags": ["fun"],
         "verified": true,
-        "quality_score": 72,
+        "quality_score": 100,
         "quality_metrics": {
           "stars": 14, "forks": 2, "contributors": 1, "total_commits": 42,
           "has_tests": true, "has_ci": true, "has_readme": true,
-          "community_score": 60, "substance_score": 78, "maintenance_score": 80
+          "community_score": 0, "substance_score": 100, "maintenance_score": 0
         },
         "live_url_ok": true,
         "endorsement_count": 3,
@@ -139,7 +139,7 @@ Content-Type: application/json
   "builder_username": "abhinav",
   "sender_name": "AI Agent (OpenClaw)",
   "sender_email": "agent@example.com",
-  "message": "I need a React developer for my landing page project. Your vibe score and streak are impressive!",
+  "message": "I need a React developer for my landing page project. Your verified React project looks relevant. Could we discuss a paid trial with clear acceptance criteria?",
   "budget": "$500-1000"
 }
 \`\`\`
@@ -166,35 +166,34 @@ The builder will see this in their Dashboard Inbox and can reply via the chat sy
 ## Understanding VibeTalent Data
 
 ### Vibe Score
-Formula: \`(current_streak * 2) + (projects * 5) + badge_bonus\`
-- Higher = more active and productive builder
+A reputation summary: baseline 10 + strongest public verified project evidence + trusted review, endorsement, and vouch credit.
+Commit counts, streaks, badges, popularity, and adding more projects earn no reputation points. A score is not proof of delivery or a hiring guarantee.
 
 ### Streak
 - Number of consecutive days the builder has logged coding activity
-- Builders who maintain streaks are more consistent and reliable
+- Activity context only; it does not establish reliability, skill, or delivery
 
 ### Badge Levels
 - **None**: < 30 day streak
-- **Bronze**: 30+ days (bonus: +10)
-- **Silver**: 90+ days (bonus: +20)
-- **Gold**: 180+ days (bonus: +30)
-- **Diamond**: 365+ days (bonus: +40)
+- **Bronze**: 30+ days
+- **Silver**: 90+ days
+- **Gold**: 180+ days
+- **Diamond**: 365+ days
 
 ### Project Verification (\`verified\`)
 A project is \`verified: true\` when its GitHub repo ownership is proven: either the
-repo owner matches the builder's linked GitHub username, or the repo contains a
-\`.vibetalent\` file with the builder's username/user ID. **Strongly prefer verified
+repo owner's immutable GitHub ID matches the builder's authenticated GitHub identity,
+or a \`.vibetalent\` file contains the builder's exact VibeTalent account UUID on its own line. **Strongly prefer verified
 projects** when evaluating builders: unverified projects are unproven claims.
 
 ### Quality Score (\`quality_score\`, 0-100)
-Composite score derived from public GitHub signals: community (stars, forks,
-external contributors), substance (languages, file structure, tests, CI, README),
-and maintenance (commit cadence, recency). Hard to game. Available on verified
-projects.
+Repository file checks: README presence (30), test-related files (40), and CI/container configuration (30).
+These checks do not run tests, inspect implementation quality, or prove delivery.
+Commits, stars, forks, and recency earn no points.
 
 \`quality_metrics\` exposes the raw signals (stars, forks, contributors,
 total_commits, has_tests, has_ci, has_readme, plus sub-scores) so agents can
-weight them differently if they want.
+inspect the evidence. Activity and popularity must not be treated as delivery proof.
 
 ### Live URL Health (\`live_url_ok\`)
 \`true\` if the project's \`live_url\` responded healthily on the most recent check.
@@ -212,11 +211,11 @@ has no trusted reviews.
 
 ### How to Pick the Best Builder
 1. Filter with \`verified_only=true\` to skip unverified claims
-2. Sort by \`vibe_score\` for overall activity, but cross-check with \`verified_projects_count\`
-3. Pull the full profile and check each project's \`quality_score\` and \`live_url_ok\`
-4. Look at \`endorsement_count\` and \`average_rating\` for social proof
-5. Match \`tech_stack\` to your project requirements
-6. Higher badge level = longer-proven consistency
+2. Match listed \`tech_stack\` and project scope to the task; listed skills are self-reported
+3. Pull the full profile, inspect verified repositories, and try their live demos
+4. Read trusted reviews and endorsements as supporting context
+5. Agree on a small paid trial, budget, deadline, and observable acceptance criteria
+6. Judge the delivered result and communication; streaks and badges are not hiring evidence
 
 ---
 
@@ -232,7 +231,7 @@ has no trusted reviews.
 
 - Always search with specific skills to get relevant results
 - Pass \`verified_only=true\` to skip builders whose project ownership is unproven
-- Use \`min_streak=3\` to filter out inactive builders
+- Do not use streaks, commit totals, or badge levels as talent or reliability filters
 - Pull the full profile (\`/builders/:username\`) before deciding: \`projects_count\` and
   \`tech_stack\` summary aren't enough; check each project's \`verified\`, \`quality_score\`,
   and \`live_url_ok\`

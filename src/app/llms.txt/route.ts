@@ -11,22 +11,22 @@ function buildLlmsTxt(p: PriceSnapshot): string {
 
 > The marketplace for vibe coders who actually ship.
 
-VibeTalent is a developer talent marketplace that ranks software engineers by coding consistency, shipped projects, and community endorsements rather than traditional resumes.
+VibeTalent is a developer talent marketplace that helps founders find developers through relevant projects, repository control checks, and community feedback.
 
 ## Key Concepts
 
 - **Vibe Coding**: Building software using AI-powered IDEs (Claude Code, Cursor, Bolt, etc.) with a focus on shipping fast and consistently.
-- **Vibe Score**: A reputation metric calculated from a developer's streak, project quality, GitHub activity, and peer endorsements.
-- **Streaks**: Consecutive days a developer has committed code. Streaks are the core trust signal on VibeTalent.
+- **Vibe Score**: A reputation summary based on the strongest public verified project evidence and trusted community feedback. Commit volume, streaks, badges, and project counts earn no points.
+- **Streaks**: Consecutive days of logged activity. Descriptive context only; they do not establish talent, reliability, or delivery.
 - **Badge Levels**: Bronze (30-day streak), Silver (90-day), Gold (180-day), Diamond (365-day).
-- **Quality Score**: A per-project metric based on GitHub repo health: community engagement, code substance, and maintenance activity.
+- **Quality Score**: Repository file checks for README, test-related files, and CI/container configuration. This does not certify code quality or delivery.
 
 ## How It Works
 
 1. Developers sign up and connect their GitHub profiles.
-2. They add projects with live URLs that get verified.
-3. The platform tracks their daily coding streak and calculates a vibe score.
-4. Clients browse builders by tech stack, badge level, and streak, or use the AI agent to get matched automatically.
+2. They add projects; repository control and demo reachability are checked separately.
+3. Reputation uses project evidence and trusted feedback; activity does not add score points.
+4. Clients browse relevant projects and listed skills, or use the AI agent to find candidates, then agree on a scoped paid trial to evaluate delivery.
 
 ## Key Pages
 

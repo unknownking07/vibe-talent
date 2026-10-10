@@ -20,16 +20,18 @@ export async function runReviewerCalibration(): Promise<{ updated: number; skipp
 
   if (error) {
     console.error("reviewer-calibration: fetch failed", error);
-    return { updated: 0, skipped: 0 };
+    throw error;
   }
 
   // 2. Pull the global vibe_score distribution to compute percentile.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: allScores } = await (sb as any)
+  const { data: allScores, error: scoresError } = await (sb as any)
     .from("users")
     .select("vibe_score")
     .gt("vibe_score", 0)
     .order("vibe_score", { ascending: true });
+
+  if (scoresError) throw scoresError;
 
   const scores: number[] = (allScores || []).map((u: { vibe_score: number }) => u.vibe_score);
   const total = scores.length || 1;
@@ -71,7 +73,7 @@ export async function runReviewerCalibration(): Promise<{ updated: number; skipp
 
     if (updErr) {
       console.error("reviewer-calibration: update failed", reviewerUserId, updErr);
-      continue;
+      throw updErr;
     }
     updated++;
   }

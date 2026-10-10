@@ -24,5 +24,19 @@ export function createAdminClient() {
     );
   }
 
-  return createClient(url, serviceRoleKey);
+  return createClient(url, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      // A stalled database must not hold privileged routes/cron jobs open for
+      // minutes. Keep the deadline through response-body reads as well.
+      fetch: (input, init) => {
+        const deadline = AbortSignal.timeout(20_000);
+        const callerSignal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
+        return fetch(input, {
+          ...init,
+          signal: callerSignal ? AbortSignal.any([callerSignal, deadline]) : deadline,
+        });
+      },
+    },
+  });
 }
