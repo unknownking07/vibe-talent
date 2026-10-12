@@ -34,27 +34,27 @@ export const revalidate = 180;
 const FAQ_ITEMS = [
   {
     q: "What is vibe coding?",
-    a: "Vibe coding is the practice of building software using AI-powered IDEs and coding assistants like Claude Code, Cursor, Bolt, and Windsurf. Rather than following traditional development processes with lengthy planning cycles and sprints, vibe coders focus on staying in flow state, shipping features fast, and committing code every single day. The philosophy prioritizes working software in production over documentation, and consistency over sporadic bursts of activity. Vibe coders leverage AI to handle boilerplate and repetitive tasks, freeing them to focus on architecture decisions, product design, and rapid iteration. The result is developers who ship more, ship faster, and build a verifiable track record of daily output that speaks louder than any resume.",
+    a: "Vibe coding means building software with AI coding tools such as Claude Code, Cursor, Bolt, and Windsurf. Developers use these tools to turn ideas into software and iterate on it. When hiring, inspect the working product and repository, and ask the builder to explain their contribution; tool choice and commit frequency do not establish skill or delivery.",
   },
   {
     q: "Where can I hire vibe coders?",
-    a: "VibeTalent is a vibe coders marketplace built specifically for hiring developers who ship with AI tools like Claude Code, Cursor, and Bolt. Browse builders ranked by coding streak, shipped-project quality, and vibe score on the Explore page and Leaderboard, or describe your project to VibeFinder Bot and get matched automatically. Hiring is direct and free: open any builder's profile, hit Hire, and message them with no middleman and no platform fees. Unlike general freelance sites such as Upwork or Fiverr, every ranking on VibeTalent is backed by verifiable GitHub activity rather than self-reported resumes.",
+    a: "Browse builders and projects on VibeTalent, or describe your project to VibeFinder Bot for matches based on skills and project evidence. The leaderboard uses Vibe Score; commits and streaks add no points. Inspect the work, then use the Hire button on a builder's profile to contact them directly.",
   },
   {
     q: "What is the best marketplace to hire vibe coders?",
-    a: "The best vibe coders marketplace depends on what you value. General freelance platforms like Upwork, Fiverr, and Freelancer have the largest talent pools but rank developers on resumes and client reviews that are easy to game. VibeTalent takes the opposite approach: it is a developer-only marketplace where builders are ranked entirely on proof of work: daily GitHub commit streaks, deployed projects with live URLs, repository quality, and peer endorsements. If you want to hire a vibe coder based on what they actually ship rather than how they market themselves, VibeTalent is purpose-built for it, with zero platform fees and AI-powered matching through VibeFinder Bot.",
+    a: "Choose a marketplace that lets you inspect relevant work and speak with the developer. VibeTalent provides public projects, repository checks, community feedback, and matching by skills and project evidence. Use those signals to create a shortlist, then assess the builder through a conversation, references, or a clearly scoped paid trial.",
   },
   {
     q: "How does the VibeTalent vibe score work?",
-    a: "The vibe score combines GitHub-linked activity, project quality signals, and peer endorsements into one reputation measure. It updates as public data changes. Use it to help find builders, then inspect their projects and discuss your requirements directly; no score can guarantee quality or delivery.",
+    a: "Vibe Score combines your strongest verified public project's evidence with endorsements, trusted reviews, and vouches. Commits, streaks, badges, popularity, and extra copies of a project add no points. Repository checks describe file presence and control of the repository; they do not prove passing tests, original authorship, or delivery. Inspect the work and discuss your requirements directly.",
   },
   {
     q: "What are coding streaks and why do they matter?",
-    a: "A coding streak tracks consecutive days of public GitHub activity as reflected in the builder's linked account. It can show a pattern of activity, but contribution dates can change and a streak does not measure code quality or reliability on its own. Compare it with shipped projects, repositories, and a conversation with the builder.",
+    a: "A streak tracks consecutive recorded activity days, including linked GitHub activity and manual check-ins. Streak freezes or restores can also preserve it. It adds no Vibe Score points and does not establish code quality or client delivery. Inspect the projects and speak with the builder.",
   },
   {
     q: "How do VibeTalent badges work?",
-    a: "Badges are visual milestones earned through streak achievements that appear on your profile and in search results. There are four levels: Bronze at 30 consecutive days, Silver at 90 days, Gold at 180 days, and Diamond at 365 days, a full year of daily coding. Each badge level signals increasing dedication and reliability to potential clients browsing the platform. Badges are permanent once earned: even if your streak resets, the badge remains on your profile as proof of past achievement. However, your active streak is displayed separately so clients can see both your historical consistency and current momentum. The badge system creates clear, achievable milestones that motivate developers to maintain their streaks while giving clients an instant visual indicator of a developer's commitment level.",
+    a: "Badges mark recorded activity streak milestones: Bronze at 30 days, Silver at 90, Gold at 180, and Diamond at 365. Earned badges remain when the active streak resets. They add no Vibe Score points and do not establish code quality or reliability on a client project.",
   },
   {
     q: "How is VibeTalent different from Upwork or Toptal?",
@@ -62,7 +62,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Is VibeTalent free to use?",
-    a: "Yes, VibeTalent is free for developers. Creating a profile, connecting your GitHub account, building your streak, earning badges, adding projects, and getting discovered by clients costs nothing. Rankings are based entirely on merit. Your vibe score, streak, and project quality determine your visibility. The one optional paid feature is Featured Projects: developers can pay to feature a project for extra visibility where people browse projects. This is purely optional and does not affect your vibe score, badge level, or search ranking. Simply sign up, start coding every day, add your best projects, and let your proof of work attract opportunities.",
+    a: "Yes. Creating a profile, connecting GitHub, sharing projects, tracking activity, and contacting builders are free. Featured Projects is an optional paid promotion for extra project visibility; it does not increase Vibe Score. Leaderboard positions use Vibe Score, and streaks add no points.",
   },
 ];
 
@@ -126,9 +126,9 @@ export default async function HomePage() {
   // "How it works" — three steps that merge the old "What is Vibe Coding",
   // "Why Streaks Matter", and end-game-ladder sections into one story.
   const steps = [
-    { icon: GitCommit, n: "01", title: "Ship daily", desc: "Commit every day. VibeTalent verifies your GitHub and builds your streak automatically." },
-    { icon: Fire, n: "02", title: "Build your Vibe Score", desc: "Streaks, project quality, and endorsements roll into one public reputation measure." },
-    { icon: Trophy, n: "03", title: "Get discovered & earn badges", desc: "Climb the leaderboard, unlock Bronze → Diamond badges, and let clients find you by proof of work." },
+    { icon: GitCommit, n: "01", title: "Share your work", desc: "Add a project with its repository and live demo. GitHub control and repository checks make the evidence available for inspection." },
+    { icon: Fire, n: "02", title: "Build your Vibe Score", desc: "Your strongest verified project and community feedback contribute to reputation. Commits, streaks, and duplicate projects add no points." },
+    { icon: Trophy, n: "03", title: "Get discovered", desc: "Founders find builders by skills and project evidence, inspect the work, and contact people whose projects fit their brief." },
   ];
 
   const badges = [
@@ -153,7 +153,7 @@ export default async function HomePage() {
                 alternateName: "Vibe Talent",
                 url: siteUrl,
                 description:
-                  "The marketplace for vibe coders who ship consistently. Find developers based on streaks, shipped projects, and vibe scores.",
+                  "Find AI-assisted developers by skills, public project evidence, and community feedback.",
                 publisher: { "@id": `${siteUrl}/#organization` },
                 potentialAction: {
                   "@type": "SearchAction",
@@ -168,7 +168,7 @@ export default async function HomePage() {
                 alternateName: "Vibe Talent",
                 url: siteUrl,
                 description:
-                  "VibeTalent is the vibe coders marketplace: hire AI-assisted developers ranked by coding streaks, shipped projects, and verifiable proof of work instead of resumes.",
+                  "VibeTalent is a marketplace for AI-assisted developers with public projects, repository checks, community feedback, and direct hiring.",
                 logo: {
                   "@type": "ImageObject",
                   url: `${siteUrl}/logo.png`,
@@ -218,7 +218,7 @@ export default async function HomePage() {
           <div className="text-center mb-10">
             <h2 className="text-3xl font-bold text-[var(--foreground)]">How it works</h2>
             <p className="mt-3 text-[var(--text-secondary)] font-medium max-w-2xl mx-auto">
-              Three steps. No resumes, no portfolios, just proof you show up and ship.
+              Share inspectable work, build your reputation, and connect with founders.
             </p>
           </div>
 
@@ -238,7 +238,7 @@ export default async function HomePage() {
           {/* Badge ladder folded in as the visual for step 3 */}
           <div className="mt-10 max-w-3xl mx-auto">
             <p className="text-center text-[11px] font-semibold text-[var(--text-muted)] mb-4">
-              Streak milestones
+              Activity badges · no reputation points
             </p>
             <div className="grid sm:grid-cols-2 gap-x-8 gap-y-4">
               {badges.map((b) => (
@@ -275,7 +275,7 @@ export default async function HomePage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-3xl font-bold text-[var(--foreground)]">Who are the top vibe coders?</h2>
-            <p className="mt-2 text-[var(--text-secondary)] font-medium">The most consistent builders on the platform</p>
+            <p className="mt-2 text-[var(--text-secondary)] font-medium">Ranked by project evidence and community feedback</p>
           </div>
           <Link
             href="/leaderboard"

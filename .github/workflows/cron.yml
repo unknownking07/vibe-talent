@@ -74,7 +74,15 @@ jobs:
             "https://www.vibetalent.work/api/cron/$ROUTE" \
             -H "Authorization: Bearer $CRON_SECRET") || TRANSPORT_EXIT=$?
           echo "HTTP $CODE (curl exit $TRANSPORT_EXIT)"
-          if [ -f /tmp/out ]; then head -c 4000 /tmp/out; echo; fi
+          if [ -f /tmp/out ]; then
+            if jq -e 'type == "object"' /tmp/out > /dev/null 2>&1; then
+              # GitHub sync's per-user detail list used to consume the entire
+              # 4KB preview and hide errors from later children/calibration.
+              jq -c 'del(.results["github-sync"].data.details)' /tmp/out
+            else
+              head -c 4000 /tmp/out; echo
+            fi
+          fi
           [ "$TRANSPORT_EXIT" = "0" ] || { echo "::error::cron $ROUTE transport failed (curl $TRANSPORT_EXIT)"; exit 1; }
           [ "$CODE" = "200" ] || { echo "::error::cron $ROUTE returned HTTP $CODE"; exit 1; }
           jq -e 'type == "object" and (.error | not) and ((.errors // 0) == 0) and ((.failed_jobs // []) | length == 0)' /tmp/out > /dev/null || {

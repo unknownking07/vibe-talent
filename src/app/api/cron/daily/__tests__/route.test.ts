@@ -19,10 +19,27 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
 describe("daily cron failure reporting", () => {
+  it("leaves the long weekly digest batch to its dedicated scheduler", async () => {
+    await GET(req());
+    const paths = mocks.bindingFetch.mock.calls.map(([url]) => new URL(url).pathname);
+    expect(paths).not.toContain("/api/cron/weekly-digest");
+    expect(paths).toContain("/api/cron/github-sync");
+    expect(paths).toContain("/api/cron/re-engagement");
+  });
+  it("includes database error codes and messages for calibration failures", async () => {
+    mocks.calibration.mockRejectedValueOnce({ code: "57014", message: "canceling statement due to statement timeout" });
+    const response = await GET(req());
+    const body = await response.json();
+    expect(response.status).toBe(503);
+    expect(body.failed_jobs).toContain("reviewer-calibration");
+    expect(body.results["reviewer-calibration"]).toMatchObject({ status: 500 });
+    expect(body.results["reviewer-calibration"].error).toContain("57014");
+    expect(body.results["reviewer-calibration"].error).toContain("statement timeout");
+  });
   it("keeps authorization on service-binding fanout and reports success", async () => {
     const response = await GET(req());
     expect(response.status).toBe(200);
-    expect(mocks.bindingFetch).toHaveBeenCalledTimes(8);
+    expect(mocks.bindingFetch).toHaveBeenCalledTimes(7);
     expect(mocks.bindingFetch.mock.calls[0][1].headers.authorization).toBe("Bearer test-cron");
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -31,7 +48,7 @@ describe("daily cron failure reporting", () => {
     const response = await GET(req());
     expect(response.status).toBe(503);
     expect((await response.json()).failed_jobs).toContain("github-sync");
-    expect(mocks.bindingFetch).toHaveBeenCalledTimes(8);
+    expect(mocks.bindingFetch).toHaveBeenCalledTimes(7);
   });
   it("reports partial errors even when a child returns HTTP 200", async () => {
     mocks.bindingFetch.mockResolvedValueOnce(Response.json({ synced: 3, errors: 2 }));
@@ -50,7 +67,7 @@ describe("daily cron failure reporting", () => {
     expect(response).toBeDefined();
     expect(response?.status).toBe(503);
     expect((await response!.json()).results["github-sync"].error).toContain("timed out");
-    expect(mocks.bindingFetch).toHaveBeenCalledTimes(8);
+    expect(mocks.bindingFetch).toHaveBeenCalledTimes(7);
   });
   it("bounds stalled reviewer calibration and reports it as a failure", async () => {
     mocks.calibration.mockImplementationOnce(() => new Promise(() => {}));

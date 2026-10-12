@@ -94,9 +94,9 @@ export function ForkHero() {
             </p>
             <ul className="mt-4 space-y-2">
               {[
-                "Daily streaks, verified from GitHub",
-                "Shipped projects with quality scores",
-                "A vibe score that gets you hired",
+                "Recorded activity shown separately from reputation",
+                "Public projects with repository checks",
+                "Get discovered by skills and project evidence",
               ].map((f) => (
                 <li
                   key={f}

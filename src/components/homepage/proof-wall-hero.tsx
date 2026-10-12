@@ -92,7 +92,7 @@ export function ProofWallHero({
                 key={row.username}
                 href={`/profile/${row.username}`}
                 prefetch={false}
-                aria-label={`@${row.username} — shipped on ${activeDays} of the last ${days.length} days. View profile.`}
+                aria-label={`@${row.username} — recorded activity on ${activeDays} of the last ${days.length} days. View profile.`}
                 className="flex justify-end gap-[3px] rounded-[3px] transition-opacity hover:opacity-75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
               >
                 {days.map((day) => {
@@ -125,10 +125,10 @@ export function ProofWallHero({
           Each row is one builder. Click anywhere on it to open their profile.
         </p>
         <p className="mt-2 text-right text-xs text-[var(--text-muted)]">
-          Each square represents a public GitHub contribution day; activity alone does not verify project quality.
+          Each square represents a recorded activity day, which may include GitHub activity, manual check-ins, or streak freezes and restores. Activity does not verify project quality.
         </p>
         <p className="sr-only">
-          Activity wall: the last {days.length} days of verified GitHub shipping
+          Activity wall: the last {days.length} days of recorded
           activity from the {rows.length} most active builders on VibeTalent.
           Each row links to that builder&apos;s profile.
         </p>

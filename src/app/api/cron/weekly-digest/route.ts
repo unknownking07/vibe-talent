@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runWeeklyDigest } from "@/lib/cron-jobs/weekly-digest";
 
+export const maxDuration = 600;
+
 export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) {
@@ -17,6 +19,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ message: "Weekly digest completed", ...result });
   } catch (error) {
     console.error("Weekly digest cron error:", error);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return NextResponse.json({
+      error: "Weekly digest failed",
+      reason: error instanceof Error ? error.message : "Unknown error",
+    }, { status: 500 });
   }
 }
