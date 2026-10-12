@@ -3,9 +3,18 @@ import { getSiteUrl } from "@/lib/seo";
 import { runReviewerCalibration } from "@/lib/cron-jobs/reviewer-calibration";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-// 90s for GitHub sync + 7 × 60s siblings + 30s calibration = 540s,
+// 90s for GitHub sync + 6 × 60s siblings + 30s calibration = 480s,
 // below the external scheduler's 600s request deadline.
 export const maxDuration = 600;
+
+function failureMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object" && "message" in error) {
+    const code = "code" in error ? `${error.code}: ` : "";
+    return `${code}${error.message}`;
+  }
+  return String(error);
+}
 
 async function boundedJob<T>(name: string, timeoutMs: number, work: (signal: AbortSignal) => Promise<T>): Promise<T> {
   const controller = new AbortController();
@@ -76,7 +85,8 @@ export async function GET(req: NextRequest) {
     { name: "streak-warning", path: "/api/cron/streak-warning" },
     { name: "profile-view-digest", path: "/api/cron/profile-view-digest" },
     { name: "milestone-check", path: "/api/cron/milestone-check" },
-    { name: "weekly-digest", path: "/api/cron/weekly-digest" },
+    // Weekly digest has its own Mon/Tue scheduler and may exceed a 60s child
+    // budget while sending its email batch. Keep it outside this fanout.
     { name: "re-engagement", path: "/api/cron/re-engagement" },
   ];
 
@@ -93,7 +103,7 @@ export async function GET(req: NextRequest) {
         return { status: res.ok && partialFailure ? 503 : res.status, data };
       });
     } catch (error) {
-      results[job.name] = { status: 500, error: String(error) };
+      results[job.name] = { status: 500, error: failureMessage(error) };
     }
   }
 
@@ -109,6 +119,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error("Daily cron reviewer-calibration error:", error);
     failedJobs.push("reviewer-calibration");
+    results["reviewer-calibration"] = { status: 500, error: failureMessage(error) };
   }
 
   return NextResponse.json({

@@ -562,7 +562,8 @@ ${cta(`${siteUrl}/dashboard`, "View dashboard")}
 }
 
 /**
- * Send a weekly digest email. Fire-and-forget.
+ * Send a weekly digest email. Reject failures so the cron only records
+ * provider-acknowledged sends in email_log.
  */
 export async function sendWeeklyDigestEmail({
   email,
@@ -580,7 +581,7 @@ export async function sendWeeklyDigestEmail({
   };
 }): Promise<void> {
   const client = getResend();
-  if (!client) return;
+  if (!client) throw new Error("Weekly digest email provider is not configured");
 
   const siteUrl = getSiteUrl();
   const monday = mondayOf(new Date()).toISOString().slice(0, 10);
@@ -601,7 +602,7 @@ ${renderWeeklyReceiptSection({ username, monday })}
 `;
 
   try {
-    await sendEmail(client, {
+    const { data, error } = await sendEmail(client, {
       to: email,
       subject: `Your week on VibeTalent`,
       text: `Hey @${username}, here's how your week went:\n\nProfile views: ${stats.profileViews}\nDay streak: ${stats.streakDays}\nVibe score: ${stats.vibeScore}\nHire requests: ${stats.hireRequests}\n\nView dashboard: ${siteUrl}/dashboard\n\nYour weekly receipt: ${receiptShareUrl}\n\nUnsubscribe: ${unsubUrl(email)}`,
@@ -612,8 +613,11 @@ ${renderWeeklyReceiptSection({ username, monday })}
         unsubLink: unsubUrl(email),
       }),
     });
+    if (error) throw new Error(`Weekly digest email failed: ${error.message}`);
+    if (!data?.id) throw new Error("Weekly digest email was not acknowledged by provider");
   } catch (error) {
     console.error("Failed to send weekly digest email:", error);
+    throw error;
   }
 }
 

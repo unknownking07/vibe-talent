@@ -102,12 +102,12 @@ export function ProofWallStats({ initial }: { initial: HeroStats }) {
     // Wording matters on the first tile. Roughly half of streak_logs predates
     // the platform (the github-sync backfill reads a year of contribution
     // history), so "days verified" implied activity ON VibeTalent that those
-    // rows cannot support. "GitHub-verified days" is what the number actually
-    // is: commit days read from GitHub rather than self-reported.
-    { label: "GitHub-verified days", value: stats.totalBuilderDays },
+    // rows cannot support. Manual and synthetic streak rows are also counted;
+    // recorded activity does not verify shipping, quality, or delivery.
+    { label: "Recorded activity days", value: stats.totalBuilderDays },
     { label: "Longest streak", value: stats.longestStreak, suffix: "days" },
     { label: "Builders tracked", value: stats.buildersTracked },
-    { label: "Projects shipped", value: stats.totalProjects },
+    { label: "Projects shared", value: stats.totalProjects },
     {
       label: "Avg. streak",
       value: stats.avgStreak,
