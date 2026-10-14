@@ -305,8 +305,9 @@ export interface ProofWallData {
 
 const PROOF_WALL_DAYS = 70;
 const PROOF_WALL_ROWS = 8;
+export const HOMEPAGE_STATS_REVALIDATE_SECONDS = 300;
 
-async function _fetchProofWall(): Promise<ProofWallData> {
+async function _fetchProofWall(): Promise<Omit<ProofWallData, "totalBuilderDays">> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = getPublicClient() as any;
 
@@ -322,14 +323,13 @@ async function _fetchProofWall(): Promise<ProofWallData> {
   // returned an arbitrary 1000-row slice covering only ~20 of the 70 days, so
   // the wall rendered three weeks and looked broken. Selecting 8 builders up
   // front bounds the log query at 8 x 70 = 560 rows, comfortably under the cap.
-  const [topUsersRes, totalRes, buildersRes] = await Promise.all([
+  const [topUsersRes, buildersRes] = await Promise.all([
     sb
       .from("users")
       .select("id, username, longest_streak")
       .not("username", "is", null)
       .order("longest_streak", { ascending: false })
       .limit(PROOF_WALL_ROWS),
-    sb.from("streak_logs").select("*", { count: "exact", head: true }),
     sb.from("users").select("id", { count: "exact", head: true }).not("username", "is", null),
   ]);
 
@@ -337,9 +337,6 @@ async function _fetchProofWall(): Promise<ProofWallData> {
   // zero counts. The stat poll checks these errors, but the first server
   // render must uphold the same contract.
   if (topUsersRes.error) throw new Error(`Failed to fetch proof wall builders: ${topUsersRes.error.message}`);
-  if (totalRes.error || typeof totalRes.count !== "number") {
-    throw new Error(`Failed to count proof wall days: ${totalRes.error?.message ?? "count unavailable"}`);
-  }
   if (buildersRes.error || typeof buildersRes.count !== "number") {
     throw new Error(`Failed to count proof wall builders: ${buildersRes.error?.message ?? "count unavailable"}`);
   }
@@ -385,7 +382,6 @@ async function _fetchProofWall(): Promise<ProofWallData> {
   return {
     days: visibleDays,
     rows,
-    totalBuilderDays: totalRes.count,
     longestStreak: topUsers[0]?.longest_streak ?? 0,
     buildersTracked: buildersRes.count,
   };
@@ -397,9 +393,16 @@ async function _fetchProofWall(): Promise<ProofWallData> {
 // 1000-row page, and that entry would otherwise keep serving a wall with
 // weeks missing until its TTL expired. Bump the suffix whenever the shape of
 // the returned data changes.
-export const fetchProofWallCached = unstable_cache(_fetchProofWall, ["proof-wall-v4"], {
+const fetchProofWallRowsCached = unstable_cache(_fetchProofWall, ["proof-wall-v5"], {
   revalidate: 300,
 });
+
+export async function fetchProofWallCached(): Promise<ProofWallData> {
+  // Compose outside both cache callbacks: Next bypasses reads from a nested
+  // unstable_cache. Hero stats own the only exact activity count.
+  const [wall, stats] = await Promise.all([fetchProofWallRowsCached(), fetchHeroStatsCached()]);
+  return { ...wall, totalBuilderDays: stats.totalBuilderDays };
+}
 
 // ---------------------------------------------------------------------------
 // Hero stats (the polled stat strip under the proof wall)
@@ -426,7 +429,7 @@ async function _fetchHeroStats(): Promise<HeroStats> {
   const sb = getPublicClient() as any;
 
   const [daysRes, longestRes, buildersRes, projectsRes, streakRes] = await Promise.all([
-    sb.from("streak_logs").select("*", { count: "exact", head: true }),
+    sb.from("streak_logs").select("id", { count: "exact", head: true }),
     sb
       .from("users")
       .select("longest_streak")
@@ -467,8 +470,8 @@ async function _fetchHeroStats(): Promise<HeroStats> {
   };
 }
 
-// 30s. This backs a 60s client poll on the busiest page on the site, so the TTL
-// is what keeps N concurrent visitors from becoming N x 5 Supabase queries.
-export const fetchHeroStatsCached = unstable_cache(_fetchHeroStats, ["hero-stats-v2"], {
-  revalidate: 30,
+// Marketing totals can refresh every five minutes; the client's minute polls
+// should mostly read cache instead of repeatedly rebuilding these aggregates.
+export const fetchHeroStatsCached = unstable_cache(_fetchHeroStats, ["hero-stats-v3"], {
+  revalidate: HOMEPAGE_STATS_REVALIDATE_SECONDS,
 });
