@@ -158,7 +158,9 @@ export async function GET(req: NextRequest) {
     let skipped = 0;
     let errors = 0;
     let unattempted = 0;
-    const details: { user: string; github: string; status: string; dates_logged?: number; lifetime?: number; last30d?: number; events_api_error?: string }[] = [];
+    let activityRowsChecked = 0;
+    let activityRowsWritten = 0;
+    const details: { user: string; github: string; status: string; dates_logged?: number; dates_written?: number; lifetime?: number; last30d?: number; events_api_error?: string }[] = [];
     const loopStart = Date.now();
 
     // Process in batches
@@ -458,10 +460,9 @@ export async function GET(req: NextRequest) {
               return { userInfo, status: "skipped", reason: "No GitHub activity in last year" };
             }
 
-            // Upsert streak_logs with real per-day counts in a single batch
-            // round-trip. The previous per-row loop fired N sequential
-            // requests (200+ for heavy users), which routinely blew the
-            // 5-min serverless budget and starved the back of the queue.
+            // Compare the bounded GitHub history before writing. Re-upserting
+            // the same year every day creates heap/WAL writes and fires row
+            // triggers even when every contribution count is unchanged.
             const streakRows = Array.from(dateCounts.entries()).map(
               ([activity_date, commit_count]) => ({
                 user_id: userInfo.userId,
@@ -469,24 +470,35 @@ export async function GET(req: NextRequest) {
                 commit_count,
               })
             );
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { error: streakUpsertError } = await (supabase as any)
-              .from("streak_logs")
-              .upsert(streakRows, { onConflict: "user_id,activity_date" });
-            if (streakUpsertError) {
-              // Bail out: running update_user_streak against stale streak_logs
-              // would either return the existing (incorrect) streak or compute
-              // from partial data. Better to surface the failure to the cron
-              // summary so the next run retries cleanly.
-              console.error(
-                `streak_logs batch upsert failed for ${userInfo.githubUsername}:`,
-                streakUpsertError
-              );
-              return {
-                userInfo,
-                status: "error",
-                reason: `streak_logs upsert failed: ${streakUpsertError.message}`,
-              };
+            let changedRows = streakRows;
+            if (streakRows.length > 0) {
+              // The heatmap is one year (< 1,000 rows), below PostgREST's cap.
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const { data: existingRows, error: lookupError } = await (supabase as any)
+                .from("streak_logs")
+                .select("activity_date,commit_count")
+                .eq("user_id", userInfo.userId)
+                .in("activity_date", streakRows.map(row => row.activity_date));
+              if (lookupError) {
+                return { userInfo, status: "error", reason: `streak_logs lookup failed: ${lookupError.message}` };
+              }
+              const existingCounts = new Map<string, number | null>((existingRows ?? []).map(
+                (row: { activity_date: string; commit_count: number | null }) => [row.activity_date, row.commit_count]
+              ));
+              changedRows = streakRows.filter(row => existingCounts.get(row.activity_date) !== row.commit_count);
+              activityRowsChecked += streakRows.length;
+            }
+            if (changedRows.length > 0) {
+              // Only update counts/dates, preserving existing freeze/restore markers.
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const { error: streakUpsertError } = await (supabase as any)
+                .from("streak_logs")
+                .upsert(changedRows, { onConflict: "user_id,activity_date" });
+              if (streakUpsertError) {
+                // Never recalculate against activity that failed to persist.
+                return { userInfo, status: "error", reason: `streak_logs upsert failed: ${streakUpsertError.message}` };
+              }
+              activityRowsWritten += changedRows.length;
             }
             const loggedCount = streakRows.length;
 
@@ -511,7 +523,7 @@ export async function GET(req: NextRequest) {
               };
             }
 
-            return { userInfo, status: "synced", loggedCount, lifetime, last30d, eventsApiError };
+            return { userInfo, status: "synced", loggedCount, writtenCount: changedRows.length, lifetime, last30d, eventsApiError };
           } catch (err) {
             console.error(`Error syncing GitHub for ${userInfo.githubUsername}:`, err);
             return { userInfo, status: "error", reason: "Unexpected error" };
@@ -529,6 +541,7 @@ export async function GET(req: NextRequest) {
               github: val.userInfo.githubUsername,
               status: "synced",
               dates_logged: val.loggedCount,
+              dates_written: val.writtenCount,
               lifetime: val.lifetime,
               last30d: val.last30d,
               ...(val.eventsApiError ? { events_api_error: val.eventsApiError } : {}),
@@ -575,6 +588,8 @@ export async function GET(req: NextRequest) {
       skipped,
       errors,
       unattempted,
+      activity_rows_checked: activityRowsChecked,
+      activity_rows_written: activityRowsWritten,
       details,
     });
   } catch (error) {
